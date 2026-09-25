@@ -44,7 +44,7 @@ It has four parts:
 ### Truth boundaries
 
 - The project file's numbers are the timing truth. Offsets are set on waveforms, which are exact data, and playback only confirms them, so preview drift never shifts the final render. This avoids the Kdenlive problem where preview and render disagreed and timeline positions had to be compensated by guesswork.
-- Source time is the presentation time as ffmpeg reads it, including a stream's start offset, and the editor preview must use the same interpretation. Kdenlive ignores such offsets, so values transcribed from Kdenlive can be a frame off.
+- Source time is a presentation timestamp, including a stream's start offset, and the frame shown at a source time is the frame whose timestamp is nearest to it. Every renderer and the editor preview must pick frames this way, because project times are rounded to milliseconds and source frames often sit off the project's frame grid, so a looser rule makes renderers disagree by one frame.
 - ffmpeg-rendered stills are the layout truth. Element-based playback may place layers slightly differently with CSS, which is acceptable because it only serves timing confirmation.
 - The browser never needs to decode source footage for layout or waveforms, so browser codec support such as HEVC only affects playback preview, and constant frame rate working files from ingest cover that case.
 

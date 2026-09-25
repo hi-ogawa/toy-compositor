@@ -41,8 +41,10 @@ export function compile({
       case "video": {
         const visible = intersect({ start: layer.start, end: layer.start + layer.out - layer.in }, range);
         if (!visible) return;
-        const k = inputs.push(seekInput({ src: resolve(layer.src), seek: layer.in + visible.start - layer.start, duration: visible.end - visible.start })) - 1;
-        const fit = fitBox({ source: probeSize(resolve(layer.src)), crop: layer.crop, box: layer.box });
+        const src = resolve(layer.src);
+        const seek = frameShownAt({ src, time: layer.in + visible.start - layer.start });
+        const k = inputs.push(seekInput({ src, seek, duration: visible.end - visible.start })) - 1;
+        const fit = fitBox({ source: probeSize(src), crop: layer.crop, box: layer.box });
         filters.push(
           `[${k}:v]fps=${canvas.fps},setpts=PTS-STARTPTS+${visible.start - range.start}/TB,${cropFilter(layer.crop)}scale=${fit.width}:${fit.height}[v${i}]`,
         );
@@ -67,7 +69,8 @@ export function compile({
         renderText({ layer, file });
         const k = inputs.push(stillInput({ src: file, fps: canvas.fps, duration: visible.end - visible.start })) - 1;
         filters.push(`[${k}:v]setpts=PTS-STARTPTS+${visible.start - range.start}/TB[v${i}]`);
-        overlay({ label: `v${i}`, x: layer.box.x, y: layer.box.y });
+        // The stroked copy pads the PNG by half the outline width, so shift it back up.
+        overlay({ label: `v${i}`, x: layer.box.x, y: layer.box.y - Math.round((layer.outline?.width ?? 0) / 2) });
         return;
       }
       case "color": {
@@ -140,8 +143,20 @@ function intersect(a: Range, b: Range): Range | undefined {
   return end > start ? { start, end } : undefined;
 }
 
+// The frame shown at a source time is the frame whose timestamp is nearest to it.
+// Project times are rounded to milliseconds and a source's first frame can start
+// off the project's frame grid, so a time often lands a hair before or after a
+// frame, and picking the nearest frame keeps renderers from disagreeing by one.
+// ffmpeg's accurate seek starts from the first frame at or after the seek time,
+// so seek to just before that frame. Assumes a constant frame rate source.
+function frameShownAt({ src, time }: { src: string; time: number }) {
+  const { startTime, frameRate } = probeTiming(src);
+  const index = Math.round((time - startTime) * frameRate);
+  return Math.max(0, startTime + index / frameRate - 0.1 / frameRate);
+}
+
 function seekInput({ src, seek, duration }: { src: string; seek: number; duration: number }) {
-  return ["-ss", seek.toFixed(3), "-t", duration.toFixed(3), "-i", src];
+  return ["-ss", seek.toFixed(6), "-t", duration.toFixed(6), "-i", src];
 }
 
 function stillInput({ src, fps, duration }: { src: string; fps: number; duration: number }) {
@@ -171,6 +186,23 @@ function cropFilter(crop?: Crop) {
   if (!crop) return "";
   const { left = 0, right = 0, top = 0, bottom = 0 } = crop;
   return `crop=iw*${1 - left - right}:ih*${1 - top - bottom}:iw*${left}:ih*${top},`;
+}
+
+function probeTiming(file: string) {
+  const out = execFileSync("ffprobe", [
+    "-v",
+    "error",
+    "-select_streams",
+    "v:0",
+    "-show_entries",
+    "stream=start_time,r_frame_rate",
+    "-of",
+    "json",
+    file,
+  ]).toString();
+  const stream = JSON.parse(out).streams[0];
+  const [num, den] = stream.r_frame_rate.split("/").map(Number);
+  return { startTime: Number(stream.start_time ?? 0), frameRate: num / den };
 }
 
 function probeSize(file: string) {
