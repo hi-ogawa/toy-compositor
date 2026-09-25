@@ -1,0 +1,15 @@
+{
+  "name": "toy-compositor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -b",
+    "render": "node prototypes/2026-09-26-ffmpeg-compiler/render.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "pnpm@11.22.0"
+}
