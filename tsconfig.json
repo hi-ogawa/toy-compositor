@@ -1,10 +1,22 @@
 {
-  "include": ["prototypes/**/*.ts", "tools/**/*.ts"],
-  "exclude": ["**/node_modules"],
+  "include": [
+    "prototypes/**/*.ts",
+    "prototypes/**/*.tsx",
+    "tools/**/*.ts"
+  ],
+  "exclude": [
+    "**/node_modules"
+  ],
   "compilerOptions": {
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "target": "esnext",
-    "lib": ["ESNext"],
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "skipLibCheck": true,
@@ -16,6 +28,7 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "jsx": "react-jsx"
   }
 }
