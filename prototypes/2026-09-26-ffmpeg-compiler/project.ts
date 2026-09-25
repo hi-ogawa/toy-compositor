@@ -30,6 +30,7 @@ export type AudioLayer = {
   out: number;
   fadeIn?: number;
   fadeOut?: number;
+  muted?: boolean;
 };
 
 export type ImageLayer = {
