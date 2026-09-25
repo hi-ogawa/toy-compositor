@@ -15,4 +15,4 @@ Media under `media/` is gitignored. `./fetch.sh` copies it from `e-1800/hiroshi/
 | `mix.wav` | `rescene-love-attack-john-park-mixed-rev2.wav` |
 | `mv-thumbnail.jpg` | `youtube-thumbnail-maxdefault.jpg` |
 
-Kdenlive's outputs for comparison are the thumbnails fetched into `research/kdenlive/projects/` and the MP4 renders on the drive.
+`fetch.sh` also copies Kdenlive's renders of all four deliverables into `kdenlive/` (gitignored) for comparison.
