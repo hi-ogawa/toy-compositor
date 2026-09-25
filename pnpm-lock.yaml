@@ -34,6 +34,9 @@ importers:
       remotion:
         specifier: 4.0.528
         version: 4.0.528(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      zod:
+        specifier: 4.5.4
+        version: 4.5.4
     devDependencies:
       '@types/react':
         specifier: ^19.3.0

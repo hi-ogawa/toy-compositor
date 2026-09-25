@@ -6,12 +6,14 @@ import { getVideoMetadata } from "@remotion/media-utils";
 import { Composition, type CalculateMetadataFunction, staticFile } from "remotion";
 import type { Project } from "../../2026-09-26-ffmpeg-compiler/project.ts";
 import { outputRange, ProjectComposition, type ProjectProps, type Size } from "./project-composition.tsx";
+import { projectSchema } from "./schema.ts";
 
 export function Root() {
   return (
     <Composition
       id="Project"
       component={ProjectComposition}
+      schema={projectSchema}
       defaultProps={initialProject}
       calculateMetadata={calculateMetadata}
       width={initialProject.canvas.width}
