@@ -27,6 +27,37 @@ Compared against the ffmpeg compiler's output for the same project files ([tools
 - Remotion's MP4 audio is 42.6ms late, which is 2048 samples at 48kHz. Its audio edit list starts at media time 0, so the AAC encoder's priming samples play instead of being skipped. This is in Remotion's encoding, not in the composition, and it does not matter for an editor preview, because final renders stay on the ffmpeg compiler.
 - The first render also downloads Chrome headless shell and bundles the project, which took about 150s once. Later renders reuse the cached bundle.
 
+## Reproduce
+
+Everything runs from the repo root. `fetch.sh` needs the archive drive once, and after that the media and Kdenlive's renders stay in the cover's gitignored `media/` and `kdenlive/` folders.
+
+```sh
+C=covers/2026-06-27-rescene-love-attack
+$C/fetch.sh
+
+# Render every deliverable with both renderers into $C/out/{ffmpeg,remotion}/
+for r in ffmpeg-compiler remotion-render; do
+  out=$C/out/${r%%-*}
+  node prototypes/2026-09-26-$r/render.ts $C/horizontal-thumbnail.json $out/horizontal-thumbnail.png
+  node prototypes/2026-09-26-$r/render.ts $C/vertical-thumbnail.json $out/vertical-thumbnail.png
+  node prototypes/2026-09-26-$r/render.ts $C/horizontal-video.json $out/horizontal-video.mp4
+  node prototypes/2026-09-26-$r/render.ts $C/vertical-video.json $out/vertical-video.mp4
+done
+
+# Stills: SSIM, plus a stacked view and an amplified difference image
+tools/compare-images.sh $C/out/ffmpeg/horizontal-thumbnail.png $C/out/remotion/horizontal-thumbnail.png $C/out/compare-horizontal-thumbnail
+
+# Videos: SSIM for every frame, and the audio lag
+uv run tools/compare-videos.py $C/out/ffmpeg/horizontal-video.mp4 $C/out/remotion/horizontal-video.mp4
+uv run tools/audio-lag.py $C/out/ffmpeg/horizontal-video.mp4 $C/out/remotion/horizontal-video.mp4
+
+# Against Kdenlive's own renders
+tools/compare-images.sh $C/out/ffmpeg/horizontal-thumbnail.png $C/kdenlive/horizontal-thumbnail.jpg $C/out/compare-kdenlive-horizontal-thumbnail
+uv run tools/audio-lag.py $C/out/ffmpeg/horizontal-video.mp4 $C/kdenlive/horizontal-video.mp4
+```
+
+Remotion renders take about 4x longer than the ffmpeg ones, and the first one also downloads Chrome headless shell.
+
 ## Where Remotion's render time goes
 
 Remotion uses the browser as the compositor. It bundles the composition, opens headless Chrome tabs (8 here), and for each frame renders the page and screenshots it, while a native compositor process decodes each `<OffthreadVideo>` frame and hands it to the page as an image. ffmpeg only encodes the screenshots and mixes audio. The ffmpeg compiler instead decodes, composites, and encodes in one filter graph.
