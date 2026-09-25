@@ -79,6 +79,8 @@ export const projectSchema = z.object({
     z.object({ type: z.literal("still"), time: z.number() }),
   ]),
   layers: z.array(layer),
-  // Probed by calculateMetadata, not part of the project file.
+  // Probed and computed by calculateMetadata, not part of the project file.
   sizes: z.record(z.string(), z.object({ width: z.number(), height: z.number() })).optional(),
+  durations: z.record(z.string(), z.number()).optional(),
+  timeline: z.object({ start: z.number(), end: z.number() }).optional(),
 }) satisfies z.ZodType<Project>;

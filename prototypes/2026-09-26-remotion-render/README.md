@@ -46,7 +46,8 @@ This opens the project in Remotion Studio, and edits in the props panel are writ
 - The project is passed as default props through a `REMOTION_PROJECT` environment variable rather than `--props`. Studio gives `--props` priority over the props panel, so with `--props` every edit in the panel is ignored.
 - Studio's own save cannot target a project file. It rewrites the inline `defaultProps` literal of the `<Composition>` in the root `.tsx` file through a codemod, and here it also reports "Cannot find root file in project". Instead, the composition posts its props to a local endpoint started by `studio.ts` whenever they change in Studio, and the endpoint writes the project file. Changing `output.end` in the panel updated the JSON file on disk.
 - A zod schema that mirrors the format lets the panel edit every field of every layer. Numbers can be dragged or typed, and optional fields have an `<undefined>` toggle. The form is one long nested list, so finding a layer means scrolling through all of them.
-- The timeline shows each layer as a named track, with video thumbnails, and the mix waveform with its fade-out.
+- In Studio the composition spans the whole timeline rather than only the output range, like a Kdenlive project. Each video and audio layer gets a row for its whole source clip above its own row, labeled with the in and out points in use, the output range has its own row, and the preview is dimmed outside the output range. Renders through `render.ts` still cover only the output range.
+- Studio hides sequences created from the same code location as "programmatically duplicated", so every layer would collapse into one row with a `+N` badge. Each layer's sequence and media element get their own `_remotionInternalStack`, an internal Remotion prop, in Studio's `studio-original://` form so it does not try to fetch source maps for them. This may break on Remotion upgrades.
 
 ### Camera sync does not work in Studio
 

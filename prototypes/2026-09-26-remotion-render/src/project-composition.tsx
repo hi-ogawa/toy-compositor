@@ -1,7 +1,9 @@
 // Draw a project's layers with Remotion elements.
-// Composition frame 0 is the start of the project's output range.
+// Composition frame 0 is the start of the output range when rendering. In Studio the
+// composition spans the whole timeline instead, so clip sources and the output range
+// can be seen in context (see studio-timeline.tsx).
 
-import type { CSSProperties, ReactNode } from "react";
+import { Fragment, type CSSProperties, type ReactNode } from "react";
 import { AbsoluteFill, Audio, Img, interpolate, OffthreadVideo, Sequence, staticFile } from "remotion";
 import type {
   AudioLayer,
@@ -12,29 +14,48 @@ import type {
   TextLayer,
 } from "../../2026-09-26-ffmpeg-compiler/project.ts";
 import { StudioSync } from "./studio-sync.tsx";
+import { SourceTrack, StudioTimeline } from "./studio-timeline.tsx";
 
 export type Size = { width: number; height: number };
 
-export type ProjectProps = Project & { sizes?: Record<string, Size> };
+export type ProjectProps = Project & {
+  // Probed and computed by calculateMetadata, not part of the project file.
+  sizes?: Record<string, Size>;
+  durations?: Record<string, number>;
+  timeline?: Range;
+};
 
-type Range = { start: number; end: number };
+export type Range = { start: number; end: number };
 
 export function ProjectComposition(props: ProjectProps) {
-  const { sizes = {}, ...project } = props;
-  const { canvas, output, layers } = project;
-  const range = outputRange(project);
+  const { sizes = {}, durations = {}, timeline: studioTimeline, ...project } = props;
+  const { canvas, layers } = project;
+  const output = outputRange(project);
+  const timeline = studioTimeline ?? output;
   return (
     <AbsoluteFill style={{ backgroundColor: canvas.background ?? "#000000" }}>
+      {studioTimeline && <StudioTimeline project={project} timeline={studioTimeline} output={output} />}
       {layers.map((layer, i) => (
-        <LayerView
-          key={i}
-          name={layerName(layer, i)}
-          layer={layer}
-          range={range}
-          fps={canvas.fps}
-          sizes={sizes}
-          still={output.type === "still"}
-        />
+        <Fragment key={i}>
+          {studioTimeline && (
+            <SourceTrack
+              name={layerName(layer, i)}
+              layer={layer}
+              duration={"src" in layer ? durations[layer.src] : undefined}
+              timeline={studioTimeline}
+              fps={canvas.fps}
+            />
+          )}
+          <LayerView
+            name={layerName(layer, i)}
+            layer={layer}
+            timeline={timeline}
+            output={output}
+            fps={canvas.fps}
+            sizes={sizes}
+            still={project.output.type === "still" && !studioTimeline}
+          />
+        </Fragment>
       ))}
       <StudioSync project={project} />
     </AbsoluteFill>
@@ -44,57 +65,59 @@ export function ProjectComposition(props: ProjectProps) {
 function LayerView({
   name,
   layer,
-  range,
+  timeline,
+  output,
   fps,
   sizes,
   still,
 }: {
   name: string;
   layer: Layer;
-  range: Range;
+  timeline: Range;
+  output: Range;
   fps: number;
   sizes: Record<string, Size>;
   still: boolean;
 }) {
   switch (layer.type) {
     case "video": {
-      const visible = intersect({ start: layer.start, end: layer.start + layer.out - layer.in }, range);
+      const visible = intersect({ start: layer.start, end: layer.start + layer.out - layer.in }, timeline);
       if (!visible) return null;
       const seek = layer.in + visible.start - layer.start;
       return (
-        <Timed name={name} visible={visible} range={range} fps={fps}>
+        <Timed name={name} visible={visible} timeline={timeline} fps={fps}>
           <Fitted size={sizes[layer.src]} box={layer.box} crop={layer.crop}>
-            <OffthreadVideo src={staticFile(layer.src)} trimBefore={Math.round(seek * fps)} muted style={fill} />
+            <OffthreadVideo {...studioRow(`${name} media`)} src={staticFile(layer.src)} trimBefore={Math.round(seek * fps)} muted style={fill} />
           </Fitted>
         </Timed>
       );
     }
     case "image": {
-      const visible = intersect({ start: layer.start ?? range.start, end: layer.end ?? range.end }, range);
+      const visible = intersect({ start: layer.start ?? output.start, end: layer.end ?? output.end }, timeline);
       if (!visible) return null;
       return (
-        <Timed name={name} visible={visible} range={range} fps={fps}>
+        <Timed name={name} visible={visible} timeline={timeline} fps={fps}>
           <Fitted size={sizes[layer.src]} box={layer.box} crop={layer.crop}>
-            <Img src={staticFile(layer.src)} style={fill} />
+            <Img {...studioRow(`${name} media`)} src={staticFile(layer.src)} style={fill} />
           </Fitted>
         </Timed>
       );
     }
     case "text": {
-      const visible = intersect({ start: layer.start ?? range.start, end: layer.end ?? range.end }, range);
+      const visible = intersect({ start: layer.start ?? output.start, end: layer.end ?? output.end }, timeline);
       if (!visible) return null;
       return (
-        <Timed name={name} visible={visible} range={range} fps={fps}>
+        <Timed name={name} visible={visible} timeline={timeline} fps={fps}>
           <Text layer={layer} />
         </Timed>
       );
     }
     case "color": {
-      const visible = intersect({ start: layer.start ?? range.start, end: layer.end ?? range.end }, range);
+      const visible = intersect({ start: layer.start ?? output.start, end: layer.end ?? output.end }, timeline);
       if (!visible) return null;
       const box = layer.box;
       return (
-        <Timed name={name} visible={visible} range={range} fps={fps}>
+        <Timed name={name} visible={visible} timeline={timeline} fps={fps}>
           <div
             style={{
               position: "absolute",
@@ -109,12 +132,13 @@ function LayerView({
     case "audio": {
       // Muted audio still plays in the Studio timeline, so its waveform can be used for sync.
       if (still) return null;
-      const visible = intersect({ start: layer.start, end: layer.start + layer.out - layer.in }, range);
+      const visible = intersect({ start: layer.start, end: layer.start + layer.out - layer.in }, timeline);
       if (!visible) return null;
       const seek = layer.in + visible.start - layer.start;
       return (
-        <Timed name={name} visible={visible} range={range} fps={fps}>
+        <Timed name={name} visible={visible} timeline={timeline} fps={fps}>
           <Audio
+            {...studioRow(`${name} media`)}
             src={staticFile(layer.src)}
             trimBefore={Math.round(seek * fps)}
             volume={(frame) => (layer.muted ? 0 : fadeVolume({ layer, frame, fps, duration: visible.end - visible.start }))}
@@ -128,20 +152,21 @@ function LayerView({
 function Timed({
   name,
   visible,
-  range,
+  timeline,
   fps,
   children,
 }: {
   name: string;
   visible: Range;
-  range: Range;
+  timeline: Range;
   fps: number;
   children: ReactNode;
 }) {
   return (
     <Sequence
+      {...studioRow(name)}
       name={name}
-      from={Math.round((visible.start - range.start) * fps)}
+      from={Math.round((visible.start - timeline.start) * fps)}
       durationInFrames={Math.max(1, Math.round((visible.end - visible.start) * fps))}
       layout="none"
     >
@@ -220,6 +245,18 @@ function fadeVolume({ layer, frame, fps, duration }: { layer: AudioLayer; frame:
   return Math.min(fadeIn, fadeOut);
 }
 
+// Studio hides sequences created from the same code location as "programmatically
+// duplicated" and shows only one timeline row for them, which would put every layer in
+// one row. Giving each layer its own stack keeps one row per layer. This relies on
+// Remotion's internal _remotionInternalStack prop, so it may break on upgrades.
+// The stack uses Studio's own "studio-original://" form, which it reads without fetching
+// source maps, pointing at this file with a column derived from the key.
+export function studioRow(key: string): object {
+  const file = encodeURIComponent("./src/project-composition.tsx");
+  const column = [...key].reduce((hash, c) => (hash * 31 + c.charCodeAt(0)) % 1_000_000, 7) + 1;
+  return { _remotionInternalStack: `Error\n    at remotionOriginalSource (studio-original://${file}:1:${column})` };
+}
+
 // Timeline label, e.g. "0 video camera.mp4" or "4 text RESCENE"
 function layerName(layer: Layer, i: number) {
   const label = "src" in layer ? layer.src.split("/").pop() : layer.type === "text" ? layer.text.split("\n")[0] : layer.color;
@@ -231,7 +268,7 @@ export function outputRange(project: Project): Range {
   return output.type === "video" ? output : { start: output.time, end: output.time + 1 / canvas.fps };
 }
 
-function intersect(a: Range, b: Range): Range | undefined {
+export function intersect(a: Range, b: Range): Range | undefined {
   const start = Math.max(a.start, b.start);
   const end = Math.min(a.end, b.end);
   return end > start ? { start, end } : undefined;
