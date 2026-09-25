@@ -7,7 +7,7 @@ A focused video compositor for my bass-cover videos, meant to replace the last m
 - A readable JSON project file is the source of truth, so agents and scripts can generate and edit projects. A minimal editor is only for the edits that need an eye, such as camera sync against the mix waveform and layer placement.
 - Rendering compiles a project into one ffmpeg filter graph. Static layouts of existing media do not need per-frame browser capture, and ffmpeg gives direct control over encoding.
 
-This repo is at the prototype stage. [research/kdenlive](research/kdenlive/README.md) records how past covers were composed, [docs/project-format.md](docs/project-format.md) drafts the project file, and [prototypes/](prototypes/) holds experiments.
+This repo is at the prototype stage. [docs/plan.md](docs/plan.md) is the working plan, [research/kdenlive](research/kdenlive/README.md) records how past covers were composed, [docs/project-format.md](docs/project-format.md) drafts the project file, and [prototypes/](prototypes/) holds experiments.
 
 ## Setup
 
