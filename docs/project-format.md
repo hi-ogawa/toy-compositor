@@ -15,7 +15,7 @@ A project is one JSON file that describes one deliverable: a canvas, what to ren
 
 ## Time
 
-All times are seconds. Timeline times (`start`, `end`, `output.*`) are positions on the project timeline. Source times (`in`, `out`) are positions in a media file.
+All times are seconds. Timeline times (`start`, `end`, `output.*`) are positions on the project timeline. Source times (`in`, `out`) are positions in a media file, measured as presentation timestamps including the stream's start offset. The frame shown at a source time is the frame whose timestamp is nearest to it, because millisecond times rarely land exactly on a frame.
 
 A video or audio layer plays its source from `in` to `out`, starting at timeline position `start`. Alignment can be expressed through either `start` or `in`, because moving both by the same amount is a no-op.
 
