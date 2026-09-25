@@ -1,0 +1,31 @@
+# ffmpeg compiler prototype
+
+Compiles a project file ([docs/project-format.md](../../docs/project-format.md)) into one ffmpeg command. The graph starts from a solid canvas, overlays each visual layer in order, and mixes audio layers. Text layers are rendered to PNG with ImageMagick first. It runs on Node 24 without dependencies.
+
+```sh
+pnpm render covers/2026-06-27-rescene-love-attack/horizontal-thumbnail.json covers/2026-06-27-rescene-love-attack/out/horizontal-thumbnail.png
+node prototypes/2026-09-26-ffmpeg-compiler/render.ts <project.json> <output> --dry-run   # print the command only
+```
+
+## Results on the rescene cover (2026-09-26)
+
+All four deliverables of [covers/2026-06-27-rescene-love-attack](../../covers/2026-06-27-rescene-love-attack/) render and match the Kdenlive outputs.
+
+| Deliverable | Render time | Output | Kdenlive output |
+| --- | --- | --- | --- |
+| Horizontal thumbnail | 0.6s | 1920x1080 PNG | 1920x1080 JPEG |
+| Vertical thumbnail | 0.5s | 1080x1920 PNG | 608x1080 JPEG |
+| Horizontal video (165s) | 54s | 134MB, 6.3Mbps | 107MB, 5.3Mbps |
+| Vertical video (42s) | 13s | 28MB at 1080x1920 | 14MB at 608x1080 |
+
+- Layout: side-by-side comparisons of both thumbnails match Kdenlive's, including the score crop, the MV thumbnail, the dim overlay, and the centered title, after mapping the vertical layout to a native 1080x1920 canvas.
+- Stills: rendering the horizontal thumbnail at nearby frames and comparing the camera region with Kdenlive's JPEG peaks at the transcribed time (SSIM 0.991).
+- Durations: both videos match Kdenlive's to the frame (164.933s and 42.367s).
+- Audio: cross-correlation against Kdenlive's renders gives a lag of 0.38ms with correlation 0.99 for both videos (`uv run tools/audio-lag.py`).
+- Video timing: our camera frames are one frame (33ms) ahead of Kdenlive's. The camera file's video stream starts at 0.066s while its audio starts at 0, and ffmpeg honors that offset, so our frame matches an ffmpeg seek of the source time (SSIM 0.986) while Kdenlive's frame is one frame earlier. Offsets transcribed from Kdenlive can therefore be a frame off. This is not visible in practice, but the tool's preview and render must interpret source time the same way.
+
+## Known gaps
+
+- Encoding uses `libx264 -crf 20 -preset medium`, which comes out about 20% larger than Kdenlive's preset. Tuning is left for later.
+- Text is aligned inside its box width through ImageMagick `label:` and gravity, with the outline drawn as a stroked copy underneath. Kdenlive's text item may have a small top margin that is not modeled.
+- The filter graph is one command per render, so a still still spawns ffmpeg with every input. That is fast enough at 0.5s for an editor preview, but it has not been tried with longer seeks into large files.
