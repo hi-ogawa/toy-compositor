@@ -9,6 +9,9 @@ A project is one JSON file that describes one deliverable: a canvas, what to ren
   // or { "type": "still", "time": 106.833 }
   "layers": [
     // bottom to top
+  ],
+  "markers": [
+    // optional named times, see below
   ]
 }
 ```
@@ -22,6 +25,8 @@ A video or audio layer plays its source from `in` to `out`, starting at timeline
 Image, text, and color layers are visible for the whole output unless they set `start` or `end`.
 
 ## Layers
+
+Every layer can have an optional `name`, such as `"camera"`, `"camera-sync"`, `"score"`, or `"mix"`. Names do not affect rendering. They label layers in the editor and let scripts find a layer by its role instead of its position in the list.
 
 ### `video`
 
@@ -68,6 +73,18 @@ Text is rendered to a transparent PNG and composited like an image, so the rende
 ```
 
 A solid fill, used for the translucent dim under thumbnail titles. It covers the whole canvas unless it sets a `box`.
+
+## Markers
+
+Markers are named timeline times, like guides in Kdenlive. They do not affect rendering. They record decisions that belong to a project but are used elsewhere, such as which frame becomes a thumbnail or which range becomes a short, so scripts can read them to generate other deliverables.
+
+```jsonc
+"markers": [
+  { "name": "thumbnail", "time": 106.833 },
+  { "name": "shorts-start", "time": 144.033 },
+  { "name": "shorts-end", "time": 186.4 }
+]
+```
 
 ## Box and crop
 

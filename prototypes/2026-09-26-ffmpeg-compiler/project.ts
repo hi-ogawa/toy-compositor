@@ -4,7 +4,10 @@ export type Project = {
   canvas: { width: number; height: number; fps: number; background?: string };
   output: { type: "video"; start: number; end: number } | { type: "still"; time: number };
   layers: Layer[];
+  markers?: Marker[];
 };
+
+export type Marker = { name: string; time: number };
 
 export type Layer = VideoLayer | AudioLayer | ImageLayer | TextLayer | ColorLayer;
 
@@ -14,6 +17,7 @@ export type Crop = { left?: number; right?: number; top?: number; bottom?: numbe
 
 export type VideoLayer = {
   type: "video";
+  name?: string;
   src: string;
   start: number;
   in: number;
@@ -24,6 +28,7 @@ export type VideoLayer = {
 
 export type AudioLayer = {
   type: "audio";
+  name?: string;
   src: string;
   start: number;
   in: number;
@@ -35,6 +40,7 @@ export type AudioLayer = {
 
 export type ImageLayer = {
   type: "image";
+  name?: string;
   src: string;
   box: Box;
   crop?: Crop;
@@ -44,6 +50,7 @@ export type ImageLayer = {
 
 export type TextLayer = {
   type: "text";
+  name?: string;
   text: string;
   box: { x: number; y: number; width: number };
   align?: "left" | "center" | "right";
@@ -56,6 +63,7 @@ export type TextLayer = {
 
 export type ColorLayer = {
   type: "color";
+  name?: string;
   color: string;
   opacity?: number;
   box?: Box;
