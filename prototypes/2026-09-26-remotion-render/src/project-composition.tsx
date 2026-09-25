@@ -11,6 +11,7 @@ import type {
   Project,
   TextLayer,
 } from "../../2026-09-26-ffmpeg-compiler/project.ts";
+import { StudioSync } from "./studio-sync.tsx";
 
 export type Size = { width: number; height: number };
 
@@ -19,24 +20,36 @@ export type ProjectProps = Project & { sizes?: Record<string, Size> };
 type Range = { start: number; end: number };
 
 export function ProjectComposition(props: ProjectProps) {
-  const { canvas, output, layers, sizes = {} } = props;
-  const range = outputRange(props);
+  const { sizes = {}, ...project } = props;
+  const { canvas, output, layers } = project;
+  const range = outputRange(project);
   return (
     <AbsoluteFill style={{ backgroundColor: canvas.background ?? "#000000" }}>
       {layers.map((layer, i) => (
-        <LayerView key={i} layer={layer} range={range} fps={canvas.fps} sizes={sizes} still={output.type === "still"} />
+        <LayerView
+          key={i}
+          name={layerName(layer, i)}
+          layer={layer}
+          range={range}
+          fps={canvas.fps}
+          sizes={sizes}
+          still={output.type === "still"}
+        />
       ))}
+      <StudioSync project={project} />
     </AbsoluteFill>
   );
 }
 
 function LayerView({
+  name,
   layer,
   range,
   fps,
   sizes,
   still,
 }: {
+  name: string;
   layer: Layer;
   range: Range;
   fps: number;
@@ -49,7 +62,7 @@ function LayerView({
       if (!visible) return null;
       const seek = layer.in + visible.start - layer.start;
       return (
-        <Timed visible={visible} range={range} fps={fps}>
+        <Timed name={name} visible={visible} range={range} fps={fps}>
           <Fitted size={sizes[layer.src]} box={layer.box} crop={layer.crop}>
             <OffthreadVideo src={staticFile(layer.src)} trimBefore={Math.round(seek * fps)} muted style={fill} />
           </Fitted>
@@ -60,7 +73,7 @@ function LayerView({
       const visible = intersect({ start: layer.start ?? range.start, end: layer.end ?? range.end }, range);
       if (!visible) return null;
       return (
-        <Timed visible={visible} range={range} fps={fps}>
+        <Timed name={name} visible={visible} range={range} fps={fps}>
           <Fitted size={sizes[layer.src]} box={layer.box} crop={layer.crop}>
             <Img src={staticFile(layer.src)} style={fill} />
           </Fitted>
@@ -71,7 +84,7 @@ function LayerView({
       const visible = intersect({ start: layer.start ?? range.start, end: layer.end ?? range.end }, range);
       if (!visible) return null;
       return (
-        <Timed visible={visible} range={range} fps={fps}>
+        <Timed name={name} visible={visible} range={range} fps={fps}>
           <Text layer={layer} />
         </Timed>
       );
@@ -81,7 +94,7 @@ function LayerView({
       if (!visible) return null;
       const box = layer.box;
       return (
-        <Timed visible={visible} range={range} fps={fps}>
+        <Timed name={name} visible={visible} range={range} fps={fps}>
           <div
             style={{
               position: "absolute",
@@ -94,16 +107,17 @@ function LayerView({
       );
     }
     case "audio": {
+      // Muted audio still plays in the Studio timeline, so its waveform can be used for sync.
       if (still) return null;
       const visible = intersect({ start: layer.start, end: layer.start + layer.out - layer.in }, range);
       if (!visible) return null;
       const seek = layer.in + visible.start - layer.start;
       return (
-        <Timed visible={visible} range={range} fps={fps}>
+        <Timed name={name} visible={visible} range={range} fps={fps}>
           <Audio
             src={staticFile(layer.src)}
             trimBefore={Math.round(seek * fps)}
-            volume={(frame) => fadeVolume({ layer, frame, fps, duration: visible.end - visible.start })}
+            volume={(frame) => (layer.muted ? 0 : fadeVolume({ layer, frame, fps, duration: visible.end - visible.start }))}
           />
         </Timed>
       );
@@ -111,9 +125,22 @@ function LayerView({
   }
 }
 
-function Timed({ visible, range, fps, children }: { visible: Range; range: Range; fps: number; children: ReactNode }) {
+function Timed({
+  name,
+  visible,
+  range,
+  fps,
+  children,
+}: {
+  name: string;
+  visible: Range;
+  range: Range;
+  fps: number;
+  children: ReactNode;
+}) {
   return (
     <Sequence
+      name={name}
       from={Math.round((visible.start - range.start) * fps)}
       durationInFrames={Math.max(1, Math.round((visible.end - visible.start) * fps))}
       layout="none"
@@ -191,6 +218,12 @@ function fadeVolume({ layer, frame, fps, duration }: { layer: AudioLayer; frame:
     ? interpolate(t, [duration - layer.fadeOut, duration], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
     : 1;
   return Math.min(fadeIn, fadeOut);
+}
+
+// Timeline label, e.g. "0 video camera.mp4" or "4 text RESCENE"
+function layerName(layer: Layer, i: number) {
+  const label = "src" in layer ? layer.src.split("/").pop() : layer.type === "text" ? layer.text.split("\n")[0] : layer.color;
+  return `${i} ${layer.type} ${label}`;
 }
 
 export function outputRange(project: Project): Range {
