@@ -11,12 +11,12 @@ node prototypes/2026-09-26-ffmpeg-compiler/render.ts <project.json> <output> --d
 
 All four deliverables of [covers/2026-06-27-rescene-love-attack](../../covers/2026-06-27-rescene-love-attack/) render and match the Kdenlive outputs.
 
-| Deliverable | Render time | Output | Kdenlive output |
-| --- | --- | --- | --- |
-| Horizontal thumbnail | 0.6s | 1920x1080 PNG | 1920x1080 JPEG |
-| Vertical thumbnail | 0.5s | 1080x1920 PNG | 608x1080 JPEG |
-| Horizontal video (165s) | 54s | 134MB, 6.3Mbps | 107MB, 5.3Mbps |
-| Vertical video (42s) | 13s | 28MB at 1080x1920 | 14MB at 608x1080 |
+| Deliverable             | Render time | Output            | Kdenlive output  |
+| ----------------------- | ----------- | ----------------- | ---------------- |
+| Horizontal thumbnail    | 0.6s        | 1920x1080 PNG     | 1920x1080 JPEG   |
+| Vertical thumbnail      | 0.5s        | 1080x1920 PNG     | 608x1080 JPEG    |
+| Horizontal video (165s) | 54s         | 134MB, 6.3Mbps    | 107MB, 5.3Mbps   |
+| Vertical video (42s)    | 13s         | 28MB at 1080x1920 | 14MB at 608x1080 |
 
 - Layout: side-by-side comparisons of both thumbnails match Kdenlive's, including the score crop, the MV thumbnail, the dim overlay, and the centered title, after mapping the vertical layout to a native 1080x1920 canvas.
 - Stills: rendering the horizontal thumbnail at nearby frames and comparing the camera region with Kdenlive's JPEG peaks at the transcribed time (SSIM 0.991).

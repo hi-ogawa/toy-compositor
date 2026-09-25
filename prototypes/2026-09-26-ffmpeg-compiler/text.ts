@@ -6,9 +6,17 @@ import fs from "node:fs";
 import path from "node:path";
 import type { TextLayer } from "./project.ts";
 
-export function renderText({ layer, file }: { layer: TextLayer; file: string }) {
+export function renderText({
+  layer,
+  file,
+}: {
+  layer: TextLayer;
+  file: string;
+}) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  const gravity = { left: "west", center: "center", right: "east" }[layer.align ?? "left"];
+  const gravity = { left: "west", center: "center", right: "east" }[
+    layer.align ?? "left"
+  ];
   const common = [
     "-background",
     "none",
@@ -28,7 +36,16 @@ export function renderText({ layer, file }: { layer: TextLayer; file: string }) 
   // Draw the outline as a stroked copy underneath the plain text,
   // so the stroke only grows outward like Kdenlive's title outline.
   const outline = layer.outline
-    ? ["(", ...common, "-stroke", layer.outline.color, "-strokewidth", String(layer.outline.width), `label:${layer.text}`, ")"]
+    ? [
+        "(",
+        ...common,
+        "-stroke",
+        layer.outline.color,
+        "-strokewidth",
+        String(layer.outline.width),
+        `label:${layer.text}`,
+        ")",
+      ]
     : [];
   execFileSync("magick", [
     ...outline,
@@ -45,6 +62,12 @@ export function renderText({ layer, file }: { layer: TextLayer; file: string }) 
 
 // "Noto Sans CJK KR" at weight 700 -> "Noto-Sans-CJK-KR-Bold"
 function magickFont(font: TextLayer["font"]) {
-  const suffix: Record<number, string> = { 300: "-Light", 400: "", 500: "-Medium", 700: "-Bold", 900: "-Black" };
+  const suffix: Record<number, string> = {
+    300: "-Light",
+    400: "",
+    500: "-Medium",
+    700: "-Bold",
+    900: "-Black",
+  };
   return font.family.replaceAll(" ", "-") + (suffix[font.weight ?? 400] ?? "");
 }

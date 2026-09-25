@@ -7,7 +7,9 @@ import { compile } from "./compile.ts";
 import type { Project } from "./project.ts";
 
 function main() {
-  const [projectFile, outFile] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
+  const [projectFile, outFile] = process.argv
+    .slice(2)
+    .filter((a) => !a.startsWith("--"));
   if (!projectFile || !outFile) {
     console.error("Usage: node render.ts <project.json> <output> [--dry-run]");
     process.exit(1);
@@ -19,11 +21,15 @@ function main() {
     outFile: path.resolve(outFile),
   });
   console.error(["ffmpeg", ...args.map(quote)].join(" "));
-  if (process.argv.includes("--dry-run")) return;
+  if (process.argv.includes("--dry-run")) {
+    return;
+  }
   fs.mkdirSync(path.dirname(path.resolve(outFile)), { recursive: true });
   const t0 = performance.now();
   execFileSync("ffmpeg", args, { stdio: "inherit" });
-  console.error(`rendered ${outFile} in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
+  console.error(
+    `rendered ${outFile} in ${((performance.now() - t0) / 1000).toFixed(1)}s`,
+  );
 }
 
 function quote(s: string) {

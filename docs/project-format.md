@@ -4,12 +4,17 @@ A project is one JSON file that describes one deliverable: a canvas, what to ren
 
 ```jsonc
 {
-  "canvas": { "width": 1920, "height": 1080, "fps": 30, "background": "#000000" },
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "background": "#000000",
+  },
   "output": { "type": "video", "start": 23.7, "end": 188.633 },
   // or { "type": "still", "time": 106.833 }
   "layers": [
     // bottom to top
-  ]
+  ],
 }
 ```
 
@@ -26,9 +31,15 @@ Image, text, and color layers are visible for the whole output unless they set `
 ### `video`
 
 ```jsonc
-{ "type": "video", "src": "media/camera.mp4", "start": 23.7, "in": 15.733, "out": 180.633,
+{
+  "type": "video",
+  "src": "media/camera.mp4",
+  "start": 23.7,
+  "in": 15.733,
+  "out": 180.633,
   "box": { "x": 0, "y": 0, "width": 1920, "height": 1080 },
-  "crop": { "left": 0.013, "top": 0.0065 } }
+  "crop": { "left": 0.013, "top": 0.0065 },
+}
 ```
 
 Video layers contribute frames only. A video file's audio is used by adding an `audio` layer with the same `src`, so camera audio can stay available for sync in the editor without being part of the mix.
@@ -36,8 +47,15 @@ Video layers contribute frames only. A video file's audio is used by adding an `
 ### `audio`
 
 ```jsonc
-{ "type": "audio", "src": "media/mix.wav", "start": 23.7, "in": 10.333, "out": 175.233,
-  "fadeIn": 0, "fadeOut": 4.7 }
+{
+  "type": "audio",
+  "src": "media/mix.wav",
+  "start": 23.7,
+  "in": 10.333,
+  "out": 175.233,
+  "fadeIn": 0,
+  "fadeOut": 4.7,
+}
 ```
 
 `fadeIn` and `fadeOut` are durations in seconds at the edges of the layer's visible range, which is the source range clipped to the output range.
@@ -45,16 +63,30 @@ Video layers contribute frames only. A video file's audio is used by adding an `
 ### `image`
 
 ```jsonc
-{ "type": "image", "src": "media/mv-thumbnail.jpg", "box": { "x": 960, "y": 540, "width": 960, "height": 540 } }
+{
+  "type": "image",
+  "src": "media/mv-thumbnail.jpg",
+  "box": { "x": 960, "y": 540, "width": 960, "height": 540 },
+}
 ```
 
 ### `text`
 
 ```jsonc
-{ "type": "text", "text": "RESCENE\nLOVE ATTACK\n(John Park ver.)",
-  "box": { "x": 336, "y": 222, "width": 1247 }, "align": "center",
-  "font": { "family": "Noto Sans CJK KR", "size": 160, "weight": 700, "lineSpacing": -30 },
-  "color": "#ffffff", "outline": { "width": 10, "color": "#000000" } }
+{
+  "type": "text",
+  "text": "RESCENE\nLOVE ATTACK\n(John Park ver.)",
+  "box": { "x": 336, "y": 222, "width": 1247 },
+  "align": "center",
+  "font": {
+    "family": "Noto Sans CJK KR",
+    "size": 160,
+    "weight": 700,
+    "lineSpacing": -30,
+  },
+  "color": "#ffffff",
+  "outline": { "width": 10, "color": "#000000" },
+}
 ```
 
 Text is rendered to a transparent PNG and composited like an image, so the renderer does not depend on ffmpeg's `drawtext`. `box.y` is the top of the first line at the font's normal line height, and `lineSpacing` is added only between lines.
@@ -78,9 +110,15 @@ A solid fill, used for the translucent dim under thumbnail titles. It covers the
 A video layer can keep showing its first frame before `start` and its last frame after its source range ends, so a clip without lead-in or tail, such as the toy-midi score video, still covers the whole output.
 
 ```jsonc
-{ "type": "video", "src": "media/score.mp4", "start": 23.7, "in": 0, "out": 160,
+{
+  "type": "video",
+  "src": "media/score.mp4",
+  "start": 23.7,
+  "in": 0,
+  "out": 160,
   "box": { "x": 781, "y": 473, "width": 1152, "height": 648 },
-  "hold": { "before": 5, "after": 10 } }
+  "hold": { "before": 5, "after": 10 },
+}
 ```
 
 `before` and `after` are durations in seconds, and they compile to `tpad` with `clone` mode. The prototype does not implement this yet.

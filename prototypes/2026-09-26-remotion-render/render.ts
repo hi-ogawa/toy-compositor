@@ -27,8 +27,13 @@ function main() {
       ? ["still", ...common, "--frame=0", "--image-format=png"]
       : ["render", ...common, "--codec=h264", "--crf=20"];
   const t0 = performance.now();
-  execFileSync(path.join(here, "node_modules/.bin/remotion"), args, { stdio: "inherit", cwd: here });
-  console.error(`rendered ${outFile} in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
+  execFileSync(path.join(here, "node_modules/.bin/remotion"), args, {
+    stdio: "inherit",
+    cwd: here,
+  });
+  console.error(
+    `rendered ${outFile} in ${((performance.now() - t0) / 1000).toFixed(1)}s`,
+  );
 }
 
 main();

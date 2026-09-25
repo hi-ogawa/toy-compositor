@@ -2,7 +2,15 @@
 // Composition frame 0 is the start of the project's output range.
 
 import type { CSSProperties, ReactNode } from "react";
-import { AbsoluteFill, Audio, Img, interpolate, OffthreadVideo, Sequence, staticFile } from "remotion";
+import {
+  AbsoluteFill,
+  Audio,
+  Img,
+  interpolate,
+  OffthreadVideo,
+  Sequence,
+  staticFile,
+} from "remotion";
 import type {
   AudioLayer,
   Box,
@@ -24,7 +32,14 @@ export function ProjectComposition(props: ProjectProps) {
   return (
     <AbsoluteFill style={{ backgroundColor: canvas.background ?? "#000000" }}>
       {layers.map((layer, i) => (
-        <LayerView key={i} layer={layer} range={range} fps={canvas.fps} sizes={sizes} still={output.type === "still"} />
+        <LayerView
+          key={i}
+          layer={layer}
+          range={range}
+          fps={canvas.fps}
+          sizes={sizes}
+          still={output.type === "still"}
+        />
       ))}
     </AbsoluteFill>
   );
@@ -45,20 +60,35 @@ function LayerView({
 }) {
   switch (layer.type) {
     case "video": {
-      const visible = intersect({ start: layer.start, end: layer.start + layer.out - layer.in }, range);
-      if (!visible) return null;
+      const visible = intersect(
+        { start: layer.start, end: layer.start + layer.out - layer.in },
+        range,
+      );
+      if (!visible) {
+        return null;
+      }
       const seek = layer.in + visible.start - layer.start;
       return (
         <Timed visible={visible} range={range} fps={fps}>
           <Fitted size={sizes[layer.src]} box={layer.box} crop={layer.crop}>
-            <OffthreadVideo src={staticFile(layer.src)} trimBefore={Math.round(seek * fps)} muted style={fill} />
+            <OffthreadVideo
+              src={staticFile(layer.src)}
+              trimBefore={Math.round(seek * fps)}
+              muted
+              style={fill}
+            />
           </Fitted>
         </Timed>
       );
     }
     case "image": {
-      const visible = intersect({ start: layer.start ?? range.start, end: layer.end ?? range.end }, range);
-      if (!visible) return null;
+      const visible = intersect(
+        { start: layer.start ?? range.start, end: layer.end ?? range.end },
+        range,
+      );
+      if (!visible) {
+        return null;
+      }
       return (
         <Timed visible={visible} range={range} fps={fps}>
           <Fitted size={sizes[layer.src]} box={layer.box} crop={layer.crop}>
@@ -68,8 +98,13 @@ function LayerView({
       );
     }
     case "text": {
-      const visible = intersect({ start: layer.start ?? range.start, end: layer.end ?? range.end }, range);
-      if (!visible) return null;
+      const visible = intersect(
+        { start: layer.start ?? range.start, end: layer.end ?? range.end },
+        range,
+      );
+      if (!visible) {
+        return null;
+      }
       return (
         <Timed visible={visible} range={range} fps={fps}>
           <Text layer={layer} />
@@ -77,15 +112,27 @@ function LayerView({
       );
     }
     case "color": {
-      const visible = intersect({ start: layer.start ?? range.start, end: layer.end ?? range.end }, range);
-      if (!visible) return null;
+      const visible = intersect(
+        { start: layer.start ?? range.start, end: layer.end ?? range.end },
+        range,
+      );
+      if (!visible) {
+        return null;
+      }
       const box = layer.box;
       return (
         <Timed visible={visible} range={range} fps={fps}>
           <div
             style={{
               position: "absolute",
-              ...(box ? { left: box.x, top: box.y, width: box.width, height: box.height } : { inset: 0 }),
+              ...(box
+                ? {
+                    left: box.x,
+                    top: box.y,
+                    width: box.width,
+                    height: box.height,
+                  }
+                : { inset: 0 }),
               backgroundColor: layer.color,
               opacity: layer.opacity ?? 1,
             }}
@@ -94,16 +141,30 @@ function LayerView({
       );
     }
     case "audio": {
-      if (still) return null;
-      const visible = intersect({ start: layer.start, end: layer.start + layer.out - layer.in }, range);
-      if (!visible) return null;
+      if (still) {
+        return null;
+      }
+      const visible = intersect(
+        { start: layer.start, end: layer.start + layer.out - layer.in },
+        range,
+      );
+      if (!visible) {
+        return null;
+      }
       const seek = layer.in + visible.start - layer.start;
       return (
         <Timed visible={visible} range={range} fps={fps}>
           <Audio
             src={staticFile(layer.src)}
             trimBefore={Math.round(seek * fps)}
-            volume={(frame) => fadeVolume({ layer, frame, fps, duration: visible.end - visible.start })}
+            volume={(frame) =>
+              fadeVolume({
+                layer,
+                frame,
+                fps,
+                duration: visible.end - visible.start,
+              })
+            }
           />
         </Timed>
       );
@@ -111,11 +172,24 @@ function LayerView({
   }
 }
 
-function Timed({ visible, range, fps, children }: { visible: Range; range: Range; fps: number; children: ReactNode }) {
+function Timed({
+  visible,
+  range,
+  fps,
+  children,
+}: {
+  visible: Range;
+  range: Range;
+  fps: number;
+  children: ReactNode;
+}) {
   return (
     <Sequence
       from={Math.round((visible.start - range.start) * fps)}
-      durationInFrames={Math.max(1, Math.round((visible.end - visible.start) * fps))}
+      durationInFrames={Math.max(
+        1,
+        Math.round((visible.end - visible.start) * fps),
+      )}
       layout="none"
     >
       {children}
@@ -126,7 +200,17 @@ function Timed({ visible, range, fps, children }: { visible: Range; range: Range
 // Same fit math as the ffmpeg compiler, so both renderers place layers identically.
 // The cropped source is scaled to fit inside the box, keeping its aspect ratio, centered.
 // The outer div clips the crop, and the inner div holds the whole scaled source.
-function Fitted({ size, box, crop = {}, children }: { size: Size; box: Box; crop?: Crop; children: ReactNode }) {
+function Fitted({
+  size,
+  box,
+  crop = {},
+  children,
+}: {
+  size: Size;
+  box: Box;
+  crop?: Crop;
+  children: ReactNode;
+}) {
   const { left = 0, right = 0, top = 0, bottom = 0 } = crop;
   const cw = size.width * (1 - left - right);
   const ch = size.height * (1 - top - bottom);
@@ -138,7 +222,16 @@ function Fitted({ size, box, crop = {}, children }: { size: Size; box: Box; crop
   const sx = width / cw;
   const sy = height / ch;
   return (
-    <div style={{ position: "absolute", left: x, top: y, width, height, overflow: "hidden" }}>
+    <div
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        width,
+        height,
+        overflow: "hidden",
+      }}
+    >
       <div
         style={{
           position: "absolute",
@@ -173,7 +266,10 @@ function Text({ layer }: { layer: TextLayer }) {
         lineHeight: `${font.size * NORMAL_LINE_HEIGHT + lineSpacing}px`,
         color: layer.color,
         whiteSpace: "pre",
-        ...(outline && { WebkitTextStroke: `${outline.width}px ${outline.color}`, paintOrder: "stroke fill" }),
+        ...(outline && {
+          WebkitTextStroke: `${outline.width}px ${outline.color}`,
+          paintOrder: "stroke fill",
+        }),
       }}
     >
       {layer.text}
@@ -184,18 +280,35 @@ function Text({ layer }: { layer: TextLayer }) {
 // Noto Sans CJK's ascent plus descent, which ImageMagick uses as the default line height.
 const NORMAL_LINE_HEIGHT = 1.448;
 
-function fadeVolume({ layer, frame, fps, duration }: { layer: AudioLayer; frame: number; fps: number; duration: number }) {
+function fadeVolume({
+  layer,
+  frame,
+  fps,
+  duration,
+}: {
+  layer: AudioLayer;
+  frame: number;
+  fps: number;
+  duration: number;
+}) {
   const t = frame / fps;
-  const fadeIn = layer.fadeIn ? interpolate(t, [0, layer.fadeIn], [0, 1], { extrapolateRight: "clamp" }) : 1;
+  const fadeIn = layer.fadeIn
+    ? interpolate(t, [0, layer.fadeIn], [0, 1], { extrapolateRight: "clamp" })
+    : 1;
   const fadeOut = layer.fadeOut
-    ? interpolate(t, [duration - layer.fadeOut, duration], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+    ? interpolate(t, [duration - layer.fadeOut, duration], [1, 0], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      })
     : 1;
   return Math.min(fadeIn, fadeOut);
 }
 
 export function outputRange(project: Project): Range {
   const { output, canvas } = project;
-  return output.type === "video" ? output : { start: output.time, end: output.time + 1 / canvas.fps };
+  return output.type === "video"
+    ? output
+    : { start: output.time, end: output.time + 1 / canvas.fps };
 }
 
 function intersect(a: Range, b: Range): Range | undefined {
