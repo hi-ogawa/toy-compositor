@@ -22,7 +22,8 @@ Compared against the ffmpeg compiler's output for the same project files ([tools
 | Horizontal video (165s) | 235s | 55s | same duration, audio 42.4ms late |
 
 - Layout matches. The camera, score crop, MV thumbnail, dim, and title land within a pixel of the ffmpeg render. The remaining SSIM gap is resampling at scaled edges and glyph rasterization, where Remotion's Chrome text is actually closer to Kdenlive's Qt text than ImageMagick's.
-- Timing matches. Both renderers pick the same source frames (best SSIM at offset 0, with ties from repeated frames in the camera file), and durations match to the frame.
+- Timing matches. Both renderers pick the same source frames, and durations match to the frame. Every frame of both videos was compared: SSIM stays between 0.970 and 0.974 on the horizontal video and between 0.956 and 0.960 on the vertical video, with no dips, and all frames decode without black or frozen stretches.
+- The whole-video comparison first caught the horizontal video one frame apart, visible as SSIM dips to 0.82 where the score page scrolls. The camera's in-point landed 0.3ms after a source frame, and ffmpeg's seek took the next frame while Remotion showed that one. The compiler now picks the frame whose timestamp is nearest to the source time, which also keeps the thumbnail matching Kdenlive's, and the format defines this rule.
 - Remotion's MP4 audio is 42.6ms late, which is 2048 samples at 48kHz. Its audio edit list starts at media time 0, so the AAC encoder's priming samples play instead of being skipped. This is in Remotion's encoding, not in the composition, and it does not matter for an editor preview, because final renders stay on the ffmpeg compiler.
 - The first render also downloads Chrome headless shell and bundles the project, which took about 150s once. Later renders reuse the cached bundle.
 
