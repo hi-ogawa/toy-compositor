@@ -57,7 +57,7 @@ Video layers contribute frames only. A video file's audio is used by adding an `
   "color": "#ffffff", "outline": { "width": 10, "color": "#000000" } }
 ```
 
-Text is rendered to a transparent PNG and composited like an image, so the renderer does not depend on ffmpeg's `drawtext`.
+Text is rendered to a transparent PNG and composited like an image, so the renderer does not depend on ffmpeg's `drawtext`. `box.y` is the top of the first line at the font's normal line height, and `lineSpacing` is added only between lines.
 
 ### `color`
 

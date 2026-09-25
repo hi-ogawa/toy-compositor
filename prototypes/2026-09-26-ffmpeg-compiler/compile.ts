@@ -67,7 +67,8 @@ export function compile({
         renderText({ layer, file });
         const k = inputs.push(stillInput({ src: file, fps: canvas.fps, duration: visible.end - visible.start })) - 1;
         filters.push(`[${k}:v]setpts=PTS-STARTPTS+${visible.start - range.start}/TB[v${i}]`);
-        overlay({ label: `v${i}`, x: layer.box.x, y: layer.box.y });
+        // The stroked copy pads the PNG by half the outline width, so shift it back up.
+        overlay({ label: `v${i}`, x: layer.box.x, y: layer.box.y - Math.round((layer.outline?.width ?? 0) / 2) });
         return;
       }
       case "color": {
