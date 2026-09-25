@@ -1,0 +1,16 @@
+node_modules
+.venv
+*.tsbuildinfo
+
+# raw data and renders stay out of git, see fetch.sh scripts
+media/
+out/
+research/kdenlive/projects/
+*.mp4
+*.mkv
+*.mov
+*.wav
+*.jpg
+*.jpeg
+*.png
+*.webp
