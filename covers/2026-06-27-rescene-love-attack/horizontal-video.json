@@ -12,6 +12,16 @@
   },
   "layers": [
     {
+      "name": "camera-sync",
+      "type": "audio",
+      "src": "media/camera.mp4",
+      "start": 23.7,
+      "in": 15.733,
+      "out": 180.633,
+      "muted": true
+    },
+    {
+      "name": "camera",
       "type": "video",
       "src": "media/camera.mp4",
       "start": 23.7,
@@ -25,6 +35,7 @@
       }
     },
     {
+      "name": "score",
       "type": "video",
       "src": "media/score.mp4",
       "start": 23.7,
@@ -42,12 +53,31 @@
       }
     },
     {
+      "name": "mix",
       "type": "audio",
       "src": "media/mix.wav",
       "start": 23.7,
       "in": 10.333,
       "out": 175.233,
       "fadeOut": 4.7
+    }
+  ],
+  "markers": [
+    {
+      "name": "thumbnail",
+      "time": 106.833
+    },
+    {
+      "name": "shorts-start",
+      "time": 144.033
+    },
+    {
+      "name": "shorts-thumbnail",
+      "time": 158.333
+    },
+    {
+      "name": "shorts-end",
+      "time": 186.4
     }
   ]
 }

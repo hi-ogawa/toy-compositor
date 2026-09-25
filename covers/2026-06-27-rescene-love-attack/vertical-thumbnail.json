@@ -11,6 +11,7 @@
   },
   "layers": [
     {
+      "name": "camera",
       "type": "video",
       "src": "media/camera.mp4",
       "start": 23.7,
@@ -24,6 +25,7 @@
       }
     },
     {
+      "name": "score",
       "type": "video",
       "src": "media/score.mp4",
       "start": 23.7,
@@ -41,6 +43,7 @@
       }
     },
     {
+      "name": "mv-thumbnail",
       "type": "image",
       "src": "media/mv-thumbnail.jpg",
       "box": {
@@ -51,11 +54,13 @@
       }
     },
     {
+      "name": "dim",
       "type": "color",
       "color": "#000000",
       "opacity": 0.51
     },
     {
+      "name": "title",
       "type": "text",
       "text": "RESCENE\nLOVE ATTACK\n(John Park ver.)",
       "align": "center",
