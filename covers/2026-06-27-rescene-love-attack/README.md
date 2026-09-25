@@ -8,11 +8,11 @@ Hand-written project files for the 2026-06-27 cover, transcribed from `research/
 
 Media under `media/` is gitignored. `./fetch.sh` copies it from `e-1800/hiroshi/projects/2026-06-27-rescene-love-attack-john-park/` on my archive drive:
 
-| File | Source |
-| --- | --- |
-| `camera.mp4` | `video-processed.mp4` |
-| `score.mp4` | `musescore-Screen Recording 2026-06-28 104534.mp4` |
-| `mix.wav` | `rescene-love-attack-john-park-mixed-rev2.wav` |
-| `mv-thumbnail.jpg` | `youtube-thumbnail-maxdefault.jpg` |
+| File               | Source                                             |
+| ------------------ | -------------------------------------------------- |
+| `camera.mp4`       | `video-processed.mp4`                              |
+| `score.mp4`        | `musescore-Screen Recording 2026-06-28 104534.mp4` |
+| `mix.wav`          | `rescene-love-attack-john-park-mixed-rev2.wav`     |
+| `mv-thumbnail.jpg` | `youtube-thumbnail-maxdefault.jpg`                 |
 
 `fetch.sh` also copies Kdenlive's renders of all four deliverables into `kdenlive/` (gitignored) for comparison.

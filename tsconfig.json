@@ -5,19 +5,11 @@
     "tools/**/*.ts",
     "vite.config.ts"
   ],
-  "exclude": [
-    "**/node_modules"
-  ],
+  "exclude": ["**/node_modules"],
   "compilerOptions": {
-    "types": [
-      "node"
-    ],
+    "types": ["node"],
     "target": "esnext",
-    "lib": [
-      "ESNext",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "skipLibCheck": true,

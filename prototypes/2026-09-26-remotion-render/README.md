@@ -14,12 +14,12 @@ The project file is passed with `--props`, and its folder is passed with `--publ
 
 Compared against the ffmpeg compiler's output for the same project files ([tools/compare-images.sh](../../tools/compare-images.sh), [tools/audio-lag.py](../../tools/audio-lag.py)).
 
-| Deliverable | Remotion | ffmpeg | Check |
-| --- | --- | --- | --- |
-| Horizontal thumbnail | 4.5s | 0.6s | SSIM 0.84, title within 1px after the fix below |
-| Vertical thumbnail | 2.2s | 0.5s | SSIM 0.92, every region within 1px |
-| Vertical video (42s) | 60s | 13s | same duration, frames aligned, audio 42.6ms late |
-| Horizontal video (165s) | 235s | 55s | same duration, audio 42.4ms late |
+| Deliverable             | Remotion | ffmpeg | Check                                            |
+| ----------------------- | -------- | ------ | ------------------------------------------------ |
+| Horizontal thumbnail    | 4.5s     | 0.6s   | SSIM 0.84, title within 1px after the fix below  |
+| Vertical thumbnail      | 2.2s     | 0.5s   | SSIM 0.92, every region within 1px               |
+| Vertical video (42s)    | 60s      | 13s    | same duration, frames aligned, audio 42.6ms late |
+| Horizontal video (165s) | 235s     | 55s    | same duration, audio 42.4ms late                 |
 
 - Layout matches. The camera, score crop, MV thumbnail, dim, and title land within a pixel of the ffmpeg render. The remaining SSIM gap is resampling at scaled edges and glyph rasterization, where Remotion's Chrome text is actually closer to Kdenlive's Qt text than ImageMagick's.
 - Timing matches. Both renderers pick the same source frames, and durations match to the frame. Every frame of both videos was compared: SSIM stays between 0.970 and 0.974 on the horizontal video and between 0.956 and 0.960 on the vertical video, with no dips, and all frames decode without black or frozen stretches.
@@ -67,14 +67,14 @@ A verbose render of the 42s vertical video (64s total) spends 61.4s rendering fr
 
 Splitting the frame cost on a 10s range of the vertical video (300 frames at 1080x1920):
 
-| Variant | Frame rendering |
-| --- | --- |
-| ffmpeg compiler, whole render | 3.3s |
-| No video layers (image, dim, text) | 5.2s |
-| Score video only | 9.2s |
-| Camera video only | 12.8s |
-| Both videos (the real project) | 14.5s |
-| Both videos, `--offthreadvideo-video-threads=8` | 14.8s |
+| Variant                                         | Frame rendering |
+| ----------------------------------------------- | --------------- |
+| ffmpeg compiler, whole render                   | 3.3s            |
+| No video layers (image, dim, text)              | 5.2s            |
+| Score video only                                | 9.2s            |
+| Camera video only                               | 12.8s           |
+| Both videos (the real project)                  | 14.5s           |
+| Both videos, `--offthreadvideo-video-threads=8` | 14.8s           |
 
 The page itself costs about 17ms per frame, and each video layer adds its own cost on top, with the 1080p camera adding the most. More decoder threads change nothing, so the cost is in moving each decoded frame into the page rather than in decoding.
 
