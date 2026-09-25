@@ -31,7 +31,7 @@ Image, text, and color layers are visible for the whole output unless they set `
   "crop": { "left": 0.013, "top": 0.0065 } }
 ```
 
-Video layers contribute frames only. A video file's audio is used by adding an `audio` layer with the same `src`, so camera audio can stay available for sync in the editor without being part of the mix.
+Video layers contribute frames only. A video file's audio is used by adding an `audio` layer with the same `src`, and marking it `muted` keeps camera audio available for sync in the editor without being part of the mix.
 
 ### `audio`
 
@@ -41,6 +41,8 @@ Video layers contribute frames only. A video file's audio is used by adding an `
 ```
 
 `fadeIn` and `fadeOut` are durations in seconds at the edges of the layer's visible range, which is the source range clipped to the output range.
+
+A `muted` audio layer is not mixed into the output. It keeps a reference track, such as the camera audio used to sync the camera against the mix, in the project so the editor can show its waveform.
 
 ### `image`
 

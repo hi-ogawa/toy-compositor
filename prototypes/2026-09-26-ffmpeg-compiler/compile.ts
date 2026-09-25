@@ -82,7 +82,7 @@ export function compile({
         return;
       }
       case "audio": {
-        if (project.output.type === "still") return;
+        if (project.output.type === "still" || layer.muted) return;
         const visible = intersect({ start: layer.start, end: layer.start + layer.out - layer.in }, range);
         if (!visible) return;
         const layerDuration = visible.end - visible.start;

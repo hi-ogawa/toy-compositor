@@ -12,6 +12,14 @@
   },
   "layers": [
     {
+      "type": "audio",
+      "src": "media/camera.mp4",
+      "start": 23.7,
+      "in": 15.733,
+      "out": 180.633,
+      "muted": true
+    },
+    {
       "type": "video",
       "src": "media/camera.mp4",
       "start": 23.7,
