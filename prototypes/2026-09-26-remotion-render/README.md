@@ -19,7 +19,7 @@ Compared against the ffmpeg compiler's output for the same project files ([tools
 | Horizontal thumbnail | 4.5s | 0.6s | SSIM 0.84, title within 1px after the fix below |
 | Vertical thumbnail | 2.2s | 0.5s | SSIM 0.92, every region within 1px |
 | Vertical video (42s) | 60s | 13s | same duration, frames aligned, audio 42.6ms late |
-| Horizontal video (165s) | 235s | 54s | not compared frame by frame |
+| Horizontal video (165s) | 235s | 55s | same duration, audio 42.4ms late |
 
 - Layout matches. The camera, score crop, MV thumbnail, dim, and title land within a pixel of the ffmpeg render. The remaining SSIM gap is resampling at scaled edges and glyph rasterization, where Remotion's Chrome text is actually closer to Kdenlive's Qt text than ImageMagick's.
 - Timing matches. Both renderers pick the same source frames (best SSIM at offset 0, with ties from repeated frames in the camera file), and durations match to the frame.
