@@ -1,15 +1,15 @@
-# ffmpeg compiler prototype
+# ffmpeg compiler
 
-Compiles a project file ([docs/project-format.md](../../docs/project-format.md)) into one ffmpeg command. The graph starts from a solid canvas, overlays each visual layer in order, and mixes audio layers. Text layers are rendered to PNG with ImageMagick first. It runs on Node 24 without dependencies.
+[src/lib/compile.ts](../src/lib/compile.ts) compiles a project file ([project-format.md](project-format.md)) into one ffmpeg command. The graph starts from a solid canvas, overlays each visual layer in order, and mixes the audio of audio layers and unmuted video layers. Text layers are rendered to PNG with ImageMagick first. The render CLI runs on Node 24 directly.
 
 ```sh
 pnpm render covers/2026-06-27-rescene-love-attack/horizontal-thumbnail.json covers/2026-06-27-rescene-love-attack/out/horizontal-thumbnail.png
-node prototypes/2026-09-26-ffmpeg-compiler/render.ts <project.json> <output> --dry-run   # print the command only
+pnpm render <project.json> <output> --dry-run   # print the command only
 ```
 
 ## Results on the rescene cover (2026-09-26)
 
-All four deliverables of [covers/2026-06-27-rescene-love-attack](../../covers/2026-06-27-rescene-love-attack/) render and match the Kdenlive outputs.
+These were measured on the prototype, before it moved into `src/lib`. All four deliverables of [covers/2026-06-27-rescene-love-attack](../covers/2026-06-27-rescene-love-attack/) render and match the Kdenlive outputs.
 
 | Deliverable             | Render time | Output            | Kdenlive output  |
 | ----------------------- | ----------- | ----------------- | ---------------- |
@@ -22,7 +22,7 @@ All four deliverables of [covers/2026-06-27-rescene-love-attack](../../covers/20
 - Stills: rendering the horizontal thumbnail at nearby frames and comparing the camera region with Kdenlive's JPEG peaks at the transcribed time (SSIM 0.991).
 - Durations: both videos match Kdenlive's to the frame (164.933s and 42.367s).
 - Audio: cross-correlation against Kdenlive's renders gives a lag of 0.38ms with correlation 0.99 for both videos (`uv run tools/audio-lag.py`).
-- Video timing: the first version was one frame (33ms) ahead of Kdenlive's camera. The camera's in-point, 15.733s, lands 0.3ms after a source frame (the stream starts at 0.066s), and ffmpeg's accurate seek starts from the first frame at or after the seek time, so it took the next frame. The compiler now seeks to the frame whose timestamp is nearest to the source time, which matches both Kdenlive and Remotion ([research/remotion](../../research/remotion/README.md)).
+- Video timing: the first version was one frame (33ms) ahead of Kdenlive's camera. The camera's in-point, 15.733s, lands 0.3ms after a source frame (the stream starts at 0.066s), and ffmpeg's accurate seek starts from the first frame at or after the seek time, so it took the next frame. The compiler now seeks to the frame whose timestamp is nearest to the source time, which matches both Kdenlive and Remotion ([research/remotion](../research/remotion/README.md)).
 
 ## Known gaps
 

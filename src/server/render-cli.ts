@@ -1,17 +1,17 @@
-// Usage: node render.ts <project.json> <output.(mp4|png|jpg)> [--dry-run]
+// Usage: node src/server/render-cli.ts <project.json> <output.(mp4|png|jpg)> [--dry-run]
 
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { compile } from "./compile.ts";
-import type { Project } from "./project.ts";
+import { compile } from "../lib/compile.ts";
+import type { Project } from "../lib/project.ts";
 
 function main() {
   const [projectFile, outFile] = process.argv
     .slice(2)
     .filter((a) => !a.startsWith("--"));
   if (!projectFile || !outFile) {
-    console.error("Usage: node render.ts <project.json> <output> [--dry-run]");
+    console.error("Usage: pnpm render <project.json> <output> [--dry-run]");
     process.exit(1);
   }
   const project: Project = JSON.parse(fs.readFileSync(projectFile, "utf-8"));

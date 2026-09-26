@@ -176,8 +176,6 @@ importers:
         specifier: 1.0.0-rc.0
         version: 1.0.0-rc.0(@types/node@26.6.2)(@vitest/ui@5.0.1(vitest@5.0.1))(esbuild@0.28.1)(terser@5.51.2)(typescript@7.0.2)
 
-  prototypes/2026-09-26-ffmpeg-compiler: {}
-
 packages:
 
   '@babel/code-frame@7.29.7':
