@@ -1,0 +1,245 @@
+
+### haechan-love-beyond-cover.kdenlive  1920x1080@30
+  trk2A @   0.067s  src[ 15.300..213.367] dur=198.100  haechan-love-beyond/export/session.wav                   
+  trk2A @ 270.867s  src[ 15.300..213.367] dur=198.100  haechan-love-beyond/export/session.wav                   
+  trk3V @   0.000s  src[ 22.900..221.767] dur=198.900  VID_20250930_001628-30fps.mp4                            qtblend rect=-97 -10 2016 1134
+  trk3V @ 270.800s  src[ 22.900..221.767] dur=198.900  VID_20250930_001628-30fps.mp4                            qtblend rect=-97 -10 2016 1134
+  trk4V @   0.000s  src[  6.033..204.900] dur=198.900  Screencast From 2025-09-30 19-48-39-28fps.mp4            qtblend rect=908 491 1056 594
+  trk4V @ 270.800s  src[  6.033..204.900] dur=198.900  Screencast From 2025-09-30 19-48-39-28fps.mp4            qtblend rect=908 -26 1056 594
+  trk5V @ 270.800s  src[  0.000..198.867] dur=198.900  maxresdefault (1).jpg                                    qtblend rect=960 540 960 540
+  trk6V @ 270.800s  src[  0.000..198.867] dur=198.900  HAECHAN Love...                                          
+  guides: [('bass in', 21, 0.7), ('thumbnail', 10455, 348.5)]
+  render: MP4-H264/AAC mode 0 guides 0 -> 0 quality -1 speed 6
+  title: <kdenlivetitle LC_NUMERIC="C" duration="150" height="1080" out="149" width="1920"> <item type="QGraphicsTextItem" z-index="0"> <position x="303" y="265"> <transform>1,0,0,0,1,0,0,0,1</transform> </position> <content alignment="1" box-height="550" box-width="1313.73" font="Noto Sans CJK HK Black" font-color="255,255,255,255" font-italic="0" font-outline="10" font-outline-color="0,0,0,255" font-pixel-size="190" font-underline="0" font-weight="700" letter-spacing="0" line-spacing="0" shadow="0;#64000000;3;3;3" tab-width="80" typewriter="0;2;1;0;0"> HAECHAN Love Beyond </content> </item> <startviewport rect="0,0,1920,1080"/> <endviewport rect="0,0,1920,1080"/> <background color="0,0,0,100"/> </k
+
+### haechan-love-beyond-cover-shorts.kdenlive  1080x1920@30
+  trk2A @ 164.867s  src[180.100..211.200] dur= 31.133  haechan-love-beyond/export/session.wav                   fadein None..None; fadeout None..None
+  trk3V @   0.000s  src[ 22.900..221.767] dur=198.900  VID_20250930_001628-30fps.mp4                            qtblend rect=-154 -881 2052 3648
+  trk4V @   0.000s  src[  6.033..204.900] dur=198.900  Screencast From 2025-09-30 19-48-39-28fps.mp4            frei0r.scale0tilt; qtblend rect=0 -636 1080 1920
+  trk5V @   0.000s  src[  0.000..198.867] dur=198.900  maxresdefault (1).jpg                                    qtblend rect=0 652 1080 1920
+  trk6V @   0.000s  src[  0.000..198.867] dur=198.900  HAECHAN Love...                                          
+  guides: [('bass in', 21, 0.7), ('shorts - start', 4946, 164.87), ('thumbnail', 5230, 174.33), ('shorts - end', 5880, 196.0)]
+  render: MP4-H264/AAC mode 2 guides 2 -> 2 quality -1 speed 6
+  title: <kdenlivetitle LC_NUMERIC="C" duration="150" height="1920" out="149" width="1080"> <item type="QGraphicsTextItem" z-index="0"> <position x="21" y="743"> <transform>1,0,0,0,1,0,0,0,1</transform> </position> <content alignment="1" box-height="434" box-width="1037.14" font="Noto Sans CJK HK Black" font-color="255,255,255,255" font-italic="0" font-outline="10" font-outline-color="0,0,0,255" font-pixel-size="150" font-underline="0" font-weight="700" letter-spacing="0" line-spacing="0" shadow="0;#64000000;3;3;3" tab-width="80" typewriter="0;2;1;0;0"> HAECHAN Love Beyond </content> </item> <startviewport rect="0,0,1080,1920"/> <endviewport rect="0,0,1080,1920"/> <background color="0,0,0,100"/> </kd
+
+### riize-boom-boom-bass-cover.kdenlive  1920x1080@30
+  trk1A @   0.133s  src[ 15.700..168.733] dur=153.066  riize-boom-boom-bass/export/r1_session.wav               
+  trk1A @ 261.699s  src[ 15.700..168.733] dur=153.066  riize-boom-boom-bass/export/r1_session.wav               
+  trk2V @   0.000s  src[  9.500..164.133] dur=154.666  VID_20251027_215549-30fps.mp4                            qtblend rect=-117 -11 2035 1144
+  trk2V @ 261.566s  src[  9.500..164.133] dur=154.666  VID_20251027_215549-30fps.mp4                            qtblend rect=-182 -11 2035 1144
+  trk3V @   0.000s  src[  6.700..161.333] dur=154.666  Screencast From 2025-10-28 20-34-17-28fps.mp4            qtblend rect=868 487 1056 594
+  trk3V @ 261.566s  src[  6.700..161.333] dur=154.666  Screencast From 2025-10-28 20-34-17-28fps.mp4            qtblend rect=930 -17 998 561
+  trk4V @ 261.567s  src[  0.000..154.633] dur=154.666  maxresdefault.jpg                                        qtblend rect=960 540 960 540
+  trk5V @ 261.567s  src[  0.000..154.633] dur=154.666  RIIZE Boom B...                                          
+  guides: [('bass in', 37, 1.23), ('thumbnail', 10995, 366.5)]
+  render: MP4-H264/AAC mode 0 guides 0 -> 0 quality -1 speed 6
+  title: <kdenlivetitle LC_NUMERIC="C" duration="150" height="1080" out="149" width="1920"> <item type="QGraphicsTextItem" z-index="0"> <position x="222" y="304"> <transform>1,0,0,0,1,0,0,0,1</transform> </position> <content alignment="1" box-height="472" box-width="1476.66" font="Noto Sans CJK HK Black" font-color="255,255,255,255" font-italic="0" font-outline="10" font-outline-color="0,0,0,255" font-pixel-size="170" font-underline="0" font-weight="700" letter-spacing="0" line-spacing="-20" shadow="0;#64000000;3;3;3" tab-width="80" typewriter="0;2;1;0;0"> RIIZE Boom Boom Bass</content> </item> <startviewport rect="0,0,1920,1080"/> <endviewport rect="0,0,1920,1080"/> <background color="0,0,0,100"/> <
+
+### riize-boom-boom-bass-cover-shorts.kdenlive  1080x1920@30
+  trk1A @  79.900s  src[ 95.467..153.933] dur= 58.499  riize-boom-boom-bass/export/r1_session.wav               fadein None..None; fadeout None..None
+  trk2V @   0.000s  src[  9.500..164.133] dur=154.666  VID_20251027_215549-30fps.mp4                            qtblend rect=-187 -993 2214 3936
+  trk3V @   0.000s  src[  6.700..161.333] dur=154.666  Screencast From 2025-10-28 20-34-17-28fps.mp4            qtblend rect=0 -668 1080 1920
+  trk4V @   0.000s  src[  0.000..154.633] dur=154.666  maxresdefault.jpg                                        frei0r.scale0tilt; qtblend rect=0 672 1080 1920
+  trk5V @   0.000s  src[  0.000..154.633] dur=154.666  RIIZE                                                    
+  guides: [('bass in', 37, 1.23), ('shorts - start', 2397, 79.9), ('shorts - thumbnail', 3143, 104.77), ('shorts - end', 4152, 138.4)]
+  render: MP4-H264/AAC mode 2 guides 2 -> 2 quality -1 speed 6
+  title: <kdenlivetitle LC_NUMERIC="C" duration="150" height="1920" out="149" width="1080"> <item type="QGraphicsTextItem" z-index="1"> <position x="16" y="967"> <transform>1,0,0,0,1,0,0,0,1</transform> </position> <content alignment="1" box-height="174" box-width="1042.33" font="Noto Sans CJK HK Black" font-color="255,255,255,255" font-italic="0" font-outline="10" font-outline-color="0,0,0,255" font-pixel-size="120" font-underline="0" font-weight="700" letter-spacing="0" line-spacing="0" shadow="0;#64000000;3;3;3" tab-width="80" typewriter="0;2;1;0;0">Boom Boom Bass</content> </item> <item type="QGraphicsTextItem" z-index="0"> <position x="338" y="749"> <transform>1,0,0,0,1,0,0,0,1</transform> </pos
+
+### arrc-wow-cover.kdenlive  1920x1080@30
+  trk2A @   0.100s  src[ 24.900..208.967] dur=184.100  arrc-wow/export/session.wav                              
+  trk2A @ 286.467s  src[ 24.900..208.967] dur=184.100  arrc-wow/export/session.wav                              
+  trk3V @   0.000s  src[  0.000..184.833] dur=184.866  arrc-wow-cover-f001670.png                               avfilter.gblur; qtblend rect=-146 -108 2304 1296
+  trk4V @   0.000s  src[ 13.400..198.233] dur=184.866  2025-12-13 23-59-39.mkv                                  frei0r.scale0tilt; qtblend rect=-94 -54 2016 1134
+  trk4V @ 286.466s  src[ 13.400..198.233] dur=184.866  2025-12-13 23-59-39.mkv                                  qtblend rect=-212 -85 2073 1166
+  trk5V @   0.000s  src[  8.800..193.633] dur=184.866  스크린캐스트 2025-12-14 11-46-15-28fps.mp4                     qtblend rect=878 486 1056 594
+  trk5V @ 286.466s  src[  8.800..193.633] dur=184.866  스크린캐스트 2025-12-14 11-46-15-28fps.mp4                     qtblend rect=947 -14 998 561
+  trk6V @ 286.467s  src[  0.000..184.067] dur=184.100  maxresdefault.jpg                                        qtblend rect=960 540 960 540
+  trk7V @ 286.467s  src[  0.000..184.067] dur=184.100  ARrC WoW                                                 
+  guides: [('bass one', 333, 11.1), ('thumbnail', 12433, 414.43)]
+  render: MP4-H264/AAC mode 0 guides 0 -> 0 quality -1 speed 6
+  title: <kdenlivetitle LC_NUMERIC="C" duration="150" height="1080" out="149" width="1920"> <item type="QGraphicsTextItem" z-index="0"> <position x="684" y="232"> <transform>1,0,0,0,1,0,0,0,1</transform> </position> <content alignment="1" box-height="586" box-width="551.5" font="Noto Sans CJK HK Black" font-color="255,255,255,255" font-italic="0" font-outline="10" font-outline-color="0,0,0,255" font-pixel-size="220" font-underline="0" font-weight="700" letter-spacing="0" line-spacing="-50" shadow="0;#64000000;3;3;3" tab-width="80" typewriter="0;2;1;0;0">ARrC WoW</content> </item> <startviewport rect="0,0,1920,1080"/> <endviewport rect="0,0,1920,1080"/> <background color="0,0,0,70"/> </kdenlivetitle> 
+
+### arrc-wow-cover-shorts.kdenlive  1080x1920@30
+  trk2A @ 122.767s  src[147.567..207.300] dur= 59.766  arrc-wow/export/session.wav                              fadeout None..None; fadein None..None
+  trk3V @   0.000s  src[ 13.400..198.233] dur=184.866  2025-12-13 23-59-39.mkv                                  qtblend rect=-34 -745 1836 3264
+  trk4V @   0.000s  src[  8.800..193.633] dur=184.866  스크린캐스트 2025-12-14 11-46-15-28fps.mp4                     qtblend rect=0 -656 1080 1920
+  trk5V @   0.000s  src[  0.000..184.167] dur=184.200  maxresdefault.jpg                                        qtblend rect=0 664 1080 1920
+  trk6V @ 137.567s  src[  0.000..  4.967] dur=  5.000  ARrC WoW                                                 
+  guides: [('bass one', 333, 11.1), ('shorts - start', 3683, 122.77), ('shorts - thumbnail', 4180, 139.33), ('shorts - end', 5476, 182.53), ('thumbnail', 12433, 414.43)]
+  render: MP4-H264/AAC mode 2 guides 2 -> 2 quality -1 speed 6
+  title: <kdenlivetitle LC_NUMERIC="C" duration="150" height="1920" out="149" width="1080"> <item type="QGraphicsTextItem" z-index="0"> <position x="264" y="642"> <transform>1,0,0,0,1,0,0,0,1</transform> </position> <content alignment="0" box-height="636" box-width="551.5" font="Noto Sans CJK HK Black" font-color="255,255,255,255" font-italic="0" font-outline="10" font-outline-color="0,0,0,255" font-pixel-size="220" font-underline="0" font-weight="700" letter-spacing="0" shadow="0;#64000000;3;3;3" tab-width="80" typewriter="0;2;1;0;0">ARrC WoW</content> </item> <startviewport rect="0,0,1080,1920"/> <endviewport rect="0,0,1080,1920"/> <background color="0,0,0,70"/> </kdenlivetitle> 
+
+### billlie-snowy-night-cover.kdenlive  1920x1080@30
+  trk2A @   0.400s  src[ 20.167..228.733] dur=208.599  billlie-snowy-night/export/session.wav                   fadeout None..None
+  trk2A @ 291.499s  src[ 20.167..228.733] dur=208.599  billlie-snowy-night/export/session.wav                   fadeout None..None
+  trk3V @   0.000s  src[  7.333..216.733] dur=209.433  2025-12-30 22-25-45.mkv                                  qtblend rect=-84 -103 2112 1188
+  trk3V @ 291.266s  src[  7.333..216.733] dur=209.433  2025-12-30 22-25-45.mkv                                  qtblend rect=-84 -103 2112 1188
+  trk4V @   0.000s  src[  5.700..215.100] dur=209.433  스크린캐스트 2025-12-30 23-35-55-26fps.mp4                     qtblend rect=780 436 1152 648
+  trk4V @ 291.266s  src[  5.700..215.100] dur=209.433  스크린캐스트 2025-12-30 23-35-55-26fps.mp4                     qtblend rect=876 -33 1056 594
+  trk6V @ 291.267s  src[  0.000..209.400] dur=209.433  maxresdefault.jpg                                        qtblend rect=960 540 960 540
+  trk7V @ 291.500s  src[  0.000..208.567] dur=208.600  Billlie snow...                                          
+  guides: [('bass one', 310, 10.33), ('full end', 6279, 209.3), ('thumbnail', 12775, 425.83)]
+  render: MP4-H264/AAC mode 2 guides 0 -> 1 quality -1 speed 6
+  title: <kdenlivetitle LC_NUMERIC="C" duration="150" height="1080" out="149" width="1920"> <item type="QGraphicsTextItem" z-index="0"> <position x="395" y="294"> <transform>1,0,0,0,1,0,0,0,1</transform> </position> <content alignment="1" box-height="492" box-width="1129.08" font="Noto Sans CJK HK Black" font-color="255,255,255,255" font-italic="0" font-outline="10" font-outline-color="0,0,0,255" font-pixel-size="180" font-underline="0" font-weight="700" letter-spacing="0" line-spacing="-30" shadow="0;#64000000;3;3;3" tab-width="80" typewriter="0;2;1;0;0"> Billlie snowy night</content> </item> <startviewport rect="0,0,1920,1080"/> <endviewport rect="0,0,1920,1080"/> <background color="0,0,0,70"/> </k
+
+### billlie-snowy-night-cover-shorts.kdenlive  1080x1920@30
+  trk2A @  96.867s  src[116.633..166.467] dur= 49.867  billlie-snowy-night/export/session.wav                   fadeout None..None; fadein None..None
+  trk3V @   0.000s  src[  7.333..216.733] dur=209.433  2025-12-30 22-25-45.mkv                                  qtblend rect=-34 -936 2052 3648
+  trk4V @   0.000s  src[  5.700..215.100] dur=209.433  스크린캐스트 2025-12-30 23-35-55-26fps.mp4                     qtblend rect=0 -660 1080 1920
+  trk5V @   0.000s  src[  0.000..209.400] dur=209.433  maxresdefault.jpg                                        qtblend rect=0 668 1080 1920
+  trk6V @   0.000s  src[  0.000..208.967] dur=209.000  Billlie snow...                                          
+  guides: [('bass one', 310, 10.33), ('shorts - start', 2906, 96.87), ('thumbnail', 4047, 134.9), ('shorts - end', 4402, 146.73)]
+  render: MP4-H264/AAC mode 2 guides 2 -> 2 quality -1 speed 6
+  title: <kdenlivetitle LC_NUMERIC="C" duration="150" height="1920" out="149" width="1080"> <item type="QGraphicsTextItem" z-index="0"> <position x="38" y="728"> <transform>1,0,0,0,1,0,0,0,1</transform> </position> <content alignment="1" box-height="464" box-width="1003.56" font="Noto Sans CJK HK Black" font-color="255,255,255,255" font-italic="0" font-outline="10" font-outline-color="0,0,0,255" font-pixel-size="160" font-underline="0" font-weight="700" letter-spacing="0" line-spacing="0" shadow="0;#64000000;3;3;3" tab-width="80" typewriter="0;2;1;0;0"> Billlie snowy night</content> </item> <startviewport rect="0,0,1080,1920"/> <endviewport rect="0,0,1080,1920"/> <background color="0,0,0,70"/> </kden
+
+### billlie-cloud-palace.kdenlive  1920x1080@30
+  trk1A @  15.733s  src[  0.000..209.833] dur=209.866  billlie-cloud-palace.wav                                 fadeout None..None
+  trk2A @  12.133s  src[  0.000..222.567] dur=222.600  VID_20260223_231411-30fps.mp4                            
+  trk3V @  12.133s  src[  0.000..222.567] dur=222.600  VID_20260223_231411-30fps.mp4                            qtblend rect=-19 -53 2016 1134; lift_gamma_gain
+  trk4V @  13.600s  src[  0.000..221.100] dur=221.133  Recording 2026-02-24 003855.mp4                          qtblend rect=-3 574 998 561
+  guides: [('start', 674, 22.47), ('End', 6767, 225.57)]
+  trk1A @  15.733s  src[  0.000..209.833] dur=209.866  billlie-cloud-palace.wav                                 fadeout None..None
+  trk2A @  12.133s  src[  0.000..222.567] dur=222.600  VID_20260223_231411-30fps.mp4                            
+  trk3V @  12.133s  src[  0.000..222.567] dur=222.600  VID_20260223_231411-30fps.mp4                            qtblend rect=-48 -146 2016 1134; lift_gamma_gain
+  trk4V @  13.600s  src[  0.000..221.100] dur=221.133  Recording 2026-02-24 003855.mp4                          qtblend rect=-1 570 960 540
+  trk5V @  12.133s  src[  0.000..232.900] dur=232.933  maxresdefault.jpg                                        qtblend rect=961 541 960 540
+  trk6V @  12.133s  src[  0.000..232.900] dur=232.933  Billlie clou...                                          qtblend rect=0 0 1920 1080
+  guides: [('start', 674, 22.47), ('thumbnail', 5487, 182.9), ('End', 6767, 225.57)]
+  trk1A @ 176.933s  src[161.200..206.700] dur= 45.533  billlie-cloud-palace.wav                                 fadeout None..None; fadein None..None
+  trk2A @  12.133s  src[  0.000..222.567] dur=222.600  VID_20260223_231411-30fps.mp4                            
+  trk3V @ 174.433s  src[  0.000.. 51.767] dur= 51.800  Horizontal guide                                         
+  trk4V @  13.600s  src[  0.000..221.100] dur=221.133  Recording 2026-02-24 003855.mp4                          qtblend rect=656 60 608 342
+  trk5V @  12.133s  src[  0.000..222.567] dur=222.600  VID_20260223_231411-30fps.mp4                            qtblend rect=636 335 634 432; lift_gamma_gain
+  trk6V @  15.733s  src[  0.000..218.967] dur=219.000  maxresdefault.jpg                                        qtblend rect=656 686 608 378
+  guides: [('start', 674, 22.47), ('Shorts - start', 5308, 176.93), ('Shorts - end', 6674, 222.47)]
+  trk1A @ 176.933s  src[161.200..206.700] dur= 45.533  billlie-cloud-palace.wav                                 fadeout None..None; fadein None..None
+  trk2A @  12.133s  src[  0.000..222.567] dur=222.600  VID_20260223_231411-30fps.mp4                            
+  trk3V @ 157.367s  src[  0.000.. 69.033] dur= 69.066  Horizontal guide                                         
+  trk4V @  13.600s  src[  0.000..221.100] dur=221.133  Recording 2026-02-24 003855.mp4                          qtblend rect=656 51 608 342
+  trk5V @  12.133s  src[  0.000..222.567] dur=222.600  VID_20260223_231411-30fps.mp4                            qtblend rect=632 335 640 432; lift_gamma_gain
+  trk6V @  15.733s  src[  0.000..218.967] dur=219.000  maxresdefault.jpg                                        frei0r.scale0tilt; qtblend rect=656 686 608 378
+  trk7V @ 174.467s  src[  0.000.. 56.433] dur= 56.466  Billlie clou... (vertical)                               
+  guides: [('start', 674, 22.47), ('Shorts - start', 5308, 176.93), ('Shorts - thumbnail', 5572, 185.73), ('Shorts - end', 6674, 222.47)]
+  render: MP4-H264/AAC mode 2 guides 2 -> 2 quality -1 speed 8
+  title: <kdenlivetitle LC_NUMERIC="C" duration="150" height="1080" out="149" width="1920"> <item type="QGraphicsTextItem" z-index="0"> <position x="310" y="243"> <transform>1,0,0,0,1,0,0,0,1</transform> </position> <content alignment="1" box-height="593" box-width="1299" font="Noto Sans KR" font-color="255,255,255,255" font-italic="0" font-outline="10" font-outline-color="0,0,0,255" font-pixel-size="210" font-underline="0" font-weight="700" letter-spacing="0" line-spacing="-15" shadow="0;#64000000;3;3;3" tab-width="80" typewriter="0;2;1;0;0"> Billlie cloud palace</content> </item> <startviewport rect="0,0,1920,1080"/> <endviewport rect="0,0,1920,1080"/> <background color="0,0,0,150"/> </kdenlivetitl
+  title: <kdenlivetitle LC_NUMERIC="C" duration="150" height="1080" out="149" width="1920"> <item type="QGraphicsRectItem" z-index="0"> <position x="656" y="-4"> <transform zoom="100">1,0,0,0,1,0,0,0,1</transform> </position> <content brushcolor="170,255,0,100" pencolor="0,0,0,255" penwidth="0" rect="0,0,608,1080"/> </item> <startviewport rect="0,0,1920,1080"/> <endviewport rect="0,0,1920,1080"/> <background color="0,0,0,99"/> </kdenlivetitle> 
+  title: <kdenlivetitle LC_NUMERIC="C" duration="150" height="1080" out="149" width="1920"> <item type="QGraphicsTextItem" z-index="0"> <position x="683" y="417"> <transform>1,0,0,0,1,0,0,0,1</transform> </position> <content alignment="1" box-height="245" box-width="553" font="Noto Sans KR" font-color="255,255,255,255" font-italic="0" font-outline="4" font-outline-color="0,0,0,255" font-pixel-size="90" font-underline="0" font-weight="700" letter-spacing="0" line-spacing="-15" shadow="0;#64000000;3;3;3" tab-width="80" typewriter="0;2;1;0;0"> Billlie cloud palace</content> </item> <startviewport rect="0,0,1920,1080"/> <endviewport rect="0,0,1920,1080"/> <background color="0,0,0,99"/> </kdenlivetitle> 
+
+### billlie-beyond-me.kdenlive  1920x1080@23.976
+  trk1A @  33.283s  src[ 12.346..215.953] dur=203.649  billie-beyond-me.wav                                     
+  trk2V @  31.907s  src[  0.000..213.200] dur=213.242  Screen Recording 2026-05-31 010128.mp4                   
+  trk3A @  33.283s  src[ 17.476..221.083] dur=203.649  2026-05-30 23-04-30.mp4                                  
+  trk4V @  33.283s  src[ 17.476..221.083] dur=203.649  2026-05-30 23-04-30.mp4                                  frei0r.scale0tilt; qtblend rect=-98 -10 2016 1134
+  trk5V @  31.907s  src[  0.000..213.200] dur=213.242  Screen Recording 2026-05-31 010128.mp4                   qtblend rect=788 491 1152 648
+  guides: [('start', 799, 33.32), ('end', 5679, 236.86)]
+  trk1A @  33.283s  src[ 12.346..215.953] dur=203.649  billie-beyond-me.wav                                     
+  trk2A @  31.907s  src[  0.000..213.200] dur=213.242  Screen Recording 2026-05-31 010128.mp4                   
+  trk3A @  33.283s  src[ 17.476..221.083] dur=203.649  2026-05-30 23-04-30.mp4                                  
+  trk4V @  33.283s  src[ 17.476..221.083] dur=203.649  2026-05-30 23-04-30.mp4                                  qtblend rect=-247 -1 2016 1134
+  trk5V @  31.907s  src[  0.000..213.200] dur=213.242  Screen Recording 2026-05-31 010128.mp4                   qtblend rect=790 -53 1152 648
+  trk6V @  18.352s  src[  0.000..233.095] dur=233.137  maxresdefault.jpg                                        qtblend rect=967 541 960 540
+  trk7V @  31.907s  src[  0.000..225.254] dur=225.296  Billlie B'yo...                                          
+  guides: [('start', 799, 33.32), ('thumbnail', 2996, 124.96), ('end', 5679, 236.86)]
+  trk1A @  75.682s  src[ 54.721..124.963] dur= 70.284  billie-beyond-me.wav                                     fadein None..None; fadeout None..None
+  trk2A @  31.907s  src[  0.000..213.200] dur=213.242  Screen Recording 2026-05-31 010128.mp4                   
+  trk3A @  33.283s  src[ 17.476..221.083] dur=203.649  2026-05-30 23-04-30.mp4                                  
+  trk4V @  31.907s  src[  0.000..221.875] dur=221.917  Vertical frame                                           
+  trk5V @  33.283s  src[ 17.476..221.083] dur=203.649  2026-05-30 23-04-30.mp4                                  frei0r.scale0tilt; qtblend rect=591 248 1056 594
+  trk6V @  31.907s  src[  0.000..213.200] dur=213.242  Screen Recording 2026-05-31 010128.mp4                   qtblend rect=656 -50 608 432
+  trk7V @  31.907s  src[  0.000..221.875] dur=221.917  maxresdefault.jpg                                        qtblend rect=656 704 608 378
+  trk8V @  31.907s  src[  0.000..221.875] dur=221.917  Vertical frame                                           
+  guides: [('start', 799, 33.32), ('short - start', 1814, 75.66), ('short - end', 3499, 145.94), ('end', 5679, 236.86)]
+  trk1A @  75.682s  src[ 54.721..124.963] dur= 70.284  billie-beyond-me.wav                                     fadein None..None; fadeout None..None
+  trk2A @  31.907s  src[  0.000..213.200] dur=213.242  Screen Recording 2026-05-31 010128.mp4                   
+  trk3A @  33.283s  src[ 17.476..221.083] dur=203.649  2026-05-30 23-04-30.mp4                                  
+  trk4V @  31.907s  src[  0.000..221.875] dur=221.917  Vertical frame                                           
+  trk5V @  33.283s  src[ 17.476..221.083] dur=203.649  2026-05-30 23-04-30.mp4                                  frei0r.scale0tilt; qtblend rect=591 248 1056 594
+  trk6V @  31.907s  src[  0.000..213.200] dur=213.242  Screen Recording 2026-05-31 010128.mp4                   qtblend rect=656 -50 608 432
+  trk7V @  31.907s  src[  0.000..221.875] dur=221.917  maxresdefault.jpg                                        qtblend rect=656 704 608 378
+  trk8V @  28.320s  src[  0.000..228.924] dur=228.966  Billlie B'yo...                                          qtblend rect=480 270 960 540
+  trk9V @  28.278s  src[  0.000..245.589] dur=245.631  kdenlivetitle                                            
+  guides: [('start', 799, 33.32), ('short - start', 1814, 75.66), ('short - thumbnail', 2485, 103.65), ('short - end', 3499, 145.94), ('end', 5679, 236.86)]
+  render: MP4-H264/AAC mode 2 guides 2 -> 2 quality -1 speed 6
+  title: <kdenlivetitle LC_NUMERIC="C" duration="120" height="1080" out="119" width="1920"> <item type="QGraphicsTextItem" z-index="0"> <position x="434" y="250"> <transform>1,0,0,0,1,0,0,0,1</transform> </position> <content alignment="1" box-height="580" box-width="1052" font="Noto Sans KR" font-color="255,255,255,255" font-italic="0" font-outline="10" font-outline-color="0,0,0,255" font-pixel-size="200" font-underline="0" font-weight="700" letter-spacing="0" line-spacing="0" shadow="0;#64000000;3;3;3" tab-width="80" typewriter="0;2;1;0;0"> Billlie B'yond me</content> </item> <startviewport rect="0,0,1920,1080"/> <endviewport rect="0,0,1920,1080"/> <background color="0,0,0,99"/> </kdenlivetitle> 
+  title: <kdenlivetitle LC_NUMERIC="C" duration="120" height="1080" out="119" width="1920"> <item type="QGraphicsRectItem" z-index="0"> <position x="656" y="2"> <transform zoom="100">1,0,0,0,1,0,0,0,1</transform> </position> <content brushcolor="170,255,0,100" pencolor="0,0,0,255" penwidth="0" rect="0,0,608,1080"/> </item> <startviewport rect="0,0,1920,1080"/> <endviewport rect="0,0,1920,1080"/> <background color="0,0,0,99"/> </kdenlivetitle> 
+  title: <kdenlivetitle LC_NUMERIC="C" duration="120" height="1080" out="119" width="1920"> <item type="QGraphicsTextItem" z-index="0"> <position x="434" y="250"> <transform>1,0,0,0,1,0,0,0,1</transform> </position> <content alignment="1" box-height="580" box-width="1052" font="Noto Sans KR" font-color="255,255,255,255" font-italic="0" font-outline="10" font-outline-color="0,0,0,255" font-pixel-size="200" font-underline="0" font-weight="700" letter-spacing="0" line-spacing="0" shadow="0;#64000000;3;3;3" tab-width="80" typewriter="0;2;1;0;0"> Billlie B'yond me</content> </item> <startviewport rect="0,0,1920,1080"/> <endviewport rect="0,0,1920,1080"/> <background color="0,0,0,0"/> </kdenlivetitle> 
+  title: <kdenlivetitle LC_NUMERIC="C" duration="120" height="1080" out="119" width="1920"> <startviewport rect="0,0,1920,1080"/> <endviewport rect="0,0,1920,1080"/> <background color="0,0,0,99"/> </kdenlivetitle> 
+
+### triples-baby-flower.kdenlive  1920x1080@23.976
+  trk1A @  32.282s  src[  9.092..198.518] dur=189.468  Screen Recording 2026-06-23 201736.mp4                   
+  trk2A @  18.727s  src[  0.000..206.401] dur=206.443  triples-baby-flower-mixed-rev3.wav                       
+  trk3A @  32.282s  src[ 13.555..202.981] dur=189.468  triples-baby-flower-mixed.wav                            
+  trk4A @  32.282s  src[ 16.850..206.276] dur=189.468  2026-06-23 02-15-15.mp4                                  
+  trk5V @  32.282s  src[ 16.850..206.276] dur=189.468  2026-06-23 02-15-15.mp4                                  
+  trk6V @  32.282s  src[  9.092..198.518] dur=189.468  Screen Recording 2026-06-23 201736.mp4                   qtblend rect=769 476 1152 648
+  guides: [('start', 774, 32.28), ('end', 5316, 221.72)]
+  trk1A @  32.282s  src[  9.092..198.518] dur=189.468  Screen Recording 2026-06-23 201736.mp4                   
+  trk2A @  18.727s  src[  0.000..206.401] dur=206.443  triples-baby-flower-mixed-rev3.wav                       
+  trk3A @  32.282s  src[ 13.555..202.981] dur=189.468  triples-baby-flower-mixed.wav                            
+  trk4A @  32.282s  src[ 16.850..206.276] dur=189.468  2026-06-23 02-15-15.mp4                                  
+  trk5V @  32.282s  src[ 16.850..206.276] dur=189.468  2026-06-23 02-15-15.mp4                                  qtblend rect=-113 0 1920 1080
+  trk6V @  32.282s  src[  9.092..198.518] dur=189.468  Screen Recording 2026-06-23 201736.mp4                   qtblend rect=784 -52 1152 648
+  trk7V @  32.282s  src[  0.000..213.784] dur=213.826  maxresdefault.jpg                                        qtblend rect=964 537 960 540
+  trk8V @  27.277s  src[  0.000..218.789] dur=218.831  Shade                                                    
+  trk9V @  27.277s  src[  0.000..205.692] dur=205.734  tripleS                                                  
+  guides: [('start', 774, 32.28), ('thumbnail', 3547, 147.94), ('end', 5316, 221.72)]
+  trk1A @  32.282s  src[  9.092..198.518] dur=189.468  Screen Recording 2026-06-23 201736.mp4                   
+  trk2A @ 168.173s  src[149.446..198.518] dur= 49.114  triples-baby-flower-mixed-rev3.wav                       fadeout None..None; fadein None..None
+  trk3A @  32.282s  src[ 16.850..206.276] dur=189.468  2026-06-23 02-15-15.mp4                                  
+  trk4V @  32.282s  src[ 16.850..206.276] dur=189.468  2026-06-23 02-15-15.mp4                                  qtblend rect=632 208 1056 594
+  trk5V @  32.282s  src[  9.092..198.518] dur=189.468  Screen Recording 2026-06-23 201736.mp4                   qtblend rect=655 -56 608 408
+  trk7V @  32.282s  src[  0.000..199.102] dur=199.144  maxresdefault.jpg                                        qtblend rect=655 740 608 349
+  trk8V @  21.688s  src[  0.000..209.696] dur=209.738  Vertical guide                                           
+  guides: [('start', 774, 32.28), ('shorts - start', 4032, 168.17), ('shorts - end', 5209, 217.26), ('end', 5316, 221.72)]
+  trk1A @  32.282s  src[  9.092..198.518] dur=189.468  Screen Recording 2026-06-23 201736.mp4                   
+  trk2A @ 168.173s  src[149.446..198.518] dur= 49.114  triples-baby-flower-mixed-rev3.wav                       fadeout None..None; fadein None..None
+  trk3A @  32.282s  src[ 16.850..206.276] dur=189.468  2026-06-23 02-15-15.mp4                                  
+  trk4V @  32.282s  src[ 16.850..206.276] dur=189.468  2026-06-23 02-15-15.mp4                                  qtblend rect=632 208 1056 594
+  trk5V @  32.282s  src[  9.092..198.518] dur=189.468  Screen Recording 2026-06-23 201736.mp4                   qtblend rect=655 -56 608 408
+  trk7V @  32.282s  src[  0.000..199.102] dur=199.144  maxresdefault.jpg                                        qtblend rect=655 740 608 349
+  trk8V @  21.688s  src[  0.000..224.753] dur=224.795  Shade                                                    
+  trk9V @  21.688s  src[  0.000..283.543] dur=283.585  tripleS                                                  qtblend rect=528 297 852 486
+  trk10V @  21.688s  src[  0.000..209.696] dur=209.738  Vertical guide                                           
+  guides: [('start', 774, 32.28), ('shorts - start', 4032, 168.17), ('shorts - thumbnail', 4699, 195.99), ('shorts - thumbnail - end', 4700, 196.03), ('shorts - end', 5209, 217.26), ('end', 5316, 221.72)]
+  render: JPEG mode 2 guides 3 -> 3 quality -1 speed 6
+  title: <kdenlivetitle LC_NUMERIC="C" duration="120" height="1080" out="119" width="1920"> <item type="QGraphicsTextItem" z-index="1"> <position x="629" y="244"> <transform>1,0,0,0,1,0,0,0,1</transform> </position> <content alignment="0" box-height="290" box-width="661" font="Noto Sans KR" font-color="255,255,255,255" font-italic="0" font-outline="10" font-outline-color="0,0,0,255" font-pixel-size="200" font-underline="0" font-weight="700" letter-spacing="0" shadow="0;#64000000;3;3;3" tab-width="80" typewriter="0;2;1;0;0">tripleS</content> </item> <item type="QGraphicsTextItem" z-index="0"> <position x="325" y="509"> <transform>1,0,0,0,1,0,0,0,1</transform> </position> <content alignment="0" box-hei
+  title: <kdenlivetitle LC_NUMERIC="C" duration="120" height="1080" out="119" width="1920"> <startviewport rect="0,0,1920,1080"/> <endviewport rect="0,0,1920,1080"/> <background color="0,0,0,101"/> </kdenlivetitle> 
+  title: <kdenlivetitle LC_NUMERIC="C" duration="120" height="1080" out="119" width="1920"> <item type="QGraphicsRectItem" z-index="1"> <position x="1264" y="0"> <transform zoom="100">1,0,0,0,1,0,0,0,1</transform> </position> <content brushcolor="170,255,0,150" pencolor="0,0,0,255" penwidth="0" rect="0,0,656,1080"/> </item> <item type="QGraphicsRectItem" z-index="0"> <position x="0" y="0"> <transform zoom="100">1,0,0,0,1,0,0,0,1</transform> </position> <content brushcolor="170,255,0,150" pencolor="0,0,0,255" penwidth="0" rect="0,0,656,1080"/> </item> <startviewport rect="0,0,1920,1080"/> <endviewport rect="0,0,1920,1080"/> <background color="0,0,0,0"/> </kdenlivetitle> 
+
+### rescene-love-attack-john-park.kdenlive  1920x1080@30
+  trk1V @  23.700s  src[  6.067..170.967] dur=164.933  musescore-Screen Recording 2026-06-28 104534.mp4         
+  trk2A @  23.700s  src[ 10.333..175.233] dur=164.933  rescene-love-attack-john-park-mixed-rev2.wav             fadeout None..None
+  trk3A @  23.700s  src[ 15.733..180.633] dur=164.933  video-processed.mp4                                      
+  trk4V @  23.700s  src[ 15.733..180.633] dur=164.933  video-processed.mp4                                      
+  trk5V @  23.700s  src[  6.067..170.967] dur=164.933  musescore-Screen Recording 2026-06-28 104534.mp4         frei0r.scale0tilt; qtblend rect=781 473 1152 648
+  guides: [('start', 711, 23.7), ('end', 5659, 188.63)]
+  trk1A @  23.700s  src[  6.067..170.967] dur=164.933  musescore-Screen Recording 2026-06-28 104534.mp4         
+  trk2A @  23.700s  src[ 10.333..175.233] dur=164.933  rescene-love-attack-john-park-mixed-rev2.wav             fadeout None..None
+  trk3A @  23.700s  src[ 15.733..180.633] dur=164.933  video-processed.mp4                                      
+  trk4V @  23.700s  src[ 15.733..180.633] dur=164.933  video-processed.mp4                                      qtblend rect=-54 0 1920 1080
+  trk5V @  23.700s  src[  6.067..170.967] dur=164.933  musescore-Screen Recording 2026-06-28 104534.mp4         frei0r.scale0tilt; qtblend rect=785 -54 1152 648
+  trk6V @  11.800s  src[  0.000..193.100] dur=193.133  youtube-thumbnail-maxdefault.jpg                         qtblend rect=959 540 960 540
+  trk7V @  18.700s  src[  0.000..177.467] dur=177.500  Overlay                                                  
+  trk8V @  18.700s  src[  0.000..180.600] dur=180.633  RESCENE LOVE...                                          
+  guides: [('start', 711, 23.7), ('thumbnail', 3205, 106.83), ('thumbnail - end', 3206, 106.87), ('end', 5659, 188.63)]
+  trk1A @  23.700s  src[  6.067..170.967] dur=164.933  musescore-Screen Recording 2026-06-28 104534.mp4         
+  trk2A @ 144.033s  src[130.667..173.000] dur= 42.366  rescene-love-attack-john-park-mixed-rev2.wav             fadeout None..None; fadein None..None
+  trk3A @  23.700s  src[ 15.733..180.633] dur=164.933  video-processed.mp4                                      
+  trk4V @  23.700s  src[ 15.733..180.633] dur=164.933  video-processed.mp4                                      qtblend rect=646 209 1056 594
+  trk5V @  23.700s  src[  6.067..170.967] dur=164.933  musescore-Screen Recording 2026-06-28 104534.mp4         frei0r.scale0tilt; qtblend rect=648 -168 625 648
+  trk6V @  18.700s  src[  0.000..187.267] dur=187.300  youtube-thumbnail-maxdefault.jpg                         qtblend rect=656 381 608 1080
+  trk7V @  18.700s  src[  0.000..178.933] dur=178.966  vertical-guide-608x1080.png                              
+  guides: [('start', 711, 23.7), ('shorts - start', 4321, 144.03), ('shorts - end', 5592, 186.4), ('end', 5659, 188.63)]
+  trk1A @  23.700s  src[  6.067..170.967] dur=164.933  musescore-Screen Recording 2026-06-28 104534.mp4         
+  trk2A @ 144.033s  src[130.667..173.000] dur= 42.366  rescene-love-attack-john-park-mixed-rev2.wav             fadeout None..None; fadein None..None
+  trk3A @  23.700s  src[ 15.733..180.633] dur=164.933  video-processed.mp4                                      
+  trk4V @  23.700s  src[ 15.733..180.633] dur=164.933  video-processed.mp4                                      qtblend rect=646 209 1056 594
+  trk5V @  23.700s  src[  6.067..170.967] dur=164.933  musescore-Screen Recording 2026-06-28 104534.mp4         frei0r.scale0tilt; qtblend rect=648 -168 625 648
+  trk6V @  18.700s  src[  0.000..187.267] dur=187.300  youtube-thumbnail-maxdefault.jpg                         qtblend rect=656 380 608 1080
+  trk7V @  18.700s  src[  0.000..178.933] dur=178.966  Overlay                                                  
+  trk8V @  18.700s  src[  0.000..178.933] dur=178.966  RESCENE LOVE...                                          qtblend rect=528 297 864 486
+  trk9V @  18.700s  src[  0.000..178.933] dur=178.966  vertical-guide-608x1080.png                              
+  guides: [('start', 711, 23.7), ('shorts - start', 4321, 144.03), ('shorts - thumbnail', 4750, 158.33), ('shorts - thumbnail end', 4751, 158.37), ('shorts - end', 5592, 186.4), ('end', 5659, 188.63)]
+  render: JPEG mode 2 guides 3 -> 3 quality -1 speed 6
+  title: <kdenlivetitle LC_NUMERIC="C" duration="150" height="1080" out="149" width="1920"> <startviewport rect="0,0,1920,1080"/> <endviewport rect="0,0,1920,1080"/> <background color="0,0,0,130"/> </kdenlivetitle> 
+  title: <kdenlivetitle LC_NUMERIC="C" duration="150" height="1080" out="149" width="1920"> <item type="QGraphicsTextItem" z-index="0"> <position x="336" y="222"> <transform>1,0,0,0,1,0,0,0,1</transform> </position> <content alignment="1" box-height="636" box-width="1247" font="Noto Sans KR" font-color="255,255,255,255" font-italic="0" font-outline="10" font-outline-color="0,0,0,255" font-pixel-size="160" font-underline="0" font-weight="700" letter-spacing="0" line-spacing="-30" shadow="0;#64000000;3;3;3" tab-width="80" typewriter="0;2;1;0;0"> RESCENE LOVE ATTACK (John Park ver.)</content> </item> <startviewport rect="0,0,1920,1080"/> <endviewport rect="0,0,1920,1080"/> <background color="0,0,0,0"/> 

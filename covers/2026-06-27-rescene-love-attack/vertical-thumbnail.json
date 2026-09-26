@@ -1,0 +1,80 @@
+{
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "background": "#000000"
+  },
+  "output": {
+    "type": "still",
+    "time": 158.333
+  },
+  "layers": [
+    {
+      "type": "video",
+      "src": "media/camera.mp4",
+      "start": 23.7,
+      "in": 15.733,
+      "out": 180.633,
+      "box": {
+        "x": -18,
+        "y": 371,
+        "width": 1876,
+        "height": 1055
+      }
+    },
+    {
+      "type": "video",
+      "src": "media/score.mp4",
+      "start": 23.7,
+      "in": 6.067,
+      "out": 170.967,
+      "box": {
+        "x": -14,
+        "y": -298,
+        "width": 1110,
+        "height": 1151
+      },
+      "crop": {
+        "left": 0.0130208,
+        "top": 0.00648148
+      }
+    },
+    {
+      "type": "image",
+      "src": "media/mv-thumbnail.jpg",
+      "box": {
+        "x": 0,
+        "y": 677,
+        "width": 1080,
+        "height": 1918
+      }
+    },
+    {
+      "type": "color",
+      "color": "#000000",
+      "opacity": 0.51
+    },
+    {
+      "type": "text",
+      "text": "RESCENE\nLOVE ATTACK\n(John Park ver.)",
+      "align": "center",
+      "font": {
+        "family": "Noto Sans CJK KR",
+        "size": 128,
+        "weight": 700,
+        "lineSpacing": -24
+      },
+      "color": "#ffffff",
+      "outline": {
+        "width": 8,
+        "color": "#000000"
+      },
+      "box": {
+        "x": 41,
+        "y": 705,
+        "width": 997
+      }
+    }
+  ]
+}

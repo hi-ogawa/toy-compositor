@@ -1,0 +1,64 @@
+{
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "background": "#000000"
+  },
+  "output": {
+    "type": "video",
+    "start": 144.033,
+    "end": 186.4
+  },
+  "layers": [
+    {
+      "type": "video",
+      "src": "media/camera.mp4",
+      "start": 23.7,
+      "in": 15.733,
+      "out": 180.633,
+      "box": {
+        "x": -18,
+        "y": 371,
+        "width": 1876,
+        "height": 1055
+      }
+    },
+    {
+      "type": "video",
+      "src": "media/score.mp4",
+      "start": 23.7,
+      "in": 6.067,
+      "out": 170.967,
+      "box": {
+        "x": -14,
+        "y": -298,
+        "width": 1110,
+        "height": 1151
+      },
+      "crop": {
+        "left": 0.0130208,
+        "top": 0.00648148
+      }
+    },
+    {
+      "type": "image",
+      "src": "media/mv-thumbnail.jpg",
+      "box": {
+        "x": 0,
+        "y": 677,
+        "width": 1080,
+        "height": 1918
+      }
+    },
+    {
+      "type": "audio",
+      "src": "media/mix.wav",
+      "start": 144.033,
+      "in": 130.667,
+      "out": 173.0,
+      "fadeIn": 0.733,
+      "fadeOut": 1.0
+    }
+  ]
+}
