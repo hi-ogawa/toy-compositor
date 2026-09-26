@@ -1,10 +1,10 @@
-// Usage: node src/lib/server/render-cli.ts <project.json> <output.(mp4|png|jpg)> [--dry-run]
+// Usage: node src/lib/cli.ts <project.json> <output.(mp4|png|jpg)> [--dry-run]
 
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { compile } from "../compile.ts";
-import type { Project } from "../project.ts";
+import { compile } from "./compile.ts";
+import type { Project } from "./project.ts";
 
 function main() {
   const [projectFile, outFile] = process.argv
