@@ -8,7 +8,7 @@
     "typecheck": "tsc -b",
     "lint": "vp check --fix && pnpm typecheck",
     "lint-check": "vp check && pnpm typecheck",
-    "render": "node prototypes/2026-09-26-ffmpeg-compiler/render.ts"
+    "render": "node src/lib/cli.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

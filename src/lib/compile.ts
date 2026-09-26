@@ -4,10 +4,9 @@
 
 import { execFileSync } from "node:child_process";
 import path from "node:path";
-import type { AudioLayer, Box, Crop, Project, VideoLayer } from "./project.ts";
+import { fitBox, intersect, outputRange } from "./layout.ts";
+import type { AudioLayer, Crop, Project, VideoLayer } from "./project.ts";
 import { renderText } from "./text.ts";
-
-type Range = { start: number; end: number };
 
 export function compile({
   project,
@@ -239,19 +238,6 @@ export function compile({
   ];
 }
 
-function outputRange(project: Project): Range {
-  const { output, canvas } = project;
-  return output.type === "video"
-    ? output
-    : { start: output.time, end: output.time + 1 / canvas.fps };
-}
-
-function intersect(a: Range, b: Range): Range | undefined {
-  const start = Math.max(a.start, b.start);
-  const end = Math.min(a.end, b.end);
-  return end > start ? { start, end } : undefined;
-}
-
 // The frame shown at a source time is the frame whose timestamp is nearest to it.
 // Project times are rounded to milliseconds and a source's first frame can start
 // off the project's frame grid, so a time often lands a hair before or after a
@@ -295,33 +281,6 @@ function stillInput({
     "-i",
     src,
   ];
-}
-
-// Scale the cropped source to fit inside the box, keeping its aspect ratio, centered.
-function fitBox({
-  source,
-  crop = {},
-  box,
-}: {
-  source: { width: number; height: number };
-  crop?: Crop;
-  box: Box;
-}) {
-  const cw = source.width * (1 - (crop.left ?? 0) - (crop.right ?? 0));
-  const ch = source.height * (1 - (crop.top ?? 0) - (crop.bottom ?? 0));
-  const scale = Math.min(box.width / cw, box.height / ch);
-  const width = even(cw * scale);
-  const height = even(ch * scale);
-  return {
-    width,
-    height,
-    x: Math.round(box.x + (box.width - width) / 2),
-    y: Math.round(box.y + (box.height - height) / 2),
-  };
-}
-
-function even(n: number) {
-  return Math.max(2, 2 * Math.round(n / 2));
 }
 
 function cropFilter(crop?: Crop) {

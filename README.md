@@ -7,31 +7,34 @@ A focused video compositor for my bass-cover videos, meant to replace the last m
 - A readable JSON project file is the source of truth, so agents and scripts can generate and edit projects. A minimal editor is only for the edits that need an eye, such as camera sync against the mix waveform and layer placement.
 - Rendering compiles a project into one ffmpeg filter graph. Static layouts of existing media do not need per-frame browser capture, and ffmpeg gives direct control over encoding.
 
-This repo is at the prototype stage. [docs/plan.md](docs/plan.md) is the working plan, [research/kdenlive](research/kdenlive/README.md) records how past covers were composed, [research/remotion](research/remotion/README.md) compares a browser render against the ffmpeg compiler, [docs/project-format.md](docs/project-format.md) drafts the project file, and [prototypes/](prototypes/) holds experiments.
+[docs/plan.md](docs/plan.md) is the working plan, [research/kdenlive](research/kdenlive/README.md) records how past covers were composed, [research/remotion](research/remotion/README.md) compares a browser render against the ffmpeg compiler, [docs/project-format.md](docs/project-format.md) drafts the project file, and [docs/compiler.md](docs/compiler.md) describes the renderer.
 
 ## Setup
 
 ```sh
-pnpm install       # TypeScript for typechecking, prototypes run on Node 24 directly
+pnpm install
 uv sync            # Python analysis tools under tools/
-pnpm typecheck
+pnpm lint-check    # format, lint, and typecheck
+
+pnpm render <project.json> <output.(mp4|png)>   # render a project
 ```
 
-Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH.
+Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The render CLI runs on Node 24 directly.
 
 ## Layout
 
 ```text
+src/
+  lib/        project format, layout math, and the ffmpeg compiler
+  lib/cli.ts  render CLI
 docs/         design drafts, e.g. the project format
-research/     findings about the current workflow, e.g. research/kdenlive/
+research/     findings from past covers and finished experiments
 covers/       one folder per real cover used for testing
   <date>-<name>/
     *.json      project files (canvas and layers), one per deliverable
     fetch.sh    copies source media from my archive drive into media/
     media/      source media, gitignored
     out/        renders, gitignored
-prototypes/   one folder per experiment, self-contained with its own deps
-  <date>-<slug>/
 tools/        analysis scripts for comparing renders
 ```
 
@@ -39,4 +42,4 @@ tools/        analysis scripts for comparing renders
 
 - Media, images, and renders are never committed. Raw data lives in gitignored folders, and a `fetch.sh` next to it reproduces it from my archive drive.
 - Project files reference media by paths relative to the project file.
-- Each prototype is self-contained, so one can be deleted without touching the others. A prototype that works graduates into a real package later.
+- An experiment that works moves into `src/`. One that does not keeps its findings under `research/<slug>/` and links to its code by commit, so dead code does not stay in the tree.

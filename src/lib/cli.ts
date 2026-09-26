@@ -1,4 +1,4 @@
-// Usage: node render.ts <project.json> <output.(mp4|png|jpg)> [--dry-run]
+// Usage: node src/lib/cli.ts <project.json> <output.(mp4|png|jpg)> [--dry-run]
 
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -11,7 +11,7 @@ function main() {
     .slice(2)
     .filter((a) => !a.startsWith("--"));
   if (!projectFile || !outFile) {
-    console.error("Usage: node render.ts <project.json> <output> [--dry-run]");
+    console.error("Usage: pnpm render <project.json> <output> [--dry-run]");
     process.exit(1);
   }
   const project: Project = JSON.parse(fs.readFileSync(projectFile, "utf-8"));

@@ -1,10 +1,5 @@
 {
-  "include": [
-    "prototypes/**/*.ts",
-    "prototypes/**/*.tsx",
-    "tools/**/*.ts",
-    "vite.config.ts"
-  ],
+  "include": ["src/**/*.ts", "tools/**/*.ts", "vite.config.ts"],
   "exclude": ["**/node_modules"],
   "compilerOptions": {
     "types": ["node"],

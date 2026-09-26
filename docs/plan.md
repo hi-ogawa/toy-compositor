@@ -59,8 +59,8 @@ It has four parts:
 The MVP is done when one new cover's deliverables are produced without opening Kdenlive. The rescene cover in [covers/](../covers/) does not count, because its values were transcribed from a finished Kdenlive project.
 
 - [ ] Project format covering everything in the composition model ([draft](project-format.md))
-- [x] CLI render of a video over a time range ([prototype](../prototypes/2026-09-26-ffmpeg-compiler/))
-- [x] CLI render of a still image at a time ([prototype](../prototypes/2026-09-26-ffmpeg-compiler/))
+- [x] CLI render of a video over a time range ([compiler](compiler.md))
+- [x] CLI render of a still image at a time ([compiler](compiler.md))
 - [ ] First and last frame hold for video layers, compiled with `tpad` clone
 - [ ] Editor that loads and saves a project file
 - [ ] Editor preview at the playhead
@@ -74,7 +74,7 @@ Deferred beyond the MVP are automatic offset suggestion by cross-correlation and
 ## Next
 
 - [x] Check the draft against past `.kdenlive` projects ([research/kdenlive](../research/kdenlive/README.md)).
-- [x] Prove the ffmpeg render path on one real cover ([prototype results](../prototypes/2026-09-26-ffmpeg-compiler/README.md)).
+- [x] Prove the ffmpeg render path on one real cover ([results](compiler.md)).
 - [x] Try Remotion Studio as the editor. Remotion reproduces the ffmpeg layout within 1px ([research/remotion](../research/remotion/README.md)), but Studio treats code as the source of truth and every step fought a JSON project file ([#2](https://github.com/hi-ogawa/toy-compositor/pull/2)), so the tool gets its own small editor instead.
 - [ ] Build a minimal project editor ([#3](https://github.com/hi-ogawa/toy-compositor/issues/3)).
 
