@@ -1,10 +1,10 @@
 // Compile a project into ffmpeg arguments.
 // The graph starts from a solid canvas and overlays each visual layer in order.
-// Audio layers are trimmed, faded, delayed, and mixed.
+// Audio layers and the audio of video layers are trimmed, faded, delayed, and mixed.
 
 import { execFileSync } from "node:child_process";
 import path from "node:path";
-import type { Box, Crop, Project } from "./project.ts";
+import type { AudioLayer, Box, Crop, Project, VideoLayer } from "./project.ts";
 import { renderText } from "./text.ts";
 
 type Range = { start: number; end: number };
@@ -46,6 +46,39 @@ export function compile({
     base = next;
   };
 
+  const mixAudio = (layer: VideoLayer | AudioLayer, i: number) => {
+    if (project.output.type === "still" || layer.muted) {
+      return;
+    }
+    const visible = intersect(
+      { start: layer.start, end: layer.start + layer.out - layer.in },
+      range,
+    );
+    if (!visible) {
+      return;
+    }
+    const layerDuration = visible.end - visible.start;
+    const k =
+      inputs.push(
+        seekInput({
+          src: resolve(layer.src),
+          seek: layer.in + visible.start - layer.start,
+          duration: layerDuration,
+        }),
+      ) - 1;
+    const fades = [
+      layer.fadeIn ? `afade=t=in:st=0:d=${layer.fadeIn}` : "",
+      layer.fadeOut
+        ? `afade=t=out:st=${layerDuration - layer.fadeOut}:d=${layer.fadeOut}`
+        : "",
+    ].filter(Boolean);
+    const delayMs = Math.round((visible.start - range.start) * 1000);
+    filters.push(
+      `[${k}:a]${["aformat=sample_rates=48000:channel_layouts=stereo", ...fades, `adelay=delays=${delayMs}:all=1`].join(",")}[a${i}]`,
+    );
+    audioLabels.push(`a${i}`);
+  };
+
   project.layers.forEach((layer, i) => {
     switch (layer.type) {
       case "video": {
@@ -74,6 +107,9 @@ export function compile({
           `[${k}:v]fps=${canvas.fps},setpts=PTS-STARTPTS+${visible.start - range.start}/TB,${cropFilter(layer.crop)}scale=${fit.width}:${fit.height}[v${i}]`,
         );
         overlay({ label: `v${i}`, x: fit.x, y: fit.y });
+        if (hasAudio(src)) {
+          mixAudio(layer, i);
+        }
         return;
       }
       case "image": {
@@ -157,36 +193,7 @@ export function compile({
         return;
       }
       case "audio": {
-        if (project.output.type === "still") {
-          return;
-        }
-        const visible = intersect(
-          { start: layer.start, end: layer.start + layer.out - layer.in },
-          range,
-        );
-        if (!visible) {
-          return;
-        }
-        const layerDuration = visible.end - visible.start;
-        const k =
-          inputs.push(
-            seekInput({
-              src: resolve(layer.src),
-              seek: layer.in + visible.start - layer.start,
-              duration: layerDuration,
-            }),
-          ) - 1;
-        const fades = [
-          layer.fadeIn ? `afade=t=in:st=0:d=${layer.fadeIn}` : "",
-          layer.fadeOut
-            ? `afade=t=out:st=${layerDuration - layer.fadeOut}:d=${layer.fadeOut}`
-            : "",
-        ].filter(Boolean);
-        const delayMs = Math.round((visible.start - range.start) * 1000);
-        filters.push(
-          `[${k}:a]${["aformat=sample_rates=48000:channel_layouts=stereo", ...fades, `adelay=delays=${delayMs}:all=1`].join(",")}[a${i}]`,
-        );
-        audioLabels.push(`a${i}`);
+        mixAudio(layer, i);
         return;
       }
     }
@@ -340,6 +347,21 @@ function probeTiming(file: string) {
   const stream = JSON.parse(out).streams[0];
   const [num, den] = stream.r_frame_rate.split("/").map(Number);
   return { startTime: Number(stream.start_time ?? 0), frameRate: num / den };
+}
+
+function hasAudio(file: string) {
+  const out = execFileSync("ffprobe", [
+    "-v",
+    "error",
+    "-select_streams",
+    "a",
+    "-show_entries",
+    "stream=index",
+    "-of",
+    "csv=p=0",
+    file,
+  ]).toString();
+  return out.trim() !== "";
 }
 
 function probeSize(file: string) {
