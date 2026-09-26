@@ -6,7 +6,10 @@ export type Project = {
     | { type: "video"; start: number; end: number }
     | { type: "still"; time: number };
   layers: Layer[];
+  locators?: Locator[];
 };
+
+export type Locator = { label: string; time: number };
 
 export type Layer =
   | VideoLayer
@@ -14,6 +17,8 @@ export type Layer =
   | ImageLayer
   | TextLayer
   | ColorLayer;
+
+type LayerBase = { name?: string };
 
 export type Box = { x: number; y: number; width: number; height: number };
 
@@ -24,7 +29,7 @@ export type Crop = {
   bottom?: number;
 };
 
-export type VideoLayer = {
+export type VideoLayer = LayerBase & {
   type: "video";
   src: string;
   start: number;
@@ -32,9 +37,12 @@ export type VideoLayer = {
   out: number;
   box: Box;
   crop?: Crop;
+  muted?: boolean;
+  fadeIn?: number;
+  fadeOut?: number;
 };
 
-export type AudioLayer = {
+export type AudioLayer = LayerBase & {
   type: "audio";
   src: string;
   start: number;
@@ -42,9 +50,10 @@ export type AudioLayer = {
   out: number;
   fadeIn?: number;
   fadeOut?: number;
+  muted?: boolean;
 };
 
-export type ImageLayer = {
+export type ImageLayer = LayerBase & {
   type: "image";
   src: string;
   box: Box;
@@ -53,7 +62,7 @@ export type ImageLayer = {
   end?: number;
 };
 
-export type TextLayer = {
+export type TextLayer = LayerBase & {
   type: "text";
   text: string;
   box: { x: number; y: number; width: number };
@@ -65,7 +74,7 @@ export type TextLayer = {
   end?: number;
 };
 
-export type ColorLayer = {
+export type ColorLayer = LayerBase & {
   type: "color";
   color: string;
   opacity?: number;

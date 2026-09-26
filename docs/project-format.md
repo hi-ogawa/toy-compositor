@@ -15,6 +15,9 @@ A project is one JSON file that describes one deliverable: a canvas, what to ren
   "layers": [
     // bottom to top
   ],
+  "locators": [
+    // optional labeled times, see below
+  ],
 }
 ```
 
@@ -28,21 +31,25 @@ Image, text, and color layers are visible for the whole output unless they set `
 
 ## Layers
 
+Every layer can have an optional `name`, such as `"camera"`, `"score"`, or `"mix"`. Names do not affect rendering. They label layers in the editor and let scripts find a layer by its role instead of its position in the list.
+
 ### `video`
 
 ```jsonc
 {
+  "name": "camera",
   "type": "video",
   "src": "media/camera.mp4",
-  "start": 23.7,
-  "in": 15.733,
-  "out": 180.633,
+  "start": 7.967,
+  "in": 0,
+  "out": 189.499,
   "box": { "x": 0, "y": 0, "width": 1920, "height": 1080 },
   "crop": { "left": 0.013, "top": 0.0065 },
+  "muted": true,
 }
 ```
 
-Video layers contribute frames only. A video file's audio is used by adding an `audio` layer with the same `src`, so camera audio can stay available for sync in the editor without being part of the mix.
+A video layer carries its file's audio, like a clip in Kdenlive, and the audio is trimmed and mixed the same way as an `audio` layer, including `fadeIn` and `fadeOut`, which fade only the audio. `muted` leaves the audio out of the mix. The camera is a muted video layer, so it moves as one thing and its audio stays available in the editor as a waveform for syncing against the mix. A video file without an audio stream contributes nothing to the mix.
 
 ### `audio`
 
@@ -58,7 +65,7 @@ Video layers contribute frames only. A video file's audio is used by adding an `
 }
 ```
 
-`fadeIn` and `fadeOut` are durations in seconds at the edges of the layer's visible range, which is the source range clipped to the output range.
+`fadeIn` and `fadeOut` are durations in seconds at the edges of the layer's visible range, which is the source range clipped to the output range. `muted` leaves the layer out of the mix.
 
 ### `image`
 
@@ -98,6 +105,18 @@ Text is rendered to a transparent PNG and composited like an image, so the rende
 ```
 
 A solid fill, used for the translucent dim under thumbnail titles. It covers the whole canvas unless it sets a `box`.
+
+## Locators
+
+Locators are labeled timeline times, like guides in Kdenlive. They do not affect rendering. They record judgment calls that belong to one project but are used elsewhere, such as which frame becomes a thumbnail or which range becomes a short, so scripts can look them up by label to generate other deliverables.
+
+```jsonc
+"locators": [
+  { "label": "thumbnail", "time": 106.833 },
+  { "label": "shorts-start", "time": 144.033 },
+  { "label": "shorts-end", "time": 186.4 }
+]
+```
 
 ## Box and crop
 
