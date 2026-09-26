@@ -27,9 +27,10 @@ Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The editor and the 
 ```text
 src/
   lib/        project format, layout math, and the ffmpeg compiler
+  lib/cli.ts  render CLI
   lib/editor/ editor runtime
   components/ editor UI
-  server/     editor API (Vite middleware), dev and render CLIs
+  server/     editor API (Vite middleware) and dev CLI
 docs/         design drafts, e.g. the project format
 research/     findings from past covers and finished experiments
 covers/       one folder per real cover used for testing

@@ -9,7 +9,7 @@
     "typecheck": "tsc -b",
     "lint": "vp check --fix && pnpm typecheck",
     "lint-check": "vp check && pnpm typecheck",
-    "render": "node src/server/render-cli.ts"
+    "render": "node src/lib/cli.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.103.2",
