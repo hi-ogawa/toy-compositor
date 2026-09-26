@@ -8,7 +8,7 @@
     "typecheck": "tsc -b",
     "lint": "vp check --fix && pnpm typecheck",
     "lint-check": "vp check && pnpm typecheck",
-    "render": "node src/server/render-cli.ts"
+    "render": "node src/lib/server/render-cli.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",
