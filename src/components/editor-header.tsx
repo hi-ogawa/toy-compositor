@@ -4,7 +4,7 @@ import {
   SaveCheckIcon,
   SaveIcon,
 } from "lucide-react";
-import { Button } from "../ui/button";
+import { Button } from "./ui/button";
 import type { SaveStatus } from "./use-editor-project";
 
 export function EditorHeader({

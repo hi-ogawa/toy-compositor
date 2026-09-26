@@ -1,6 +1,6 @@
-import { createStore } from "../../utils/store.ts";
-import type { Layer, Project } from "../project.ts";
+import { createStore } from "../utils/store.ts";
 import type { EditorProjectFile } from "./project-storage.ts";
+import type { Layer, Project } from "./project.ts";
 
 export type EditorSelection =
   | { type: "output" }

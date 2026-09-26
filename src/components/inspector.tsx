@@ -1,6 +1,6 @@
-import { useDraftInput } from "../../hooks/use-draft-input";
-import type { EditorRuntime, EditorSelection } from "../../lib/editor/runtime";
-import type { Box, Crop, Layer, Project } from "../../lib/project";
+import { useDraftInput } from "../hooks/use-draft-input";
+import type { Box, Crop, Layer, Project } from "../lib/project";
+import type { EditorRuntime, EditorSelection } from "../lib/runtime";
 
 export function Inspector({
   runtime,
