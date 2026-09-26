@@ -2,15 +2,27 @@
 
 export type Project = {
   canvas: { width: number; height: number; fps: number; background?: string };
-  output: { type: "video"; start: number; end: number } | { type: "still"; time: number };
+  output:
+    | { type: "video"; start: number; end: number }
+    | { type: "still"; time: number };
   layers: Layer[];
 };
 
-export type Layer = VideoLayer | AudioLayer | ImageLayer | TextLayer | ColorLayer;
+export type Layer =
+  | VideoLayer
+  | AudioLayer
+  | ImageLayer
+  | TextLayer
+  | ColorLayer;
 
 export type Box = { x: number; y: number; width: number; height: number };
 
-export type Crop = { left?: number; right?: number; top?: number; bottom?: number };
+export type Crop = {
+  left?: number;
+  right?: number;
+  top?: number;
+  bottom?: number;
+};
 
 export type VideoLayer = {
   type: "video";

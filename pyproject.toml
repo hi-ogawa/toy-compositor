@@ -3,6 +3,4 @@ name = "toy-compositor-tools"
 version = "0.0.0"
 description = "Analysis tools for comparing renders"
 requires-python = ">=3.11"
-dependencies = [
-    "numpy>=2.4.6",
-]
+dependencies = ["numpy>=2.4.6"]

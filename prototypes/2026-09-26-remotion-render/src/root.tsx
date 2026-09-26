@@ -3,9 +3,18 @@
 // and source sizes are probed up front so layers can be fitted synchronously.
 
 import { getVideoMetadata } from "@remotion/media-utils";
-import { Composition, type CalculateMetadataFunction, staticFile } from "remotion";
+import {
+  Composition,
+  type CalculateMetadataFunction,
+  staticFile,
+} from "remotion";
 import type { Project } from "../../2026-09-26-ffmpeg-compiler/project.ts";
-import { outputRange, ProjectComposition, type ProjectProps, type Size } from "./project-composition.tsx";
+import {
+  outputRange,
+  ProjectComposition,
+  type ProjectProps,
+  type Size,
+} from "./project-composition.tsx";
 
 export function Root() {
   return (
@@ -28,14 +37,19 @@ const emptyProject: ProjectProps = {
   layers: [],
 };
 
-const calculateMetadata: CalculateMetadataFunction<ProjectProps> = async ({ props }) => {
+const calculateMetadata: CalculateMetadataFunction<ProjectProps> = async ({
+  props,
+}) => {
   const { canvas } = props;
   const range = outputRange(props);
   return {
     width: canvas.width,
     height: canvas.height,
     fps: canvas.fps,
-    durationInFrames: Math.max(1, Math.round((range.end - range.start) * canvas.fps)),
+    durationInFrames: Math.max(
+      1,
+      Math.round((range.end - range.start) * canvas.fps),
+    ),
     props: { ...props, sizes: await probeSizes(props) },
   };
 };
@@ -57,7 +71,8 @@ async function probeSizes(project: Project): Promise<Record<string, Size>> {
 function imageSize(src: string) {
   return new Promise<Size>((resolve, reject) => {
     const image = new Image();
-    image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
+    image.onload = () =>
+      resolve({ width: image.naturalWidth, height: image.naturalHeight });
     image.onerror = reject;
     image.src = src;
   });
