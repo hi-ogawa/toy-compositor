@@ -16,17 +16,16 @@ pnpm install
 uv sync            # Python analysis tools under tools/
 pnpm lint-check    # format, lint, and typecheck
 
-pnpm render <project.json> <output.(mp4|png)>   # render a project
+pnpm dev covers/2026-06-27-rescene-love-attack/horizontal-video.json   # edit a project
+pnpm render <project.json> <output.(mp4|png)>                          # render a project
 ```
 
-Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The render CLI runs on Node 24 directly.
+Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The editor and the render CLI run on Node 24 directly.
 
 ## Layout
 
 ```text
-src/
-  lib/        project format, layout math, and the ffmpeg compiler
-  lib/cli.ts  render CLI
+src/          editor and renderer
 docs/         design drafts, e.g. the project format
 research/     findings from past covers and finished experiments
 covers/       one folder per real cover used for testing
