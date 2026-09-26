@@ -13,7 +13,6 @@ A focused video compositor for my bass-cover videos, meant to replace the last m
 
 ```sh
 pnpm install
-uv sync            # Python analysis tools under tools/
 pnpm lint-check    # format, lint, and typecheck
 
 pnpm dev covers/2026-06-27-rescene-love-attack/horizontal-video.json   # edit a project

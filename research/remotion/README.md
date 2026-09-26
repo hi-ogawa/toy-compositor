@@ -6,7 +6,7 @@ One generic `Project` composition took a project file as its input props. `calcu
 
 ## Results on the rescene cover (2026-09-26)
 
-Compared against the ffmpeg compiler's output for the same project files ([tools/compare-images.sh](../../tools/compare-images.sh), [tools/audio-lag.py](../../tools/audio-lag.py)).
+Compared against the ffmpeg compiler's output for the same project files ([tools/compare-images.sh](../../tools/compare-images.sh), [tools/audio-lag.py](https://github.com/hi-ogawa/toy-compositor/blob/bca3b97/tools/audio-lag.py)).
 
 | Deliverable             | Remotion | ffmpeg | Check                                            |
 | ----------------------- | -------- | ------ | ------------------------------------------------ |

@@ -1,5 +1,4 @@
 node_modules
-.venv
 *.tsbuildinfo
 
 # raw data and renders stay out of git, see fetch.sh scripts
