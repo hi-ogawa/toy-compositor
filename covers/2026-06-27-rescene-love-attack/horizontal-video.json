@@ -12,19 +12,22 @@
   },
   "layers": [
     {
+      "name": "camera",
       "type": "video",
       "src": "media/camera.mp4",
-      "start": 23.7,
-      "in": 15.733,
-      "out": 180.633,
+      "start": 7.967,
+      "in": 0,
+      "out": 189.499,
       "box": {
         "x": 0,
         "y": 0,
         "width": 1920,
         "height": 1080
-      }
+      },
+      "muted": true
     },
     {
+      "name": "score",
       "type": "video",
       "src": "media/score.mp4",
       "start": 23.7,
@@ -39,15 +42,35 @@
       "crop": {
         "left": 0.0130208,
         "top": 0.00648148
-      }
+      },
+      "muted": true
     },
     {
+      "name": "mix",
       "type": "audio",
       "src": "media/mix.wav",
       "start": 23.7,
       "in": 10.333,
       "out": 175.233,
       "fadeOut": 4.7
+    }
+  ],
+  "locators": [
+    {
+      "label": "thumbnail",
+      "time": 106.833
+    },
+    {
+      "label": "shorts-start",
+      "time": 144.033
+    },
+    {
+      "label": "shorts-thumbnail",
+      "time": 158.333
+    },
+    {
+      "label": "shorts-end",
+      "time": 186.4
     }
   ]
 }
