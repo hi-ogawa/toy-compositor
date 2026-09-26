@@ -1,4 +1,4 @@
-// The project is a JSON file on disk, loaded and saved through src/server/api.ts.
+// The project is a JSON file on disk, loaded and saved through src/lib/server/api.ts.
 
 import type { Project } from "./project.ts";
 

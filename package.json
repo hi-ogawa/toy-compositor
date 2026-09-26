@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "prepare": "vp config",
-    "dev": "node src/server/dev-cli.ts",
+    "dev": "node src/lib/server/dev-cli.ts",
     "typecheck": "tsc -b",
     "lint": "vp check --fix && pnpm typecheck",
     "lint-check": "vp check && pnpm typecheck",
