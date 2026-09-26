@@ -1,14 +1,8 @@
-# Remotion render prototype
+# Remotion render comparison
 
-Renders a project file with Remotion, as the first step toward using Remotion Studio as the editor. Studio's preview is Remotion rendering the composition, so it is only useful as an editor if Remotion reproduces what the ffmpeg compiler renders.
+A project file was rendered with Remotion, as the first step toward using Remotion Studio as the editor. Studio's preview is Remotion rendering the composition, so it is only useful as an editor if Remotion reproduces what the ffmpeg compiler renders. Studio then turned out to be a dead end as the editor ([#2](https://github.com/hi-ogawa/toy-compositor/pull/2)), and the prototype was removed, but these results still show that a browser draws the same layout as the ffmpeg compiler, which is why the editor preview is composed in the DOM.
 
-One generic `Project` composition takes a project file as its input props. `calculateMetadata` sizes the canvas and duration from the project and probes source sizes, and each layer is drawn with the same fit math as the ffmpeg compiler. The format types are imported from the [ffmpeg compiler prototype](../2026-09-26-ffmpeg-compiler/project.ts), so both renderers read the same format.
-
-```sh
-node prototypes/2026-09-26-remotion-render/render.ts <project.json> <output.(mp4|png)>
-```
-
-The project file is passed with `--props`, and its folder is passed with `--public-dir`, so `media/...` paths resolve through `staticFile()` without copying media into a `public/` folder.
+One generic `Project` composition took a project file as its input props. `calculateMetadata` sized the canvas and duration from the project and probed source sizes, and each layer was drawn with the same fit math as the ffmpeg compiler. The code is at [bca3b97](https://github.com/hi-ogawa/toy-compositor/tree/bca3b97/prototypes/2026-09-26-remotion-render).
 
 ## Results on the rescene cover (2026-09-26)
 
@@ -30,7 +24,7 @@ Compared against the ffmpeg compiler's output for the same project files ([tools
 
 ## Reproduce
 
-Everything runs from the repo root. `fetch.sh` needs the archive drive once, and after that the media and Kdenlive's renders stay in the cover's gitignored `media/` and `kdenlive/` folders.
+Everything runs from the repo root of a checkout at [bca3b97](https://github.com/hi-ogawa/toy-compositor/tree/bca3b97), which still has both renderers. `fetch.sh` needs the archive drive once, and after that the media and Kdenlive's renders stay in the cover's gitignored `media/` and `kdenlive/` folders.
 
 ```sh
 C=covers/2026-06-27-rescene-love-attack
@@ -82,7 +76,7 @@ The page itself costs about 17ms per frame, and each video layer adds its own co
 
 The first comparison had the title 20px higher in Remotion. Two things differed between the renderers, and the format now pins both down (`box.y` is the top of the first line, and line spacing only applies between lines):
 
-- CSS splits a negative line spacing above and below every line box, which moves the first line up by half the spacing. The Remotion text now offsets its top by `-lineSpacing / 2`.
+- CSS splits a negative line spacing above and below every line box, which moves the first line up by half the spacing. The Remotion text offset its top by `-lineSpacing / 2`.
 - ImageMagick pads the stroked text PNG by half the outline width, which moved the ffmpeg title down by 5px. The compiler now shifts the PNG back up.
 
 After both fixes the renderers agree within 1px, and both are within 1px to 4px of Kdenlive's title.
