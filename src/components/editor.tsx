@@ -1,11 +1,11 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { useWindowEvent } from "../hooks/use-window-event";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import { EditorRuntime } from "../lib/runtime";
 import { EditorHeader } from "./editor-header";
 import { Inspector } from "./inspector";
 import { cn } from "./ui/utils";
 import { useEditorProject } from "./use-editor-project";
+import { useWindowEvent } from "./use-window-event";
 
 export function Editor() {
   const [runtime] = useState(() => new EditorRuntime());
