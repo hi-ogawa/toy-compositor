@@ -1,12 +1,12 @@
 {
-  "include": ["src/**/*.ts", "tools/**/*.ts", "vite.config.ts"],
+  "include": ["src", "tools/**/*.ts", "*.ts"],
   "exclude": ["**/node_modules"],
   "compilerOptions": {
-    "types": ["node"],
+    "types": ["vite/client", "node"],
     "target": "esnext",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "erasableSyntaxOnly": true,
