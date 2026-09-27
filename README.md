@@ -26,8 +26,8 @@ Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The render CLI runs
 Samples contain a `project.json` entry point and its media. The small synthetic sample is committed, and real-cover samples stay local:
 
 ```sh
-pnpm setup-sample synthetic
-pnpm setup-sample rescene       # when main has .local/samples/rescene.zip
+pnpm setup-sample samples/synthetic
+pnpm setup-sample ../toy-compositor/.local/samples/rescene.zip
 
 # On a branch with the editor:
 pnpm dev .local/projects/synthetic/project.json
@@ -36,7 +36,7 @@ pnpm dev .local/projects/synthetic/project.json
 pnpm render .local/projects/synthetic/project.json .local/projects/synthetic/out/preview.mp4
 ```
 
-Setup looks in this worktree's `samples/` first, then main's `.local/samples/`, and copies a directory or unpacks a ZIP into `.local/projects/<name>/`. ZIPs need unzip. Existing files are preserved on reruns, so local edits do not change the source examples. See [samples/README.md](samples/README.md) for bundle preparation and the RESCENE reference. `node tools/samples/generate.ts` reproduces the synthetic media with ffmpeg.
+Setup takes a directory or ZIP path and copies or unpacks it into `.local/projects/<name>/`, using the source basename without its extension. ZIPs need unzip. Existing files are preserved on reruns, so local edits do not change the source examples. See [samples/README.md](samples/README.md) for bundle preparation and the RESCENE reference. `node tools/samples/generate.ts` reproduces the synthetic media with ffmpeg.
 
 ## Layout
 

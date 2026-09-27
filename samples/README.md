@@ -7,11 +7,11 @@ Each sample directory or ZIP is self-contained, with a `project.json` entry poin
 Local sample sources are gitignored under `.local/samples/`. Put a local bundle such as `rescene.zip` in the main worktree's `.local/samples/`, then use it from any worktree:
 
 ```sh
-pnpm setup-sample synthetic
-pnpm setup-sample rescene
+pnpm setup-sample samples/synthetic
+pnpm setup-sample ../toy-compositor/.local/samples/rescene.zip
 ```
 
-Pass a sample name without the ZIP extension. Setup looks for `<name>/` or `<name>.zip` in the current worktree's `samples/` first, then in main's `.local/samples/`. It copies a directory or unpacks a ZIP into `.local/projects/<name>/` and preserves existing files, so local project edits survive reruns. To start again from the source sample, remove that sample's local directory and run setup again.
+Run setup from the repository root with a relative or absolute source path. It copies a directory or unpacks a ZIP into `.local/projects/<name>/`, where `<name>` is the source basename without its extension. Existing files are preserved, so local project edits survive reruns. To start again from the source sample, remove that sample's local directory and run setup again.
 
 On an editor branch, open `.local/projects/<name>/project.json` with `pnpm dev`. On main, use the render CLI. Preparing ZIP samples needs unzip.
 
