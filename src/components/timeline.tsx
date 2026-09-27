@@ -152,7 +152,14 @@ export function Timeline({
               )
             )}
           </TimelineRow>
-          <TimelineRow label={<span>Locators</span>} graphStyle={graphStyle}>
+          <TimelineRow
+            label={
+              <span className="px-3 text-xs font-semibold text-muted-foreground">
+                Locators
+              </span>
+            }
+            graphStyle={graphStyle}
+          >
             {(project.locators ?? [])
               .filter(
                 (locator) =>
@@ -162,12 +169,21 @@ export function Timeline({
                 <button
                   type="button"
                   key={index}
-                  className="absolute inset-y-1 max-w-40 truncate rounded border border-amber-700/50 bg-amber-950 px-1 text-xs text-amber-200"
-                  style={{ left: timeline.timeToX(locator.time) }}
+                  aria-label={locator.label}
+                  className="group absolute inset-y-0 flex w-max items-center pl-4 text-muted-foreground outline-none hover:text-sky-200 focus-visible:text-sky-300 focus-visible:ring-1 focus-visible:ring-sky-300"
+                  style={{ left: timeline.timeToX(locator.time) - 6 }}
                   title={`${locator.label} · ${locator.time.toFixed(3)} s`}
                   onClick={() => runtime.seek({ time: locator.time })}
                 >
-                  {locator.label}
+                  <span
+                    aria-hidden="true"
+                    className="absolute bottom-1 left-0 size-0 border-x-[6px] border-t-[8px] border-x-transparent border-t-current"
+                  />
+                  <span className="max-w-40 truncate rounded px-1 text-[11px] select-none group-hover:bg-secondary group-focus-visible:bg-sky-300/20">
+                    <span className="inline-block translate-y-px">
+                      {locator.label}
+                    </span>
+                  </span>
                 </button>
               ))}
           </TimelineRow>
