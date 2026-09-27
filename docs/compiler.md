@@ -1,6 +1,6 @@
 # ffmpeg compiler
 
-[src/lib/compile.ts](../src/lib/compile.ts) compiles a project file ([project-format.md](project-format.md)) into one ffmpeg command. The graph starts from a solid canvas, overlays each visual layer in order, and mixes the audio of audio layers and unmuted video layers. Text layers are rendered to PNG with ImageMagick first. The render CLI runs on Node 24 directly.
+[src/lib/render/compile.ts](../src/lib/render/compile.ts) compiles a project file ([project-format.md](project-format.md)) into one ffmpeg command. The graph starts from a solid canvas, overlays each visual layer in order, and mixes the audio of audio layers and unmuted video layers. Text layers are rendered to PNG with ImageMagick first. The render CLI runs on Node 24 directly.
 
 ```sh
 pnpm setup-sample samples/synthetic

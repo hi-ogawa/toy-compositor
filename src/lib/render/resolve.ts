@@ -4,7 +4,7 @@
 
 import { execFileSync } from "node:child_process";
 import path from "node:path";
-import type { Project } from "./project.ts";
+import type { Project } from "../project.ts";
 import { renderText } from "./text.ts";
 
 export type Resolved = {

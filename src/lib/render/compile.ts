@@ -3,8 +3,8 @@
 // Audio layers and the audio of video layers are trimmed, faded, delayed, and mixed.
 
 import path from "node:path";
+import type { AudioLayer, Crop, Project, VideoLayer } from "../project.ts";
 import { fitBox, intersect, outputRange } from "./layout.ts";
-import type { AudioLayer, Crop, Project, VideoLayer } from "./project.ts";
 import type { Media, Resolved } from "./resolve.ts";
 
 export function compile({
