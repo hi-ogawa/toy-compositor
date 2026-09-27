@@ -4,7 +4,8 @@ import type { AudioLayer, Crop, Project, VideoLayer } from "../project.ts";
 import type { Media, Resolved } from "./resolve.ts";
 
 /**
- * Compile a project and its resolved media into ffmpeg arguments without any I/O.
+ * Compile a project and its resolved media into the ffmpeg inputs, filter graph,
+ * and output options, without any I/O. The caller adds the output file.
  * The graph starts from a solid canvas and overlays each visual layer in order.
  * Audio layers and the audio of video layers are trimmed, faded, delayed, and mixed.
  */
@@ -12,12 +13,10 @@ export function compile({
   project,
   projectDir,
   resolved,
-  outFile,
 }: {
   project: Project;
   projectDir: string;
   resolved: Resolved;
-  outFile: string;
 }): string[] {
   const { canvas } = project;
   const range = outputRange(project);
@@ -222,16 +221,10 @@ export function compile({
   }
 
   return [
-    "-hide_banner",
-    "-loglevel",
-    "warning",
-    "-stats",
-    "-y",
     ...inputs.flat(),
     "-filter_complex",
     filters.join(";\n"),
     ...outputArgs,
-    outFile,
   ];
 }
 

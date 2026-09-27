@@ -21,16 +21,16 @@ export type Media = {
 /**
  * Resolve the source facts and derived assets a project needs before compiling.
  * Each video and image source is probed once, and each text layer is rendered
- * to a PNG, so compile() can build ffmpeg arguments without doing any I/O.
+ * to a PNG in textDir, so compile() can build ffmpeg arguments without any I/O.
  */
 export async function resolveProject({
   project,
   projectDir,
-  outFile,
+  textDir,
 }: {
   project: Project;
   projectDir: string;
-  outFile: string;
+  textDir: string;
 }): Promise<Resolved> {
   const media = new Map<string, Media>();
   const texts = new Map<number, string>();
@@ -47,11 +47,7 @@ export async function resolveProject({
         break;
       }
       case "text": {
-        const file = path.join(
-          path.dirname(outFile),
-          ".text",
-          `${path.basename(outFile)}.${i}.png`,
-        );
+        const file = path.join(textDir, `${i}.png`);
         await renderText({ layer, file });
         texts.set(i, file);
         break;

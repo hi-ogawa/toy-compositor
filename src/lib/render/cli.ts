@@ -16,22 +16,26 @@ async function main() {
   }
   const project: Project = JSON.parse(fs.readFileSync(projectFile, "utf-8"));
   const projectDir = path.dirname(path.resolve(projectFile));
+  const outPath = path.resolve(outFile);
   const resolved = await resolveProject({
     project,
     projectDir,
-    outFile: path.resolve(outFile),
+    textDir: path.join(path.dirname(outPath), ".text", path.basename(outPath)),
   });
-  const args = compile({
-    project,
-    projectDir,
-    resolved,
-    outFile: path.resolve(outFile),
-  });
+  const args = [
+    "-hide_banner",
+    "-loglevel",
+    "warning",
+    "-stats",
+    "-y",
+    ...compile({ project, projectDir, resolved }),
+    outPath,
+  ];
   console.error(["ffmpeg", ...args.map(quote)].join(" "));
   if (process.argv.includes("--dry-run")) {
     return;
   }
-  fs.mkdirSync(path.dirname(path.resolve(outFile)), { recursive: true });
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
   const t0 = performance.now();
   const ffmpeg = spawn("ffmpeg", args, { stdio: "inherit" });
   const [code] = await once(ffmpeg, "close");
