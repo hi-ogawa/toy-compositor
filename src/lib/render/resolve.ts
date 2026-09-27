@@ -1,10 +1,7 @@
-import { execFile } from "node:child_process";
 import path from "node:path";
-import { promisify } from "node:util";
+import { execFileAsync } from "../../utils/exec.ts";
 import type { Project } from "../project.ts";
 import { renderText } from "./text.ts";
-
-const execFileAsync = promisify(execFile);
 
 export type Resolved = {
   /** Keyed by layer src. */

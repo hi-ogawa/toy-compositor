@@ -1,10 +1,7 @@
-import { execFile } from "node:child_process";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
-import { promisify } from "node:util";
+import { execFileAsync } from "../../utils/exec.ts";
 import type { TextLayer } from "../project.ts";
-
-const execFileAsync = promisify(execFile);
 
 /**
  * Render a text layer to a transparent PNG with ImageMagick.
