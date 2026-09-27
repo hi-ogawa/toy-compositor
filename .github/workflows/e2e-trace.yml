@@ -64,6 +64,7 @@ jobs:
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: .github/scripts/install-ffmpeg.sh
+      - run: pnpm exec playwright install --with-deps chromium
       - name: Run selected tests with tracing
         env:
           E2E_TRACE: "1"

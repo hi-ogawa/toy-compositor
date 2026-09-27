@@ -15,12 +15,13 @@ A focused video compositor for my bass-cover videos, meant to replace the last m
 pnpm install
 uv sync            # Python analysis tools under tools/
 pnpm lint-check    # format, lint, and typecheck
-pnpm test-e2e      # synthetic render, needs ffmpeg and ffprobe
+pnpm test-e2e      # editor smoke and synthetic render, needs Chromium, ffmpeg, and ffprobe
 
-pnpm render <project.json> <output.(mp4|png)>   # render a project
+pnpm dev .local/projects/synthetic/project.json   # edit a prepared sample project
+pnpm render <project.json> <output.(mp4|png)>                          # render a project
 ```
 
-Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The render CLI runs on Node 24 directly.
+Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The editor and the render CLI run on Node 24 directly.
 
 ## Samples
 
