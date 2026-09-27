@@ -2,25 +2,5 @@ node_modules
 .venv
 *.tsbuildinfo
 
-# raw data and renders stay out of git, see fetch.sh scripts
-media/
-out/
-research/kdenlive/projects/
-*.mp4
-*.mkv
-*.mov
-*.wav
-*.jpg
-*.jpeg
-*.png
-*.webp
-kdenlive/
-
-# local sample sources and editable projects
 .local/
-
-# small committed synthetic source assets
-!samples/synthetic/media/
-!samples/synthetic/media/video.mp4
-!samples/synthetic/media/audio.wav
-!samples/synthetic/media/image.png
+research/kdenlive/projects/
