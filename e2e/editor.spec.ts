@@ -53,8 +53,10 @@ test("preview synthetic sources and save an inspector edit", async ({
   await expect(save).toHaveAttribute("data-status", "unsaved");
   await save.click();
   await expect(save).toHaveAttribute("data-status", "saved");
-  const saved = JSON.parse(await readFile(editor.projectFile, "utf-8"));
-  expect(saved.layers[2].box.x).toBe(400);
+  const savedProjectJson = JSON.parse(
+    await readFile(editor.projectFile, "utf-8"),
+  );
+  expect(savedProjectJson.layers[2].box.x).toBe(400);
 
   // Reload the project and confirm the saved position survives.
   await page.reload();
