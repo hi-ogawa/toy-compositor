@@ -10,7 +10,7 @@ export function MediaPreview({ layer }: { layer: Layer | undefined }) {
       </p>
     );
   }
-  const src = `/api/media/${encodeURIComponent(layer.src)}`;
+  const src = `/api/media/${layer.src.split("/").map(encodeURIComponent).join("/")}`;
   const onError = () => setFailed(true);
   return (
     <section className="flex h-full min-h-0 flex-col gap-3 p-4">
