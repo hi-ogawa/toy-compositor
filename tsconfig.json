@@ -1,5 +1,5 @@
 {
-  "include": ["src", "tools/**/*.ts", "*.ts"],
+  "include": ["src", "tools/**/*.ts", "e2e/**/*.ts", "*.ts"],
   "exclude": ["**/node_modules"],
   "compilerOptions": {
     "types": ["vite/client", "node"],

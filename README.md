@@ -15,6 +15,7 @@ A focused video compositor for my bass-cover videos, meant to replace the last m
 pnpm install
 uv sync            # Python analysis tools under tools/
 pnpm lint-check    # format, lint, and typecheck
+pnpm test-e2e      # synthetic render, needs ffmpeg and ffprobe
 
 pnpm dev .local/projects/synthetic/project.json   # edit a prepared sample project
 pnpm render <project.json> <output.(mp4|png)>                          # render a project
