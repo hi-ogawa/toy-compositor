@@ -23,12 +23,20 @@ Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The render CLI runs
 
 ## Local demo
 
-The RESCENE examples are committed starting points. To iterate without changing them, prepare editable copies with the source media in a gitignored directory:
+Keep a self-contained RESCENE bundle in the main worktree, with the four project JSON files and their media. Build it once from the existing cover assets:
 
 ```sh
-pnpm demo:cache                  # once, zip the source media already in the main worktree
-pnpm demo:setup                  # in each worktree, unpack media and copy the committed JSON
-pnpm demo:setup --reset          # restore local JSON from this branch's examples
+# In the main worktree:
+cd covers/2026-06-27-rescene-love-attack
+zip -1 media/rescene-demo.zip *.json media/camera.mp4 media/score.mp4 media/mix.wav media/mv-thumbnail.jpg
+```
+
+The ZIP stays gitignored alongside the original media. If the assets are missing, run the cover's `fetch.sh` first.
+
+In any worktree, unpack the bundle into a gitignored directory for local iteration:
+
+```sh
+pnpm demo:setup
 
 # On a branch with the editor:
 pnpm dev .local/demo/rescene/horizontal-video.json
@@ -37,9 +45,7 @@ pnpm dev .local/demo/rescene/horizontal-video.json
 pnpm render .local/demo/rescene/horizontal-thumbnail.json .local/demo/rescene/out/thumbnail.png
 ```
 
-`demo:cache` finds the main worktree through git and packs only the camera, score, mix, and thumbnail into `covers/2026-06-27-rescene-love-attack/media/rescene-media.zip` there. If its source media is missing, run that cover's `fetch.sh` in main first. The cache stays gitignored alongside the original media and can be rebuilt explicitly with `demo:cache`. Packing needs `zip`, and setup needs `unzip`.
-
-`demo:setup` extracts into `.local/demo/rescene/` in the current worktree. Normal reruns preserve edited JSON and reuse existing media. `--reset` replaces only the JSON from this branch's committed examples. Neither command writes to the committed projects. Both accept `--cache /path/to/media.zip` to use another cache location.
+`demo:setup` finds the main worktree through git and unpacks its bundle into `.local/demo/rescene/`. It needs `unzip`. Existing files are preserved on reruns, so saving or reopening the demo does not change the committed examples. The initial JSON comes from the bundle, independent of the current branch.
 
 ## Layout
 
