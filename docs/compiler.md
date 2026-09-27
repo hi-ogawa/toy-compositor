@@ -98,11 +98,15 @@ The ffmpeg building blocks behind the table:
 
 Once every layer has its streams, one pass joins them into a single filter graph. The picture chain starts from a solid canvas covering the whole output. Each picture is overlaid on the result so far at its position, in layer order, so later layers sit on top. When a picture stream ends before the output does, the layers below show through. Every sound goes into one mix, which is padded or trimmed to the output length.
 
-![Pictures from the video, image, and text layers stack over a solid canvas in order, while the audio layer goes to a separate mix](images/graph-assembly.svg)
-
 This pass is the only place that knows how streams are numbered and connected. The per-layer step only says what a layer contributes, which keeps each layer type readable on its own. To see the actual graph for a project, run the render with `--dry-run`.
 
-For the synthetic sample, the inputs are numbered in the order they are added, and each chain's output label uses its layer's index. The graph below is wrapped and annotated for reading, with paths shortened:
+For the synthetic sample, the inputs are numbered in the order they are added, and each chain's output label uses its layer's index:
+
+![The synthetic sample's graph, where four inputs feed one chain per layer, pictures stack through three overlays from a color canvas, and the audio chain goes to a mix](images/synthetic-graph.svg)
+
+A chain can read more than one stream when its filter takes more than one input. `overlay` takes two. The first label is the background, and the second is drawn on top of it at `x` and `y`, so `[canvas][v0]overlay=x=0:y=0[over0]` composites the video over the canvas. Its result `[over0]` becomes the background of the next overlay, which is how the stack is built one layer at a time. `amix` likewise takes every sound stream at once.
+
+The same graph as ffmpeg text, wrapped and annotated for reading, with paths shortened:
 
 ```sh
 -ss 0.000000 -t 3.000000 -i media/video.mp4          # input 0, layer 0 video
