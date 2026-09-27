@@ -13,11 +13,18 @@ pnpm setup-sample ../toy-compositor/.local/samples/rescene.zip
 
 Run setup from the repository root with a relative or absolute source path. It copies a directory or unpacks a ZIP into `.local/projects/<name>/`, where `<name>` is the source basename without its extension. Existing files are preserved, so local project edits survive reruns. To start again from the source sample, remove that sample's local directory and run setup again.
 
-On an editor branch, open `.local/projects/<name>/project.json` with `pnpm dev`. On main, use the render CLI. Preparing ZIP samples needs unzip.
+Setup preserves every file in the sample, including additional project variants. On an editor branch, pass any project JSON to `pnpm dev`. On main, pass it to `pnpm render`. Preparing ZIP samples needs unzip.
 
 ## Local RESCENE reference
 
-`rescene.zip` contains the four RESCENE deliverable projects and their camera, score, mix, and MV thumbnail sources. `project.json` is the horizontal-video project. The ZIP is kept in main at `.local/samples/rescene.zip`, and no real-cover media is committed.
+`rescene.zip` contains `horizontal-video.json`, `horizontal-thumbnail.json`, `vertical-video.json`, and `vertical-thumbnail.json`, together with their camera, score, mix, and MV thumbnail sources. `project.json` is an additional copy of `horizontal-video.json` for the default entry point. All five JSON files are unpacked into `.local/projects/rescene/`. The ZIP is kept in main at `.local/samples/rescene.zip`, and no real-cover media is committed.
+
+For example, on an editor branch:
+
+```sh
+pnpm dev .local/projects/rescene/project.json
+pnpm dev .local/projects/rescene/vertical-video.json
+```
 
 These projects were transcribed from the finished Kdenlive composition. The original project JSON, archive fetch script, and layout notes are preserved at [11e9808](https://github.com/hi-ogawa/toy-compositor/tree/11e9808/covers/2026-06-27-rescene-love-attack). The horizontal values were copied directly. The vertical layout maps the Kdenlive center window to a native 1080×1920 canvas. The [compiler results](../docs/compiler.md) and [Remotion comparison](../research/remotion/README.md) record the render checks.
 
