@@ -54,6 +54,13 @@ export function Timeline({
     >
       <div className="flex items-center gap-3 border-b px-3 py-2">
         <h2 className="font-medium">Timeline</h2>
+        <button
+          type="button"
+          className="rounded border px-2 py-1 text-xs hover:bg-secondary"
+          onClick={selectOutput}
+        >
+          Render settings
+        </button>
         <span
           className="text-xs tabular-nums text-muted-foreground"
           data-testid="timeline-time"
@@ -119,72 +126,68 @@ export function Timeline({
           </TimelineRow>
           <TimelineRow
             label={
-              <LaneLabel
-                selected={selection?.type === "output"}
-                onClick={selectOutput}
-              >
-                Output
-              </LaneLabel>
-            }
-            graphStyle={graphStyle}
-          >
-            {project.output.type === "still" ? (
-              <button
-                type="button"
-                aria-label={`Output frame at ${project.output.time} seconds`}
-                onClick={selectOutput}
-                className="absolute inset-y-1 border-l-2 border-primary px-2 text-xs text-primary"
-                style={{ left: timeline.timeToX(output.start) }}
-              >
-                Frame
-              </button>
-            ) : (
-              regionStyle(output) && (
-                <button
-                  type="button"
-                  onClick={selectOutput}
-                  aria-label="Select output range"
-                  className="absolute inset-y-1 overflow-hidden rounded border border-primary/60 bg-primary/15 px-2 text-left text-xs tabular-nums"
-                  style={regionStyle(output)}
-                >
-                  {output.start.toFixed(3)}–{output.end.toFixed(3)}
-                </button>
-              )
-            )}
-          </TimelineRow>
-          <TimelineRow
-            label={
               <span className="px-3 text-xs font-semibold text-muted-foreground">
                 Locators
               </span>
             }
             graphStyle={graphStyle}
           >
+            {(project.output.type === "video"
+              ? [
+                  {
+                    label: "Render start",
+                    time: output.start,
+                    labelSide: "after" as const,
+                  },
+                  {
+                    label: "Render end",
+                    time: output.end,
+                    labelSide: "before" as const,
+                  },
+                ]
+              : [
+                  {
+                    label: "Render frame",
+                    time: output.start,
+                    labelSide: "after" as const,
+                  },
+                ]
+            )
+              .filter(
+                (marker) =>
+                  marker.time >= visible.start && marker.time <= visible.end,
+              )
+              .map((marker) => (
+                <LocatorMarker
+                  key={marker.label}
+                  label={marker.label}
+                  time={marker.time}
+                  left={timeline.timeToX(marker.time)}
+                  labelSide={marker.labelSide}
+                  render
+                  selected={selection?.type === "output"}
+                  onClick={() => {
+                    selectOutput();
+                    runtime.seek({ time: marker.time });
+                  }}
+                />
+              ))}
             {(project.locators ?? [])
               .filter(
                 (locator) =>
                   locator.time >= visible.start && locator.time <= visible.end,
               )
               .map((locator, index) => (
-                <button
-                  type="button"
+                <LocatorMarker
                   key={index}
-                  aria-label={locator.label}
-                  className="group absolute inset-y-0 flex w-max items-center pl-4 text-muted-foreground outline-none hover:text-sky-200 focus-visible:text-sky-300 focus-visible:ring-1 focus-visible:ring-sky-300"
-                  style={{ left: timeline.timeToX(locator.time) - 6 }}
-                  title={`${locator.label} · ${locator.time.toFixed(3)} s`}
+                  label={locator.label}
+                  time={locator.time}
+                  left={timeline.timeToX(locator.time)}
+                  labelSide="after"
+                  render={false}
+                  selected={false}
                   onClick={() => runtime.seek({ time: locator.time })}
-                >
-                  <span
-                    aria-hidden="true"
-                    className="absolute bottom-1 left-0 size-0 border-x-[6px] border-t-[8px] border-x-transparent border-t-current"
-                  />
-                  <span className="max-w-40 truncate rounded px-1 text-[11px] select-none group-hover:bg-secondary group-focus-visible:bg-sky-300/20">
-                    <span className="inline-block translate-y-px">
-                      {locator.label}
-                    </span>
-                  </span>
-                </button>
+                />
               ))}
           </TimelineRow>
           {project.layers
@@ -248,6 +251,63 @@ export function Timeline({
         </div>
       </div>
     </section>
+  );
+}
+
+function LocatorMarker({
+  label,
+  time,
+  left,
+  labelSide,
+  render,
+  selected,
+  onClick,
+}: {
+  label: string;
+  time: number;
+  left: number;
+  labelSide: "before" | "after";
+  render: boolean;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={render ? selected : undefined}
+      title={`${label} · ${time.toFixed(3)} s`}
+      onClick={onClick}
+      style={{
+        left,
+        transform:
+          labelSide === "before"
+            ? "translateX(calc(-100% + 6px))"
+            : "translateX(-6px)",
+      }}
+      className={cn(
+        "group absolute inset-y-0 flex w-max items-center outline-none hover:text-sky-200 focus-visible:ring-1 focus-visible:ring-sky-300",
+        labelSide === "before" ? "pr-4" : "pl-4",
+        render ? "z-10 text-primary" : "text-muted-foreground",
+        selected && "text-sky-300",
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className={cn(
+          "absolute bottom-1 size-0 border-x-[6px] border-t-[8px] border-x-transparent border-t-current",
+          labelSide === "before" ? "right-0" : "left-0",
+        )}
+      />
+      <span
+        className={cn(
+          "max-w-40 truncate rounded px-1 text-[11px] select-none group-hover:bg-secondary group-focus-visible:bg-sky-300/20",
+          selected && "bg-sky-300/20",
+        )}
+      >
+        <span className="inline-block translate-y-px">{label}</span>
+      </span>
+    </button>
   );
 }
 

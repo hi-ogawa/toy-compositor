@@ -229,7 +229,7 @@ test("compose a still project at its output time", async ({ page, editor }) => {
   await expect(page.getByTestId("composition-time")).toContainText("1.500 s");
   await expect(
     page.getByTestId("editor-timeline").getByRole("button", {
-      name: "Output frame at 1.5 seconds",
+      name: "Render frame",
       exact: true,
     }),
   ).toBeVisible();
@@ -254,6 +254,29 @@ test("select lanes and seek the composition without editing the project", async 
   await page.goto(editor.url);
   const timeline = page.getByTestId("editor-timeline");
   await expect(page.getByTestId("timeline-time")).toContainText("0.500 s");
+  await expect(
+    timeline.getByRole("button", { name: "Render start", exact: true }),
+  ).toBeVisible();
+  await expect(
+    timeline.getByRole("button", { name: "Render end", exact: true }),
+  ).toBeVisible();
+  await expect(
+    timeline.getByRole("button", { name: "Output", exact: true }),
+  ).toHaveCount(0);
+  await timeline
+    .getByRole("button", { name: "Render start", exact: true })
+    .click();
+  await expect(
+    page
+      .getByTestId("inspector")
+      .getByRole("heading", { name: "Render settings", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByTestId("inspector")
+      .getByRole("textbox", { name: "start", exact: true }),
+  ).toHaveValue("0.5");
+
   await expect(page.getByTestId("timeline-layer-0")).toHaveAttribute(
     "title",
     "0.500–3.250 s",
