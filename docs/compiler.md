@@ -26,6 +26,19 @@ First, a layer is cut to the part that falls inside the output range. A video or
 
 Each stream is trimmed to that visible part when ffmpeg reads the input, then shifted by its offset from the output start. For a video layer, trimming means seeking the source to the matching source time. Because project times are rounded to milliseconds, the seek targets the source frame nearest to that time rather than the first frame after it.
 
+In ffmpeg terms, the cut is input options and the rest is a filter chain. The synthetic sample's video layer covers the whole three-second output and fills the 640×360 canvas:
+
+```sh
+-ss 0.000000 -t 3.000000 -i media/video.mp4   # seek to the source time, read the visible duration
+```
+
+```text
+[0:v]fps=30,setpts=PTS-STARTPTS+0/TB,scale=640:360[v0]
+     │      │                        └ fit to its box
+     │      └ restart timestamps at 0, then shift by the offset from the output start (0 s here)
+     └ resample to the canvas frame rate
+```
+
 What each layer type turns into:
 
 | Layer | Picture                                                                    | Sound                       |
@@ -38,6 +51,18 @@ What each layer type turns into:
 
 Sound is normalized to 48 kHz stereo, faded in and out when the layer asks for it, and delayed to its offset.
 
+The ffmpeg building blocks behind the table:
+
+| Idea                                   | ffmpeg                                                                                                          |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Read only the visible part of a source | input options `-ss <source time> -t <duration>`                                                                 |
+| Repeat an image or text PNG            | input options `-loop 1 -framerate <fps> -t <duration>`                                                          |
+| Match the canvas frame rate            | `fps=<fps>`                                                                                                     |
+| Crop, then fit to the box              | `crop=iw*<w>:ih*<h>:iw*<left>:ih*<top>`, `scale=<width>:<height>`                                               |
+| Generate a solid fill                  | `color=c=<color>@<opacity>:s=<width>x<height>:r=<fps>:d=<duration>`, `format=rgba`                              |
+| Place on the output timeline           | `setpts=PTS-STARTPTS+<offset>/TB`                                                                               |
+| Normalize, fade, and place sound       | `aformat=sample_rates=48000:channel_layouts=stereo`, `afade=t=in` and `afade=t=out`, `adelay=delays=<ms>:all=1` |
+
 ## Stack Pictures, Mix Sounds
 
 Once every layer has its streams, one pass joins them into a single filter graph. The picture chain starts from a solid canvas covering the whole output. Each picture is overlaid on the result so far at its position, in layer order, so later layers sit on top. When a picture stream ends before the output does, the layers below show through. Every sound goes into one mix, which is padded or trimmed to the output length.
@@ -46,9 +71,46 @@ Once every layer has its streams, one pass joins them into a single filter graph
 
 This pass is the only place that knows how streams are numbered and connected. The per-layer step only says what a layer contributes, which keeps each layer type readable on its own. To see the actual graph for a project, run the render with `--dry-run`.
 
+For the synthetic sample, the inputs are numbered in the order they are added, and each stream is labeled by its layer. The graph below is wrapped and annotated for reading, with paths shortened:
+
+```sh
+-ss 0.000000 -t 3.000000 -i media/video.mp4          # input 0, layer 0 video
+-ss 0.000000 -t 3.000000 -i media/audio.wav          # input 1, layer 1 audio
+-loop 1 -framerate 30 -t 3.000 -i media/image.png    # input 2, layer 2 image
+-loop 1 -framerate 30 -t 3.000 -i .text/out.mp4/3.png  # input 3, layer 3 text
+```
+
+```text
+color=c=#000000:s=640x360:r=30:d=3[canvas];                             canvas
+[0:v]fps=30,setpts=PTS-STARTPTS+0/TB,scale=640:360[v0];                 layer 0 picture
+[canvas][v0]overlay=x=0:y=0:eof_action=pass[over0];                     stack on the canvas
+[1:a]aformat=sample_rates=48000:channel_layouts=stereo,
+     afade=t=in:st=0:d=0.2,afade=t=out:st=2.5:d=0.5,
+     adelay=delays=0:all=1[a1];                                          layer 1 sound
+[2:v]scale=160:90,setpts=PTS-STARTPTS+0/TB[v2];                         layer 2 picture
+[over0][v2]overlay=x=420:y=240:eof_action=pass[over2];                  stack on the result so far
+[3:v]setpts=PTS-STARTPTS+0/TB[v3];                                      layer 3 picture
+[over2][v3]overlay=x=420:y=259:eof_action=pass[over3];                  stack on top
+[over3]format=yuv420p[vout];                                            output picture
+[a1]amix=inputs=1:normalize=0:duration=longest,apad,atrim=0:3[aout]     output sound
+```
+
+The video layer is muted, so it adds no sound. `eof_action=pass` is what lets lower layers show through after a stream ends. The text sits at `y=259` rather than its box's `260` because the 2 px outline pads the PNG by 1 px. Then the video output encodes both streams:
+
+```sh
+-map [vout] -c:v libx264 -preset medium -crf 20 -r 30 -t 3 -map [aout] -c:a aac -b:a 192k -movflags +faststart out.mp4
+```
+
 ## Stills
 
 A project whose `output` is a still renders the same graph over a single frame. The output range becomes one frame long starting at the still's time, no layer contributes sound, and ffmpeg writes one image file instead of encoding a video. A thumbnail therefore only decodes each source around its time, however long the source is.
+
+For the synthetic thumbnail at 1.5 seconds, the video input reads one frame's worth, starting a tenth of a frame before frame 45 so ffmpeg's seek lands on it, and the output writes a single PNG:
+
+```sh
+-ss 1.496667 -t 0.033333 -i media/video.mp4
+-map [vout] -frames:v 1 -update 1 thumbnail.png
+```
 
 ## Results on the rescene cover (2026-09-26)
 
