@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import type { TextLayer } from "./project.ts";
+import type { TextLayer } from "../project.ts";
 
 /**
  * Render a text layer to a transparent PNG with ImageMagick.

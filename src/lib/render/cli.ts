@@ -1,8 +1,8 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import type { Project } from "../project.ts";
 import { compile } from "./compile.ts";
-import type { Project } from "./project.ts";
 
 function main() {
   const [projectFile, outFile] = process.argv
