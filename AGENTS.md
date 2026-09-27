@@ -2,16 +2,13 @@
 
 ## Quick Reference
 
-| Command                            | When                                      |
-| ---------------------------------- | ----------------------------------------- |
-| `pnpm lint`                        | Format, Lint, Typecheck after any changes |
-| `pnpm render <project.json> <out>` | Render a project with ffmpeg              |
-| `pnpm setup-sample <sample>`       | Set up a sample project for iteration     |
+| Command     | When                                      |
+| ----------- | ----------------------------------------- |
+| `pnpm lint` | Format, Lint, Typecheck after any changes |
 
 ## Conventions
 
 - This application is desktop-only. Do not propose, evaluate, implement, or mention mobile or responsive behavior
-- Keep source media, images, and renders gitignored. Small synthetic samples can be committed with a generator that reproduces them
 - Commit messages: use Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`); add `!` for breaking changes
 - File names: kebab-case
 - Do not add compatibility paths or handling for edge cases that do not occur in practice
