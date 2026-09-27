@@ -107,12 +107,12 @@ Each folder contains roughly:
 
 Every project has one horizontal 1920x1080 profile and four sequences following the duplication chain. The names vary per cover, for example `main`, `main - thumbnail`, `vertical`, `vertical - thumbnail`.
 
-| Sequence | Layers | Render |
-| --- | --- | --- |
-| Horizontal video | mix, camera, score | MP4 between `start` and `end` guides |
-| Horizontal thumbnail | adds MV thumbnail, dim overlay, title | one JPEG frame at the `thumbnail` guide, with a `thumbnail - end` guide one frame later as the range end |
-| Vertical video | re-laid-out camera, score, MV thumbnail inside the 608x1080 center window, plus a guide layer | MP4 between `shorts - start` and `shorts - end`, with the mix trimmed to that range and faded in and out |
-| Vertical thumbnail | adds dim overlay and a smaller title | one JPEG frame at `shorts - thumbnail` |
+| Sequence             | Layers                                                                                        | Render                                                                                                   |
+| -------------------- | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Horizontal video     | mix, camera, score                                                                            | MP4 between `start` and `end` guides                                                                     |
+| Horizontal thumbnail | adds MV thumbnail, dim overlay, title                                                         | one JPEG frame at the `thumbnail` guide, with a `thumbnail - end` guide one frame later as the range end |
+| Vertical video       | re-laid-out camera, score, MV thumbnail inside the 608x1080 center window, plus a guide layer | MP4 between `shorts - start` and `shorts - end`, with the mix trimmed to that range and faded in and out |
+| Vertical thumbnail   | adds dim overlay and a smaller title                                                          | one JPEG frame at `shorts - thumbnail`                                                                   |
 
 Track states confirm the sync routine. Camera audio and screencast audio stay in the timeline but are disabled (`hide=both`), and only the mix track plays. Guide layers are either a title clip with translucent green side rectangles or the `vertical-guide-608x1080.png` image, which is green outside the 608x1080 center window. The guide is disabled in most sequences, and where it stays enabled it only covers the area that the vertical crop removes.
 
@@ -120,13 +120,13 @@ Track states confirm the sync routine. Camera audio and screencast audio stay in
 
 All transforms are still single static `qtblend` rects.
 
-| Layer | Horizontal video | Horizontal thumbnail | Vertical (inside x 656..1264) |
-| --- | --- | --- | --- |
-| Camera | full frame, sometimes shifted or zoomed 1.05x, for example `-98 -10 2016 1134`, `-113 0 1920 1080` | shifted left further to make room, for example `-247 -1 2016 1134` | box about `591..646 208..335 1056 594`, so the 608 window shows the middle of the camera frame |
-| Score | bottom-right box `769..790 473..491 1152 648` | top-right box about `784 -54 1152 648` | top, box `648..656 -168..60 608..625 342..648` |
-| MV thumbnail | none | bottom-right quarter `959..967 537..541 960 540` | bottom, box `655 686..740 608 349..378` |
-| Dim | none | full-frame title with black background at alpha 99 to 130, named `Shade` or `Overlay` | same |
-| Title | none | Noto Sans KR 160px to 210px, white with 10px black outline | the horizontal title clip scaled into the window, for example `528 297 864 486`, or a separate 90px title |
+| Layer        | Horizontal video                                                                                   | Horizontal thumbnail                                                                  | Vertical (inside x 656..1264)                                                                             |
+| ------------ | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Camera       | full frame, sometimes shifted or zoomed 1.05x, for example `-98 -10 2016 1134`, `-113 0 1920 1080` | shifted left further to make room, for example `-247 -1 2016 1134`                    | box about `591..646 208..335 1056 594`, so the 608 window shows the middle of the camera frame            |
+| Score        | bottom-right box `769..790 473..491 1152 648`                                                      | top-right box about `784 -54 1152 648`                                                | top, box `648..656 -168..60 608..625 342..648`                                                            |
+| MV thumbnail | none                                                                                               | bottom-right quarter `959..967 537..541 960 540`                                      | bottom, box `655 686..740 608 349..378`                                                                   |
+| Dim          | none                                                                                               | full-frame title with black background at alpha 99 to 130, named `Shade` or `Overlay` | same                                                                                                      |
+| Title        | none                                                                                               | Noto Sans KR 160px to 210px, white with 10px black outline                            | the horizontal title clip scaled into the window, for example `528 297 864 486`, or a separate 90px title |
 
 Screen recordings are now window-region captures (834x418 to 1394x652), so the score box fits a small notation-only frame instead of a scaled-down full screen. This is close to what the toy-midi score video produces.
 
@@ -162,13 +162,13 @@ Duplication already happens at the file level, plus an in-timeline copy for the 
 
 All transforms are a single static `qtblend` rect with no keyframes, and there are no cuts or transitions. With `distort=0`, a rect is a box that the source is fitted into while keeping its aspect ratio, which the shorts thumbnail confirms (a landscape source in a 1080x1920 box renders as a 1080-wide band).
 
-| Layer | Source | Horizontal | Shorts |
-| --- | --- | --- | --- |
-| Camera | phone `VID_*-30fps.mp4` pre-transcode or OBS `.mkv`, audio track hidden | full frame zoomed 1.05x to 1.1x, for example `-84 -103 2112 1188` | fills the middle band, box about `-34 -936 2052 3648` |
-| Score | MuseScore screencast 1920x1080, pre-transcoded to 26 or 28 fps | bottom-right at 0.55x to 0.6x, for example `780 436 1152 648`, slightly overhanging the frame edges | top band at frame width, box about `0 -660 1080 1920` |
-| Mix | Ardour `export/session.wav` | source in at 15s to 25s, timeline offset 0.07s to 0.4s, one cover has a 1.2s fade-out | only within the shorts range, with a 0.3s to 0.7s fade-in and 0.6s fade-out |
-| MV thumbnail | `maxresdefault.jpg` | thumbnail only, bottom-right quarter `960 540 960 540`, and the score moves to top-right at about `876 -33 1056 594` | bottom band during the whole short, box about `0 668 1080 1920` |
-| Title | Kdenlive title clip | thumbnail only, Noto Sans CJK HK Black 170px to 220px, white with a 10px black outline, full-frame black background at alpha 70 to 100 that dims everything below | same style at 120px to 220px, shown for the whole short or only around the thumbnail |
+| Layer        | Source                                                                  | Horizontal                                                                                                                                                        | Shorts                                                                               |
+| ------------ | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Camera       | phone `VID_*-30fps.mp4` pre-transcode or OBS `.mkv`, audio track hidden | full frame zoomed 1.05x to 1.1x, for example `-84 -103 2112 1188`                                                                                                 | fills the middle band, box about `-34 -936 2052 3648`                                |
+| Score        | MuseScore screencast 1920x1080, pre-transcoded to 26 or 28 fps          | bottom-right at 0.55x to 0.6x, for example `780 436 1152 648`, slightly overhanging the frame edges                                                               | top band at frame width, box about `0 -660 1080 1920`                                |
+| Mix          | Ardour `export/session.wav`                                             | source in at 15s to 25s, timeline offset 0.07s to 0.4s, one cover has a 1.2s fade-out                                                                             | only within the shorts range, with a 0.3s to 0.7s fade-in and 0.6s fade-out          |
+| MV thumbnail | `maxresdefault.jpg`                                                     | thumbnail only, bottom-right quarter `960 540 960 540`, and the score moves to top-right at about `876 -33 1056 594`                                              | bottom band during the whole short, box about `0 668 1080 1920`                      |
+| Title        | Kdenlive title clip                                                     | thumbnail only, Noto Sans CJK HK Black 170px to 220px, white with a 10px black outline, full-frame black background at alpha 70 to 100 that dims everything below | same style at 120px to 220px, shown for the whole short or only around the thumbnail |
 
 Per-cover summary for billlie-snowy-night (horizontal):
 

@@ -16,11 +16,22 @@ pnpm install
 uv sync            # Python analysis tools under tools/
 pnpm lint-check    # format, lint, and typecheck
 
-pnpm dev covers/2026-06-27-rescene-love-attack/horizontal-video.json   # edit a project
+pnpm dev .local/projects/synthetic/project.json   # edit a prepared sample project
 pnpm render <project.json> <output.(mp4|png)>                          # render a project
 ```
 
 Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The editor and the render CLI run on Node 24 directly.
+
+## Samples
+
+```sh
+pnpm setup-sample samples/synthetic
+pnpm setup-sample ../toy-compositor/.local/samples/rescene.zip
+
+pnpm render .local/projects/synthetic/project.json .local/projects/synthetic/out/preview.mp4
+```
+
+See [samples/README.md](samples/README.md) for setting up the synthetic sample or a local project bundle for iteration.
 
 ## Layout
 
@@ -28,17 +39,13 @@ Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The editor and the 
 src/          editor and renderer
 docs/         design drafts, e.g. the project format
 research/     findings from past covers and finished experiments
-covers/       one folder per real cover used for testing
-  <date>-<name>/
-    *.json      project files (canvas and layers), one per deliverable
-    fetch.sh    copies source media from my archive drive into media/
-    media/      source media, gitignored
-    out/        renders, gitignored
-tools/        analysis scripts for comparing renders
+samples/      committed sample sources
+.local/       local sample sources and editable projects, gitignored
+tools/        analysis scripts and sample setup/generation
 ```
 
 ## Conventions
 
-- Media, images, and renders are never committed. Raw data lives in gitignored folders, and a `fetch.sh` next to it reproduces it from my archive drive.
+- Source media and renders stay gitignored. Small synthetic samples are committed with a generator that reproduces them.
 - Project files reference media by paths relative to the project file.
 - An experiment that works moves into `src/`. One that does not keeps its findings under `research/<slug>/` and links to its code by commit, so dead code does not stay in the tree.
