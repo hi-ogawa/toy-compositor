@@ -1,5 +1,7 @@
 // Render a text layer to a transparent PNG with ImageMagick.
 // The PNG is box.width wide, so the compiler places it at box.x, box.y.
+// label: scales the text to fill a -size width and ignores -pointsize, so the text
+// is drawn at its natural size and then extended to the box width by alignment.
 
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -20,8 +22,6 @@ export function renderText({
   const common = [
     "-background",
     "none",
-    "-size",
-    `${layer.box.width}x`,
     "-gravity",
     gravity,
     "-font",
@@ -56,6 +56,10 @@ export function renderText({
     `label:${layer.text}`,
     ")",
     ...(layer.outline ? ["-gravity", "center", "-composite"] : []),
+    "-gravity",
+    gravity,
+    "-extent",
+    `${layer.box.width}x%[h]`,
     file,
   ]);
 }
