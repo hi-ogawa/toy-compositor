@@ -3,6 +3,7 @@ import { matchKeyboardEvent } from "../lib/keyboard";
 import { EditorRuntime } from "../lib/runtime";
 import { EditorHeader } from "./editor-header";
 import { Inspector } from "./inspector";
+import { MediaPreview } from "./media-preview";
 import { cn } from "./ui/utils";
 import { useEditorProject } from "./use-editor-project";
 import { useWindowEvent } from "./use-window-event";
@@ -39,6 +40,8 @@ export function Editor() {
 
   const { selection } = state;
   const { layers, canvas } = state.project;
+  const previewLayer =
+    selection?.type === "layer" ? layers[selection.index] : undefined;
   return (
     <div className="flex h-screen flex-col">
       <EditorHeader
@@ -80,7 +83,16 @@ export function Editor() {
               </SelectableRow>
             ))}
         </nav>
-        <main className="min-w-0 flex-1" />
+        <main className="min-w-0 flex-1">
+          <MediaPreview
+            key={
+              previewLayer && "src" in previewLayer
+                ? `${previewLayer.type}:${previewLayer.src}`
+                : "none"
+            }
+            layer={previewLayer}
+          />
+        </main>
         <aside className="w-72 shrink-0 overflow-y-auto border-l border-border">
           <Inspector
             runtime={runtime}
