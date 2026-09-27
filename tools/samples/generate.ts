@@ -54,7 +54,7 @@ async function main() {
     "-f",
     "lavfi",
     "-i",
-    "color=c=blue:s=160x90",
+    "color=c=0x303030:s=160x90,drawbox=color=yellow:thickness=4",
     "-frames:v",
     "1",
     "media/image.png",

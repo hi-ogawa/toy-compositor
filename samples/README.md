@@ -20,7 +20,7 @@ Setup preserves every file in the sample, including additional project variants.
 [synthetic/project.json](synthetic/project.json) renders three seconds at 640×360 and 30 fps:
 
 - A moving 320×180 ffmpeg test pattern is scaled to fill the canvas. Its embedded 440 Hz audio is muted.
-- A plain blue 160×90 image overlays the video at `(420, 240)` throughout the clip.
+- A dark gray 160×90 image with a yellow border overlays the video at `(420, 240)` throughout the clip.
 - A centered white “Synthetic sample” text layer with a black outline sits on the image throughout the clip.
 - A separate 660 Hz WAV tone plays throughout, fading in over the first 0.2 seconds and fading out over the last 0.5 seconds.
 
