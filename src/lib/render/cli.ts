@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { mkdir, readFile } from "node:fs/promises";
+import fs from "node:fs";
 import path from "node:path";
 import type { Project } from "../project.ts";
 import { compile } from "./compile.ts";
@@ -14,7 +14,7 @@ async function main() {
     console.error("Usage: pnpm render <project.json> <output> [--dry-run]");
     process.exit(1);
   }
-  const project: Project = JSON.parse(await readFile(projectFile, "utf-8"));
+  const project: Project = JSON.parse(fs.readFileSync(projectFile, "utf-8"));
   const projectDir = path.dirname(path.resolve(projectFile));
   const resolved = await resolveProject({
     project,
@@ -31,7 +31,7 @@ async function main() {
   if (process.argv.includes("--dry-run")) {
     return;
   }
-  await mkdir(path.dirname(path.resolve(outFile)), { recursive: true });
+  fs.mkdirSync(path.dirname(path.resolve(outFile)), { recursive: true });
   const t0 = performance.now();
   const ffmpeg = spawn("ffmpeg", args, { stdio: "inherit" });
   const [code] = await once(ffmpeg, "close");

@@ -1,4 +1,4 @@
-import { mkdir } from "node:fs/promises";
+import fs from "node:fs";
 import path from "node:path";
 import { execFileAsync } from "../../utils/exec.ts";
 import type { TextLayer } from "../project.ts";
@@ -14,7 +14,7 @@ export async function renderText({
   layer: TextLayer;
   file: string;
 }) {
-  await mkdir(path.dirname(file), { recursive: true });
+  fs.mkdirSync(path.dirname(file), { recursive: true });
   const gravity = { left: "west", center: "center", right: "east" }[
     layer.align ?? "left"
   ];
