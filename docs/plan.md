@@ -56,7 +56,7 @@ It has four parts:
 
 ## MVP
 
-The MVP is done when one new cover's deliverables are produced without opening Kdenlive. The rescene cover in [covers/](../covers/) does not count, because its values were transcribed from a finished Kdenlive project.
+The MVP is done when one new cover's deliverables are produced without opening Kdenlive. The [RESCENE reference sample](../samples/README.md#local-rescene-reference) does not count, because its values were transcribed from a finished Kdenlive project.
 
 - [ ] Project format covering everything in the composition model ([draft](project-format.md))
 - [x] CLI render of a video over a time range ([compiler](compiler.md))
