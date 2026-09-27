@@ -16,6 +16,37 @@ A render has three steps. First, it gathers what the project file cannot say abo
 
 Compiling reads no files and starts no processes, so it is plain data in and arguments out. All the I/O sits at the two ends. `--dry-run` stops before running ffmpeg, but it still probes the sources and writes the text PNGs, because the printed command refers to them.
 
+## Read an ffmpeg Command
+
+The compiled command has three parts: inputs, one filter graph, and an output. The rest of this doc uses the names below.
+
+![An ffmpeg command with input options and inputs on the left, a filter graph of labeled chains in the middle, and maps and output options on the right](images/ffmpeg-command.svg)
+
+- **Input**: a file opened with `-i`. Inputs are numbered from 0 in the order they appear.
+- **Input options**: options written before an `-i`, such as `-ss` (seek), `-t` (duration), or `-loop 1`. They apply only to that input and decide which part of the file is read.
+- **Stream**: a sequence of video frames or audio samples. `[0:v]` is input 0's video, and `[1:a]` is input 1's audio.
+- **Filter**: one operation on a stream, such as `scale=640:360` or `overlay=x=420:y=240`.
+- **Chain**: filters joined by commas. It reads the labeled streams on its left and writes a new labeled stream on its right, as in `[0:v]fps=30,scale=640:360[v0]`.
+- **Label**: a bracketed name that connects chains. `[k:v]` and `[k:a]` come from input `k`, and any other name is made by a chain.
+- **Source filter**: a filter that makes a stream without any input, such as `color=` for a solid fill.
+- **Filter graph**: every chain, separated by semicolons and passed once with `-filter_complex`.
+- **Output**: `-map [label]` picks streams from the graph, and output options such as `-c:v libx264` apply to the output file that follows them.
+
+The project maps onto those parts like this:
+
+| Project             | ffmpeg                                                                                                               |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Canvas              | A `color=` source filter at the start of the picture chain                                                           |
+| Video layer         | One input and chain for its picture, and, when it has sound, a second input of the same file and chain for the sound |
+| Image or text layer | One input, the image or the text PNG, and a chain                                                                    |
+| Color layer         | A chain that starts with a `color=` source filter, with no input                                                     |
+| Audio layer         | One input and a chain                                                                                                |
+| Layer order         | The order of the `overlay` filters                                                                                   |
+| Output range        | Each input's `-ss` and `-t`, each chain's `setpts` offset, and the canvas duration                                   |
+| Video or still      | The output options                                                                                                   |
+
+Layers and inputs are not one to one. A color layer has no input, a video layer with sound has two, and a layer outside the output range has none. Only the filter graph connects everything.
+
 ## Cut Each Layer to the Output
 
 Every layer is compiled on its own, into at most one picture stream and one sound stream. A layer does not need to know which other layers exist.
@@ -53,15 +84,15 @@ Sound is normalized to 48 kHz stereo, faded in and out when the layer asks for i
 
 The ffmpeg building blocks behind the table:
 
-| Idea                                   | ffmpeg                                                                                                          |
-| -------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Read only the visible part of a source | input options `-ss <source time> -t <duration>`                                                                 |
-| Repeat an image or text PNG            | input options `-loop 1 -framerate <fps> -t <duration>`                                                          |
-| Match the canvas frame rate            | `fps=<fps>`                                                                                                     |
-| Crop, then fit to the box              | `crop=iw*<w>:ih*<h>:iw*<left>:ih*<top>`, `scale=<width>:<height>`                                               |
-| Generate a solid fill                  | `color=c=<color>@<opacity>:s=<width>x<height>:r=<fps>:d=<duration>`, `format=rgba`                              |
-| Place on the output timeline           | `setpts=PTS-STARTPTS+<offset>/TB`                                                                               |
-| Normalize, fade, and place sound       | `aformat=sample_rates=48000:channel_layouts=stereo`, `afade=t=in` and `afade=t=out`, `adelay=delays=<ms>:all=1` |
+| Idea                                      | ffmpeg                                                                                                          |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Read only the visible part of a source    | input options `-ss <source time> -t <duration>`                                                                 |
+| Repeat an image or text PNG               | input options `-loop 1 -framerate <fps> -t <duration>`                                                          |
+| Match the canvas frame rate               | `fps=<fps>`                                                                                                     |
+| Crop, then fit to the box                 | `crop=iw*<w>:ih*<h>:iw*<left>:ih*<top>`, `scale=<width>:<height>`                                               |
+| Generate a solid fill, as a source filter | `color=c=<color>@<opacity>:s=<width>x<height>:r=<fps>:d=<duration>`, `format=rgba`                              |
+| Place on the output timeline              | `setpts=PTS-STARTPTS+<offset>/TB`                                                                               |
+| Normalize, fade, and place sound          | `aformat=sample_rates=48000:channel_layouts=stereo`, `afade=t=in` and `afade=t=out`, `adelay=delays=<ms>:all=1` |
 
 ## Stack Pictures, Mix Sounds
 
@@ -71,7 +102,7 @@ Once every layer has its streams, one pass joins them into a single filter graph
 
 This pass is the only place that knows how streams are numbered and connected. The per-layer step only says what a layer contributes, which keeps each layer type readable on its own. To see the actual graph for a project, run the render with `--dry-run`.
 
-For the synthetic sample, the inputs are numbered in the order they are added, and each stream is labeled by its layer. The graph below is wrapped and annotated for reading, with paths shortened:
+For the synthetic sample, the inputs are numbered in the order they are added, and each chain's output label uses its layer's index. The graph below is wrapped and annotated for reading, with paths shortened:
 
 ```sh
 -ss 0.000000 -t 3.000000 -i media/video.mp4          # input 0, layer 0 video
