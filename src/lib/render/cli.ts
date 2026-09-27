@@ -1,5 +1,3 @@
-// Usage: node src/lib/render/cli.ts <project.json> <output.(mp4|png|jpg)> [--dry-run]
-
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { mkdir, readFile } from "node:fs/promises";

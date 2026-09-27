@@ -1,7 +1,3 @@
-// Resolve the source facts and derived assets a project needs before compiling.
-// Each video and image source is probed once, and each text layer is rendered
-// to a PNG, so compile() can build ffmpeg arguments without doing any I/O.
-
 import { execFile } from "node:child_process";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -11,9 +7,9 @@ import { renderText } from "./text.ts";
 const execFileAsync = promisify(execFile);
 
 export type Resolved = {
-  // Keyed by layer src.
+  /** Keyed by layer src. */
   media: Map<string, Media>;
-  // Text PNG files keyed by layer index.
+  /** Text PNG files keyed by layer index. */
   texts: Map<number, string>;
 };
 
@@ -25,6 +21,11 @@ export type Media = {
   hasAudio: boolean;
 };
 
+/**
+ * Resolve the source facts and derived assets a project needs before compiling.
+ * Each video and image source is probed once, and each text layer is rendered
+ * to a PNG, so compile() can build ffmpeg arguments without doing any I/O.
+ */
 export async function resolveProject({
   project,
   projectDir,
