@@ -67,3 +67,59 @@ test("preview synthetic sources and save an inspector edit", async ({
   await expect(save).toHaveAttribute("data-status", "saved");
   expect(errors).toEqual([]);
 });
+
+test("resize and collapse the source monitor without changing the project", async ({
+  page,
+  editor,
+}) => {
+  // Open a video source and seek independently of project timing.
+  await page.goto(editor.url);
+  await page
+    .getByTestId("editor-layer-list")
+    .getByRole("button", { name: "video video", exact: true })
+    .click();
+  const source = page.locator("#source-monitor video");
+  await expect
+    .poll(() => source.evaluate((video: HTMLVideoElement) => video.readyState))
+    .toBeGreaterThanOrEqual(2);
+  await source.evaluate((video: HTMLVideoElement) => {
+    video.currentTime = 1;
+  });
+  await expect
+    .poll(() => source.evaluate((video: HTMLVideoElement) => video.currentTime))
+    .toBeCloseTo(1);
+
+  // Drag the split and nudge it with the keyboard to resize the source panel.
+  const split = page.getByRole("separator", {
+    name: "Source and composition split",
+  });
+  const bounds = (await split.boundingBox())!;
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + 20);
+  await page.mouse.down();
+  await page.mouse.move(bounds.x + 100, bounds.y + 20);
+  await page.mouse.up();
+  await expect
+    .poll(async () => Number(await split.getAttribute("aria-valuenow")))
+    .toBeGreaterThan(35);
+  await split.press("Home");
+  await split.press("ArrowRight");
+  await expect(split).toHaveAttribute("aria-valuenow", "22");
+
+  // Collapse and reopen Source while preserving the split, position, and save status.
+  const toggle = page.getByRole("button", { name: "Hide source", exact: true });
+  const before = await toggle.boundingBox();
+  await toggle.click();
+  await expect(source).toBeHidden();
+  const show = page.getByRole("button", { name: "Show source", exact: true });
+  expect((await show.boundingBox())!.x).toBe(before!.x);
+  await show.click();
+  await expect(split).toHaveAttribute("aria-valuenow", "22");
+  await expect(source).toBeVisible();
+  await expect
+    .poll(() => source.evaluate((video: HTMLVideoElement) => video.currentTime))
+    .toBeCloseTo(1);
+  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
+});

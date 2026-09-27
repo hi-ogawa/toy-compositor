@@ -3,7 +3,7 @@ import { matchKeyboardEvent } from "../lib/keyboard";
 import { EditorRuntime } from "../lib/runtime";
 import { EditorHeader } from "./editor-header";
 import { Inspector } from "./inspector";
-import { MediaPreview } from "./media-preview";
+import { PreviewMonitors } from "./preview-monitors";
 import { cn } from "./ui/utils";
 import { useEditorProject } from "./use-editor-project";
 import { useWindowEvent } from "./use-window-event";
@@ -50,50 +50,53 @@ export function Editor() {
         onSave={() => project.save()}
       />
       <div className="flex min-h-0 flex-1">
-        <nav
-          className="flex w-56 shrink-0 flex-col overflow-y-auto border-r border-border py-2 text-sm"
-          data-testid="editor-layer-list"
-        >
-          <SelectableRow
-            selected={selection?.type === "output"}
-            onClick={() => runtime.select({ type: "output" })}
-          >
-            <span>Output</span>
-            <span className="text-xs text-muted-foreground">
-              {canvas.width}x{canvas.height} {canvas.fps}fps
-            </span>
-          </SelectableRow>
-          <div className="mx-3 my-2 border-t border-border" />
-          {/* Top layer first, like tracks in a timeline. */}
-          {layers
-            .map((layer, index) => ({ layer, index }))
-            .reverse()
-            .map(({ layer, index }) => (
-              <SelectableRow
-                key={index}
-                selected={
-                  selection?.type === "layer" && selection.index === index
-                }
-                onClick={() => runtime.select({ type: "layer", index })}
-              >
-                <span>{layer.name ?? layer.type}</span>
-                <span className="text-xs text-muted-foreground">
-                  {layer.type}
-                </span>
-              </SelectableRow>
-            ))}
-        </nav>
-        <main className="min-w-0 flex-1">
-          <MediaPreview
-            key={
-              previewLayer && "src" in previewLayer
-                ? `${previewLayer.type}:${previewLayer.src}`
-                : "none"
-            }
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <PreviewMonitors
             layer={previewLayer}
+            composition={
+              <div className="flex min-h-0 flex-1 items-center justify-center rounded bg-black text-sm text-muted-foreground">
+                No composition preview yet.
+              </div>
+            }
           />
+          <nav
+            className="flex h-56 shrink-0 flex-col overflow-y-auto border-t border-border py-2 text-sm"
+            data-testid="editor-layer-list"
+          >
+            <SelectableRow
+              selected={selection?.type === "output"}
+              onClick={() => runtime.select({ type: "output" })}
+            >
+              <span>Output</span>
+              <span className="text-xs text-muted-foreground">
+                {canvas.width}x{canvas.height} {canvas.fps}fps
+              </span>
+            </SelectableRow>
+            <div className="mx-3 my-2 border-t border-border" />
+            {/* Top layer first, like tracks in a timeline. */}
+            {layers
+              .map((layer, index) => ({ layer, index }))
+              .reverse()
+              .map(({ layer, index }) => (
+                <SelectableRow
+                  key={index}
+                  selected={
+                    selection?.type === "layer" && selection.index === index
+                  }
+                  onClick={() => runtime.select({ type: "layer", index })}
+                >
+                  <span>{layer.name ?? layer.type}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {layer.type}
+                  </span>
+                </SelectableRow>
+              ))}
+          </nav>
         </main>
-        <aside className="w-72 shrink-0 overflow-y-auto border-l border-border">
+        <aside
+          className="w-72 shrink-0 overflow-y-auto border-l border-border"
+          aria-label="Inspector"
+        >
           <Inspector
             runtime={runtime}
             project={state.project}

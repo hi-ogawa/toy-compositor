@@ -1,7 +1,21 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Layer } from "../lib/project";
 
-export function MediaPreview({ layer }: { layer: Layer | undefined }) {
+export function MediaPreview({
+  layer,
+  visible,
+}: {
+  layer?: Layer;
+  visible: boolean;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  useEffect(() => {
+    if (!visible) {
+      videoRef.current?.pause();
+      audioRef.current?.pause();
+    }
+  }, [visible]);
   const [failed, setFailed] = useState(false);
   if (!layer || !("src" in layer)) {
     return (
@@ -13,9 +27,9 @@ export function MediaPreview({ layer }: { layer: Layer | undefined }) {
   const src = `/api/media/${layer.src.split("/").map(encodeURIComponent).join("/")}`;
   const onError = () => setFailed(true);
   return (
-    <section className="flex h-full min-h-0 flex-col gap-3 p-4">
+    <section className="flex h-full min-h-0 flex-col gap-2">
       <div className="text-sm">
-        <h2 className="font-medium">Source media</h2>
+        <h2 className="font-medium">Source</h2>
         <p className="break-all text-muted-foreground">{layer.src}</p>
         <p className="text-muted-foreground">
           Full source file, independent of project timing and layout.
@@ -30,16 +44,18 @@ export function MediaPreview({ layer }: { layer: Layer | undefined }) {
       <div className="flex min-h-0 flex-1 items-center justify-center">
         {layer.type === "video" && (
           <video
+            ref={videoRef}
             src={src}
             controls
             playsInline
             preload="metadata"
             onError={onError}
-            className="max-h-full w-full bg-black"
+            className="max-h-full max-w-full bg-black"
           />
         )}
         {layer.type === "audio" && (
           <audio
+            ref={audioRef}
             src={src}
             controls
             preload="metadata"
