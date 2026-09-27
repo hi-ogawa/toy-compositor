@@ -19,28 +19,17 @@ export const test = base.extend<{
     let output = "";
     const exited = once(server, "exit");
     try {
-      const url = await new Promise<string>((resolve, reject) => {
-        const timeout = setTimeout(
-          () => reject(new Error(output || "Editor server startup timed out")),
-          15_000,
-        );
-        const finish = (callback: () => void) => {
-          clearTimeout(timeout);
-          callback();
-        };
-        server.stdout.on("data", (chunk: Buffer) => {
-          output += chunk.toString();
-          const match = output.match(/http:\/\/localhost:\d+\//);
-          if (match) {
-            finish(() => resolve(match[0]));
-          }
-        });
-        server.stderr.on("data", (chunk: Buffer) => {
-          output += chunk.toString();
-        });
-        server.once("error", (error) => finish(() => reject(error)));
-        server.once("exit", () => finish(() => reject(new Error(output))));
+      server.stdout.on("data", (chunk: Buffer) => {
+        output += chunk.toString();
       });
+      server.stderr.on("data", (chunk: Buffer) => {
+        output += chunk.toString();
+      });
+      // Use Playwright's default assertion timeout for server startup.
+      await expect
+        .poll(() => output.match(/http:\/\/localhost:\d+\//)?.[0])
+        .toBeDefined();
+      const url = output.match(/http:\/\/localhost:\d+\//)![0];
       await use({ url, projectFile });
     } finally {
       if (server.exitCode === null) {
@@ -56,6 +45,7 @@ export const test = base.extend<{
 });
 
 export async function checkPlayback({ media }: { media: Locator }) {
+  // Load the selected source and confirm native controls are available.
   await expect(media).toBeVisible();
   await expect(media).toHaveAttribute("controls", "");
   await expect
@@ -63,12 +53,14 @@ export async function checkPlayback({ media }: { media: Locator }) {
       media.evaluate((element: HTMLMediaElement) => element.readyState),
     )
     .toBeGreaterThanOrEqual(2);
+  // Play the source and wait for its playback position to advance.
   await media.evaluate((element: HTMLMediaElement) => element.play());
   await expect
     .poll(() =>
       media.evaluate((element: HTMLMediaElement) => element.currentTime),
     )
     .toBeGreaterThan(0.2);
+  // Pause and seek to one second, then wait for the new frame or sample.
   await media.evaluate((element: HTMLMediaElement) => {
     element.pause();
     element.currentTime = 1;

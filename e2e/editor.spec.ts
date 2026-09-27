@@ -8,6 +8,7 @@ test("preview synthetic sources and save an inspector edit", async ({
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  // Open the synthetic project and confirm it starts saved.
   await page.goto(editor.url);
   await expect(page.getByTestId("editor-project-file")).toContainText(
     "project.json",
@@ -16,15 +17,18 @@ test("preview synthetic sources and save an inspector edit", async ({
   await expect(save).toHaveAttribute("data-status", "saved");
   const layers = page.getByTestId("editor-layer-list");
 
+  // Select video and check that its source plays, pauses, and seeks.
   await layers
     .getByRole("button", { name: "video video", exact: true })
     .click();
   await checkPlayback({ media: page.locator("main video") });
+  // Switch to audio and check playback after the video player is removed.
   await layers
     .getByRole("button", { name: "audio audio", exact: true })
     .click();
   await expect(page.locator("main video")).toHaveCount(0);
   await checkPlayback({ media: page.locator("main audio") });
+  // Select the image and confirm it loads without making the project dirty.
   await layers
     .getByRole("button", { name: "image image", exact: true })
     .click();
@@ -38,6 +42,7 @@ test("preview synthetic sources and save an inspector edit", async ({
     .toBeGreaterThan(0);
   await expect(save).toHaveAttribute("data-status", "saved");
 
+  // Edit the image position and save the change to the project file.
   const x = page
     .getByTestId("inspector")
     .getByRole("textbox", { name: "x", exact: true });
@@ -49,6 +54,7 @@ test("preview synthetic sources and save an inspector edit", async ({
   const saved = JSON.parse(await readFile(editor.projectFile, "utf-8"));
   expect(saved.layers[2].box.x).toBe(400);
 
+  // Reload the project and confirm the saved position survives.
   await page.reload();
   await layers
     .getByRole("button", { name: "image image", exact: true })
