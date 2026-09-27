@@ -23,49 +23,34 @@ Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The render CLI runs
 
 ## Local demo
 
-Keep a self-contained RESCENE bundle in the main worktree, with the four project JSON files and their media. Build it once from the existing cover assets:
+Sample ZIPs contain a `project.json` entry point and its media. The small synthetic sample is committed, and real-cover samples stay local:
 
 ```sh
-# In the main worktree:
-cd covers/2026-06-27-rescene-love-attack
-zip -1 media/rescene-demo.zip *.json media/camera.mp4 media/score.mp4 media/mix.wav media/mv-thumbnail.jpg
-```
-
-The ZIP stays gitignored alongside the original media. If the assets are missing, run the cover's `fetch.sh` first.
-
-In any worktree, unpack the bundle into a gitignored directory for local iteration:
-
-```sh
-pnpm demo:setup
+pnpm demo:setup synthetic.zip
+pnpm demo:setup rescene.zip       # when samples/rescene.zip exists in main
 
 # On a branch with the editor:
-pnpm dev .local/demo/rescene/horizontal-video.json
+pnpm dev .local/samples/synthetic/project.json
 
 # On main, try the renderer:
-pnpm render .local/demo/rescene/horizontal-thumbnail.json .local/demo/rescene/out/thumbnail.png
+pnpm render .local/samples/synthetic/project.json .local/samples/synthetic/out/preview.mp4
 ```
 
-`demo:setup` finds the main worktree through git and unpacks its bundle into `.local/demo/rescene/`. It needs `unzip`. Existing files are preserved on reruns, so saving or reopening the demo does not change the committed examples. The initial JSON comes from the bundle, independent of the current branch.
+Setup looks in this worktree's `samples/` first, then main's `samples/`, and unpacks into `.local/samples/<name>/`. It needs unzip. Existing files are preserved on reruns, so local edits do not change the bundled examples. See [samples/README.md](samples/README.md) for bundle preparation and the RESCENE reference. `pnpm demo:generate` reproduces the committed synthetic ZIP with ffmpeg and zip.
 
 ## Layout
 
 ```text
-src/
-  lib/        project format, layout math, and the ffmpeg compiler
-  lib/cli.ts  render CLI
+src/          editor and renderer
 docs/         design drafts, e.g. the project format
 research/     findings from past covers and finished experiments
-covers/       one folder per real cover used for testing
-  <date>-<name>/
-    *.json      project files (canvas and layers), one per deliverable
-    fetch.sh    copies source media from my archive drive into media/
-    media/      source media, gitignored
-    out/        renders, gitignored
-tools/        analysis scripts for comparing renders
+samples/      self-contained demo/test ZIPs, with real-cover bundles gitignored
+.local/       editable sample projects and extracted media, gitignored
+tools/        analysis scripts and sample setup/generation
 ```
 
 ## Conventions
 
-- Media, images, and renders are never committed. Raw data lives in gitignored folders, and a `fetch.sh` next to it reproduces it from my archive drive.
+- Source media and renders stay gitignored. Small synthetic sample ZIPs are committed with a generator that reproduces them.
 - Project files reference media by paths relative to the project file.
 - An experiment that works moves into `src/`. One that does not keeps its findings under `research/<slug>/` and links to its code by commit, so dead code does not stay in the tree.

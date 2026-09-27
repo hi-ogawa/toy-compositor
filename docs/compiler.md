@@ -3,13 +3,14 @@
 [src/lib/compile.ts](../src/lib/compile.ts) compiles a project file ([project-format.md](project-format.md)) into one ffmpeg command. The graph starts from a solid canvas, overlays each visual layer in order, and mixes the audio of audio layers and unmuted video layers. Text layers are rendered to PNG with ImageMagick first. The render CLI runs on Node 24 directly.
 
 ```sh
-pnpm render covers/2026-06-27-rescene-love-attack/horizontal-thumbnail.json covers/2026-06-27-rescene-love-attack/out/horizontal-thumbnail.png
+pnpm demo:setup synthetic.zip
+pnpm render .local/samples/synthetic/project.json .local/samples/synthetic/out/preview.mp4
 pnpm render <project.json> <output> --dry-run   # print the command only
 ```
 
 ## Results on the rescene cover (2026-09-26)
 
-These were measured on the prototype, before it moved into `src/lib`. All four deliverables of [covers/2026-06-27-rescene-love-attack](../covers/2026-06-27-rescene-love-attack/) render and match the Kdenlive outputs.
+These were measured on the prototype, before it moved into `src/lib`. All four deliverables of the [RESCENE reference sample](../samples/README.md#local-rescene-reference) render and match the Kdenlive outputs.
 
 | Deliverable             | Render time | Output            | Kdenlive output  |
 | ----------------------- | ----------- | ----------------- | ---------------- |

@@ -18,3 +18,7 @@ kdenlive/
 
 # editable demo projects and extracted media
 .local/
+
+# local sample bundles, with an explicit committed synthetic fixture
+samples/*.zip
+!samples/synthetic.zip
