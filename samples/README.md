@@ -24,7 +24,9 @@ Setup preserves every file in the sample, including additional project variants.
 - A centered white “Synthetic sample” text layer with a black outline sits on the image throughout the clip.
 - A separate 660 Hz WAV tone plays throughout, fading in over the first 0.2 seconds and fading out over the last 0.5 seconds.
 
-The sample exercises video scaling, image placement, text rendering with an outline, source audio muting, and audio fades. `pnpm test-e2e` renders this committed project, checks its output metadata, and checks that the entire video and audio can be decoded without errors.
+[synthetic/thumbnail.json](synthetic/thumbnail.json) is the same composition with a still output at 1.5 seconds, so it renders only frame 45 of the test pattern as a PNG.
+
+The sample exercises video scaling, image placement, text rendering with an outline, source audio muting, audio fades, and still output. `pnpm test-e2e` renders both committed projects, checks their output metadata, and checks that the outputs can be decoded without errors.
 
 ## Local RESCENE reference
 
