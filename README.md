@@ -23,10 +23,10 @@ Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The render CLI runs
 
 ## Samples
 
-Sample ZIPs contain a `project.json` entry point and its media. The small synthetic sample is committed, and real-cover samples stay local:
+Samples contain a `project.json` entry point and its media. The small synthetic sample is committed, and real-cover samples stay local:
 
 ```sh
-pnpm sample:setup synthetic.zip
+pnpm sample:setup synthetic
 pnpm sample:setup rescene.zip       # when samples/rescene.zip exists in main
 
 # On a branch with the editor:
@@ -36,7 +36,7 @@ pnpm dev .local/samples/synthetic/project.json
 pnpm render .local/samples/synthetic/project.json .local/samples/synthetic/out/preview.mp4
 ```
 
-Setup looks in this worktree's `samples/` first, then main's `samples/`, and unpacks into `.local/samples/<name>/`. It needs unzip. Existing files are preserved on reruns, so local edits do not change the bundled examples. See [samples/README.md](samples/README.md) for bundle preparation and the RESCENE reference. `pnpm sample:generate` reproduces the committed synthetic ZIP with ffmpeg and zip.
+Setup looks in this worktree's `samples/` first, then main's `samples/`, and copies a directory or unpacks a ZIP into `.local/samples/<name>/`. ZIPs need unzip. Existing files are preserved on reruns, so local edits do not change the source examples. See [samples/README.md](samples/README.md) for bundle preparation and the RESCENE reference. `pnpm sample:generate` reproduces the synthetic media with ffmpeg.
 
 ## Layout
 
@@ -44,13 +44,13 @@ Setup looks in this worktree's `samples/` first, then main's `samples/`, and unp
 src/          editor and renderer
 docs/         design drafts, e.g. the project format
 research/     findings from past covers and finished experiments
-samples/      self-contained sample ZIPs, with real-cover bundles gitignored
+samples/      sample projects, with real-cover bundles gitignored
 .local/       editable sample projects and extracted media, gitignored
 tools/        analysis scripts and sample setup/generation
 ```
 
 ## Conventions
 
-- Source media and renders stay gitignored. Small synthetic sample ZIPs are committed with a generator that reproduces them.
+- Source media and renders stay gitignored. Small synthetic samples are committed with a generator that reproduces them.
 - Project files reference media by paths relative to the project file.
 - An experiment that works moves into `src/`. One that does not keeps its findings under `research/<slug>/` and links to its code by commit, so dead code does not stay in the tree.

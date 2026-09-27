@@ -1,7 +1,7 @@
 # Agent Guide
 
 - Read README.md for the motivation and layout.
-- Keep source media, images, and renders gitignored. Small synthetic sample ZIPs can be committed with a generator that reproduces them.
+- Keep source media, images, and renders gitignored. Small synthetic samples can be committed with a generator that reproduces them.
 - Source media is large, so copy only what an experiment needs and never unzip archives wholesale. The archive of past covers is on the `e-1800` drive under `hiroshi/projects/`.
 - Record experiment findings under `research/<slug>/` and remove experiment code once it is superseded, linking to it by commit.
 - Run `pnpm lint` after code changes.

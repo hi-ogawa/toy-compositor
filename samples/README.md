@@ -1,19 +1,19 @@
-# Sample bundles
+# Samples
 
-Each ZIP is self-contained, with a `project.json` entry point, a `media/` directory, and optionally other project variants. Source paths are relative to the project file.
+Each sample directory or ZIP is self-contained, with a `project.json` entry point, a `media/` directory, and optionally other project variants. Source paths are relative to the project file.
 
-`synthetic.zip` is a small committed fixture with three seconds of H.264/AAC video, a separate WAV tone, and a PNG image. Reproduce it with `pnpm sample:generate`, which needs ffmpeg and zip. Generated loose files stay under `.local/` and are removed after packaging.
+`synthetic/` is a small committed fixture with reviewable project JSON, three seconds of H.264/AAC video, a separate WAV tone, and a PNG image. Regenerate its media with `pnpm sample:generate`, which needs ffmpeg.
 
-Other ZIPs are gitignored. Put a local bundle such as `rescene.zip` in the main worktree's `samples/`, then use it from any worktree:
+ZIPs are gitignored. Put a local bundle such as `rescene.zip` in the main worktree's `samples/`, then use it from any worktree:
 
 ```sh
-pnpm sample:setup synthetic.zip
+pnpm sample:setup synthetic
 pnpm sample:setup rescene.zip
 ```
 
-Setup looks in the current worktree's `samples/` first, then in main's `samples/`. It unpacks into `.local/samples/<name>/` and preserves existing files, so local project edits survive reruns. To start again from the bundle, remove that sample's local directory and run setup again.
+Setup looks in the current worktree's `samples/` first, then in main's `samples/`. It copies a directory or unpacks a ZIP into `.local/samples/<name>/` and preserves existing files, so local project edits survive reruns. To start again from the source sample, remove that sample's local directory and run setup again.
 
-On an editor branch, open `.local/samples/<name>/project.json` with `pnpm dev`. On main, use the render CLI. Preparing samples needs unzip.
+On an editor branch, open `.local/samples/<name>/project.json` with `pnpm dev`. On main, use the render CLI. Preparing ZIP samples needs unzip.
 
 ## Local RESCENE reference
 
