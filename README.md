@@ -23,20 +23,7 @@ Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The render CLI runs
 
 ## Samples
 
-Samples contain a `project.json` entry point and its media. The small synthetic sample is committed, and real-cover samples stay local:
-
-```sh
-pnpm setup-sample samples/synthetic
-pnpm setup-sample ../toy-compositor/.local/samples/rescene.zip
-
-# On a branch with the editor:
-pnpm dev .local/projects/synthetic/project.json
-
-# On main, try the renderer:
-pnpm render .local/projects/synthetic/project.json .local/projects/synthetic/out/preview.mp4
-```
-
-Setup takes a directory or ZIP path and copies or unpacks it into `.local/projects/<name>/`, using the source basename without its extension. ZIPs need unzip. Existing files are preserved on reruns, so local edits do not change the source examples. See [samples/README.md](samples/README.md) for bundle preparation and the RESCENE reference. `node tools/samples/generate.ts` reproduces the synthetic media with ffmpeg.
+See [samples/README.md](samples/README.md) for setting up the synthetic sample or a local project bundle for iteration.
 
 ## Layout
 
@@ -45,9 +32,7 @@ src/          editor and renderer
 docs/         design drafts, e.g. the project format
 research/     findings from past covers and finished experiments
 samples/      committed sample sources
-.local/
-  samples/    local sample sources in main, gitignored
-  projects/   editable project copies in each worktree, gitignored
+.local/       local sample sources and editable projects, gitignored
 tools/        analysis scripts and sample setup/generation
 ```
 
