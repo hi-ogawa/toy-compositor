@@ -8,7 +8,7 @@ test("render the synthetic sample", async ({}, testInfo) => {
   // Render the synthetic sample project to an MP4.
   const output = testInfo.outputPath("preview.mp4");
   await execFileAsync(process.execPath, [
-    "src/lib/cli.ts",
+    "src/lib/render/cli.ts",
     "samples/synthetic/project.json",
     output,
   ]);
