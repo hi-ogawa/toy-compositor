@@ -27,16 +27,16 @@ Samples contain a `project.json` entry point and its media. The small synthetic 
 
 ```sh
 pnpm sample:setup synthetic
-pnpm sample:setup rescene.zip       # when samples/rescene.zip exists in main
+pnpm sample:setup rescene       # when main has .local/samples/rescene.zip
 
 # On a branch with the editor:
-pnpm dev .local/samples/synthetic/project.json
+pnpm dev .local/projects/synthetic/project.json
 
 # On main, try the renderer:
-pnpm render .local/samples/synthetic/project.json .local/samples/synthetic/out/preview.mp4
+pnpm render .local/projects/synthetic/project.json .local/projects/synthetic/out/preview.mp4
 ```
 
-Setup looks in this worktree's `samples/` first, then main's `samples/`, and copies a directory or unpacks a ZIP into `.local/samples/<name>/`. ZIPs need unzip. Existing files are preserved on reruns, so local edits do not change the source examples. See [samples/README.md](samples/README.md) for bundle preparation and the RESCENE reference. `node tools/samples/generate.ts` reproduces the synthetic media with ffmpeg.
+Setup looks in this worktree's `samples/` first, then main's `.local/samples/`, and copies a directory or unpacks a ZIP into `.local/projects/<name>/`. ZIPs need unzip. Existing files are preserved on reruns, so local edits do not change the source examples. See [samples/README.md](samples/README.md) for bundle preparation and the RESCENE reference. `node tools/samples/generate.ts` reproduces the synthetic media with ffmpeg.
 
 ## Layout
 
@@ -44,8 +44,10 @@ Setup looks in this worktree's `samples/` first, then main's `samples/`, and cop
 src/          editor and renderer
 docs/         design drafts, e.g. the project format
 research/     findings from past covers and finished experiments
-samples/      sample projects, with real-cover bundles gitignored
-.local/       editable sample projects and extracted media, gitignored
+samples/      committed sample sources
+.local/
+  samples/    local sample sources in main, gitignored
+  projects/   editable project copies in each worktree, gitignored
 tools/        analysis scripts and sample setup/generation
 ```
 

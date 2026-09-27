@@ -16,11 +16,8 @@ research/kdenlive/projects/
 *.webp
 kdenlive/
 
-# editable sample projects and extracted media
+# local sample sources and editable projects
 .local/
-
-# local sample bundles
-samples/*.zip
 
 # small committed synthetic source assets
 !samples/synthetic/media/

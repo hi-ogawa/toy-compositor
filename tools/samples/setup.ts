@@ -14,7 +14,7 @@ async function main() {
     sample === ".." ||
     path.basename(sample) !== sample
   ) {
-    throw new Error("Usage: pnpm sample:setup <sample-directory-or-zip>");
+    throw new Error("Usage: pnpm sample:setup <name>");
   }
   const root = path.resolve(import.meta.dirname, "../..");
   const { stdout } = await execFileAsync(
@@ -23,15 +23,20 @@ async function main() {
     { cwd: root },
   );
   const mainWorktree = stdout.split("\0")[0].slice("worktree ".length);
-  const local = path.join(root, "samples", sample);
-  const source = existsSync(local)
-    ? local
-    : path.join(mainWorktree, "samples", sample);
-  const destination = path.join(
-    root,
-    ".local/samples",
-    path.basename(sample, ".zip"),
-  );
+  const sources = [
+    path.join(root, "samples"),
+    path.join(mainWorktree, ".local/samples"),
+  ];
+  const source = sources
+    .flatMap((directory) => [
+      path.join(directory, sample),
+      path.join(directory, `${sample}.zip`),
+    ])
+    .find((candidate) => existsSync(candidate));
+  if (!source) {
+    throw new Error(`Sample not found: ${sample}`);
+  }
+  const destination = path.join(root, ".local/projects", sample);
 
   await mkdir(destination, { recursive: true });
 

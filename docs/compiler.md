@@ -4,7 +4,7 @@
 
 ```sh
 pnpm sample:setup synthetic
-pnpm render .local/samples/synthetic/project.json .local/samples/synthetic/out/preview.mp4
+pnpm render .local/projects/synthetic/project.json .local/projects/synthetic/out/preview.mp4
 pnpm render <project.json> <output> --dry-run   # print the command only
 ```
 
