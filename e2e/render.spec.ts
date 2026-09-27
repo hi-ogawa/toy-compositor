@@ -45,7 +45,7 @@ test("render the synthetic sample", async ({}, testInfo) => {
   );
   expect(Number(probe.format.duration)).toBeCloseTo(3, 1);
 
-  // Decode all video and audio, failing on corrupt packets or frames.
+  // Check that the entire rendered video and audio can be decoded without errors.
   await execFileAsync("ffmpeg", [
     "-v",
     "error",
