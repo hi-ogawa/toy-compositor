@@ -60,3 +60,48 @@ test("render the synthetic sample", async ({}, testInfo) => {
     "-",
   ]);
 });
+
+test("render the synthetic thumbnail", async ({}, testInfo) => {
+  // Render the synthetic thumbnail project to a PNG still.
+  const output = testInfo.outputPath("thumbnail.png");
+  await execFileAsync(process.execPath, [
+    "src/lib/render/cli.ts",
+    "samples/synthetic/thumbnail.json",
+    output,
+  ]);
+  await testInfo.attach("synthetic thumbnail", {
+    path: output,
+    contentType: "image/png",
+  });
+
+  // Check that the output is a single PNG image at the canvas size.
+  const { stdout } = await execFileAsync("ffprobe", [
+    "-v",
+    "error",
+    "-show_streams",
+    "-of",
+    "json",
+    output,
+  ]);
+  const probe = JSON.parse(stdout);
+  expect(probe.streams).toEqual([
+    expect.objectContaining({
+      codec_type: "video",
+      codec_name: "png",
+      width: 640,
+      height: 360,
+    }),
+  ]);
+
+  // Check that the image can be decoded without errors.
+  await execFileAsync("ffmpeg", [
+    "-v",
+    "error",
+    "-xerror",
+    "-i",
+    output,
+    "-f",
+    "null",
+    "-",
+  ]);
+});
