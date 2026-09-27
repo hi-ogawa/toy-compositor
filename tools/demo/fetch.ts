@@ -1,24 +1,29 @@
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import path from "node:path";
+import { promisify } from "node:util";
 
-const root = path.resolve(import.meta.dirname, "../..");
-const worktrees = execFileSync(
-  "git",
-  ["worktree", "list", "--porcelain", "-z"],
-  {
-    cwd: root,
-    encoding: "utf-8",
-  },
-);
-const main = worktrees.split("\0")[0].slice("worktree ".length);
-const archive = path.join(
-  main,
-  "covers/2026-06-27-rescene-love-attack/media/rescene-demo.zip",
-);
-const destination = path.join(root, ".local/demo/rescene");
+const execFileAsync = promisify(execFile);
 
-// Preserve local edits and reuse media when setup is run again.
-execFileSync("unzip", ["-qn", archive, "-d", destination], {
-  stdio: "inherit",
+async function main() {
+  const root = path.resolve(import.meta.dirname, "../..");
+  const { stdout } = await execFileAsync(
+    "git",
+    ["worktree", "list", "--porcelain", "-z"],
+    { cwd: root },
+  );
+  const mainWorktree = stdout.split("\0")[0].slice("worktree ".length);
+  const archive = path.join(
+    mainWorktree,
+    "covers/2026-06-27-rescene-love-attack/media/rescene-demo.zip",
+  );
+  const destination = path.join(root, ".local/demo/rescene");
+
+  // Preserve local edits and reuse media when setup is run again.
+  await execFileAsync("unzip", ["-qn", archive, "-d", destination]);
+  console.log(`Demo project: ${destination}/horizontal-video.json`);
+}
+
+main().catch((error: unknown) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exitCode = 1;
 });
-console.log(`Demo project: ${destination}/horizontal-video.json`);
