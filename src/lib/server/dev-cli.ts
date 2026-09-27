@@ -24,10 +24,7 @@ async function main() {
         configureServer(server) {
           server.middlewares.use(async (req, res, next) => {
             const url = new URL(req.url ?? "/", "http://localhost");
-            if (
-              !url.pathname.startsWith("/api/") &&
-              !url.pathname.startsWith("/media/")
-            ) {
+            if (!url.pathname.startsWith("/api/")) {
               next();
               return;
             }

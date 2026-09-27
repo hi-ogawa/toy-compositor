@@ -40,8 +40,10 @@ export function createEditorHandler({ projectFile }: { projectFile: string }) {
         );
         return Response.json({});
       }
-      if (url.pathname.startsWith("/media/")) {
-        const src = decodeURIComponent(url.pathname.slice("/media/".length));
+      if (url.pathname.startsWith("/api/media/")) {
+        const src = decodeURIComponent(
+          url.pathname.slice("/api/media/".length),
+        );
         return await serveFile({
           request,
           file: path.resolve(projectDir, src),
