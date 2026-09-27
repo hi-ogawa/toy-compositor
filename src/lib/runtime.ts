@@ -1,4 +1,5 @@
 import { createStore } from "../utils/store.ts";
+import { outputRange } from "./layout.ts";
 import type { EditorProjectFile } from "./project-storage.ts";
 import type { Layer, Project } from "./project.ts";
 
@@ -10,6 +11,7 @@ export interface EditorState {
   /** Project file path relative to where the editor was started. */
   file: string;
   project: Project;
+  playhead: number;
   selection?: EditorSelection;
 }
 
@@ -23,11 +25,20 @@ export class EditorRuntime {
   readonly store = createStore<EditorState>(() => ({
     file: "",
     project: EMPTY_PROJECT,
+    playhead: 0,
     selection: undefined,
   }));
 
   select(selection: EditorSelection | undefined): void {
     this.store.update({ selection });
+  }
+
+  seek({ time }: { time: number }): void {
+    const { project } = this.store.get();
+    const playhead = Number(
+      (Math.round(time * project.canvas.fps) / project.canvas.fps).toFixed(3),
+    );
+    this.store.update({ playhead });
   }
 
   updateLayer({
@@ -58,7 +69,12 @@ export class EditorRuntime {
   }
 
   deserializeProject({ file, project }: EditorProjectFile): void {
-    this.store.update({ file, project, selection: undefined });
+    this.store.update({
+      file,
+      project,
+      playhead: outputRange(project).start,
+      selection: undefined,
+    });
   }
 
   subscribePersistableState(listener: () => void): () => void {

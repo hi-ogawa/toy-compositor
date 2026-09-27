@@ -15,7 +15,7 @@ test("preview synthetic sources and save an inspector edit", async ({
   );
   const save = page.getByTestId("editor-save-button");
   await expect(save).toHaveAttribute("data-status", "saved");
-  const layers = page.getByTestId("editor-layer-list");
+  const layers = page.getByTestId("editor-timeline");
 
   // Select the video and confirm its source preview appears.
   await layers
@@ -77,7 +77,7 @@ test("resize and collapse the source monitor without changing the project", asyn
   // Open a video source and seek independently of project timing.
   await page.goto(editor.url);
   await page
-    .getByTestId("editor-layer-list")
+    .getByTestId("editor-timeline")
     .getByRole("button", { name: "video video", exact: true })
     .click();
   const source = page.locator("#source-monitor video");
@@ -169,7 +169,7 @@ test("compose the output's first frame and reflect inspector edits", async ({
 
   // Select the image and nudge its box while keeping the source file independent.
   await page
-    .getByTestId("editor-layer-list")
+    .getByTestId("editor-timeline")
     .getByRole("button", { name: "image image", exact: true })
     .click();
   await expect(canvas.getByLabel("Selected layer outline")).toBeVisible();
@@ -182,7 +182,7 @@ test("compose the output's first frame and reflect inspector edits", async ({
 
   // Move the video beyond the preview time and confirm its visual disappears.
   await page
-    .getByTestId("editor-layer-list")
+    .getByTestId("editor-timeline")
     .getByRole("button", { name: "video video", exact: true })
     .click();
   const sourceVideo = page.locator("#source-monitor video");
@@ -227,8 +227,110 @@ test("compose a still project at its output time", async ({ page, editor }) => {
     )
     .toBeCloseTo(1.5);
   await expect(page.getByTestId("composition-time")).toContainText("1.500 s");
+  await expect(
+    page.getByTestId("editor-timeline").getByRole("button", {
+      name: "Output frame at 1.5 seconds",
+      exact: true,
+    }),
+  ).toBeVisible();
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
     "data-status",
     "saved",
   );
+});
+
+test("select lanes and seek the composition without editing the project", async ({
+  page,
+  editor,
+}) => {
+  // Open offset and trimmed layers with an output range and a named locator.
+  const project = JSON.parse(await readFile(editor.projectFile, "utf-8"));
+  project.output.start = 0.5;
+  project.layers[0].start = 0.5;
+  project.layers[0].in = 0.25;
+  project.locators = [{ label: "thumbnail", time: 1.5 }];
+  await writeFile(editor.projectFile, JSON.stringify(project));
+  const original = await readFile(editor.projectFile, "utf-8");
+  await page.goto(editor.url);
+  const timeline = page.getByTestId("editor-timeline");
+  await expect(page.getByTestId("timeline-time")).toContainText("0.500 s");
+  await expect(page.getByTestId("timeline-layer-0")).toHaveAttribute(
+    "title",
+    "0.500–3.250 s",
+  );
+
+  // Select a lane and seek through a locator while leaving its source player independent.
+  await timeline
+    .getByRole("button", { name: "video video", exact: true })
+    .click();
+  const source = page.locator("#source-monitor video");
+  await expect
+    .poll(() => source.evaluate((video: HTMLVideoElement) => video.readyState))
+    .toBeGreaterThanOrEqual(2);
+  await source.evaluate((video: HTMLVideoElement) => {
+    video.currentTime = 0.4;
+  });
+  await timeline
+    .getByRole("button", { name: "thumbnail", exact: true })
+    .click();
+  const composition = page.getByTestId("composition-canvas").locator("video");
+  await expect
+    .poll(() =>
+      composition.evaluate((video: HTMLVideoElement) => video.currentTime),
+    )
+    .toBeCloseTo(1.25);
+  await expect
+    .poll(() => source.evaluate((video: HTMLVideoElement) => video.currentTime))
+    .toBeCloseTo(0.4);
+
+  // Seek on the ruler and confirm the requested project time snaps to a frame.
+  const ruler = timeline.getByRole("button", {
+    name: "Timeline ruler",
+    exact: true,
+  });
+  const bounds = (await ruler.boundingBox())!;
+  const region = (await page.getByTestId("timeline-layer-0").boundingBox())!;
+  const pixelsPerSecond = region.width / 2.75;
+  await ruler.click({
+    position: { x: 1.12 * pixelsPerSecond, y: bounds.height / 2 },
+  });
+  await expect(page.getByTestId("timeline-time")).toContainText("1.133 s");
+  await expect
+    .poll(() =>
+      composition.evaluate((video: HTMLVideoElement) => video.currentTime),
+    )
+    .toBeCloseTo(0.883);
+
+  // Zoom and scroll the timeline while its lane labels and current project state stay intact.
+  await timeline
+    .getByRole("slider", { name: "Timeline zoom", exact: true })
+    .fill("9");
+  const scroll = page.getByTestId("timeline-scroll");
+  await scroll.evaluate((element) => {
+    element.scrollLeft = 150;
+  });
+  await expect
+    .poll(() => scroll.evaluate((element) => element.scrollLeft))
+    .toBe(150);
+  await expect(
+    timeline.getByRole("button", { name: "video video", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByTestId("timeline-time")).toContainText("1.133 s");
+  // Seek after scrolling and confirm the ruler still maps to project time.
+  const scrolledRuler = (await ruler.boundingBox())!;
+  await page.mouse.click(
+    scrolledRuler.x + 0.5 * 512,
+    scrolledRuler.y + scrolledRuler.height / 2,
+  );
+  await expect(page.getByTestId("timeline-time")).toContainText("0.500 s");
+  await expect
+    .poll(() =>
+      composition.evaluate((video: HTMLVideoElement) => video.currentTime),
+    )
+    .toBeCloseTo(0.25);
+  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
+  expect(await readFile(editor.projectFile, "utf-8")).toBe(original);
 });
