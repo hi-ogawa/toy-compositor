@@ -1,35 +1,16 @@
 import { execFile } from "node:child_process";
-import { mkdir } from "node:fs/promises";
-import path from "node:path";
 import { promisify } from "node:util";
 import { expect, test } from "@playwright/test";
 
 const execFileAsync = promisify(execFile);
 
-test("set up and render the synthetic sample", async ({}, testInfo) => {
-  const root = process.cwd();
-  const cwd = testInfo.outputPath("workspace");
-  await mkdir(cwd, { recursive: true });
-
-  // Set up a fresh copy without touching locally edited sample projects.
-  await execFileAsync(
-    process.execPath,
-    [
-      path.join(root, "tools/samples/setup.ts"),
-      path.join(root, "samples/synthetic"),
-    ],
-    { cwd },
-  );
-  const output = path.join(cwd, ".local/projects/synthetic/out/preview.mp4");
-  await execFileAsync(
-    process.execPath,
-    [
-      path.join(root, "src/lib/cli.ts"),
-      ".local/projects/synthetic/project.json",
-      output,
-    ],
-    { cwd },
-  );
+test("render the synthetic sample", async ({}, testInfo) => {
+  const output = testInfo.outputPath("preview.mp4");
+  await execFileAsync(process.execPath, [
+    "src/lib/cli.ts",
+    "samples/synthetic/project.json",
+    output,
+  ]);
   await testInfo.attach("synthetic render", {
     path: output,
     contentType: "video/mp4",
