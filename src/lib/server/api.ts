@@ -3,12 +3,11 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import type { ServerRequest } from "srvx";
 import { staticMiddleware } from "srvx/static";
 
 export function createEditorHandler({ projectFile }: { projectFile: string }) {
   const serveMedia = staticMiddleware({ dir: path.dirname(projectFile) });
-  return async (request: ServerRequest): Promise<Response> => {
+  return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url);
       if (url.pathname === "/api/project" && request.method === "GET") {
@@ -28,9 +27,8 @@ export function createEditorHandler({ projectFile }: { projectFile: string }) {
       }
       if (url.pathname.startsWith("/api/media/")) {
         url.pathname = url.pathname.slice("/api/media".length);
-        request._url = url;
         return await serveMedia(
-          request,
+          new Request(url, request),
           () => new Response(undefined, { status: 404 }),
         );
       }
