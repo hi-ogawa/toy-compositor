@@ -1,5 +1,4 @@
-// Types for docs/project-format.md
-
+/** See docs/project-format.md */
 export type Project = {
   canvas: { width: number; height: number; fps: number; background?: string };
   output:

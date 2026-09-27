@@ -1,5 +1,3 @@
-// Pure layout and timing math shared by the compiler and the editor.
-
 import type { Box, Crop, Project } from "./project.ts";
 
 export type Range = { start: number; end: number };
@@ -17,7 +15,7 @@ export function intersect(a: Range, b: Range): Range | undefined {
   return end > start ? { start, end } : undefined;
 }
 
-// Scale the cropped source to fit inside the box, keeping its aspect ratio, centered.
+/** Scale the cropped source to fit inside the box, keeping its aspect ratio, centered. */
 export function fitBox({
   source,
   crop = {},

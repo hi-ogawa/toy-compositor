@@ -1,5 +1,3 @@
-// Usage: node src/lib/cli.ts <project.json> <output.(mp4|png|jpg)> [--dry-run]
-
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
