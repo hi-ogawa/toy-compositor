@@ -2,7 +2,7 @@
 
 Each sample directory or ZIP is self-contained, with a `project.json` entry point, a `media/` directory, and optionally other project variants. Source paths are relative to the project file.
 
-`synthetic/` is a small committed fixture with reviewable project JSON, three seconds of H.264/AAC video, a separate WAV tone, and a PNG image. Regenerate its media with `pnpm sample:generate`, which needs ffmpeg.
+`synthetic/` is a small committed fixture with reviewable project JSON, three seconds of H.264/AAC video, a separate WAV tone, and a PNG image. Regenerate its media with `node tools/samples/generate.ts`, which needs ffmpeg.
 
 ZIPs are gitignored. Put a local bundle such as `rescene.zip` in the main worktree's `samples/`, then use it from any worktree:
 

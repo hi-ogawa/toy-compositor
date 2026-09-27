@@ -36,7 +36,7 @@ pnpm dev .local/samples/synthetic/project.json
 pnpm render .local/samples/synthetic/project.json .local/samples/synthetic/out/preview.mp4
 ```
 
-Setup looks in this worktree's `samples/` first, then main's `samples/`, and copies a directory or unpacks a ZIP into `.local/samples/<name>/`. ZIPs need unzip. Existing files are preserved on reruns, so local edits do not change the source examples. See [samples/README.md](samples/README.md) for bundle preparation and the RESCENE reference. `pnpm sample:generate` reproduces the synthetic media with ffmpeg.
+Setup looks in this worktree's `samples/` first, then main's `samples/`, and copies a directory or unpacks a ZIP into `.local/samples/<name>/`. ZIPs need unzip. Existing files are preserved on reruns, so local edits do not change the source examples. See [samples/README.md](samples/README.md) for bundle preparation and the RESCENE reference. `node tools/samples/generate.ts` reproduces the synthetic media with ffmpeg.
 
 ## Layout
 
