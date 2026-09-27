@@ -10,9 +10,11 @@
     "lint-check": "vp check && pnpm typecheck",
     "render": "node src/lib/cli.ts",
     "setup-sample": "node tools/samples/setup.ts",
-    "test-e2e": "playwright test"
+    "test-e2e": "playwright test",
+    "test-e2e-trace": "E2E_TRACE=1 playwright test"
   },
   "devDependencies": {
+    "@hiogawa/playwright-trace-pack": "https://pkg.pr.new/hi-ogawa/playwright-trace-pack/@hiogawa/playwright-trace-pack@df95343",
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.2",
     "typescript": "^7.0.2",
