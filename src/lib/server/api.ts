@@ -1,6 +1,3 @@
-// Fetch handler for the editor. It loads and saves one project file and
-// serves the media it references, with range requests so video can seek.
-
 import fs from "node:fs";
 import path from "node:path";
 import { staticMiddleware } from "srvx/static";

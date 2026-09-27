@@ -1,6 +1,3 @@
-// Usage: pnpm dev <project.json>
-// Starts the editor on one project file.
-
 import path from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
