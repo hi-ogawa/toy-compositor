@@ -50,17 +50,27 @@ async function main() {
     "3",
     "media/audio.wav",
   ]);
-  await ffmpeg([
-    "-f",
-    "lavfi",
-    "-i",
-    "color=c=blue:size=160x90",
-    "-frames:v",
-    "1",
-    "-threads",
-    "1",
-    "media/image.png",
-  ]);
+  await execFileAsync(
+    "magick",
+    [
+      "-size",
+      "160x90",
+      "xc:blue",
+      "-font",
+      "DejaVu-Sans",
+      "-pointsize",
+      "20",
+      "-fill",
+      "white",
+      "-gravity",
+      "center",
+      "-annotate",
+      "0",
+      "Synthetic\nsample",
+      "media/image.png",
+    ],
+    { cwd: directory },
+  );
   console.log(`Generated media in ${directory}`);
 }
 
