@@ -8,6 +8,7 @@
 
 ## Conventions
 
+- Use [toy-midi](https://github.com/hi-ogawa/toy-midi) (checked out at `../toy-midi`) as the reference for architecture and code style, such as the runtime, store, and component patterns. Write code fresh for this domain instead of copying from it
 - This application is desktop-only. Do not propose, evaluate, implement, or mention mobile or responsive behavior
 - Commit messages: use Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`); add `!` for breaking changes
 - File names: kebab-case
