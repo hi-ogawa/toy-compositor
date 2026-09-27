@@ -15,6 +15,16 @@ Run setup from the repository root with a relative or absolute source path. It c
 
 Setup preserves every file in the sample, including additional project variants. On an editor branch, pass any project JSON to `pnpm dev`. On main, pass it to `pnpm render`. Preparing ZIP samples needs unzip.
 
+## Synthetic composition
+
+[synthetic/project.json](synthetic/project.json) renders three seconds at 640×360 and 30 fps:
+
+- A moving 320×180 ffmpeg test pattern is scaled to fill the canvas. Its embedded 440 Hz audio is muted.
+- A blue 160×90 image overlays the video at `(420, 240)` throughout the clip.
+- A separate 660 Hz WAV tone plays throughout, fading in over the first 0.2 seconds and fading out over the last 0.5 seconds.
+
+The sample exercises video scaling, image placement, source audio muting, and audio fades. `pnpm test-e2e` renders this committed project, checks its output metadata, and checks that the entire video and audio can be decoded without errors.
+
 ## Local RESCENE reference
 
 `rescene.zip` contains `horizontal-video.json`, `horizontal-thumbnail.json`, `vertical-video.json`, and `vertical-thumbnail.json`, together with their camera, score, mix, and MV thumbnail sources. `project.json` is an additional copy of `horizontal-video.json` for the default entry point. All five JSON files are unpacked into `.local/projects/rescene/`. The ZIP is kept in main at `.local/samples/rescene.zip`, and no real-cover media is committed.
