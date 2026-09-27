@@ -17,10 +17,15 @@ Checked in headless Google Chrome with the actual RESCENE cover sources, rather 
 
 ## Try it
 
-The existing [cover fetch script](../../covers/2026-06-27-rescene-love-attack/fetch.sh) reproduces the source files from the archive. With those files under the cover's gitignored `media/` directory, run:
+Prepare an editable sample using [the sample setup](../../samples/README.md):
 
 ```sh
-pnpm dev covers/2026-06-27-rescene-love-attack/horizontal-video.json
+pnpm setup-sample samples/synthetic
+pnpm dev .local/projects/synthetic/project.json
+
+# For the local RESCENE bundle:
+pnpm setup-sample ../toy-compositor/.local/samples/rescene.zip
+pnpm dev .local/projects/rescene/project.json
 ```
 
-Select camera, score, or mix and use the native controls. To check an image, open `horizontal-thumbnail.json` and select mv-thumbnail. Source media and browser screenshots remain gitignored.
+Select a video, audio, or image layer to preview its full source. For RESCENE, select camera, score, or mix and use the native controls. To check its image, open `.local/projects/rescene/horizontal-thumbnail.json` and select mv-thumbnail. Local projects, source media, renders, and probe screenshots stay under the gitignored `.local/` directory.
