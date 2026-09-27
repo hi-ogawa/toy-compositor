@@ -5,6 +5,7 @@ import { expect, test } from "@playwright/test";
 const execFileAsync = promisify(execFile);
 
 test("render the synthetic sample", async ({}, testInfo) => {
+  // Render the synthetic sample project to an MP4.
   const output = testInfo.outputPath("preview.mp4");
   await execFileAsync(process.execPath, [
     "src/lib/cli.ts",
@@ -16,6 +17,7 @@ test("render the synthetic sample", async ({}, testInfo) => {
     contentType: "video/mp4",
   });
 
+  // Check that the output has H.264 video and AAC audio matching the project settings.
   const { stdout } = await execFileAsync("ffprobe", [
     "-v",
     "error",
