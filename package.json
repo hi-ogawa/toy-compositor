@@ -11,7 +11,8 @@
     "lint-check": "vp check && pnpm typecheck",
     "render": "node src/lib/cli.ts",
     "setup-sample": "node tools/samples/setup.ts",
-    "test-e2e": "playwright test"
+    "test-e2e": "playwright test",
+    "test-e2e-trace": "E2E_TRACE=1 playwright test"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.103.2",
@@ -22,6 +23,7 @@
     "srvx": "^1.0.5"
   },
   "devDependencies": {
+    "@hiogawa/playwright-trace-pack": "https://pkg.pr.new/hi-ogawa/playwright-trace-pack/@hiogawa/playwright-trace-pack@df95343",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.2",
