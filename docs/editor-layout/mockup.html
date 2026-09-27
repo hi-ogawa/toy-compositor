@@ -1,0 +1,1351 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Toy Compositor editor layout candidates</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #f0f1f3;
+        color: #20242b;
+        font:
+          14px system-ui,
+          sans-serif;
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+      button {
+        cursor: pointer;
+        background: #fff;
+        border: 1px solid #cdd2d9;
+        border-radius: 5px;
+        padding: 6px 11px;
+        color: inherit;
+      }
+      button:hover {
+        background: #edf1f6;
+      }
+      button.active {
+        background: #e3ebfc;
+        border-color: #7194d4;
+        color: #244c8e;
+      }
+      a {
+        color: #315c9e;
+      }
+      .discussion {
+        padding: 18px 26px;
+        background: white;
+        border-bottom: 1px solid #cdd2d9;
+      }
+      .discussion h1 {
+        font-size: 20px;
+        margin: 0 0 5px;
+      }
+      .discussion p {
+        margin: 6px 0;
+        color: #5b626e;
+        max-width: 1050px;
+        line-height: 1.5;
+      }
+      .options {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin: 12px 0 8px;
+      }
+      .phase {
+        margin-left: auto;
+        font-size: 12px;
+        color: #59616e;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .shell {
+        margin: 20px auto;
+        width: calc(100% - 48px);
+        min-width: 900px;
+        max-width: 1480px;
+        height: 760px;
+        border: 1px solid #cdd2d9;
+        border-radius: 7px;
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 280px;
+        grid-template-rows: 46px minmax(0, 1fr) 40px 310px;
+        background: #fff;
+      }
+      .app-header {
+        grid-column: 1/-1;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 0 14px;
+        border-bottom: 1px solid #dce0e6;
+      }
+      .file {
+        color: #69717d;
+        font:
+          12px ui-monospace,
+          monospace;
+      }
+      .save {
+        margin-left: auto;
+      }
+      .preview-panel {
+        grid-column: 1;
+        grid-row: 2;
+        padding: 16px 22px 12px;
+        background: #edf0f4;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        gap: 10px;
+      }
+      .panel-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #606977;
+      }
+      .canvas-wrap {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .canvas {
+        aspect-ratio: 16/9;
+        max-width: 100%;
+        max-height: 100%;
+        height: 100%;
+        position: relative;
+        background: #101722;
+        overflow: hidden;
+        box-shadow: 0 0 0 1px #aab2bf;
+      }
+      .canvas svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      .outline {
+        position: absolute;
+        pointer-events: none;
+        border: 2px solid #6495ef;
+        left: 50%;
+        top: 0;
+        width: 50%;
+        height: 100%;
+      }
+      .inspector {
+        grid-column: 2;
+        grid-row: 2 / 4;
+        border-left: 1px solid #dce0e6;
+        overflow: auto;
+        padding: 16px;
+      }
+      .shell.side .inspector {
+        grid-row: 2 / 5;
+      }
+      .inspector h2 {
+        font-size: 15px;
+        margin: 0 0 5px;
+      }
+      .kind {
+        font-size: 12px;
+        color: #747b86;
+      }
+      .group {
+        border-top: 1px solid #e3e6eb;
+        margin-top: 16px;
+        padding-top: 12px;
+      }
+      .group h3 {
+        font-size: 12px;
+        margin: 0 0 10px;
+        color: #5f6977;
+      }
+      .fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .fields label {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 11px;
+        color: #626b77;
+      }
+      .fields input {
+        min-width: 0;
+        width: 100%;
+        border: 1px solid #d2d7df;
+        border-radius: 4px;
+        background: #fff;
+        padding: 6px 8px;
+        color: #263141;
+        font:
+          12px ui-monospace,
+          monospace;
+      }
+      .source {
+        font:
+          11px ui-monospace,
+          monospace;
+        overflow-wrap: anywhere;
+        color: #657080;
+        margin: 12px 0;
+      }
+      .transport {
+        grid-column: 1;
+        grid-row: 3;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 18px;
+        border-top: 1px solid #dce0e6;
+        font-size: 12px;
+      }
+      .transport button {
+        padding: 4px 8px;
+      }
+      .time {
+        font:
+          12px ui-monospace,
+          monospace;
+      }
+      .transport .range {
+        margin-left: auto;
+        color: #717987;
+      }
+      .timeline {
+        grid-column: 1/-1;
+        grid-row: 4;
+        border-top: 1px solid #cdd2d9;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .shell.side .timeline {
+        grid-column: 1;
+      }
+      .timeline-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 12px;
+        border-bottom: 1px solid #dce0e6;
+        height: 35px;
+        font-size: 12px;
+      }
+      .timeline-head .zoom {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .zoom input {
+        width: 85px;
+      }
+      .lanes {
+        overflow: auto;
+        position: relative;
+        flex: 1;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 145px minmax(0, 1fr);
+        min-height: 30px;
+      }
+      .label {
+        border: 0;
+        border-radius: 0;
+        border-right: 1px solid #dce0e6;
+        border-bottom: 1px solid #e9ecf0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 10px;
+        text-align: left;
+        font-size: 12px;
+      }
+      .label small {
+        font-size: 10px;
+        color: #727b89;
+      }
+      .label.selected {
+        background: #e4ecfc;
+        color: #254f91;
+      }
+      .track {
+        position: relative;
+        background: repeating-linear-gradient(
+          to right,
+          transparent 0,
+          transparent calc(12.5% - 1px),
+          #e9ecf0 calc(12.5% - 1px),
+          #e9ecf0 12.5%
+        );
+        border-bottom: 1px solid #e9ecf0;
+        min-width: 0;
+      }
+      .ruler {
+        height: 27px;
+        display: flex;
+        justify-content: space-between;
+        font:
+          10px ui-monospace,
+          monospace;
+        color: #6c7584;
+        padding: 5px 2px;
+      }
+      .range-bar {
+        position: absolute;
+        left: 12.5%;
+        right: 6.25%;
+        top: 6px;
+        height: 18px;
+        background: #dbe5f4;
+        border-left: 3px solid #6c88b1;
+        border-right: 3px solid #6c88b1;
+        color: #486186;
+        font-size: 10px;
+        padding: 1px 7px;
+      }
+      .locator {
+        position: absolute;
+        top: 1px;
+        font-size: 10px;
+        border: 0;
+        background: #f4e8cd;
+        padding: 3px 5px;
+        white-space: nowrap;
+        border-radius: 3px;
+        color: #6e5727;
+      }
+      .clip {
+        position: absolute;
+        top: 4px;
+        bottom: 4px;
+        left: 0;
+        right: 0;
+        border: 1px solid #b9cce8;
+        background: #e9f0fa;
+        border-radius: 3px;
+        font-size: 10px;
+        overflow: hidden;
+        padding: 2px 7px;
+        color: #527299;
+      }
+      .clip.camera {
+        left: 8.021875%;
+        background: #dae7fa;
+        border-color: #86a8da;
+      }
+      .clip.mix {
+        background: #e8f1e9;
+        border-color: #a8c4b0;
+        color: #527960;
+      }
+      .clip.selected {
+        outline: 2px solid #5884cb;
+        outline-offset: -2px;
+      }
+      .waveform {
+        position: absolute;
+        inset: 3px 0;
+        width: 100%;
+        height: calc(100% - 6px);
+        display: none;
+        opacity: 0.6;
+      }
+      .with-waveforms .waveform {
+        display: block;
+      }
+      .with-waveforms .audio-caption {
+        display: none;
+      }
+      .playhead {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: #c65353;
+        left: 47%;
+        pointer-events: none;
+        z-index: 2;
+      }
+      .playhead:before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -4px;
+        border-top: 6px solid #c65353;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+      }
+      .footer {
+        padding: 0 26px 22px;
+        max-width: 1500px;
+        margin: auto;
+        color: #5e6774;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .footer strong {
+        color: #293747;
+      }
+      .footer p {
+        margin: 7px 0;
+      }
+      .status {
+        font-size: 11px;
+        color: #7c6539;
+        background: #fff5da;
+        padding: 3px 7px;
+        border-radius: 4px;
+      }
+      .ruler.track {
+        cursor: crosshair;
+      }
+      .legend {
+        display: flex;
+        gap: 20px;
+        font-size: 11px;
+        padding: 7px 12px;
+        background: #fafbfc;
+        color: #697384;
+      }
+      .swatch {
+        display: inline-block;
+        width: 12px;
+        height: 8px;
+        background: #dbe5f4;
+        margin-right: 5px;
+      }
+      .swatch.red {
+        background: #c65353;
+        width: 2px;
+      }
+      .mock-field {
+        color: #7a818b;
+        font-size: 11px;
+        margin-top: 12px;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+      .preview-panel {
+        padding: 12px 16px;
+        gap: 8px;
+      }
+      .preview-tabs {
+        display: flex;
+        gap: 6px;
+      }
+      .preview-tabs button {
+        padding: 5px 12px;
+        font-size: 12px;
+      }
+      .monitors {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        gap: 14px;
+      }
+      .monitor {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-height: 0;
+      }
+      .source-stage {
+        flex: 1;
+        min-height: 0;
+        background: #e1e5ec;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .source-stage svg {
+        height: 100%;
+        max-width: 100%;
+        width: auto;
+      }
+      .source-stage .image-source {
+        width: 80%;
+        height: auto;
+      }
+      .source-message {
+        padding: 22px;
+        text-align: center;
+        color: #627082;
+        line-height: 1.6;
+      }
+      .source-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        min-height: 30px;
+      }
+      .source-controls button {
+        padding: 3px 7px;
+      }
+      .source-controls input {
+        min-width: 40px;
+        flex: 1;
+        width: 80px;
+      }
+      .source-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .source-note {
+        font-size: 11px;
+        color: #717b88;
+      }
+      .dual .preview-tabs {
+        display: none;
+      }
+      .dual .monitor {
+        width: 50%;
+      }
+      .monitor-title {
+        font-size: 12px;
+        color: #4e5a6b;
+      }
+      .source-stage .audio-source {
+        width: 90%;
+        height: auto;
+      }
+      .options + .options {
+        margin-top: 8px;
+      }
+      .source-time {
+        white-space: nowrap;
+        font:
+          11px ui-monospace,
+          monospace;
+      }
+
+      .monitor-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        font-size: 11px;
+        color: #667181;
+        height: 28px;
+        flex-shrink: 0;
+      }
+      .monitor-toolbar button {
+        font-size: 11px;
+        padding: 4px 9px;
+      }
+      .monitors {
+        gap: 6px;
+      }
+      .dual #source-monitor {
+        flex: 0 0 calc(var(--source-share, 35%) - 8px);
+        width: auto;
+      }
+      .dual #composition-monitor {
+        flex: 1;
+        width: auto;
+      }
+      .monitor-divider {
+        flex: 0 0 10px;
+        position: relative;
+        cursor: col-resize;
+        touch-action: none;
+        align-self: stretch;
+        border-radius: 4px;
+        outline: none;
+      }
+      .monitor-divider:before {
+        content: "";
+        position: absolute;
+        left: 4px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #c2cbd8;
+        border-radius: 2px;
+      }
+      .monitor-divider:after {
+        content: "";
+        position: absolute;
+        left: 2px;
+        top: calc(50% - 18px);
+        width: 6px;
+        height: 36px;
+        border-radius: 3px;
+        background: #9aa8bb;
+      }
+      .monitor-divider:hover,
+      .monitor-divider:focus-visible {
+        background: #d7e2f4;
+      }
+      .resizing,
+      .resizing * {
+        cursor: col-resize !important;
+        user-select: none;
+      }
+      .source-name {
+        max-width: 65%;
+      }
+      .source-controls {
+        flex-wrap: wrap;
+      }
+      .source-controls input {
+        flex-basis: 80px;
+      }
+      .source-collapsed #composition-monitor {
+        flex: 1;
+        width: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="discussion">
+      <h1>Editor shape · source and composition</h1>
+      <p>
+        Keep the raw asset preview alongside the project composition. Compare
+        tabbed and side-by-side monitors independently of the timeline/inspector
+        arrangement. Lane labels select the layer and its source.
+      </p>
+      <div class="options">
+        <button data-layout="wide">A · Full-width timeline</button
+        ><button class="active" data-layout="side">
+          B · Full-height inspector</button
+        ><label class="phase"
+          ><input id="waves" type="checkbox" /> Show later waveform phase</label
+        >
+      </div>
+      <div class="options">
+        <span>Monitors</span
+        ><button data-monitors="tabs">Composition / Source tabs</button
+        ><button class="active" data-monitors="dual">Side by side</button>
+      </div>
+      <p id="monitor-tradeoff">
+        Side by side keeps source and composition visible together. Collapse
+        Source for more composition space, or drag the divider to adjust their
+        split.
+      </p>
+      <p id="tradeoff">
+        B keeps all parameter groups beside both preview and timeline. The
+        inspector consumes timeline width, so the same time range has less room
+        for alignment.
+      </p>
+      <p>
+        <a href="https://github.com/hi-ogawa/toy-compositor/issues/3"
+          >Issue #3</a
+        >
+        · Proposal based on
+        <a
+          href="https://github.com/hi-ogawa/toy-compositor/blob/980e9efdab400bdbab7d5081dbf3c8ff51d9ba14/src/components/editor.tsx"
+          >current editor</a
+        >. Illustrative cover data and drawing, not a render comparison.
+      </p>
+    </section>
+    <main id="shell" class="shell side">
+      <header class="app-header">
+        <strong>Toy Compositor</strong
+        ><span class="file">covers / demo / horizontal.json</span
+        ><span class="status">Layout mockup</span
+        ><button class="save" disabled>Saved</button>
+      </header>
+      <section class="preview-panel">
+        <div class="monitor-toolbar" id="monitor-toolbar">
+          <button
+            id="toggle-source"
+            aria-controls="source-monitor"
+            aria-expanded="true"
+          >
+            Hide source
+          </button>
+        </div>
+        <div class="preview-tabs" role="tablist" aria-label="Preview monitor">
+          <button
+            class="active"
+            id="composition-tab"
+            data-tab="composition"
+            role="tab"
+            aria-selected="true"
+            aria-controls="composition-monitor"
+          >
+            Composition</button
+          ><button
+            id="source-tab"
+            data-tab="source"
+            role="tab"
+            aria-selected="false"
+            aria-controls="source-monitor"
+          >
+            Source
+          </button>
+        </div>
+        <div class="monitors">
+          <section class="monitor" id="source-monitor" hidden>
+            <div class="panel-label">
+              <strong class="monitor-title">Source</strong
+              ><span class="source-name" id="source-name"
+                >media/camera.mp4</span
+              >
+            </div>
+            <div class="source-stage" id="source-stage"></div>
+            <div class="source-controls" id="source-controls">
+              <button disabled>Play source</button
+              ><span class="source-time" id="source-time">00:00.000</span
+              ><input
+                type="range"
+                min="0"
+                max="33"
+                step="0.001"
+                value="0"
+                id="source-scrub"
+                aria-label="Source position"
+              />
+            </div>
+            <div class="source-note" id="source-note">
+              Original file · independent source position
+            </div>
+          </section>
+          <div
+            id="monitor-divider"
+            class="monitor-divider"
+            role="separator"
+            tabindex="0"
+            aria-label="Source and composition split"
+            aria-orientation="vertical"
+            aria-valuemin="20"
+            aria-valuemax="60"
+            aria-valuenow="35"
+            title="Drag to resize. Arrow keys adjust the split."
+          ></div>
+          <section class="monitor" id="composition-monitor">
+            <div class="panel-label">
+              <strong class="monitor-title">Composition</strong
+              ><span>1920 × 1080 · 30 fps · fit</span>
+            </div>
+            <div class="canvas-wrap">
+              <div class="canvas">
+                <svg
+                  viewBox="0 0 960 540"
+                  role="img"
+                  aria-label="Illustrative composition with score on the left and camera on the right"
+                >
+                  <rect width="960" height="540" fill="#172131" />
+                  <rect x="0" y="0" width="480" height="540" fill="#fcfcfa" />
+                  <text
+                    x="25"
+                    y="42"
+                    font-size="22"
+                    font-family="system-ui"
+                    fill="#283443"
+                  >
+                    Cloud Palace
+                  </text>
+                  <text
+                    x="25"
+                    y="65"
+                    font-size="11"
+                    font-family="system-ui"
+                    fill="#7c8590"
+                  >
+                    Bass arrangement
+                  </text>
+                  <g stroke="#afb6bd" stroke-width="1">
+                    <path
+                      d="M22 116H460 M22 127H460 M22 138H460 M22 149H460 M22 160H460 M22 249H460 M22 260H460 M22 271H460 M22 282H460 M22 293H460 M22 382H460 M22 393H460 M22 404H460 M22 415H460 M22 426H460"
+                    />
+                  </g>
+                  <g fill="#34404b">
+                    <ellipse cx="70" cy="149" rx="7" ry="5" />
+                    <ellipse cx="135" cy="138" rx="7" ry="5" />
+                    <ellipse cx="200" cy="160" rx="7" ry="5" />
+                    <ellipse cx="265" cy="127" rx="7" ry="5" />
+                    <ellipse cx="330" cy="149" rx="7" ry="5" />
+                    <ellipse cx="390" cy="138" rx="7" ry="5" />
+                    <ellipse cx="80" cy="282" rx="7" ry="5" />
+                    <ellipse cx="170" cy="260" rx="7" ry="5" />
+                    <ellipse cx="240" cy="271" rx="7" ry="5" />
+                    <ellipse cx="330" cy="293" rx="7" ry="5" />
+                    <ellipse cx="405" cy="260" rx="7" ry="5" />
+                  </g>
+                  <g stroke="#34404b" stroke-width="2">
+                    <path
+                      d="M76 149V118 M141 138V108 M206 160V129 M271 127V96 M336 149V118 M396 138V107 M86 282V251 M176 260V229 M246 271V240 M336 293V262 M411 260V229"
+                    />
+                  </g>
+                  <rect x="215" y="94" width="3" height="355" fill="#7baa93" />
+                  <rect x="480" y="0" width="480" height="540" fill="#3e4149" />
+                  <rect
+                    x="520"
+                    y="22"
+                    width="125"
+                    height="228"
+                    fill="#686b71"
+                  />
+                  <rect
+                    x="660"
+                    y="22"
+                    width="258"
+                    height="228"
+                    fill="#555960"
+                  />
+                  <ellipse cx="744" cy="143" rx="53" ry="65" fill="#c8ad93" />
+                  <path
+                    d="M690 120Q689 62 747 65Q806 62 797 130L769 91Z"
+                    fill="#28282c"
+                  />
+                  <path
+                    d="M656 237Q742 181 833 237L901 540H583Z"
+                    fill="#18262e"
+                  />
+                  <path d="M672 265L727 345L664 385L617 329" fill="#c7ad92" />
+                  <path d="M814 275L871 321L811 368L770 343" fill="#c7ad92" />
+                  <ellipse
+                    cx="731"
+                    cy="383"
+                    rx="68"
+                    ry="98"
+                    transform="rotate(24 731 383)"
+                    fill="#a16b40"
+                  />
+                  <ellipse
+                    cx="731"
+                    cy="383"
+                    rx="53"
+                    ry="80"
+                    transform="rotate(24 731 383)"
+                    fill="#b88654"
+                  />
+                  <path d="M750 349L910 192L929 205L770 370Z" fill="#d3b17c" />
+                  <g stroke="#72502d" stroke-width="2">
+                    <path
+                      d="M753 356L919 199 M759 361L921 202 M765 366L924 204"
+                    />
+                  </g>
+                  <g transform="translate(350 18) scale(.31)">
+                    <rect width="320" height="180" fill="#d4dbcc" />
+                    <rect
+                      x="16"
+                      y="16"
+                      width="288"
+                      height="148"
+                      fill="#425e54"
+                    />
+                    <circle cx="242" cy="68" r="30" fill="#bdcdb2" />
+                    <path
+                      d="M16 135L91 64L178 141L215 108L304 164H16Z"
+                      fill="#89a38d"
+                    />
+                    <text
+                      x="30"
+                      y="153"
+                      fill="white"
+                      font-family="system-ui"
+                      font-size="22"
+                    >
+                      Cloud Palace
+                    </text>
+                  </g>
+                  <rect x="12" y="474" width="165" height="54" fill="#26354b" />
+                  <text
+                    x="26"
+                    y="498"
+                    font-family="system-ui"
+                    font-size="14"
+                    fill="white"
+                  >
+                    Cloud Palace
+                  </text>
+                  <text
+                    x="26"
+                    y="517"
+                    font-family="system-ui"
+                    font-size="10"
+                    fill="#b3c6df"
+                  >
+                    Bass cover
+                  </text>
+                </svg>
+                <div id="outline" class="outline"></div>
+              </div>
+            </div>
+            <div class="source-note">
+              Project playhead · layer timing, crop, and layout applied
+            </div>
+          </section>
+        </div>
+      </section>
+      <aside class="inspector" id="inspector"></aside>
+      <div class="transport">
+        <button disabled aria-label="Play composition">Play composition</button
+        ><span class="time" id="time">00:14.100</span
+        ><span class="range">Output 4.000–30.000 s</span>
+      </div>
+      <section class="timeline">
+        <div class="timeline-head">
+          <strong>Timeline</strong><button id="output">Output range</button
+          ><span>Frame snap · 30 fps</span
+          ><label class="zoom"
+            >Zoom
+            <input type="range" value="30" disabled aria-label="Timeline zoom"
+          /></label>
+        </div>
+        <div class="lanes" id="lanes">
+          <div class="row">
+            <div class="label">Time · seconds</div>
+            <div class="ruler track" id="ruler">
+              <span>0</span><span>4</span><span>8</span><span>12</span
+              ><span>16</span><span>20</span><span>24</span><span>28</span
+              ><span>32</span>
+            </div>
+          </div>
+          <div class="row">
+            <button class="label" data-layer="output">
+              Output<small>range</small>
+            </button>
+            <div class="track"><div class="range-bar">4.000–30.000</div></div>
+          </div>
+          <div class="row">
+            <div class="label">Locators</div>
+            <div class="track">
+              <button class="locator" style="left: 44%" data-time="14.1">
+                thumbnail</button
+              ><button class="locator" style="left: 65%" data-time="20.8">
+                shorts-start</button
+              ><button class="locator" style="left: 82%" data-time="26.24">
+                shorts-end
+              </button>
+            </div>
+          </div>
+          <div class="row">
+            <button class="label" data-layer="title">
+              title<small>text</small>
+            </button>
+            <div class="track">
+              <div class="clip" data-clip="title">Title overlay</div>
+            </div>
+          </div>
+          <div class="row">
+            <button class="label" data-layer="thumbnail">
+              thumbnail<small>image</small>
+            </button>
+            <div class="track">
+              <div class="clip" data-clip="thumbnail">Thumbnail image</div>
+            </div>
+          </div>
+          <div class="row">
+            <button class="label selected" data-layer="camera">
+              camera<small>video · muted</small>
+            </button>
+            <div class="track">
+              <div class="clip camera selected" data-clip="camera">
+                <span class="audio-caption">Camera source · muted</span
+                ><svg
+                  class="waveform"
+                  viewBox="0 0 800 24"
+                  preserveAspectRatio="none"
+                  aria-label="Illustrative camera waveform"
+                ></svg>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <button class="label" data-layer="score">
+              score<small>video · muted</small>
+            </button>
+            <div class="track">
+              <div class="clip" data-clip="score">Score recording · muted</div>
+            </div>
+          </div>
+          <div class="row">
+            <button class="label" data-layer="mix">
+              mix<small>audio</small>
+            </button>
+            <div class="track">
+              <div class="clip mix" data-clip="mix">
+                <span class="audio-caption">Final mix</span
+                ><svg
+                  class="waveform"
+                  viewBox="0 0 800 24"
+                  preserveAspectRatio="none"
+                  aria-label="Illustrative mix waveform"
+                ></svg>
+              </div>
+            </div>
+          </div>
+          <div class="playhead" id="playhead"></div>
+        </div>
+        <div class="legend">
+          <span><i class="swatch"></i>Output range</span
+          ><span><i class="swatch red"></i>Playhead</span
+          ><span
+            >Top visual layer first · source audio remains visible when
+            muted</span
+          >
+        </div>
+      </section>
+    </main>
+    <section class="footer">
+      <p>
+        <strong>Try:</strong> hide/show Source, drag the monitor divider (or use
+        its arrow keys), switch layout and monitor arrangements, select
+        camera/score/mix/thumbnail lanes, scrub the source independently, click
+        the project ruler or locators, and reveal the waveform phase. Selection
+        and seeking are mock interactions. The illustrated frames remain still
+        while seeking. Parameter fields, playback, zoom, and timeline dragging
+        are intentionally inactive. The monitor divider is draggable.
+      </p>
+      <p>
+        <strong>Build stages:</strong> composed preview and static timeline can
+        be developed independently after shared layout/state decisions.
+        Selection, seeking, and drag editing follow the static timeline.
+        Waveforms build on the lanes, and synchronized playback follows later.
+      </p>
+      <p>
+        <strong>Decision to discuss:</strong> start with B and side-by-side
+        monitors. Resize or fold Source to give Composition more room, while
+        preserving the inspector and timeline. A and preview tabs remain
+        available for comparison. Both preserve separate source and project
+        positions.
+      </p>
+    </section>
+    <script>
+      const shell = document.getElementById("shell");
+      const inspector = document.getElementById("inspector");
+      const fields = (title, values) =>
+        `<section class="group"><h3>${title}</h3><div class="fields">${Object.entries(
+          values,
+        )
+          .map(
+            ([key, value]) =>
+              `<label>${key}<input value="${value}" readonly></label>`,
+          )
+          .join("")}</div></section>`;
+      const layers = {
+        camera: {
+          kind: "video",
+          source: "media/camera.mp4",
+          timing: { start: "2.567", in: "0.000", out: "33.000" },
+          box: { x: 960, y: 0, width: 960, height: 1080 },
+          crop: {
+            left: "0.000",
+            right: "0.000",
+            top: "0.000",
+            bottom: "0.000",
+          },
+          muted: true,
+        },
+        score: {
+          kind: "video",
+          source: "media/score.mp4",
+          timing: { start: "0.000", in: "0.000", out: "32.000" },
+          box: { x: 0, y: 0, width: 960, height: 1080 },
+          crop: {
+            left: "0.000",
+            right: "0.000",
+            top: "0.000",
+            bottom: "0.000",
+          },
+          muted: true,
+        },
+        mix: {
+          kind: "audio",
+          source: "media/mix.wav",
+          timing: { start: "0.000", in: "0.000", out: "32.000" },
+          muted: false,
+        },
+        thumbnail: {
+          kind: "image",
+          source: "media/thumbnail.png",
+          box: { x: 700, y: 36, width: 200, height: 113 },
+        },
+        title: { kind: "text", box: { x: 24, y: 948, width: 330 } },
+        output: { kind: "video", range: { start: "4.000", end: "30.000" } },
+      };
+      function select(name) {
+        const layer = layers[name];
+        inspector.innerHTML = `<h2>${name === "output" ? "Output" : name}</h2><span class="kind">${layer.kind}</span>${layer.source ? `<p class="source">${layer.source}</p>` : ""}${layer.range ? fields("Range · seconds", layer.range) : ""}${layer.timing ? fields("Timing · seconds", layer.timing) : ""}${(layer.kind === "video" && name !== "output") || layer.kind === "audio" ? `<section class="group"><h3>Audio</h3><label><input type="checkbox" ${layer.muted ? "checked" : ""} disabled> muted</label>${fields("Fades · seconds", { "fade in": "0.000", "fade out": "0.000" })}</section>` : ""}${layer.box ? fields("Box · pixels", layer.box) : ""}${layer.crop ? fields("Crop · fraction", layer.crop) : ""}<p class="mock-field">Read-only values for layout discussion.</p>`;
+        document
+          .querySelectorAll("[data-layer]")
+          .forEach((el) =>
+            el.classList.toggle("selected", el.dataset.layer === name),
+          );
+        document
+          .querySelectorAll("[data-clip]")
+          .forEach((el) =>
+            el.classList.toggle("selected", el.dataset.clip === name),
+          );
+        const outline = document.getElementById("outline");
+        outline.style.display = [
+          "camera",
+          "score",
+          "title",
+          "thumbnail",
+        ].includes(name)
+          ? "block"
+          : "none";
+        Object.assign(
+          outline.style,
+          name === "camera"
+            ? { left: "50%", top: "0", width: "50%", height: "100%" }
+            : name === "score"
+              ? { left: "0", top: "0", width: "50%", height: "100%" }
+              : name === "thumbnail"
+                ? {
+                    left: "36.46%",
+                    top: "3.33%",
+                    width: "10.42%",
+                    height: "10.46%",
+                  }
+                : {
+                    left: "1.25%",
+                    top: "87.8%",
+                    width: "17.2%",
+                    height: "10%",
+                  },
+        );
+        renderSource(name);
+      }
+      function seek(seconds) {
+        const snapped = Math.round(seconds * 30) / 30;
+        document.getElementById("time").textContent =
+          `00:${snapped.toFixed(3).padStart(6, "0")}`;
+        const lanes = document.getElementById("lanes");
+        const fraction = snapped / 32;
+        document.getElementById("playhead").style.left =
+          `${145 + (lanes.clientWidth - 145) * fraction}px`;
+        document.getElementById("playhead").dataset.seconds = snapped;
+      }
+      document.querySelectorAll("[data-layout]").forEach((el) =>
+        el.addEventListener("click", () => {
+          shell.classList.toggle("side", el.dataset.layout === "side");
+          document
+            .querySelectorAll("[data-layout]")
+            .forEach((b) => b.classList.toggle("active", b === el));
+          document.getElementById("tradeoff").textContent =
+            el.dataset.layout === "side"
+              ? "B keeps all parameter groups beside both preview and timeline. The inspector consumes timeline width, so the same time range has less room for alignment."
+              : "A gives camera sync the most horizontal space. The inspector shares the upper area with the preview, so long parameter groups scroll there.";
+          seek(Number(document.getElementById("playhead").dataset.seconds));
+        }),
+      );
+      document
+        .querySelectorAll("[data-layer]")
+        .forEach((el) =>
+          el.addEventListener("click", () => select(el.dataset.layer)),
+        );
+      document
+        .getElementById("output")
+        .addEventListener("click", () => select("output"));
+      document
+        .querySelectorAll("[data-time]")
+        .forEach((el) =>
+          el.addEventListener("click", () => seek(Number(el.dataset.time))),
+        );
+      document.getElementById("ruler").addEventListener("click", (event) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        seek(
+          Math.max(
+            0,
+            Math.min(32, ((event.clientX - rect.left) / rect.width) * 32),
+          ),
+        );
+      });
+      document
+        .getElementById("waves")
+        .addEventListener("change", (event) =>
+          shell.classList.toggle("with-waveforms", event.target.checked),
+        );
+      document.querySelectorAll(".waveform").forEach((svg, j) => {
+        let path = "";
+        for (let i = 0; i < 200; i++) {
+          const beat = Math.exp(-((i % 24) / 4));
+          const amplitude = 1 + 8 * beat + 2 * Math.abs(Math.sin(i * 1.91 + j));
+          path += `M${i * 4} ${12 - amplitude}V${12 + amplitude} `;
+        }
+        svg.innerHTML = `<path d="${path}" stroke="${j ? "#537e61" : "#517aae"}" stroke-width="2"/>`;
+      });
+
+      let selectedLayer = "camera";
+      let monitorMode = "dual";
+      let sourceCollapsed = false;
+      let sourceShare = 35;
+      let monitorTab = "composition";
+      const sourcePositions = { camera: 0, score: 0, mix: 0 };
+      const rawCamera =
+        '<svg viewBox="480 0 480 540" role="img" aria-label="Illustrative raw camera video frame">\n<rect width="960" height="540" fill="#172131"/><rect x="0" y="0" width="480" height="540" fill="#fcfcfa"/>\n<text x="25" y="42" font-size="22" font-family="system-ui" fill="#283443">Cloud Palace</text><text x="25" y="65" font-size="11" font-family="system-ui" fill="#7c8590">Bass arrangement</text>\n<g stroke="#afb6bd" stroke-width="1"><path d="M22 116H460 M22 127H460 M22 138H460 M22 149H460 M22 160H460 M22 249H460 M22 260H460 M22 271H460 M22 282H460 M22 293H460 M22 382H460 M22 393H460 M22 404H460 M22 415H460 M22 426H460"/></g>\n<g fill="#34404b"><ellipse cx="70" cy="149" rx="7" ry="5"/><ellipse cx="135" cy="138" rx="7" ry="5"/><ellipse cx="200" cy="160" rx="7" ry="5"/><ellipse cx="265" cy="127" rx="7" ry="5"/><ellipse cx="330" cy="149" rx="7" ry="5"/><ellipse cx="390" cy="138" rx="7" ry="5"/><ellipse cx="80" cy="282" rx="7" ry="5"/><ellipse cx="170" cy="260" rx="7" ry="5"/><ellipse cx="240" cy="271" rx="7" ry="5"/><ellipse cx="330" cy="293" rx="7" ry="5"/><ellipse cx="405" cy="260" rx="7" ry="5"/></g>\n<g stroke="#34404b" stroke-width="2"><path d="M76 149V118 M141 138V108 M206 160V129 M271 127V96 M336 149V118 M396 138V107 M86 282V251 M176 260V229 M246 271V240 M336 293V262 M411 260V229"/></g>\n<rect x="215" y="94" width="3" height="355" fill="#7baa93"/>\n<rect x="480" y="0" width="480" height="540" fill="#3e4149"/><rect x="520" y="22" width="125" height="228" fill="#686b71"/><rect x="660" y="22" width="258" height="228" fill="#555960"/>\n<ellipse cx="744" cy="143" rx="53" ry="65" fill="#c8ad93"/><path d="M690 120Q689 62 747 65Q806 62 797 130L769 91Z" fill="#28282c"/><path d="M656 237Q742 181 833 237L901 540H583Z" fill="#18262e"/>\n<path d="M672 265L727 345L664 385L617 329" fill="#c7ad92"/><path d="M814 275L871 321L811 368L770 343" fill="#c7ad92"/>\n<ellipse cx="731" cy="383" rx="68" ry="98" transform="rotate(24 731 383)" fill="#a16b40"/><ellipse cx="731" cy="383" rx="53" ry="80" transform="rotate(24 731 383)" fill="#b88654"/><path d="M750 349L910 192L929 205L770 370Z" fill="#d3b17c"/><g stroke="#72502d" stroke-width="2"><path d="M753 356L919 199 M759 361L921 202 M765 366L924 204"/></g>\n<rect x="12" y="474" width="165" height="54" fill="#26354b"/><text x="26" y="498" font-family="system-ui" font-size="14" fill="white">Cloud Palace</text><text x="26" y="517" font-family="system-ui" font-size="10" fill="#b3c6df">Bass cover</text>\n</svg>';
+      const rawScore =
+        '<svg viewBox="0 0 480 540" role="img" aria-label="Illustrative raw score recording">\n<rect width="960" height="540" fill="#172131"/><rect x="0" y="0" width="480" height="540" fill="#fcfcfa"/>\n<text x="25" y="42" font-size="22" font-family="system-ui" fill="#283443">Cloud Palace</text><text x="25" y="65" font-size="11" font-family="system-ui" fill="#7c8590">Bass arrangement</text>\n<g stroke="#afb6bd" stroke-width="1"><path d="M22 116H460 M22 127H460 M22 138H460 M22 149H460 M22 160H460 M22 249H460 M22 260H460 M22 271H460 M22 282H460 M22 293H460 M22 382H460 M22 393H460 M22 404H460 M22 415H460 M22 426H460"/></g>\n<g fill="#34404b"><ellipse cx="70" cy="149" rx="7" ry="5"/><ellipse cx="135" cy="138" rx="7" ry="5"/><ellipse cx="200" cy="160" rx="7" ry="5"/><ellipse cx="265" cy="127" rx="7" ry="5"/><ellipse cx="330" cy="149" rx="7" ry="5"/><ellipse cx="390" cy="138" rx="7" ry="5"/><ellipse cx="80" cy="282" rx="7" ry="5"/><ellipse cx="170" cy="260" rx="7" ry="5"/><ellipse cx="240" cy="271" rx="7" ry="5"/><ellipse cx="330" cy="293" rx="7" ry="5"/><ellipse cx="405" cy="260" rx="7" ry="5"/></g>\n<g stroke="#34404b" stroke-width="2"><path d="M76 149V118 M141 138V108 M206 160V129 M271 127V96 M336 149V118 M396 138V107 M86 282V251 M176 260V229 M246 271V240 M336 293V262 M411 260V229"/></g>\n<rect x="215" y="94" width="3" height="355" fill="#7baa93"/>\n<rect x="480" y="0" width="480" height="540" fill="#3e4149"/><rect x="520" y="22" width="125" height="228" fill="#686b71"/><rect x="660" y="22" width="258" height="228" fill="#555960"/>\n<ellipse cx="744" cy="143" rx="53" ry="65" fill="#c8ad93"/><path d="M690 120Q689 62 747 65Q806 62 797 130L769 91Z" fill="#28282c"/><path d="M656 237Q742 181 833 237L901 540H583Z" fill="#18262e"/>\n<path d="M672 265L727 345L664 385L617 329" fill="#c7ad92"/><path d="M814 275L871 321L811 368L770 343" fill="#c7ad92"/>\n<ellipse cx="731" cy="383" rx="68" ry="98" transform="rotate(24 731 383)" fill="#a16b40"/><ellipse cx="731" cy="383" rx="53" ry="80" transform="rotate(24 731 383)" fill="#b88654"/><path d="M750 349L910 192L929 205L770 370Z" fill="#d3b17c"/><g stroke="#72502d" stroke-width="2"><path d="M753 356L919 199 M759 361L921 202 M765 366L924 204"/></g>\n</svg>';
+      const rawImage =
+        '<svg class="image-source" viewBox="0 0 320 180" role="img" aria-label="Illustrative thumbnail image source"><rect width="320" height="180" fill="#d4dbcc"/><rect x="16" y="16" width="288" height="148" fill="#425e54"/><circle cx="242" cy="68" r="30" fill="#bdcdb2"/><path d="M16 135L91 64L178 141L215 108L304 164H16Z" fill="#89a38d"/><text x="30" y="153" fill="white" font-family="system-ui" font-size="22">Cloud Palace</text></svg>';
+      const audioSource =
+        '<svg class="audio-source" viewBox="0 0 600 150" role="img" aria-label="Illustrative raw mix waveform"><rect width="600" height="150" fill="#f6faf6"/><text x="18" y="25" font-family="system-ui" font-size="14" fill="#557461">mix.wav · original audio</text><path d="' +
+        Array.from({ length: 150 }, (_, i) => {
+          const h =
+            5 + 30 * Math.exp(-(i % 18) / 4) + 6 * Math.abs(Math.sin(i * 1.7));
+          return `M${i * 4} ${85 - h}V${85 + h}`;
+        }).join(" ") +
+        '" stroke="#73937b" stroke-width="2"/></svg>';
+      function updateMonitors() {
+        const dual = monitorMode === "dual";
+        shell.classList.toggle("dual", dual);
+        shell.classList.toggle("source-collapsed", sourceCollapsed);
+        document.getElementById("monitor-toolbar").hidden = !dual;
+        document.getElementById("source-monitor").hidden = dual
+          ? sourceCollapsed
+          : monitorTab !== "source";
+        document.getElementById("composition-monitor").hidden =
+          !dual && monitorTab !== "composition";
+        document.getElementById("monitor-divider").hidden =
+          !dual || sourceCollapsed;
+        const toggle = document.getElementById("toggle-source");
+        toggle.textContent = sourceCollapsed ? "Show source" : "Hide source";
+        toggle.setAttribute("aria-expanded", String(!sourceCollapsed));
+        shell.style.setProperty("--source-share", sourceShare + "%");
+        document
+          .getElementById("monitor-divider")
+          .setAttribute("aria-valuenow", String(Math.round(sourceShare)));
+        document.querySelectorAll("[data-tab]").forEach((el) => {
+          el.classList.toggle("active", el.dataset.tab === monitorTab);
+          el.setAttribute(
+            "aria-selected",
+            String(el.dataset.tab === monitorTab),
+          );
+        });
+      }
+      function resizeSource(value) {
+        sourceShare = Math.max(20, Math.min(60, value));
+        updateMonitors();
+      }
+      const divider = document.getElementById("monitor-divider");
+      divider.addEventListener("pointerdown", (event) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        divider.setPointerCapture(event.pointerId);
+        divider.focus();
+        shell.classList.add("resizing");
+      });
+      divider.addEventListener("pointermove", (event) => {
+        if (!divider.hasPointerCapture(event.pointerId)) return;
+        const rect = document
+          .querySelector(".monitors")
+          .getBoundingClientRect();
+        resizeSource(((event.clientX - rect.left) / rect.width) * 100);
+      });
+      function finishResize(event) {
+        if (divider.hasPointerCapture(event.pointerId))
+          divider.releasePointerCapture(event.pointerId);
+        shell.classList.remove("resizing");
+      }
+      divider.addEventListener("pointerup", finishResize);
+      divider.addEventListener("pointercancel", finishResize);
+      divider.addEventListener("lostpointercapture", () =>
+        shell.classList.remove("resizing"),
+      );
+      divider.addEventListener("keydown", (event) => {
+        let value;
+        if (event.key === "ArrowLeft") value = sourceShare - 2;
+        if (event.key === "ArrowRight") value = sourceShare + 2;
+        if (event.key === "Home") value = 20;
+        if (event.key === "End") value = 60;
+        if (value !== undefined) {
+          event.preventDefault();
+          resizeSource(value);
+        }
+      });
+      document.getElementById("toggle-source").addEventListener("click", () => {
+        sourceCollapsed = !sourceCollapsed;
+        updateMonitors();
+      });
+
+      function renderSource(name) {
+        selectedLayer = name;
+        const layer = layers[name];
+        const hasSource = Boolean(layer.source);
+        const timed = hasSource && ["video", "audio"].includes(layer.kind);
+        document.getElementById("source-name").textContent =
+          layer.source || "No source file";
+        document.getElementById("source-stage").innerHTML =
+          name === "camera"
+            ? rawCamera
+            : name === "score"
+              ? rawScore
+              : name === "thumbnail"
+                ? rawImage
+                : name === "mix"
+                  ? audioSource
+                  : '<p class="source-message">' +
+                    (name === "output"
+                      ? "Select a video, audio, or image lane to inspect its source."
+                      : "Text is generated from the project. There is no raw media file.") +
+                    "</p>";
+        document.getElementById("source-controls").hidden = !timed;
+        document.getElementById("source-note").textContent = !hasSource
+          ? "Source preview is for file-backed media."
+          : timed
+            ? "Original file · independent source position"
+            : "Original image · no timing, crop, or layout applied";
+        if (timed) {
+          const scrub = document.getElementById("source-scrub");
+          scrub.max = layer.timing.out;
+          scrub.value = sourcePositions[name];
+          sourceSeek(sourcePositions[name]);
+        }
+      }
+      function sourceSeek(seconds) {
+        sourcePositions[selectedLayer] = seconds;
+        document.getElementById("source-time").textContent =
+          "00:" + seconds.toFixed(3).padStart(6, "0");
+      }
+      document.querySelectorAll("[data-tab]").forEach((el) =>
+        el.addEventListener("click", () => {
+          monitorTab = el.dataset.tab;
+          updateMonitors();
+        }),
+      );
+      document.querySelectorAll("[data-monitors]").forEach((el) =>
+        el.addEventListener("click", () => {
+          monitorMode = el.dataset.monitors;
+          document
+            .querySelectorAll("[data-monitors]")
+            .forEach((b) => b.classList.toggle("active", b === el));
+          document.getElementById("monitor-tradeoff").textContent =
+            monitorMode === "dual"
+              ? "Side by side keeps source and composition visible together. Collapse Source for more composition space, or drag the divider to adjust their split."
+              : "Tabs give each preview the whole monitor area. Source seeking is independent of the project playhead.";
+          updateMonitors();
+        }),
+      );
+      document
+        .getElementById("source-scrub")
+        .addEventListener("input", (e) => sourceSeek(Number(e.target.value)));
+      select("camera");
+      seek(14.1);
+      updateMonitors();
+      window.addEventListener("resize", () =>
+        seek(Number(document.getElementById("playhead").dataset.seconds)),
+      );
+    </script>
+  </body>
+</html>
