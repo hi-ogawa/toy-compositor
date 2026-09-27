@@ -1,6 +1,8 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { matchKeyboardEvent } from "../lib/keyboard";
+import { outputRange } from "../lib/layout";
 import { EditorRuntime } from "../lib/runtime";
+import { CompositionPreview } from "./composition-preview";
 import { EditorHeader } from "./editor-header";
 import { Inspector } from "./inspector";
 import { PreviewMonitors } from "./preview-monitors";
@@ -54,9 +56,11 @@ export function Editor() {
           <PreviewMonitors
             layer={previewLayer}
             composition={
-              <div className="flex min-h-0 flex-1 items-center justify-center rounded bg-black text-sm text-muted-foreground">
-                No composition preview yet.
-              </div>
+              <CompositionPreview
+                project={state.project}
+                selection={selection}
+                time={outputRange(state.project).start}
+              />
             }
           />
           <nav

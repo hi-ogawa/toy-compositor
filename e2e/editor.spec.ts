@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { expect } from "@playwright/test";
 import { test } from "./helper";
 
@@ -21,21 +21,23 @@ test("preview synthetic sources and save an inspector edit", async ({
   await layers
     .getByRole("button", { name: "video video", exact: true })
     .click();
-  await expect(page.locator("main video")).toBeVisible();
+  await expect(page.locator("#source-monitor video")).toBeVisible();
 
   // Switch to audio and confirm its preview replaces the video player.
   await layers
     .getByRole("button", { name: "audio audio", exact: true })
     .click();
-  await expect(page.locator("main video")).toHaveCount(0);
-  await expect(page.locator("main audio")).toBeVisible();
+  await expect(page.locator("#source-monitor video")).toHaveCount(0);
+  await expect(page.locator("#source-monitor audio")).toBeVisible();
 
   // Select the image and confirm it loads without making the project dirty.
   await layers
     .getByRole("button", { name: "image image", exact: true })
     .click();
-  await expect(page.locator("main audio")).toHaveCount(0);
-  const image = page.getByRole("img", { name: "image", exact: true });
+  await expect(page.locator("#source-monitor audio")).toHaveCount(0);
+  const image = page
+    .locator("#source-monitor")
+    .getByRole("img", { name: "image", exact: true });
   await expect(image).toBeVisible();
   await expect
     .poll(() =>
@@ -118,6 +120,113 @@ test("resize and collapse the source monitor without changing the project", asyn
   await expect
     .poll(() => source.evaluate((video: HTMLVideoElement) => video.currentTime))
     .toBeCloseTo(1);
+  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
+});
+
+test("compose the output's first frame and reflect inspector edits", async ({
+  page,
+  editor,
+}) => {
+  // Start the output after a trimmed source's timeline offset and add cropped/color overlays.
+  const project = JSON.parse(await readFile(editor.projectFile, "utf-8"));
+  project.output.start = 1;
+  project.layers[0].start = 0.5;
+  project.layers[0].in = 0.25;
+  project.layers[2].crop = { left: 0.25, right: 0.25 };
+  project.layers.push({
+    type: "color",
+    color: "#ff0000",
+    opacity: 0.5,
+    box: { x: 10, y: 20, width: 30, height: 40 },
+  });
+  await writeFile(editor.projectFile, JSON.stringify(project));
+  await page.goto(editor.url);
+  const canvas = page.getByTestId("composition-canvas");
+  const video = canvas.locator("video");
+  await expect
+    .poll(() =>
+      video.evaluate((element: HTMLVideoElement) => element.currentTime),
+    )
+    .toBeCloseTo(0.75);
+  await expect(page.getByTestId("composition-time")).toContainText("1.000 s");
+  await expect(
+    canvas.getByText("Synthetic\nsample", { exact: true }),
+  ).toBeVisible();
+  const image = canvas.getByRole("img", { name: "image", exact: true });
+  await expect(image).toBeVisible();
+  expect(
+    await image.locator("..").evaluate((element) => ({
+      left: (element as HTMLElement).style.left,
+      width: (element as HTMLElement).style.width,
+    })),
+  ).toEqual({ left: "460px", width: "80px" });
+  await expect(
+    page.getByTestId("composition-layer-4").locator("div"),
+  ).toHaveCSS("opacity", "0.5");
+
+  // Select the image and nudge its box while keeping the source file independent.
+  await page
+    .getByTestId("editor-layer-list")
+    .getByRole("button", { name: "image image", exact: true })
+    .click();
+  await expect(canvas.getByLabel("Selected layer outline")).toBeVisible();
+  const x = page
+    .getByTestId("inspector")
+    .getByRole("textbox", { name: "x", exact: true });
+  await x.press("ArrowUp");
+  await expect(image.locator("..")).toHaveCSS("left", "461px");
+  await expect(page.locator("#source-monitor img")).toBeVisible();
+
+  // Move the video beyond the preview time and confirm its visual disappears.
+  await page
+    .getByTestId("editor-layer-list")
+    .getByRole("button", { name: "video video", exact: true })
+    .click();
+  const sourceVideo = page.locator("#source-monitor video");
+  await expect
+    .poll(() =>
+      sourceVideo.evaluate((element: HTMLVideoElement) => element.readyState),
+    )
+    .toBeGreaterThanOrEqual(2);
+  await sourceVideo.evaluate((element: HTMLVideoElement) => {
+    element.currentTime = 1.25;
+  });
+  await expect
+    .poll(() =>
+      sourceVideo.evaluate((element: HTMLVideoElement) => element.currentTime),
+    )
+    .toBeCloseTo(1.25);
+  await expect
+    .poll(() =>
+      video.evaluate((element: HTMLVideoElement) => element.currentTime),
+    )
+    .toBeCloseTo(0.75);
+  const start = page
+    .getByTestId("inspector")
+    .getByRole("textbox", { name: "start", exact: true });
+  await start.fill("2");
+  await start.press("Enter");
+  await expect(canvas.locator("video")).toHaveCount(0);
+});
+
+test("compose a still project at its output time", async ({ page, editor }) => {
+  // Open the still-output sample and seek its video to the requested thumbnail time.
+  const thumbnail = await readFile(
+    editor.projectFile.replace("project.json", "thumbnail.json"),
+    "utf-8",
+  );
+  await writeFile(editor.projectFile, thumbnail);
+  await page.goto(editor.url);
+  const video = page.getByTestId("composition-canvas").locator("video");
+  await expect
+    .poll(() =>
+      video.evaluate((element: HTMLVideoElement) => element.currentTime),
+    )
+    .toBeCloseTo(1.5);
+  await expect(page.getByTestId("composition-time")).toContainText("1.500 s");
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
     "data-status",
     "saved",
