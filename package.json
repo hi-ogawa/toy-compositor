@@ -9,8 +9,8 @@
     "lint": "vp check --fix && pnpm typecheck",
     "lint-check": "vp check && pnpm typecheck",
     "render": "node src/lib/cli.ts",
-    "demo:setup": "node tools/demo/fetch.ts",
-    "demo:generate": "node tools/demo/generate.ts"
+    "sample:setup": "node tools/samples/setup.ts",
+    "sample:generate": "node tools/samples/generate.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

@@ -21,13 +21,13 @@ pnpm render <project.json> <output.(mp4|png)>   # render a project
 
 Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The render CLI runs on Node 24 directly.
 
-## Local demo
+## Samples
 
 Sample ZIPs contain a `project.json` entry point and its media. The small synthetic sample is committed, and real-cover samples stay local:
 
 ```sh
-pnpm demo:setup synthetic.zip
-pnpm demo:setup rescene.zip       # when samples/rescene.zip exists in main
+pnpm sample:setup synthetic.zip
+pnpm sample:setup rescene.zip       # when samples/rescene.zip exists in main
 
 # On a branch with the editor:
 pnpm dev .local/samples/synthetic/project.json
@@ -36,7 +36,7 @@ pnpm dev .local/samples/synthetic/project.json
 pnpm render .local/samples/synthetic/project.json .local/samples/synthetic/out/preview.mp4
 ```
 
-Setup looks in this worktree's `samples/` first, then main's `samples/`, and unpacks into `.local/samples/<name>/`. It needs unzip. Existing files are preserved on reruns, so local edits do not change the bundled examples. See [samples/README.md](samples/README.md) for bundle preparation and the RESCENE reference. `pnpm demo:generate` reproduces the committed synthetic ZIP with ffmpeg and zip.
+Setup looks in this worktree's `samples/` first, then main's `samples/`, and unpacks into `.local/samples/<name>/`. It needs unzip. Existing files are preserved on reruns, so local edits do not change the bundled examples. See [samples/README.md](samples/README.md) for bundle preparation and the RESCENE reference. `pnpm sample:generate` reproduces the committed synthetic ZIP with ffmpeg and zip.
 
 ## Layout
 
@@ -44,7 +44,7 @@ Setup looks in this worktree's `samples/` first, then main's `samples/`, and unp
 src/          editor and renderer
 docs/         design drafts, e.g. the project format
 research/     findings from past covers and finished experiments
-samples/      self-contained demo/test ZIPs, with real-cover bundles gitignored
+samples/      self-contained sample ZIPs, with real-cover bundles gitignored
 .local/       editable sample projects and extracted media, gitignored
 tools/        analysis scripts and sample setup/generation
 ```

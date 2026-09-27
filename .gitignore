@@ -16,7 +16,7 @@ research/kdenlive/projects/
 *.webp
 kdenlive/
 
-# editable demo projects and extracted media
+# editable sample projects and extracted media
 .local/
 
 # local sample bundles, with an explicit committed synthetic fixture

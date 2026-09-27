@@ -2,13 +2,13 @@
 
 Each ZIP is self-contained, with a `project.json` entry point, a `media/` directory, and optionally other project variants. Source paths are relative to the project file.
 
-`synthetic.zip` is a small committed fixture with three seconds of H.264/AAC video, a separate WAV tone, and a PNG image. Reproduce it with `pnpm demo:generate`, which needs ffmpeg and zip. Generated loose files stay under `.local/` and are removed after packaging.
+`synthetic.zip` is a small committed fixture with three seconds of H.264/AAC video, a separate WAV tone, and a PNG image. Reproduce it with `pnpm sample:generate`, which needs ffmpeg and zip. Generated loose files stay under `.local/` and are removed after packaging.
 
 Other ZIPs are gitignored. Put a local bundle such as `rescene.zip` in the main worktree's `samples/`, then use it from any worktree:
 
 ```sh
-pnpm demo:setup synthetic.zip
-pnpm demo:setup rescene.zip
+pnpm sample:setup synthetic.zip
+pnpm sample:setup rescene.zip
 ```
 
 Setup looks in the current worktree's `samples/` first, then in main's `samples/`. It unpacks into `.local/samples/<name>/` and preserves existing files, so local project edits survive reruns. To start again from the bundle, remove that sample's local directory and run setup again.

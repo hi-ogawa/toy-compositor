@@ -9,7 +9,7 @@ const execFileAsync = promisify(execFile);
 async function main() {
   const sample = process.argv[2] ?? "synthetic.zip";
   if (path.basename(sample) !== sample || path.extname(sample) !== ".zip") {
-    throw new Error("Usage: pnpm demo:setup <sample.zip>");
+    throw new Error("Usage: pnpm sample:setup <sample.zip>");
   }
   const root = path.resolve(import.meta.dirname, "../..");
   const { stdout } = await execFileAsync(
@@ -32,7 +32,7 @@ async function main() {
 
   // Preserve local edits and reuse media when setup is run again.
   await execFileAsync("unzip", ["-qn", archive, "-d", destination]);
-  console.log(`Demo project: ${destination}/project.json`);
+  console.log(`Sample project: ${destination}/project.json`);
 }
 
 main().catch((error: unknown) => {
