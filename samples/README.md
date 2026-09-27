@@ -7,8 +7,8 @@ Each sample directory or ZIP is self-contained, with a `project.json` entry poin
 Local sample sources are gitignored under `.local/samples/`. Put a local bundle such as `rescene.zip` in the main worktree's `.local/samples/`, then use it from any worktree:
 
 ```sh
-pnpm sample:setup synthetic
-pnpm sample:setup rescene
+pnpm setup-sample synthetic
+pnpm setup-sample rescene
 ```
 
 Pass a sample name without the ZIP extension. Setup looks for `<name>/` or `<name>.zip` in the current worktree's `samples/` first, then in main's `.local/samples/`. It copies a directory or unpacks a ZIP into `.local/projects/<name>/` and preserves existing files, so local project edits survive reruns. To start again from the source sample, remove that sample's local directory and run setup again.

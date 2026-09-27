@@ -14,7 +14,7 @@ async function main() {
     sample === ".." ||
     path.basename(sample) !== sample
   ) {
-    throw new Error("Usage: pnpm sample:setup <name>");
+    throw new Error("Usage: pnpm setup-sample <name>");
   }
   const root = path.resolve(import.meta.dirname, "../..");
   const { stdout } = await execFileAsync(

@@ -3,7 +3,7 @@
 [src/lib/compile.ts](../src/lib/compile.ts) compiles a project file ([project-format.md](project-format.md)) into one ffmpeg command. The graph starts from a solid canvas, overlays each visual layer in order, and mixes the audio of audio layers and unmuted video layers. Text layers are rendered to PNG with ImageMagick first. The render CLI runs on Node 24 directly.
 
 ```sh
-pnpm sample:setup synthetic
+pnpm setup-sample synthetic
 pnpm render .local/projects/synthetic/project.json .local/projects/synthetic/out/preview.mp4
 pnpm render <project.json> <output> --dry-run   # print the command only
 ```

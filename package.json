@@ -9,7 +9,7 @@
     "lint": "vp check --fix && pnpm typecheck",
     "lint-check": "vp check && pnpm typecheck",
     "render": "node src/lib/cli.ts",
-    "sample:setup": "node tools/samples/setup.ts"
+    "setup-sample": "node tools/samples/setup.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

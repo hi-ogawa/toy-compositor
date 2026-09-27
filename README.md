@@ -26,8 +26,8 @@ Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The render CLI runs
 Samples contain a `project.json` entry point and its media. The small synthetic sample is committed, and real-cover samples stay local:
 
 ```sh
-pnpm sample:setup synthetic
-pnpm sample:setup rescene       # when main has .local/samples/rescene.zip
+pnpm setup-sample synthetic
+pnpm setup-sample rescene       # when main has .local/samples/rescene.zip
 
 # On a branch with the editor:
 pnpm dev .local/projects/synthetic/project.json
