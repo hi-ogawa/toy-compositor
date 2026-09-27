@@ -47,4 +47,7 @@ function quote(s: string) {
   return /^[\w./:=@,+-]+$/.test(s) ? s : `'${s.replaceAll("'", `'\\''`)}'`;
 }
 
-await main();
+main().catch((error: unknown) => {
+  console.error(error);
+  process.exitCode = 1;
+});
