@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { compile } from "./compile.ts";
 import type { Project } from "./project.ts";
+import { resolveProject } from "./resolve.ts";
 
 function main() {
   const [projectFile, outFile] = process.argv
@@ -15,9 +16,16 @@ function main() {
     process.exit(1);
   }
   const project: Project = JSON.parse(fs.readFileSync(projectFile, "utf-8"));
+  const projectDir = path.dirname(path.resolve(projectFile));
+  const resolved = resolveProject({
+    project,
+    projectDir,
+    outFile: path.resolve(outFile),
+  });
   const args = compile({
     project,
-    projectDir: path.dirname(path.resolve(projectFile)),
+    projectDir,
+    resolved,
     outFile: path.resolve(outFile),
   });
   console.error(["ffmpeg", ...args.map(quote)].join(" "));
