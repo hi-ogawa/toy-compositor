@@ -2,6 +2,8 @@
 // Starts the editor on one project file.
 
 import path from "node:path";
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
 import type { NodeHttp1Handler } from "srvx";
 import { toNodeHandler } from "srvx/node";
 import { createServer } from "vite";
@@ -17,8 +19,10 @@ async function main() {
     createEditorHandler({ projectFile: path.resolve(projectFile) }),
   ) as NodeHttp1Handler;
   const server = await createServer({
-    configFile: "vite.app.config.ts",
+    configFile: false,
     plugins: [
+      react(),
+      tailwindcss(),
       {
         name: "editor-api",
         configureServer(server) {
