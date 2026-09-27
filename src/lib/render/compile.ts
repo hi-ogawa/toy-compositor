@@ -1,22 +1,22 @@
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fitBox, intersect, outputRange } from "../layout.ts";
 import type { AudioLayer, Crop, Project, VideoLayer } from "../project.ts";
-import { renderText } from "./text.ts";
+import type { Media, Resolved } from "./resolve.ts";
 
 /**
- * Compile a project into ffmpeg arguments.
+ * Compile a project and its resolved media into the ffmpeg inputs, filter graph,
+ * and output options, without any I/O. The caller adds the output file.
  * The graph starts from a solid canvas and overlays each visual layer in order.
  * Audio layers and the audio of video layers are trimmed, faded, delayed, and mixed.
  */
 export function compile({
   project,
   projectDir,
-  outFile,
+  resolved,
 }: {
   project: Project;
   projectDir: string;
-  outFile: string;
+  resolved: Resolved;
 }): string[] {
   const { canvas } = project;
   const range = outputRange(project);
@@ -90,8 +90,9 @@ export function compile({
           return;
         }
         const src = resolve(layer.src);
+        const media = resolved.media.get(layer.src)!;
         const seek = frameShownAt({
-          src,
+          media,
           time: layer.in + visible.start - layer.start,
         });
         const k =
@@ -99,7 +100,7 @@ export function compile({
             seekInput({ src, seek, duration: visible.end - visible.start }),
           ) - 1;
         const fit = fitBox({
-          source: probeSize(src),
+          source: media,
           crop: layer.crop,
           box: layer.box,
         });
@@ -107,7 +108,7 @@ export function compile({
           `[${k}:v]fps=${canvas.fps},setpts=PTS-STARTPTS+${visible.start - range.start}/TB,${cropFilter(layer.crop)}scale=${fit.width}:${fit.height}[v${i}]`,
         );
         overlay({ label: `v${i}`, x: fit.x, y: fit.y });
-        if (hasAudio(src)) {
+        if (media.hasAudio) {
           mixAudio(layer, i);
         }
         return;
@@ -129,7 +130,7 @@ export function compile({
             }),
           ) - 1;
         const fit = fitBox({
-          source: probeSize(resolve(layer.src)),
+          source: resolved.media.get(layer.src)!,
           crop: layer.crop,
           box: layer.box,
         });
@@ -147,16 +148,10 @@ export function compile({
         if (!visible) {
           return;
         }
-        const file = path.join(
-          path.dirname(outFile),
-          ".text",
-          `${path.basename(outFile)}.${i}.png`,
-        );
-        renderText({ layer, file });
         const k =
           inputs.push(
             stillInput({
-              src: file,
+              src: resolved.texts.get(i)!,
               fps: canvas.fps,
               duration: visible.end - visible.start,
             }),
@@ -226,16 +221,10 @@ export function compile({
   }
 
   return [
-    "-hide_banner",
-    "-loglevel",
-    "warning",
-    "-stats",
-    "-y",
     ...inputs.flat(),
     "-filter_complex",
     filters.join(";\n"),
     ...outputArgs,
-    outFile,
   ];
 }
 
@@ -247,8 +236,8 @@ export function compile({
  * ffmpeg's accurate seek starts from the first frame at or after the seek time,
  * so seek to just before that frame. Assumes a constant frame rate source.
  */
-function frameShownAt({ src, time }: { src: string; time: number }) {
-  const { startTime, frameRate } = probeTiming(src);
+function frameShownAt({ media, time }: { media: Media; time: number }) {
+  const { startTime, frameRate } = media;
   const index = Math.round((time - startTime) * frameRate);
   return Math.max(0, startTime + index / frameRate - 0.1 / frameRate);
 }
@@ -292,52 +281,4 @@ function cropFilter(crop?: Crop) {
   }
   const { left = 0, right = 0, top = 0, bottom = 0 } = crop;
   return `crop=iw*${1 - left - right}:ih*${1 - top - bottom}:iw*${left}:ih*${top},`;
-}
-
-function probeTiming(file: string) {
-  const out = execFileSync("ffprobe", [
-    "-v",
-    "error",
-    "-select_streams",
-    "v:0",
-    "-show_entries",
-    "stream=start_time,r_frame_rate",
-    "-of",
-    "json",
-    file,
-  ]).toString();
-  const stream = JSON.parse(out).streams[0];
-  const [num, den] = stream.r_frame_rate.split("/").map(Number);
-  return { startTime: Number(stream.start_time ?? 0), frameRate: num / den };
-}
-
-function hasAudio(file: string) {
-  const out = execFileSync("ffprobe", [
-    "-v",
-    "error",
-    "-select_streams",
-    "a",
-    "-show_entries",
-    "stream=index",
-    "-of",
-    "csv=p=0",
-    file,
-  ]).toString();
-  return out.trim() !== "";
-}
-
-function probeSize(file: string) {
-  const out = execFileSync("ffprobe", [
-    "-v",
-    "error",
-    "-select_streams",
-    "v:0",
-    "-show_entries",
-    "stream=width,height",
-    "-of",
-    "csv=p=0",
-    file,
-  ]).toString();
-  const [width, height] = out.trim().split(",").map(Number);
-  return { width, height };
 }

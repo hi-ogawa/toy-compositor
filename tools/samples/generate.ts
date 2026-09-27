@@ -1,9 +1,6 @@
-import { execFile } from "node:child_process";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
-import { promisify } from "node:util";
-
-const execFileAsync = promisify(execFile);
+import { execFileAsync } from "../../src/utils/exec.ts";
 
 async function main() {
   const directory = path.resolve(

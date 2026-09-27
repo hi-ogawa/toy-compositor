@@ -1,8 +1,5 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { expect, test } from "@playwright/test";
-
-const execFileAsync = promisify(execFile);
+import { execFileAsync } from "../src/utils/exec.ts";
 
 test("render the synthetic sample", async ({}, testInfo) => {
   // Render the synthetic sample project to an MP4.

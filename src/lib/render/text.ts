@@ -1,13 +1,13 @@
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { execFileAsync } from "../../utils/exec.ts";
 import type { TextLayer } from "../project.ts";
 
 /**
  * Render a text layer to a transparent PNG with ImageMagick.
  * The PNG is box.width wide, so the compiler places it at box.x, box.y.
  */
-export function renderText({
+export async function renderText({
   layer,
   file,
 }: {
@@ -46,7 +46,7 @@ export function renderText({
         ")",
       ]
     : [];
-  execFileSync("magick", [
+  await execFileAsync("magick", [
     ...outline,
     "(",
     ...common,

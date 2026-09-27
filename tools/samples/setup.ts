@@ -1,9 +1,6 @@
-import { execFile } from "node:child_process";
 import { cp, mkdir, stat } from "node:fs/promises";
 import path from "node:path";
-import { promisify } from "node:util";
-
-const execFileAsync = promisify(execFile);
+import { execFileAsync } from "../../src/utils/exec.ts";
 
 async function main() {
   const sample = process.argv[2];
