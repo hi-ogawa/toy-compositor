@@ -27,9 +27,6 @@ Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The render CLI runs
 pnpm setup-sample samples/synthetic
 pnpm setup-sample ../toy-compositor/.local/samples/rescene.zip
 
-# On a branch with the editor:
-pnpm dev .local/projects/synthetic/project.json
-
 pnpm render .local/projects/synthetic/project.json .local/projects/synthetic/out/preview.mp4
 ```
 
