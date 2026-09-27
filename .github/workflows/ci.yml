@@ -30,7 +30,7 @@ jobs:
           node-version: "lts/*"
       - run: corepack enable
       - run: pnpm i
-      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: .github/scripts/install-ffmpeg.sh
       - run: pnpm test-e2e
       - uses: actions/upload-artifact@v4
         if: always()
