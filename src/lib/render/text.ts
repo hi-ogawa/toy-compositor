@@ -3,19 +3,22 @@
 // label: scales the text to fill a -size width and ignores -pointsize, so the text
 // is drawn at its natural size and then extended to the box width by alignment.
 
-import { execFileSync } from "node:child_process";
-import fs from "node:fs";
+import { execFile } from "node:child_process";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
+import { promisify } from "node:util";
 import type { TextLayer } from "../project.ts";
 
-export function renderText({
+const execFileAsync = promisify(execFile);
+
+export async function renderText({
   layer,
   file,
 }: {
   layer: TextLayer;
   file: string;
 }) {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
+  await mkdir(path.dirname(file), { recursive: true });
   const gravity = { left: "west", center: "center", right: "east" }[
     layer.align ?? "left"
   ];
@@ -47,7 +50,7 @@ export function renderText({
         ")",
       ]
     : [];
-  execFileSync("magick", [
+  await execFileAsync("magick", [
     ...outline,
     "(",
     ...common,

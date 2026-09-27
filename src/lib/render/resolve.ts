@@ -2,10 +2,13 @@
 // Each video and image source is probed once, and each text layer is rendered
 // to a PNG, so compile() can build ffmpeg arguments without doing any I/O.
 
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import path from "node:path";
+import { promisify } from "node:util";
 import type { Project } from "../project.ts";
 import { renderText } from "./text.ts";
+
+const execFileAsync = promisify(execFile);
 
 export type Resolved = {
   // Keyed by layer src.
@@ -22,7 +25,7 @@ export type Media = {
   hasAudio: boolean;
 };
 
-export function resolveProject({
+export async function resolveProject({
   project,
   projectDir,
   outFile,
@@ -30,17 +33,20 @@ export function resolveProject({
   project: Project;
   projectDir: string;
   outFile: string;
-}): Resolved {
+}): Promise<Resolved> {
   const media = new Map<string, Media>();
   const texts = new Map<number, string>();
-  project.layers.forEach((layer, i) => {
+  for (const [i, layer] of project.layers.entries()) {
     switch (layer.type) {
       case "video":
       case "image": {
         if (!media.has(layer.src)) {
-          media.set(layer.src, probeMedia(path.resolve(projectDir, layer.src)));
+          media.set(
+            layer.src,
+            await probeMedia(path.resolve(projectDir, layer.src)),
+          );
         }
-        return;
+        break;
       }
       case "text": {
         const file = path.join(
@@ -48,17 +54,17 @@ export function resolveProject({
           ".text",
           `${path.basename(outFile)}.${i}.png`,
         );
-        renderText({ layer, file });
+        await renderText({ layer, file });
         texts.set(i, file);
-        return;
+        break;
       }
     }
-  });
+  }
   return { media, texts };
 }
 
-function probeMedia(file: string): Media {
-  const out = execFileSync("ffprobe", [
+async function probeMedia(file: string): Promise<Media> {
+  const { stdout } = await execFileAsync("ffprobe", [
     "-v",
     "error",
     "-show_entries",
@@ -66,14 +72,14 @@ function probeMedia(file: string): Media {
     "-of",
     "json",
     file,
-  ]).toString();
+  ]);
   const streams: {
     codec_type: string;
     width: number;
     height: number;
     start_time?: string;
     r_frame_rate: string;
-  }[] = JSON.parse(out).streams;
+  }[] = JSON.parse(stdout).streams;
   const video = streams.find((s) => s.codec_type === "video")!;
   const [num, den] = video.r_frame_rate.split("/").map(Number);
   return {

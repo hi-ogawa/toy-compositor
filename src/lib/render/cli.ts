@@ -1,13 +1,14 @@
 // Usage: node src/lib/render/cli.ts <project.json> <output.(mp4|png|jpg)> [--dry-run]
 
-import { execFileSync } from "node:child_process";
-import fs from "node:fs";
+import { spawn } from "node:child_process";
+import { once } from "node:events";
+import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { Project } from "../project.ts";
 import { compile } from "./compile.ts";
 import { resolveProject } from "./resolve.ts";
 
-function main() {
+async function main() {
   const [projectFile, outFile] = process.argv
     .slice(2)
     .filter((a) => !a.startsWith("--"));
@@ -15,9 +16,9 @@ function main() {
     console.error("Usage: pnpm render <project.json> <output> [--dry-run]");
     process.exit(1);
   }
-  const project: Project = JSON.parse(fs.readFileSync(projectFile, "utf-8"));
+  const project: Project = JSON.parse(await readFile(projectFile, "utf-8"));
   const projectDir = path.dirname(path.resolve(projectFile));
-  const resolved = resolveProject({
+  const resolved = await resolveProject({
     project,
     projectDir,
     outFile: path.resolve(outFile),
@@ -32,9 +33,13 @@ function main() {
   if (process.argv.includes("--dry-run")) {
     return;
   }
-  fs.mkdirSync(path.dirname(path.resolve(outFile)), { recursive: true });
+  await mkdir(path.dirname(path.resolve(outFile)), { recursive: true });
   const t0 = performance.now();
-  execFileSync("ffmpeg", args, { stdio: "inherit" });
+  const ffmpeg = spawn("ffmpeg", args, { stdio: "inherit" });
+  const [code] = await once(ffmpeg, "close");
+  if (code !== 0) {
+    throw new Error(`ffmpeg exited with code ${code}`);
+  }
   console.error(
     `rendered ${outFile} in ${((performance.now() - t0) / 1000).toFixed(1)}s`,
   );
@@ -44,4 +49,4 @@ function quote(s: string) {
   return /^[\w./:=@,+-]+$/.test(s) ? s : `'${s.replaceAll("'", `'\\''`)}'`;
 }
 
-main();
+await main();
