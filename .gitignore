@@ -15,3 +15,6 @@ research/kdenlive/projects/
 *.png
 *.webp
 kdenlive/
+
+# editable demo projects and extracted media
+.local/
