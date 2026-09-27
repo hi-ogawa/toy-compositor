@@ -1,6 +1,6 @@
 // Pure layout and timing math shared by the compiler and the editor.
 
-import type { Box, Crop, Project } from "../project.ts";
+import type { Box, Crop, Project } from "./project.ts";
 
 export type Range = { start: number; end: number };
 

@@ -4,8 +4,8 @@
 
 import { execFileSync } from "node:child_process";
 import path from "node:path";
+import { fitBox, intersect, outputRange } from "../layout.ts";
 import type { AudioLayer, Crop, Project, VideoLayer } from "../project.ts";
-import { fitBox, intersect, outputRange } from "./layout.ts";
 import { renderText } from "./text.ts";
 
 export function compile({
