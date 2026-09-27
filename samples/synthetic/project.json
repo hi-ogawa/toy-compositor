@@ -46,6 +46,26 @@
         "width": 160,
         "height": 90
       }
+    },
+    {
+      "name": "label",
+      "type": "text",
+      "text": "Synthetic\nsample",
+      "box": {
+        "x": 420,
+        "y": 260,
+        "width": 160
+      },
+      "align": "center",
+      "font": {
+        "family": "DejaVu Sans",
+        "size": 20
+      },
+      "color": "#ffffff",
+      "outline": {
+        "width": 2,
+        "color": "#000000"
+      }
     }
   ]
 }
