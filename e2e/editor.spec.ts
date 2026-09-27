@@ -22,12 +22,14 @@ test("preview synthetic sources and save an inspector edit", async ({
     .getByRole("button", { name: "video video", exact: true })
     .click();
   await expect(page.locator("main video")).toBeVisible();
+
   // Switch to audio and confirm its preview replaces the video player.
   await layers
     .getByRole("button", { name: "audio audio", exact: true })
     .click();
   await expect(page.locator("main video")).toHaveCount(0);
   await expect(page.locator("main audio")).toBeVisible();
+
   // Select the image and confirm it loads without making the project dirty.
   await layers
     .getByRole("button", { name: "image image", exact: true })
