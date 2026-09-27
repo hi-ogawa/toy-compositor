@@ -21,8 +21,6 @@ export function renderText({
   const common = [
     "-background",
     "none",
-    "-size",
-    `${layer.box.width}x`,
     "-gravity",
     gravity,
     "-font",
@@ -57,6 +55,12 @@ export function renderText({
     `label:${layer.text}`,
     ")",
     ...(layer.outline ? ["-gravity", "center", "-composite"] : []),
+    // label: scales the text to fill a -size width and ignores -pointsize, so the text
+    // is drawn at its natural size and then extended to the box width by alignment.
+    "-gravity",
+    gravity,
+    "-extent",
+    `${layer.box.width}x%[h]`,
     file,
   ]);
 }
