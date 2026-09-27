@@ -2,7 +2,7 @@
 
 Each sample directory or ZIP is self-contained, with a `project.json` entry point, a `media/` directory, and optionally other project variants. Source paths are relative to the project file.
 
-`synthetic/` is a small committed fixture with reviewable project JSON, three seconds of H.264/AAC video, a separate WAV tone, and a PNG image. Regenerate its media with `node tools/samples/generate.ts`, which needs ffmpeg.
+`synthetic/` is a small committed fixture with reviewable project JSON, three seconds of H.264/AAC video, a separate WAV tone, and a PNG image. Regenerate its media with `node tools/samples/generate.ts`, which needs ffmpeg and ImageMagick (`magick`) with the DejaVu Sans font.
 
 Local sample sources are gitignored under `.local/samples/`. Put a local bundle such as `rescene.zip` in the main worktree's `.local/samples/`, then use it from any worktree:
 
@@ -14,6 +14,16 @@ pnpm setup-sample ../toy-compositor/.local/samples/rescene.zip
 Run setup from the repository root with a relative or absolute source path. It copies a directory or unpacks a ZIP into `.local/projects/<name>/`, where `<name>` is the source basename without its extension. Existing files are preserved, so local project edits survive reruns. To start again from the source sample, remove that sample's local directory and run setup again.
 
 Setup preserves every file in the sample, including additional project variants. On an editor branch, pass any project JSON to `pnpm dev`. On main, pass it to `pnpm render`. Preparing ZIP samples needs unzip.
+
+## Synthetic composition
+
+[synthetic/project.json](synthetic/project.json) renders three seconds at 640×360 and 30 fps:
+
+- A moving 320×180 ffmpeg test pattern is scaled to fill the canvas. Its embedded 440 Hz audio is muted.
+- A blue 160×90 image with a centered white “Synthetic sample” label overlays the video at `(420, 240)` throughout the clip.
+- A separate 660 Hz WAV tone plays throughout, fading in over the first 0.2 seconds and fading out over the last 0.5 seconds.
+
+The sample exercises video scaling, image placement, source audio muting, and audio fades. `pnpm test-e2e` renders this committed project, checks its output metadata, and checks that the entire video and audio can be decoded without errors.
 
 ## Local RESCENE reference
 
