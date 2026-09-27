@@ -1,13 +1,14 @@
-// Compile a project into ffmpeg arguments.
-// The graph starts from a solid canvas and overlays each visual layer in order.
-// Audio layers and the audio of video layers are trimmed, faded, delayed, and mixed.
-
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fitBox, intersect, outputRange } from "../layout.ts";
 import type { AudioLayer, Crop, Project, VideoLayer } from "../project.ts";
 import { renderText } from "./text.ts";
 
+/**
+ * Compile a project into ffmpeg arguments.
+ * The graph starts from a solid canvas and overlays each visual layer in order.
+ * Audio layers and the audio of video layers are trimmed, faded, delayed, and mixed.
+ */
 export function compile({
   project,
   projectDir,
@@ -238,12 +239,14 @@ export function compile({
   ];
 }
 
-// The frame shown at a source time is the frame whose timestamp is nearest to it.
-// Project times are rounded to milliseconds and a source's first frame can start
-// off the project's frame grid, so a time often lands a hair before or after a
-// frame, and picking the nearest frame keeps renderers from disagreeing by one.
-// ffmpeg's accurate seek starts from the first frame at or after the seek time,
-// so seek to just before that frame. Assumes a constant frame rate source.
+/**
+ * The frame shown at a source time is the frame whose timestamp is nearest to it.
+ * Project times are rounded to milliseconds and a source's first frame can start
+ * off the project's frame grid, so a time often lands a hair before or after a
+ * frame, and picking the nearest frame keeps renderers from disagreeing by one.
+ * ffmpeg's accurate seek starts from the first frame at or after the seek time,
+ * so seek to just before that frame. Assumes a constant frame rate source.
+ */
 function frameShownAt({ src, time }: { src: string; time: number }) {
   const { startTime, frameRate } = probeTiming(src);
   const index = Math.round((time - startTime) * frameRate);

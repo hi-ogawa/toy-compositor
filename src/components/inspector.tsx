@@ -209,8 +209,10 @@ function CropFields({
 
 const PIXEL_FIELD = { step: 1, round: Math.round };
 
-// Times snap to the project's frame grid and are stored in milliseconds, like
-// the rest of the format. Arrow keys step by one frame.
+/**
+ * Times snap to the project's frame grid and are stored in milliseconds, like
+ * the rest of the format. Arrow keys step by one frame.
+ */
 function timeField(fps: number) {
   return {
     step: 1 / fps,

@@ -1,13 +1,12 @@
-// Render a text layer to a transparent PNG with ImageMagick.
-// The PNG is box.width wide, so the compiler places it at box.x, box.y.
-// label: scales the text to fill a -size width and ignores -pointsize, so the text
-// is drawn at its natural size and then extended to the box width by alignment.
-
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import type { TextLayer } from "../project.ts";
 
+/**
+ * Render a text layer to a transparent PNG with ImageMagick.
+ * The PNG is box.width wide, so the compiler places it at box.x, box.y.
+ */
 export function renderText({
   layer,
   file,
@@ -56,6 +55,8 @@ export function renderText({
     `label:${layer.text}`,
     ")",
     ...(layer.outline ? ["-gravity", "center", "-composite"] : []),
+    // label: scales the text to fill a -size width and ignores -pointsize, so the text
+    // is drawn at its natural size and then extended to the box width by alignment.
     "-gravity",
     gravity,
     "-extent",
@@ -64,7 +65,7 @@ export function renderText({
   ]);
 }
 
-// "Noto Sans CJK KR" at weight 700 -> "Noto-Sans-CJK-KR-Bold"
+/** "Noto Sans CJK KR" at weight 700 -> "Noto-Sans-CJK-KR-Bold" */
 function magickFont(font: TextLayer["font"]) {
   const suffix: Record<number, string> = {
     300: "-Light",
