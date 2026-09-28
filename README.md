@@ -22,7 +22,7 @@ toy-compositor render ~/covers/my-cover/horizontal-video.json out.mp4
 toy-compositor render ~/covers/my-cover/horizontal-thumbnail.json out.png
 ```
 
-Rendering needs `ffmpeg` and ImageMagick (`magick`) on your PATH.
+Rendering needs `ffmpeg`, `ffprobe`, and ImageMagick (`magick`) on your PATH.
 
 ## Projects
 
