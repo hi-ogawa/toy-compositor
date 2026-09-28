@@ -13,7 +13,6 @@ export const test = base.extend<{
     const projectFile = path.join(directory, "project.json");
     const server = spawn("pnpm", ["dev", "--port", "0"], {
       env: { ...process.env, NO_COLOR: "1", FORCE_COLOR: "0" },
-      detached: true,
     });
     let output = "";
     const exited = once(server, "exit");
@@ -34,8 +33,7 @@ export const test = base.extend<{
       await use({ url, projectFile });
     } finally {
       if (server.exitCode === null) {
-        // Stop pnpm and the Vite process it started.
-        process.kill(-server.pid!, "SIGTERM");
+        server.kill("SIGTERM");
         await exited;
       }
       await testInfo.attach("editor server log", {
