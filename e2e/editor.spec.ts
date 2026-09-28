@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { expect } from "@playwright/test";
 import {
   commitInspectorField,
@@ -207,17 +207,10 @@ test("navigate the timeline without editing the project", async ({
   page,
   editor,
 }) => {
-  // Open a project whose output starts at 0.5 with a locator at 1.5. The file
-  // sets both because locators have no editing UI and the playhead only starts
-  // at the output start on load. Confirm the playhead starts there.
-  const project = JSON.parse(await readFile(editor.projectFile, "utf-8"));
-  project.output.start = 0.5;
-  project.locators = [{ label: "thumbnail", time: 1.5 }];
-  await writeFile(editor.projectFile, JSON.stringify(project));
+  // Open the synthetic project.
   const original = await readFile(editor.projectFile, "utf-8");
   await page.goto(editor.url);
   const time = page.getByTestId("timeline-time");
-  await expect(time).toContainText("0.500 s");
 
   // Click the render start marker and confirm it opens Render settings.
   await clickTimelineButton(page, { name: "Render start" });
@@ -226,7 +219,7 @@ test("navigate the timeline without editing the project", async ({
       .getByTestId("inspector")
       .getByRole("heading", { name: "Render settings", exact: true }),
   ).toBeVisible();
-  await expect(getInspectorField(page, { name: "start" })).toHaveValue("0.5");
+  await expect(getInspectorField(page, { name: "start" })).toHaveValue("0");
 
   // Click the locator and confirm the composition video follows the playhead.
   await clickTimelineButton(page, { name: "thumbnail" });

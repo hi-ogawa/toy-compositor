@@ -10,6 +10,12 @@
     "start": 0,
     "end": 3
   },
+  "locators": [
+    {
+      "label": "thumbnail",
+      "time": 1.5
+    }
+  ],
   "layers": [
     {
       "name": "video",
