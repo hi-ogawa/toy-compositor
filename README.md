@@ -36,7 +36,7 @@ toy-compositor serve [dir]                       # editor for projects under dir
 toy-compositor render <project.json> <output>    # render a project
 ```
 
-`serve` listens on localhost only, rejects requests addressed to other hosts, and serves `dir` at `/files/` the same way the dev server serves the repository. In the repository, `pnpm build` produces `dist/cli.js` and `dist/client/`, and `node dist/cli.js serve <dir>` runs the built CLI.
+`serve` listens on localhost only, rejects requests addressed to other hosts, and serves the editor API over `dir` the same way the dev server does over `.local/projects/`. In the repository, `pnpm build` produces `dist/cli.js` and `dist/client/`, and `node dist/cli.js serve <dir>` runs the built CLI.
 
 ## Samples
 

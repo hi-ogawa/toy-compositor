@@ -33,7 +33,7 @@ test("serve a project directory from the built CLI and save an edit", async ({
     const url = output.match(/Editor: (\S+)/)![1]!;
 
     // Open the project and select the image to confirm media loads.
-    await page.goto(`${url}?project=/files/synthetic/project.json`);
+    await page.goto(`${url}?project=synthetic/project.json`);
     await page
       .getByTestId("editor-layer-list")
       .getByRole("button", { name: "image image", exact: true })
@@ -62,7 +62,7 @@ test("serve a project directory from the built CLI and save an edit", async ({
     // Reject a request addressed to another host, as a DNS-rebound page would send.
     const status = await new Promise<number | undefined>((resolve, reject) => {
       const request = http.get(
-        new URL("/files/synthetic/project.json", url),
+        new URL("/api/project?path=synthetic/project.json", url),
         { headers: { host: "evil.example" } },
         (response) => {
           response.resume();
