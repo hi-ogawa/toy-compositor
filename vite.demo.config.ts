@@ -13,7 +13,7 @@ export default defineConfig({
 /** Resolve the server-backed project file module to the demo one. */
 function demoProjectFile(): Plugin {
   const server = path.resolve("src/lib/project-file.ts");
-  const demo = path.resolve("src/demo/project-file.ts");
+  const demo = path.resolve("src/lib/project-file-demo.ts");
   return {
     name: "demo-project-file",
     enforce: "pre",

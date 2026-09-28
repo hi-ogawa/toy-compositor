@@ -1,10 +1,10 @@
-import type { ProjectFile, ProjectList } from "../lib/project-file.ts";
-import type { Project } from "../lib/project.ts";
+import type { ProjectFile, ProjectList } from "./project-file.ts";
+import type { Project } from "./project.ts";
 
-// The demo build uses this module in place of `lib/project-file.ts`, so the
+// The demo build uses this module in place of `project-file.ts`, so the
 // editor runs as a static site over the bundled synthetic sample.
 
-export { getProjectPageUrl } from "../lib/project-file.ts";
+export { getProjectPageUrl } from "./project-file.ts";
 
 export async function listProjectFiles(): Promise<ProjectList> {
   return {
