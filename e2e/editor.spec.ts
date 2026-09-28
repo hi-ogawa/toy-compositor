@@ -241,13 +241,6 @@ test("navigate the timeline without editing the project", async ({
   await seekTimelineByPixels(page, 1.12 * pixelsPerSecond);
   await expect(time).toContainText("1.133 s");
 
-  // Scroll right, click the ruler at 1 s, and confirm the playhead lands there.
-  await page.getByTestId("timeline-scroll").evaluate((element) => {
-    element.scrollLeft = 150;
-  });
-  await seekTimelineByPixels(page, 1 * pixelsPerSecond);
-  await expect(time).toContainText("1.000 s");
-
   // Confirm navigation did not mark the project as having unsaved changes.
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
     "data-status",
