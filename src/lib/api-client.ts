@@ -12,9 +12,9 @@ export type ProjectEntry = {
 
 export type ProjectList = { root: string; projects: ProjectEntry[] };
 
-/** Project files and their media, read and written through the editor server. */
-export const projectFiles = {
-  async list(): Promise<ProjectList> {
+/** Client for the editor server's `/api/` routes. */
+export const apiClient = {
+  async listProjects(): Promise<ProjectList> {
     const res = await fetch("/api/projects");
     if (!res.ok) {
       throw new Error(`Failed to list projects: ${await res.text()}`);
@@ -22,7 +22,7 @@ export const projectFiles = {
     return res.json();
   },
 
-  async load({ path }: { path: string }): Promise<ProjectFile> {
+  async loadProject({ path }: { path: string }): Promise<ProjectFile> {
     const res = await fetch(
       apiUrl({ pathname: "/api/project", params: { path } }),
     );
@@ -32,7 +32,7 @@ export const projectFiles = {
     return { file: path, project: await res.json() };
   },
 
-  async save({
+  async saveProject({
     path,
     project,
   }: {
@@ -56,7 +56,7 @@ export const projectFiles = {
    * The server resolves a layer source against the project's directory, as the
    * renderer does, so `src` is a file path everywhere.
    */
-  resolveMediaUrl({
+  getMediaUrl({
     src,
     projectPath,
   }: {
@@ -69,11 +69,6 @@ export const projectFiles = {
     });
   },
 };
-
-/** Get the editor page URL that opens a project. */
-export function getProjectPageUrl({ path }: { path: string }): string {
-  return `?${new URLSearchParams({ project: path })}`;
-}
 
 function apiUrl({
   pathname,
