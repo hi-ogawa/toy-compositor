@@ -6,12 +6,12 @@ import { defineConfig, type Plugin } from "vite";
 /** Build the editor as a static site over the synthetic sample, with no server. */
 export default defineConfig({
   base: "./",
-  plugins: [react(), tailwindcss(), demoProjectFile()],
+  plugins: [react(), tailwindcss(), demoProjectFilePlugin()],
   build: { outDir: "dist/demo" },
 });
 
 /** Resolve the server-backed project file module to the demo one. */
-function demoProjectFile(): Plugin {
+function demoProjectFilePlugin(): Plugin {
   const server = path.resolve("src/lib/project-file.ts");
   const demo = path.resolve("src/lib/project-file-demo.ts");
   return {
