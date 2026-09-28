@@ -91,7 +91,7 @@ export function Editor({ projectUrl }: { projectUrl: string }) {
                 : "none"
             }
             layer={previewLayer}
-            projectUrl={projectUrl}
+            resolveMediaUrl={project.resolveMediaUrl}
           />
         </main>
         <aside className="w-72 shrink-0 overflow-y-auto border-l border-border">

@@ -1,6 +1,10 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { loadProjectFile, saveProjectFile } from "../lib/project-file";
+import {
+  loadProjectFile,
+  resolveProjectMediaUrl,
+  saveProjectFile,
+} from "../lib/project-file";
 import type { EditorRuntime } from "../lib/runtime";
 import { useWindowEvent } from "./use-window-event";
 
@@ -72,5 +76,7 @@ export function useEditorProject({
     ready: projectQuery.isSuccess,
     save: saveMutation.mutate,
     saveStatus,
+    resolveMediaUrl: (src: string) =>
+      resolveProjectMediaUrl({ src, projectUrl }),
   };
 }
