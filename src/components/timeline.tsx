@@ -1,23 +1,29 @@
 import type { ReactNode } from "react";
+import { layerRange } from "../lib/editor/layer-regions";
 import type { Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
+import type { EditorRuntime, EditorSelection } from "../lib/runtime";
 import { cn } from "./ui/utils";
-import { TIMELINE_LABEL_WIDTH, type TimelineView } from "./use-timeline";
+import {
+  TIMELINE_LABEL_WIDTH,
+  type TimelineView,
+  useTimeline,
+} from "./use-timeline";
 
-/** Toolbar and the horizontally scrolling area that rows render into. */
 export function Timeline({
-  timeline,
+  runtime,
+  project,
+  selection,
   playhead,
-  fps,
-  onRenderSettings,
-  children,
 }: {
-  timeline: TimelineView;
+  runtime: EditorRuntime;
+  project: Project;
+  selection?: EditorSelection;
   playhead: number;
-  fps: number;
-  onRenderSettings: () => void;
-  children: ReactNode;
 }) {
+  const timeline = useTimeline({ project });
+  const selectOutput = () => runtime.select({ type: "output" });
+  const seek = (time: number) => runtime.seek({ time });
   return (
     <section
       className="flex h-72 shrink-0 flex-col border-t border-border text-sm"
@@ -29,7 +35,7 @@ export function Timeline({
         <button
           type="button"
           className="rounded border px-2 py-1 text-xs hover:bg-secondary"
-          onClick={onRenderSettings}
+          onClick={selectOutput}
         >
           Render settings
         </button>
@@ -37,7 +43,7 @@ export function Timeline({
           className="text-xs tabular-nums text-muted-foreground"
           data-testid="timeline-time"
         >
-          {playhead.toFixed(3)} s · {fps} fps
+          {playhead.toFixed(3)} s · {project.canvas.fps} fps
         </span>
         <label className="ml-auto flex items-center gap-2 text-xs">
           Zoom
@@ -68,7 +74,35 @@ export function Timeline({
             minHeight: "100%",
           }}
         >
-          {children}
+          <TimelineRuler timeline={timeline} onSeek={seek} />
+          <TimelineLocatorRow
+            timeline={timeline}
+            output={project.output}
+            locators={project.locators ?? []}
+            renderSelected={selection?.type === "output"}
+            onRenderMarkerClick={(time) => {
+              selectOutput();
+              seek(time);
+            }}
+            onSeek={seek}
+          />
+          {/* Top layer first, like tracks in a timeline. */}
+          {project.layers
+            .map((layer, index) => ({ layer, index }))
+            .reverse()
+            .map(({ layer, index }) => (
+              <TimelineLayerLane
+                key={index}
+                timeline={timeline}
+                layer={layer}
+                index={index}
+                range={layerRange({ layer, project })}
+                selected={
+                  selection?.type === "layer" && selection.index === index
+                }
+                onSelect={() => runtime.select({ type: "layer", index })}
+              />
+            ))}
           {timeline.isVisible(playhead) && (
             <div
               className="pointer-events-none absolute inset-y-0 z-10 w-px bg-red-400"
@@ -84,7 +118,7 @@ export function Timeline({
   );
 }
 
-export function TimelineRuler({
+function TimelineRuler({
   timeline,
   onSeek,
 }: {
@@ -129,7 +163,7 @@ export function TimelineRuler({
 }
 
 /** Render boundaries from the output, followed by the project's own locators. */
-export function TimelineLocatorRow({
+function TimelineLocatorRow({
   timeline,
   output,
   locators,
@@ -206,7 +240,7 @@ export function TimelineLocatorRow({
   );
 }
 
-export function TimelineLayerLane({
+function TimelineLayerLane({
   timeline,
   layer,
   index,
