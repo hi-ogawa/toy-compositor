@@ -8,10 +8,12 @@ export function CompositionPreview({
   project,
   selection,
   time,
+  resolveMediaUrl,
 }: {
   project: Project;
   selection?: EditorSelection;
   time: number;
+  resolveMediaUrl: (src: string) => string;
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const viewportRef = useCallback((element: HTMLDivElement | null) => {
@@ -72,6 +74,7 @@ export function CompositionPreview({
                   }
                   index={index}
                   canvas={canvas}
+                  resolveMediaUrl={resolveMediaUrl}
                 />
               );
             })}
@@ -95,12 +98,14 @@ function PreviewLayer({
   selected,
   index,
   canvas,
+  resolveMediaUrl,
 }: {
   layer: Exclude<Layer, { type: "audio" }>;
   time: number;
   selected: boolean;
   index: number;
   canvas: Project["canvas"];
+  resolveMediaUrl: (src: string) => string;
 }) {
   const box: TextLayer["box"] & { height?: number } =
     layer.type === "color"
@@ -121,7 +126,11 @@ function PreviewLayer({
   return (
     <div data-testid={`composition-layer-${index}`}>
       {layer.type === "video" || layer.type === "image" ? (
-        <CompositionMedia layer={layer} time={time} />
+        <CompositionMedia
+          layer={layer}
+          time={time}
+          resolveMediaUrl={resolveMediaUrl}
+        />
       ) : layer.type === "text" ? (
         <div style={{ ...style, ...textStyle(layer) }}>{layer.text}</div>
       ) : (

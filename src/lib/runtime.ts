@@ -1,5 +1,5 @@
 import { createStore } from "../utils/store.ts";
-import type { EditorProjectFile } from "./project-storage.ts";
+import type { ProjectFile } from "./project-file.ts";
 import type { Layer, Project } from "./project.ts";
 
 export type EditorSelection =
@@ -7,7 +7,7 @@ export type EditorSelection =
   | { type: "layer"; index: number };
 
 export interface EditorState {
-  /** Project file path relative to where the editor was started. */
+  /** Project file path relative to the projects root, which is also where saves go. */
   file: string;
   project: Project;
   selection?: EditorSelection;
@@ -57,7 +57,7 @@ export class EditorRuntime {
     return this.store.get().project;
   }
 
-  deserializeProject({ file, project }: EditorProjectFile): void {
+  deserializeProject({ file, project }: ProjectFile): void {
     this.store.update({ file, project, selection: undefined });
   }
 

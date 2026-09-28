@@ -10,13 +10,13 @@ import { cn } from "./ui/utils";
 import { useEditorProject } from "./use-editor-project";
 import { useWindowEvent } from "./use-window-event";
 
-export function Editor() {
+export function Editor({ projectPath }: { projectPath: string }) {
   const [runtime] = useState(() => new EditorRuntime());
   const state = useSyncExternalStore(
     runtime.store.subscribe,
     runtime.store.get,
   );
-  const project = useEditorProject({ runtime });
+  const project = useEditorProject({ projectPath, runtime });
 
   useEffect(() => {
     document.title = state.file
@@ -55,11 +55,13 @@ export function Editor() {
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">
           <PreviewMonitors
             layer={previewLayer}
+            resolveMediaUrl={project.resolveMediaUrl}
             composition={
               <CompositionPreview
                 project={state.project}
                 selection={selection}
                 time={outputRange(state.project).start}
+                resolveMediaUrl={project.resolveMediaUrl}
               />
             }
           />

@@ -1,21 +1,31 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { editorProjectStorage } from "../lib/project-storage";
+import {
+  loadProjectFile,
+  resolveProjectMediaUrl,
+  saveProjectFile,
+} from "../lib/project-file";
 import type { EditorRuntime } from "../lib/runtime";
 import { useWindowEvent } from "./use-window-event";
 
 export type SaveStatus = "saved" | "unsaved" | "saving" | "error";
 
-export function useEditorProject({ runtime }: { runtime: EditorRuntime }) {
+export function useEditorProject({
+  projectPath,
+  runtime,
+}: {
+  projectPath: string;
+  runtime: EditorRuntime;
+}) {
   const [dirty, setDirty] = useState(false);
   const revisionRef = useRef(0);
 
   const projectQuery = useQuery({
-    queryKey: ["editor-project"],
+    queryKey: ["editor-project", projectPath],
     retry: false,
     staleTime: Infinity,
     queryFn: async () => {
-      runtime.deserializeProject(await editorProjectStorage.load());
+      runtime.deserializeProject(await loadProjectFile({ path: projectPath }));
       return true;
     },
   });
@@ -27,7 +37,10 @@ export function useEditorProject({ runtime }: { runtime: EditorRuntime }) {
         throw new Error("Cannot save before the project has loaded.");
       }
       const revision = revisionRef.current;
-      await editorProjectStorage.save(runtime.serializeProject());
+      await saveProjectFile({
+        path: projectPath,
+        project: runtime.serializeProject(),
+      });
       return revision;
     },
     onSuccess: (savedRevision) => {
@@ -63,5 +76,7 @@ export function useEditorProject({ runtime }: { runtime: EditorRuntime }) {
     ready: projectQuery.isSuccess,
     save: saveMutation.mutate,
     saveStatus,
+    resolveMediaUrl: (src: string) =>
+      resolveProjectMediaUrl({ src, projectPath }),
   };
 }
