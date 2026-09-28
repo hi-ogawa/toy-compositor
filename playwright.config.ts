@@ -30,8 +30,9 @@ export default defineConfig({
     env: { TOY_COMPOSITOR_ROOT: root },
     url: `http://localhost:${port}`,
     reuseExistingServer: false,
-    // pnpm forwards SIGTERM to Vite, but the default SIGKILL leaves it running.
-    gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },
+    // pnpm forwards SIGTERM to Vite, but SIGKILL leaves it running, so never
+    // fall back to SIGKILL.
+    gracefulShutdown: { signal: "SIGTERM", timeout: 0 },
   },
   forbidOnly: !!process.env.CI,
   reporter: [
