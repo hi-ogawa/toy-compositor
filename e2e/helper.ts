@@ -41,10 +41,7 @@ export const test = base.extend<{
       .toBeDefined();
     const origin = output.match(/http:\/\/localhost:\d+\//)![0];
     const url = new URL(origin);
-    url.searchParams.set(
-      "project",
-      `/files/${path.relative(process.cwd(), projectFile)}`,
-    );
+    url.searchParams.set("project", path.relative(process.cwd(), projectFile));
     await use({ url: url.href, projectFile });
   },
 });

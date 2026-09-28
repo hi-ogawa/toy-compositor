@@ -8,13 +8,13 @@ import { cn } from "./ui/utils";
 import { useEditorProject } from "./use-editor-project";
 import { useWindowEvent } from "./use-window-event";
 
-export function Editor({ projectUrl }: { projectUrl: string }) {
+export function Editor({ projectPath }: { projectPath: string }) {
   const [runtime] = useState(() => new EditorRuntime());
   const state = useSyncExternalStore(
     runtime.store.subscribe,
     runtime.store.get,
   );
-  const project = useEditorProject({ projectUrl, runtime });
+  const project = useEditorProject({ projectPath, runtime });
 
   useEffect(() => {
     document.title = state.file

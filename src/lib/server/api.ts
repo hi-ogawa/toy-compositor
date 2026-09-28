@@ -1,67 +1,168 @@
 import fs from "node:fs";
 import path from "node:path";
-import { staticMiddleware } from "srvx/static";
-
-/** URL prefix under which files in the editor root are served. */
-export const FILES_PREFIX = "/files/";
+import { Readable } from "node:stream";
 
 // Local sample projects live under the gitignored `.local/`. Other dot paths,
 // such as `.git/`, stay hidden for reads and saves.
 const ALLOWED_DOTFILES = [".local"];
 
+const CONTENT_TYPES: Record<string, string> = {
+  ".json": "application/json",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
+  ".mov": "video/quicktime",
+  ".mp3": "audio/mpeg",
+  ".wav": "audio/wav",
+  ".m4a": "audio/mp4",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+};
+
 /**
- * Serve files under `root` at `/files/*`, and accept project saves as `PUT`
- * of `.json` files there. The client resolves media relative to the project
- * URL, so the same layout works from a static host.
+ * Editor API over files under `root`. Files are named by paths relative to
+ * `root` in query parameters, so a file path is never encoded as a URL path.
+ *
+ * - `GET /api/project?path=` reads a project, and `PUT` saves it.
+ * - `GET /api/media?project=&src=` serves a layer source resolved against the
+ *   project's directory, as the renderer does, with range requests.
  */
 export function createEditorHandler({ root }: { root: string }) {
-  const serveFile = staticMiddleware({ dir: root, dotfiles: ALLOWED_DOTFILES });
   return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url);
-      if (!url.pathname.startsWith(FILES_PREFIX)) {
-        return new Response(undefined, { status: 404 });
-      }
-      const relative = decodeURIComponent(
-        url.pathname.slice(FILES_PREFIX.length),
-      );
-      const file = path.resolve(root, relative);
-      if (
-        !file.startsWith(root + path.sep) ||
-        path
-          .relative(root, file)
-          .split(path.sep)
-          .some((s) => s.startsWith(".") && !ALLOWED_DOTFILES.includes(s))
-      ) {
-        return new Response("Path is not served by the editor", {
-          status: 403,
-        });
-      }
-      if (request.method === "PUT") {
-        if (path.extname(file) !== ".json") {
-          return new Response("Only .json files can be saved", {
-            status: 403,
+      switch (url.pathname) {
+        case "/api/project": {
+          const file = resolveFile({
+            root,
+            paths: [getParam({ url, name: "path" })],
+          });
+          if (request.method === "PUT") {
+            if (path.extname(file) !== ".json") {
+              throw new HttpError({
+                status: 403,
+                message: "Only .json files can be saved",
+              });
+            }
+            const project = await request.json();
+            await fs.promises.writeFile(
+              file,
+              JSON.stringify(project, null, 2) + "\n",
+            );
+            return Response.json({});
+          }
+          return new Response(await fs.promises.readFile(file), {
+            headers: { "Content-Type": "application/json" },
           });
         }
-        const project = await request.json();
-        await fs.promises.writeFile(
-          file,
-          JSON.stringify(project, null, 2) + "\n",
-        );
-        return Response.json({});
+        case "/api/media": {
+          const project = getParam({ url, name: "project" });
+          const src = getParam({ url, name: "src" });
+          const file = resolveFile({
+            root,
+            paths: [path.dirname(project), src],
+          });
+          return await serveFile({ file, request });
+        }
+        default: {
+          return new Response(undefined, { status: 404 });
+        }
       }
-      url.pathname = "/" + url.pathname.slice(FILES_PREFIX.length);
-      return await serveFile(
-        new Request(url, request),
-        () => new Response(undefined, { status: 404 }),
-      );
     } catch (error) {
+      if (error instanceof HttpError) {
+        return new Response(error.message, { status: error.status });
+      }
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "ENOENT"
+      ) {
+        return new Response("File not found", { status: 404 });
+      }
       return new Response(
         error instanceof Error ? error.message : String(error),
-        {
-          status: 500,
-        },
+        { status: 500 },
       );
     }
   };
+}
+
+class HttpError extends Error {
+  status: number;
+  constructor({ status, message }: { status: number; message: string }) {
+    super(message);
+    this.status = status;
+  }
+}
+
+function getParam({ url, name }: { url: URL; name: string }): string {
+  const value = url.searchParams.get(name);
+  if (!value) {
+    throw new HttpError({ status: 400, message: `Missing ?${name}=` });
+  }
+  return value;
+}
+
+/** Resolve `paths` against `root`, rejecting files outside it and dot paths. */
+function resolveFile({
+  root,
+  paths,
+}: {
+  root: string;
+  paths: string[];
+}): string {
+  const file = path.resolve(root, ...paths);
+  if (
+    !file.startsWith(root + path.sep) ||
+    path
+      .relative(root, file)
+      .split(path.sep)
+      .some((s) => s.startsWith(".") && !ALLOWED_DOTFILES.includes(s))
+  ) {
+    throw new HttpError({
+      status: 403,
+      message: "Path is not served by the editor",
+    });
+  }
+  return file;
+}
+
+/**
+ * Stream a file, honoring the single `bytes=<start>-[<end>]` ranges that media
+ * elements send when seeking. Other ranges get the whole file, which HTTP
+ * allows.
+ */
+async function serveFile({
+  file,
+  request,
+}: {
+  file: string;
+  request: Request;
+}): Promise<Response> {
+  const { size } = await fs.promises.stat(file);
+  const headers = new Headers({
+    "Accept-Ranges": "bytes",
+    "Content-Type":
+      CONTENT_TYPES[path.extname(file).toLowerCase()] ??
+      "application/octet-stream",
+  });
+  const range = request.headers.get("range")?.match(/^bytes=(\d+)-(\d*)$/);
+  const start = range ? Number(range[1]) : 0;
+  const end = range?.[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
+  if (range && start >= size) {
+    headers.set("Content-Range", `bytes */${size}`);
+    return new Response(undefined, { status: 416, headers });
+  }
+  headers.set("Content-Length", String(end - start + 1));
+  if (range) {
+    headers.set("Content-Range", `bytes ${start}-${end}/${size}`);
+  }
+  const body =
+    request.method === "HEAD"
+      ? undefined
+      : (Readable.toWeb(
+          fs.createReadStream(file, { start, end }),
+        ) as ReadableStream);
+  return new Response(body, { status: range ? 206 : 200, headers });
 }

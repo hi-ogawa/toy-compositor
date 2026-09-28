@@ -1,15 +1,15 @@
 import { Editor } from "./components/editor";
 
 export function App() {
-  const project = new URL(window.location.href).searchParams.get("project");
-  if (!project) {
+  const projectPath = new URL(window.location.href).searchParams.get("project");
+  if (!projectPath) {
     return (
       <p className="p-4 text-destructive">
-        No project to open. Add ?project=&lt;url&gt; to the page URL, for
-        example ?project=/files/samples/synthetic/project.json
+        No project to open. Add ?project=&lt;path&gt; to the page URL with a
+        path relative to the editor root, for example
+        ?project=samples/synthetic/project.json
       </p>
     );
   }
-  const projectUrl = new URL(project, window.location.href).href;
-  return <Editor projectUrl={projectUrl} />;
+  return <Editor projectPath={projectPath} />;
 }

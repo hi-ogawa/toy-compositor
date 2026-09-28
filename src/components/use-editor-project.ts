@@ -11,21 +11,21 @@ import { useWindowEvent } from "./use-window-event";
 export type SaveStatus = "saved" | "unsaved" | "saving" | "error";
 
 export function useEditorProject({
-  projectUrl,
+  projectPath,
   runtime,
 }: {
-  projectUrl: string;
+  projectPath: string;
   runtime: EditorRuntime;
 }) {
   const [dirty, setDirty] = useState(false);
   const revisionRef = useRef(0);
 
   const projectQuery = useQuery({
-    queryKey: ["editor-project", projectUrl],
+    queryKey: ["editor-project", projectPath],
     retry: false,
     staleTime: Infinity,
     queryFn: async () => {
-      runtime.deserializeProject(await loadProjectFile({ url: projectUrl }));
+      runtime.deserializeProject(await loadProjectFile({ path: projectPath }));
       return true;
     },
   });
@@ -38,7 +38,7 @@ export function useEditorProject({
       }
       const revision = revisionRef.current;
       await saveProjectFile({
-        url: projectUrl,
+        path: projectPath,
         project: runtime.serializeProject(),
       });
       return revision;
@@ -77,6 +77,6 @@ export function useEditorProject({
     save: saveMutation.mutate,
     saveStatus,
     resolveMediaUrl: (src: string) =>
-      resolveProjectMediaUrl({ src, projectUrl }),
+      resolveProjectMediaUrl({ src, projectPath }),
   };
 }

@@ -13,7 +13,7 @@ pnpm setup-sample ../toy-compositor/.local/samples/rescene.zip
 
 Run setup from the repository root with a relative or absolute source path. It copies a directory or unpacks a ZIP into `.local/projects/<name>/`, where `<name>` is the source basename without its extension. Existing files are preserved, so local project edits survive reruns. To start again from the source sample, remove that sample's local directory and run setup again.
 
-Setup preserves every file in the sample, including additional project variants. Open any project JSON in the editor with `pnpm dev` and its `?project=` URL, or pass it to `pnpm render`. Preparing ZIP samples needs unzip.
+Setup preserves every file in the sample, including additional project variants. Open any project JSON in the editor with `pnpm dev` and its `?project=` path, or pass it to `pnpm render`. Preparing ZIP samples needs unzip.
 
 ## Synthetic composition
 
@@ -35,8 +35,8 @@ The sample exercises video scaling, image placement, text rendering with an outl
 For example, with `pnpm dev` running:
 
 ```text
-http://localhost:5173/?project=/files/.local/projects/rescene/project.json
-http://localhost:5173/?project=/files/.local/projects/rescene/vertical-video.json
+http://localhost:5173/?project=.local/projects/rescene/project.json
+http://localhost:5173/?project=.local/projects/rescene/vertical-video.json
 ```
 
 These projects were transcribed from the finished Kdenlive composition. The original project JSON, archive fetch script, and layout notes are preserved at [11e9808](https://github.com/hi-ogawa/toy-compositor/tree/11e9808/covers/2026-06-27-rescene-love-attack). The horizontal values were copied directly. The vertical layout maps the Kdenlive center window to a native 1080×1920 canvas. The [compiler results](../docs/compiler.md) and [Remotion comparison](../research/remotion/README.md) record the render checks.

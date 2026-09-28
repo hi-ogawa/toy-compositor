@@ -23,7 +23,7 @@ pnpm render <project.json> <output.(mp4|png)>                          # render 
 
 Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The editor and the render CLI run on Node 24 directly.
 
-The editor serves the repository at `/files/` and opens the project given by the page's `?project=` URL, for example `/?project=/files/.local/projects/synthetic/project.json`. Any project under the repository opens by changing the query. Media resolves relative to the project URL, and saving writes the JSON back with `PUT`.
+The editor opens the project given by the page's `?project=` query, a path relative to the repository root, for example `/?project=.local/projects/synthetic/project.json`. Any project under the repository opens by changing the query. The dev server reads, saves, and serves media for it through `/api/`, and media resolves relative to the project file as in the renderer.
 
 ## Samples
 
