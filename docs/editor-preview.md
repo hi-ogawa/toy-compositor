@@ -9,13 +9,13 @@ Each component answers one question about the preview, and the preview holds no 
 ![The editor screen as nested component regions, each with the one question it answers](images/component-tree.svg)
 
 ```text
-Editor                     editor.tsx               runtime store, selection, preview time
+Editor                     editor.tsx               runtime store, selection, playhead
 ├─ PreviewMonitors         preview-monitors.tsx     source panel open state and width only
 │  ├─ MediaPreview         media-preview.tsx        the selected layer's raw file
 │  └─ CompositionPreview   composition-preview.tsx  viewport scale, layers visible at time
 │     └─ PreviewLayer × N                           box to CSS, per-type rendering, outline
 │        └─ CompositionMedia  composition-media.tsx natural size, fit and crop, video seek
-├─ layer list              editor.tsx               selection
+├─ Timeline                timeline.tsx             selection, seeking the playhead
 └─ Inspector               inspector.tsx            project edits
 ```
 
@@ -41,7 +41,6 @@ The selected layer gets a read-only outline, drawn as a second div with the same
 
 ## Known gaps
 
-- The preview time is the output start for now. The timeline's playhead replaces it next.
 - A paused video shows whatever frame the browser picks for `currentTime`, while the compiler snaps to the nearest source frame, so the preview may be one frame off.
 - Text is DOM text with `-webkit-text-stroke` and an estimated line height, while the compiler draws it with ImageMagick, so glyph placement differs slightly.
 - Video seeks run in a React effect whenever the time changes. Playback will need media elements to follow a transport natively and to stay mounted around their range, and audio layers will need elements outside the visual tree.
