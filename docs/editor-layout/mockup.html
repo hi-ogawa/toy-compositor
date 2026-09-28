@@ -678,7 +678,7 @@
             aria-controls="source-monitor"
             aria-expanded="true"
           >
-            Hide source
+            Close source panel
           </button>
         </div>
         <div class="preview-tabs" role="tablist" aria-label="Preview monitor">
@@ -1192,7 +1192,7 @@
       let sourceCollapsed = false;
       let sourceShare = 35;
       let monitorTab = "composition";
-      const sourcePositions = { camera: 0, score: 0, mix: 0 };
+      let sourcePosition = 0;
       const rawCamera =
         '<svg viewBox="480 0 480 540" role="img" aria-label="Illustrative raw camera video frame">\n<rect width="960" height="540" fill="#172131"/><rect x="0" y="0" width="480" height="540" fill="#fcfcfa"/>\n<text x="25" y="42" font-size="22" font-family="system-ui" fill="#283443">Cloud Palace</text><text x="25" y="65" font-size="11" font-family="system-ui" fill="#7c8590">Bass arrangement</text>\n<g stroke="#afb6bd" stroke-width="1"><path d="M22 116H460 M22 127H460 M22 138H460 M22 149H460 M22 160H460 M22 249H460 M22 260H460 M22 271H460 M22 282H460 M22 293H460 M22 382H460 M22 393H460 M22 404H460 M22 415H460 M22 426H460"/></g>\n<g fill="#34404b"><ellipse cx="70" cy="149" rx="7" ry="5"/><ellipse cx="135" cy="138" rx="7" ry="5"/><ellipse cx="200" cy="160" rx="7" ry="5"/><ellipse cx="265" cy="127" rx="7" ry="5"/><ellipse cx="330" cy="149" rx="7" ry="5"/><ellipse cx="390" cy="138" rx="7" ry="5"/><ellipse cx="80" cy="282" rx="7" ry="5"/><ellipse cx="170" cy="260" rx="7" ry="5"/><ellipse cx="240" cy="271" rx="7" ry="5"/><ellipse cx="330" cy="293" rx="7" ry="5"/><ellipse cx="405" cy="260" rx="7" ry="5"/></g>\n<g stroke="#34404b" stroke-width="2"><path d="M76 149V118 M141 138V108 M206 160V129 M271 127V96 M336 149V118 M396 138V107 M86 282V251 M176 260V229 M246 271V240 M336 293V262 M411 260V229"/></g>\n<rect x="215" y="94" width="3" height="355" fill="#7baa93"/>\n<rect x="480" y="0" width="480" height="540" fill="#3e4149"/><rect x="520" y="22" width="125" height="228" fill="#686b71"/><rect x="660" y="22" width="258" height="228" fill="#555960"/>\n<ellipse cx="744" cy="143" rx="53" ry="65" fill="#c8ad93"/><path d="M690 120Q689 62 747 65Q806 62 797 130L769 91Z" fill="#28282c"/><path d="M656 237Q742 181 833 237L901 540H583Z" fill="#18262e"/>\n<path d="M672 265L727 345L664 385L617 329" fill="#c7ad92"/><path d="M814 275L871 321L811 368L770 343" fill="#c7ad92"/>\n<ellipse cx="731" cy="383" rx="68" ry="98" transform="rotate(24 731 383)" fill="#a16b40"/><ellipse cx="731" cy="383" rx="53" ry="80" transform="rotate(24 731 383)" fill="#b88654"/><path d="M750 349L910 192L929 205L770 370Z" fill="#d3b17c"/><g stroke="#72502d" stroke-width="2"><path d="M753 356L919 199 M759 361L921 202 M765 366L924 204"/></g>\n<rect x="12" y="474" width="165" height="54" fill="#26354b"/><text x="26" y="498" font-family="system-ui" font-size="14" fill="white">Cloud Palace</text><text x="26" y="517" font-family="system-ui" font-size="10" fill="#b3c6df">Bass cover</text>\n</svg>';
       const rawScore =
@@ -1220,7 +1220,9 @@
         document.getElementById("monitor-divider").hidden =
           !dual || sourceCollapsed;
         const toggle = document.getElementById("toggle-source");
-        toggle.textContent = sourceCollapsed ? "Show source" : "Hide source";
+        toggle.textContent = sourceCollapsed
+          ? "Open source panel"
+          : "Close source panel";
         toggle.setAttribute("aria-expanded", String(!sourceCollapsed));
         shell.style.setProperty("--source-share", sourceShare + "%");
         document
@@ -1276,10 +1278,12 @@
       });
       document.getElementById("toggle-source").addEventListener("click", () => {
         sourceCollapsed = !sourceCollapsed;
+        if (sourceCollapsed) sourceSeek(0);
         updateMonitors();
       });
 
       function renderSource(name) {
+        if (selectedLayer !== name) sourcePosition = 0;
         selectedLayer = name;
         const layer = layers[name];
         const hasSource = Boolean(layer.source);
@@ -1309,12 +1313,12 @@
         if (timed) {
           const scrub = document.getElementById("source-scrub");
           scrub.max = layer.timing.out;
-          scrub.value = sourcePositions[name];
-          sourceSeek(sourcePositions[name]);
+          scrub.value = sourcePosition;
+          sourceSeek(sourcePosition);
         }
       }
       function sourceSeek(seconds) {
-        sourcePositions[selectedLayer] = seconds;
+        sourcePosition = seconds;
         document.getElementById("source-time").textContent =
           "00:" + seconds.toFixed(3).padStart(6, "0");
       }
