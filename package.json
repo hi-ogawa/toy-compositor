@@ -2,7 +2,7 @@
   "name": "toy-compositor",
   "version": "0.0.0",
   "bin": {
-    "toy-compositor": "./dist/cli.js"
+    "toy-compositor": "./dist/server/cli.js"
   },
   "files": [
     "dist"

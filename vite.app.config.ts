@@ -9,7 +9,8 @@ import { createEditorHandler } from "./src/lib/server/api.ts";
 export default defineConfig({
   plugins: [react(), tailwindcss(), editorApi()],
   // `vite build` builds the client into `dist/client/` and bundles the CLI
-  // into `dist/cli.js`, which keeps `srvx` external as a runtime dependency.
+  // into `dist/server/cli.js`, which keeps `srvx` external as a runtime
+  // dependency.
   builder: {},
   environments: {
     client: {
@@ -17,8 +18,7 @@ export default defineConfig({
     },
     ssr: {
       build: {
-        outDir: "dist",
-        emptyOutDir: false,
+        outDir: "dist/server",
         target: "node24",
         rolldownOptions: { input: { cli: "src/cli.ts" } },
       },

@@ -17,7 +17,7 @@ test("serve a project directory from the built CLI and save an edit", async ({
   await cp("samples/synthetic", `${root}/synthetic`, { recursive: true });
   const server = spawn(
     process.execPath,
-    ["dist/cli.js", "serve", root, "--port", "0"],
+    ["dist/server/cli.js", "serve", root, "--port", "0"],
     { env: { ...process.env, NO_COLOR: "1" } },
   );
   let output = "";

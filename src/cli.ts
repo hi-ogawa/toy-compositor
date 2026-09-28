@@ -25,7 +25,7 @@ async function main() {
   switch (command) {
     case "serve": {
       // The build places the client next to the bundled CLI.
-      const clientDir = path.join(import.meta.dirname, "client");
+      const clientDir = path.join(import.meta.dirname, "../client");
       if (!fs.existsSync(path.join(clientDir, "index.html"))) {
         throw new Error(
           `Editor client not found at ${clientDir}. Run pnpm build first.`,
