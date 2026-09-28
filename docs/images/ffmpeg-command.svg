@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="400" viewBox="0 0 760 400" role="img" aria-labelledby="title desc">
+<title id="title">An ffmpeg command has inputs, one filter graph, and an output</title>
+<desc id="desc">On the left, each input is a file opened with -i, preceded by input options such as -ss and -t that apply only to it. Inputs are numbered from 0, and their streams are referenced as 0:v or 1:a. In the middle, the filter graph passed with -filter_complex is a list of chains separated by semicolons. Each chain is filters joined by commas, reads from bracketed labels, and writes to a new label. A source filter such as color generates frames without any input. On the right, -map picks labeled streams for the output, and output options such as codecs apply to the output file that follows them.</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7d8a84"/></marker>
+</defs>
+<rect width="760" height="400" fill="#fcfaf5"/>
+<g font-family="Arial,sans-serif" font-size="15" fill="#263632">
+<text x="30" y="34" font-size="20" font-weight="700">An ffmpeg command: inputs, one filter graph, an output</text>
+<text x="30" y="70" font-weight="700">Inputs</text>
+<text x="30" y="88" font-size="12" fill="#52625d">options before -i apply to that input</text>
+<text x="262" y="70" font-weight="700">Filter graph</text>
+<text x="262" y="88" font-size="12" fill="#52625d">-filter_complex '…'</text>
+<text x="580" y="70" font-weight="700">Output</text>
+<text x="580" y="88" font-size="12" fill="#52625d">options before the file apply to it</text>
+<g font-family="Menlo,Consolas,monospace" font-size="12">
+<rect x="30" y="102" width="200" height="54" rx="7" fill="#ffffff" stroke="#a3b0a9"/>
+<text x="42" y="124"><tspan fill="#6b4fa0">-ss 0 -t 3</tspan> -i video.mp4</text>
+<text x="42" y="144" fill="#52625d">input 0 → [0:v] [0:a]</text>
+<rect x="30" y="166" width="200" height="54" rx="7" fill="#ffffff" stroke="#a3b0a9"/>
+<text x="42" y="188"><tspan fill="#6b4fa0">-ss 0 -t 3</tspan> -i audio.wav</text>
+<text x="42" y="208" fill="#52625d">input 1 → [1:a]</text>
+<rect x="30" y="230" width="200" height="54" rx="7" fill="#ffffff" stroke="#a3b0a9"/>
+<text x="42" y="252"><tspan fill="#6b4fa0">-loop 1 …</tspan> -i image.png</text>
+<text x="42" y="272" fill="#52625d">input 2 → [2:v]</text>
+<rect x="262" y="102" width="286" height="226" rx="7" fill="#ffffff" stroke="#2f6fb0" stroke-width="1.5"/>
+<text x="276" y="128"><tspan fill="#8a5a00">color=…</tspan><tspan fill="#2f6fb0">[canvas]</tspan>;</text>
+<text x="276" y="154"><tspan fill="#2f6fb0">[0:v]</tspan>fps=30,setpts=…,scale=…<tspan fill="#2f6fb0">[v0]</tspan>;</text>
+<text x="276" y="180"><tspan fill="#2f6fb0">[canvas][v0]</tspan>overlay=…<tspan fill="#2f6fb0">[over0]</tspan>;</text>
+<text x="276" y="206"><tspan fill="#2f6fb0">[1:a]</tspan>aformat=…,afade=…<tspan fill="#2f6fb0">[a1]</tspan>;</text>
+<text x="276" y="232">…</text>
+<text x="276" y="258"><tspan fill="#2f6fb0">[over2]</tspan>format=yuv420p<tspan fill="#2f6fb0">[vout]</tspan>;</text>
+<text x="276" y="284"><tspan fill="#2f6fb0">[a1]</tspan>amix=…,apad,atrim=…<tspan fill="#2f6fb0">[aout]</tspan></text>
+<rect x="580" y="102" width="150" height="118" rx="7" fill="#ffffff" stroke="#a3b0a9"/>
+<text x="592" y="126">-map <tspan fill="#2f6fb0">[vout]</tspan></text>
+<text x="592" y="146">-map <tspan fill="#2f6fb0">[aout]</tspan></text>
+<text x="592" y="170" fill="#6b4fa0">-c:v libx264 …</text>
+<text x="592" y="188" fill="#6b4fa0">-c:a aac …</text>
+<text x="592" y="208">out.mp4</text>
+</g>
+<text x="276" y="310" font-size="12" fill="#52625d">"," joins filters in a chain · ";" ends a chain</text>
+<path d="M230 129 H260" fill="none" stroke="#7d8a84" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M230 193 H260" fill="none" stroke="#7d8a84" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M230 257 H260" fill="none" stroke="#7d8a84" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M548 161 H578" fill="none" stroke="#7d8a84" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="30" y="352" width="12" height="12" rx="2" fill="#6b4fa0"/>
+<text x="50" y="363" font-size="13" fill="#52625d">options</text>
+<rect x="130" y="352" width="12" height="12" rx="2" fill="#2f6fb0"/>
+<text x="150" y="363" font-size="13" fill="#52625d">[labels] name streams: [k:v] and [k:a] from input k, others made by chains</text>
+<rect x="30" y="376" width="12" height="12" rx="2" fill="#8a5a00"/>
+<text x="50" y="387" font-size="13" fill="#52625d">source filter, which makes frames without any input</text>
+</g>
+</svg>

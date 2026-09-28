@@ -1,0 +1,28 @@
+name: pkg.pr.new
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: pkg-pr-new-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "lts/*"
+      - run: corepack enable
+      - run: pnpm i
+      - run: pnpm build
+      - run: pnpm exec pkg-pr-new publish --no-compact --commentWithSha .

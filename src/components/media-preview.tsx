@@ -4,9 +4,11 @@ import type { Layer } from "../lib/project";
 export function MediaPreview({
   layer,
   visible,
+  resolveMediaUrl,
 }: {
   layer?: Layer;
   visible: boolean;
+  resolveMediaUrl: (src: string) => string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -24,7 +26,7 @@ export function MediaPreview({
       </p>
     );
   }
-  const src = `/api/media/${layer.src.split("/").map(encodeURIComponent).join("/")}`;
+  const src = resolveMediaUrl(layer.src);
   const onError = () => setFailed(true);
   return (
     <section className="flex h-full min-h-0 flex-col gap-2">
