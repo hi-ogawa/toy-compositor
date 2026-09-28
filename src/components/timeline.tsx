@@ -37,7 +37,7 @@ export function Timeline({
           type="button"
           className="w-14 rounded border px-2 py-1 text-xs hover:bg-secondary"
           title={playing ? "Pause (Space)" : "Play (Space)"}
-          onClick={() => runtime.togglePlayback()}
+          onClick={() => void runtime.togglePlayback()}
         >
           {playing ? "Pause" : "Play"}
         </button>

@@ -33,7 +33,8 @@ export class EditorRuntime {
     selection: undefined,
   }));
 
-  readonly transport = new AudioContextTransport();
+  readonly context = new AudioContext();
+  readonly transport = new AudioContextTransport(this.context);
 
   constructor() {
     this.transport.store.subscribe(() => {
@@ -61,12 +62,14 @@ export class EditorRuntime {
     this.seek({ time: playhead + frames / project.canvas.fps });
   }
 
-  togglePlayback(): void {
+  async togglePlayback(): Promise<void> {
     if (this.store.get().playing) {
       this.transport.pause();
       // Land on a frame, so the paused preview matches a rendered frame.
       this.seek({ time: this.store.get().playhead });
     } else {
+      // Play is a user gesture, which lets the context start running.
+      await this.context.resume();
       this.transport.play();
     }
   }

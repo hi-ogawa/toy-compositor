@@ -35,17 +35,17 @@ The preview time decides which layers show and which frame each video shows. A l
 
 ![One project time picks which layers are visible and which source frame each video shows](images/time-mapping.svg)
 
-Every layer stays mounted and is hidden outside its range, so its media is loaded before playback reaches it. Layers draw in project order, so later layers sit on top, matching the compiler's overlay order. Audio layers are `<audio>` elements outside the canvas, because they draw nothing.
+Every layer stays mounted and is hidden outside its range, so its media is loaded before playback reaches it. Layers draw in project order, so later layers sit on top, matching the compiler's overlay order. Audio layers draw nothing, and their sound plays on the transport, described below.
 
 The selected layer gets a read-only outline, drawn as a second div with the same box. Text layers have no height, so the outline holds an invisible copy of the text to match it.
 
 ## Play Along the Transport
 
-The playhead belongs to a transport in [src/lib/transport.ts](../src/lib/transport.ts), after toy-midi's recorder transport. Its clock is `AudioContext.currentTime`, which keeps running when a project has no audio, and it publishes the position on every animation frame while playing. Pausing lands the playhead back on the frame grid, so a paused preview always corresponds to a rendered frame. Space plays and pauses, and the arrow keys step by one frame, ten with Shift.
+The playhead belongs to a transport in [src/lib/transport.ts](../src/lib/transport.ts), after toy-midi's recorder transport. Its clock is the `AudioContext`, which keeps running when a project has no audio. While playing it publishes the position being heard on every animation frame, from `getOutputTimestamp`, because `currentTime` is where the context renders and runs ahead of the speakers by the output latency. Chromium on Linux reports `outputLatency` as 0, so the timestamp is the reliable source. Pausing lands the playhead back on the frame grid, so a paused preview always corresponds to a rendered frame. Space plays and pauses, and the arrow keys step by one frame, ten with Shift.
 
-Media elements follow the transport and never drive it. Each video and audio layer's element has a `MediaPlayback` in [src/lib/media-playback.ts](../src/lib/media-playback.ts), which seeks to `in + time − start` while paused, and while playing plays natively and seeks back when it drifts more than 0.1 s from the transport. Outside its source range the element pauses at `in` or `out`.
+Audio is scheduled on the transport and never steered. Each audio layer, and each unmuted video layer, has an `AudioBufferPlayback` in [src/lib/audio-buffer-playback.ts](../src/lib/audio-buffer-playback.ts), after toy-midi's, which decodes its source and starts an `AudioBufferSourceNode` at the context time where the layer's range begins. A layer is heard wherever its own range covers the playhead, so trimming decides what plays and the output range is only the window that renders. `fadeIn` and `fadeOut` are gain automation at the edges of the layer's range, and `muted` silences it. An edit during playback reschedules the layer from the current position.
 
-A layer is heard wherever its own range covers the playhead, so trimming decides what plays and the output range is only the window that renders. `fadeIn` and `fadeOut` apply at the edges of the layer's range, and `muted` silences it. Unmuted video layers play their own audio the same way.
+Video elements follow the heard position and never drive it. Each video layer has a `VideoPlayback` in [src/lib/video-playback.ts](../src/lib/video-playback.ts), which keeps the element muted and seeks it to `in + time − start` while paused. While playing it plays natively and closes drift by nudging `playbackRate` by up to 10%, seeking only when the drift passes a second. A corrective seek lands behind by however long the seek took, which on a camera file with a long keyframe interval is longer than the drift it corrects, so seeking to correct drift never converges. Outside its source range the element pauses at `in` or `out`. [Working media](working-media.md) keeps the remaining seeks, such as timeline clicks, fast.
 
 ## Known gaps
 
@@ -53,5 +53,6 @@ A layer is heard wherever its own range covers the playhead, so trimming decides
 - Text is DOM text with `-webkit-text-stroke` and an estimated line height, while the compiler draws it with ImageMagick, so glyph placement differs slightly.
 - The transport publishes the playhead through the editor store, so the editor re-renders on every animation frame while playing, like toy-midi's recorder.
 - The compiler fades at the edges of a layer's part inside the output range, while the preview fades at the layer's own edges. They agree whenever a layer is trimmed within the output range.
-- Drift correction seeks, so a media element that falls behind skips instead of catching up smoothly.
+- A video starts 50 to 90 ms behind the sound right after Play and catches up within a few seconds, because the element takes that long to start.
+- Each audible layer decodes its whole source into memory, about 60MB for a 3-minute stereo mix.
 - Layers are keyed by index, which holds until layers can be added or reordered.

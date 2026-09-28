@@ -1,46 +1,48 @@
-import { throttle } from "../utils/timing.ts";
-import { layerRange } from "./layout.ts";
-import type { AudioLayer, VideoLayer } from "./project.ts";
+import type { VideoLayer } from "./project.ts";
 import type { AudioContextTransport } from "./transport.ts";
 
 type PlaybackMode = "paused" | "before" | "playing" | "after";
 
-const DRIFT_CHECK_INTERVAL_SECONDS = 1;
-const DRIFT_TOLERANCE_SECONDS = 0.1;
+/** Drift that a seek fixes faster than a rate change, such as after a stall. */
+const SEEK_DRIFT_SECONDS = 1;
+/** Drift within a frame or so is left alone, so the rate stays at 1 when in sync. */
+const RATE_DEADBAND_SECONDS = 0.02;
+/** Seconds over which a rate change closes the drift. */
+const RATE_CATCH_UP_SECONDS = 2;
+/** Keeps rate changes invisible while catching up. */
+const MAX_RATE_CHANGE = 0.1;
 
 /**
- * Makes one layer's `<video>` or `<audio>` follow the transport. While paused
- * it seeks to the playhead, and while playing it plays natively and seeks back
- * when it drifts from the transport, like toy-midi's reference video.
+ * Makes one video layer's `<video>` follow the transport. While paused it seeks
+ * to the playhead. While playing it plays natively and closes any drift by
+ * nudging `playbackRate`, because a corrective seek lands behind by however
+ * long the seek took, which on long keyframe intervals is longer than the drift
+ * it corrects. The element is always muted, since audio plays on the transport.
  */
-export class MediaPlayback {
+export class VideoPlayback {
   private readonly transport: AudioContextTransport;
-  private readonly element: HTMLMediaElement;
-  private layer?: VideoLayer | AudioLayer;
+  private readonly element: HTMLVideoElement;
+  private layer?: VideoLayer;
   private mode?: PlaybackMode;
   private readonly unsubscribe: () => void;
-  private readonly correctDriftThrottled = throttle(
-    (expectedTime: number) => this.correctDrift(expectedTime),
-    DRIFT_CHECK_INTERVAL_SECONDS * 1_000,
-  );
 
   constructor({
     transport,
     element,
   }: {
     transport: AudioContextTransport;
-    element: HTMLMediaElement;
+    element: HTMLVideoElement;
   }) {
     this.transport = transport;
     this.element = element;
+    element.muted = true;
     this.unsubscribe = transport.store.subscribe(this.sync);
     // A seek before the metadata loads may not apply, so repeat it after.
     element.addEventListener("loadedmetadata", this.resync);
   }
 
-  setLayer({ layer }: { layer: VideoLayer | AudioLayer }): void {
+  setLayer({ layer }: { layer: VideoLayer }): void {
     this.layer = layer;
-    this.element.muted = layer.muted ?? false;
     this.sync();
   }
 
@@ -62,7 +64,6 @@ export class MediaPlayback {
     }
     const { position, isPlaying } = this.transport.store.get();
     const expectedTime = layer.in + position - layer.start;
-    this.element.volume = this.gainAt(position);
     if (!isPlaying) {
       this.mode = "paused";
       this.pause(Math.min(Math.max(expectedTime, layer.in), layer.out));
@@ -77,7 +78,7 @@ export class MediaPlayback {
           : "playing";
     if (mode === this.mode) {
       if (mode === "playing") {
-        this.correctDriftThrottled.run(expectedTime);
+        this.correctDrift(expectedTime);
       }
       return;
     }
@@ -98,38 +99,41 @@ export class MediaPlayback {
     }
   };
 
-  /** Fades at the edges of the layer's own range, which trimming decides. */
-  private gainAt(position: number): number {
-    const layer = this.layer!;
-    const range = layerRange(layer);
-    const fadeIn = layer.fadeIn
-      ? (position - range.start) / layer.fadeIn
-      : Infinity;
-    const fadeOut = layer.fadeOut
-      ? (range.end - position) / layer.fadeOut
-      : Infinity;
-    return Math.max(0, Math.min(1, fadeIn, fadeOut));
-  }
-
   private correctDrift(expectedTime: number): void {
-    if (
-      Math.abs(this.element.currentTime - expectedTime) >
-      DRIFT_TOLERANCE_SECONDS
-    ) {
-      this.element.currentTime = expectedTime;
+    // Wait out a seek, whose currentTime already reads as the target.
+    if (this.element.seeking) {
+      return;
     }
+    const drift = this.element.currentTime - expectedTime;
+    if (Math.abs(drift) > SEEK_DRIFT_SECONDS) {
+      this.element.currentTime = expectedTime;
+      this.element.playbackRate = 1;
+      return;
+    }
+    this.element.playbackRate =
+      Math.abs(drift) < RATE_DEADBAND_SECONDS
+        ? 1
+        : 1 +
+          Math.max(
+            -MAX_RATE_CHANGE,
+            Math.min(MAX_RATE_CHANGE, -drift / RATE_CATCH_UP_SECONDS),
+          );
   }
 
   private play(time: number): void {
-    this.correctDriftThrottled.reset();
-    this.element.currentTime = time;
+    // A paused element already shows the playhead's frame, and seeking it
+    // again would stall playback on the decode.
+    if (Math.abs(this.element.currentTime - time) > RATE_DEADBAND_SECONDS) {
+      this.element.currentTime = time;
+    }
+    this.element.playbackRate = 1;
     // A pause before playback starts rejects this promise, which is expected.
     this.element.play().catch(() => {});
   }
 
   private pause(time: number): void {
-    this.correctDriftThrottled.reset();
     this.element.pause();
+    this.element.playbackRate = 1;
     if (this.element.currentTime !== time) {
       this.element.currentTime = time;
     }

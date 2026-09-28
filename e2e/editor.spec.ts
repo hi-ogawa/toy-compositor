@@ -187,17 +187,14 @@ test("compose the output start and follow inspector edits", async ({
 });
 
 test("play the composition and step by frames", async ({ page, editor }) => {
-  // Open the synthetic project, where the video and the audio tone start at 0.
+  // Open the synthetic project, where the video starts at 0.
   await page.goto(editor.url);
   const timeline = page.getByTestId("editor-timeline");
   const time = page.getByTestId("timeline-time");
   const video = page.getByTestId("composition-canvas").locator("video");
-  const audio = page
-    .getByRole("region", { name: "Composition monitor" })
-    .locator("audio");
   const playhead = async () => parseFloat((await time.textContent())!);
 
-  // Play and confirm the playhead advances with the video and audio playing.
+  // Play and confirm the playhead advances with the video playing.
   await timeline.getByRole("button", { name: "Play", exact: true }).click();
   await expect(
     timeline.getByRole("button", { name: "Pause", exact: true }),
@@ -206,12 +203,6 @@ test("play the composition and step by frames", async ({ page, editor }) => {
   expect(
     await video.evaluate((element: HTMLVideoElement) => element.paused),
   ).toBe(false);
-  expect(
-    await audio.evaluate((element: HTMLAudioElement) => element.paused),
-  ).toBe(false);
-  expect(
-    await audio.evaluate((element: HTMLAudioElement) => element.volume),
-  ).toBe(1);
 
   // Pause with Space and confirm the playhead lands on a frame that the paused
   // video shows.

@@ -49,7 +49,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
     }
     if (matchKeyboardEvent(event, "Space") && !event.repeat) {
       event.preventDefault();
-      runtime.togglePlayback();
+      void runtime.togglePlayback();
     }
   });
 

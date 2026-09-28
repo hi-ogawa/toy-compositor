@@ -2,7 +2,7 @@ import { useState, type CSSProperties } from "react";
 import { fitBox } from "../lib/layout";
 import type { ImageLayer, VideoLayer } from "../lib/project";
 import type { AudioContextTransport } from "../lib/transport";
-import { useMediaPlayback } from "./use-media-playback";
+import { useVideoPlayback } from "./use-transport-playback";
 
 /** Fit the cropped source into its canvas box after the browser reads its dimensions. */
 export function CompositionMedia({
@@ -101,7 +101,7 @@ function CompositionVideo({
   onSize: (size: { width: number; height: number }) => void;
   onError: () => void;
 }) {
-  const playbackRef = useMediaPlayback({ transport, layer });
+  const playbackRef = useVideoPlayback({ transport, layer });
   return (
     <video
       ref={playbackRef}

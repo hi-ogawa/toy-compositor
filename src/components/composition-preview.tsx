@@ -1,11 +1,17 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
 import { layerRange } from "../lib/layout";
-import type { AudioLayer, Layer, Project, TextLayer } from "../lib/project";
+import type {
+  AudioLayer,
+  Layer,
+  Project,
+  TextLayer,
+  VideoLayer,
+} from "../lib/project";
 import type { EditorSelection } from "../lib/runtime";
 import type { AudioContextTransport } from "../lib/transport";
 import { CompositionMedia } from "./composition-media";
-import { useMediaPlayback } from "./use-media-playback";
+import { useAudioBufferPlayback } from "./use-transport-playback";
 
 export function CompositionPreview({
   project,
@@ -74,10 +80,12 @@ export function CompositionPreview({
           </div>
         </div>
       </div>
+      {/* Audio plays on the transport, including an unmuted video layer's own. */}
       {project.layers.map(
         (layer, index) =>
-          layer.type === "audio" && (
-            <PreviewAudio
+          (layer.type === "audio" ||
+            (layer.type === "video" && !layer.muted)) && (
+            <LayerAudio
               key={`${index}:${layer.src}`}
               layer={layer}
               transport={transport}
@@ -161,25 +169,17 @@ function PreviewLayer({
   );
 }
 
-/** Audio layers play through elements outside the canvas, since they draw nothing. */
-function PreviewAudio({
+function LayerAudio({
   layer,
   transport,
   src,
 }: {
-  layer: AudioLayer;
+  layer: VideoLayer | AudioLayer;
   transport: AudioContextTransport;
   src: string;
 }) {
-  const playbackRef = useMediaPlayback({ transport, layer });
-  return (
-    <audio
-      ref={playbackRef}
-      src={src}
-      preload="auto"
-      aria-label={layer.name ?? layer.src}
-    />
-  );
+  useAudioBufferPlayback({ transport, layer, src });
+  return undefined;
 }
 
 function textStyle(layer: TextLayer): CSSProperties {
