@@ -32,11 +32,11 @@ The package ships a `toy-compositor` command with the editor client prebuilt, so
 ```sh
 pnpm add -g https://pkg.pr.new/hi-ogawa/toy-compositor@main
 
-toy-compositor serve [dir]                       # editor for projects under dir, default ~/Documents/toy-compositor
+toy-compositor serve [root]                      # editor for projects under root, default ~/Documents/toy-compositor
 toy-compositor render <project.json> <output>    # render a project
 ```
 
-`serve` listens on localhost only, rejects requests addressed to other hosts, and serves the editor API over `dir` the same way the dev server does over `.local/projects/`. In the repository, `pnpm build` produces `dist/client/` and `dist/server/cli.js`, and `node dist/server/cli.js serve <dir>` runs the built CLI.
+`serve` listens on localhost only, rejects requests addressed to other hosts, and serves the editor API over `root` the same way the dev server does over `.local/projects/`. In the repository, `pnpm build` produces `dist/client/` and `dist/server/cli.js`, and `node dist/server/cli.js serve <root>` runs the built CLI.
 
 ## Samples
 
