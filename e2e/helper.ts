@@ -40,8 +40,11 @@ export const test = base.extend<{
       .poll(() => output.match(/http:\/\/localhost:\d+\//)?.[0])
       .toBeDefined();
     const origin = output.match(/http:\/\/localhost:\d+\//)![0];
-    const projectPath = path.relative(process.cwd(), projectFile);
-    const url = `${origin}?project=/files/${projectPath.split(path.sep).join("/")}`;
-    await use({ url, projectFile });
+    const url = new URL(origin);
+    url.searchParams.set(
+      "project",
+      `/files/${path.relative(process.cwd(), projectFile)}`,
+    );
+    await use({ url: url.href, projectFile });
   },
 });
