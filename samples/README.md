@@ -13,7 +13,7 @@ pnpm setup-sample ../toy-compositor/.local/samples/rescene.zip
 
 Run setup from the repository root with a relative or absolute source path. It copies a directory or unpacks a ZIP into `.local/projects/<name>/`, where `<name>` is the source basename without its extension. Existing files are preserved, so local project edits survive reruns. To start again from the source sample, remove that sample's local directory and run setup again.
 
-Setup preserves every file in the sample, including additional project variants. Open any project JSON in the editor with `pnpm dev` and its `?project=` path, or pass it to `pnpm render`. Preparing ZIP samples needs unzip.
+Setup preserves every file in the sample, including additional project variants. `pnpm dev` lists every project under `.local/projects/` on its start page, and `pnpm render` takes any project JSON. Preparing ZIP samples needs unzip.
 
 ## Synthetic composition
 
@@ -32,10 +32,9 @@ The sample exercises video scaling, image placement, text rendering with an outl
 
 `rescene.zip` contains `horizontal-video.json`, `horizontal-thumbnail.json`, `vertical-video.json`, and `vertical-thumbnail.json`, together with their camera, score, mix, and MV thumbnail sources. `project.json` is an additional copy of `horizontal-video.json` for the default entry point. All five JSON files are unpacked into `.local/projects/rescene/`. The ZIP is kept in main at `.local/samples/rescene.zip`, and no real-cover media is committed.
 
-For example, with `pnpm dev` running:
+For example, with `pnpm dev` running, the start page lists them under `rescene`, and each opens at a URL such as:
 
 ```text
-http://localhost:5173/?project=rescene/project.json
 http://localhost:5173/?project=rescene/vertical-video.json
 ```
 

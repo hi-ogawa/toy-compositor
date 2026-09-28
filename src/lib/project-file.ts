@@ -2,6 +2,29 @@ import type { Project } from "./project.ts";
 
 export type ProjectFile = { file: string; project: Project };
 
+/** A project file found under the projects root, as `<project-dir>/<name>.json`. */
+export type ProjectEntry = {
+  path: string;
+  width: number;
+  height: number;
+  output: Project["output"]["type"];
+};
+
+export type ProjectList = { root: string; projects: ProjectEntry[] };
+
+export async function listProjectFiles(): Promise<ProjectList> {
+  const res = await fetch("/api/projects");
+  if (!res.ok) {
+    throw new Error(`Failed to list projects: ${await res.text()}`);
+  }
+  return res.json();
+}
+
+/** Get the editor page URL that opens a project. */
+export function getProjectPageUrl({ path }: { path: string }): string {
+  return `?${new URLSearchParams({ project: path })}`;
+}
+
 export async function loadProjectFile({
   path,
 }: {

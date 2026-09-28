@@ -41,9 +41,6 @@ async function main() {
       const url = new URL(server.url!);
       url.hostname = "localhost";
       console.log(`Editor: ${url.href}`);
-      console.log(
-        `Open a project with ?project=<path to project.json relative to ${root}>`,
-      );
       break;
     }
     case "render": {

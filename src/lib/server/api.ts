@@ -1,11 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
+import type { ProjectEntry } from "../project-file.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 
 /**
- * Editor API over files under `root`. Files are named by paths relative to
+ * Editor API over a projects root laid out as `<root>/<project-dir>/<name>.json`
+ * with media next to each project. Files are named by paths relative to
  * `root` in query parameters, so a file path is never encoded as a URL path.
  *
+ * - `GET /api/projects` lists the projects.
  * - `GET /api/project?path=` reads a project, and `PUT` saves it.
  * - `GET /api/media?project=&src=` serves a layer source resolved against the
  *   project's directory, as the renderer does, with range requests.
@@ -15,6 +18,12 @@ export function createEditorHandler({ root }: { root: string }) {
     try {
       const url = new URL(request.url);
       switch (`${request.method} ${url.pathname}`) {
+        case "GET /api/projects": {
+          return Response.json({
+            root,
+            projects: await listProjects({ root }),
+          });
+        }
         case "GET /api/project": {
           return await handleGetProject({ root, url });
         }
@@ -33,6 +42,44 @@ export function createEditorHandler({ root }: { root: string }) {
       return toErrorResponse(error);
     }
   };
+}
+
+/** List `<root>/<project-dir>/*.json` files that parse as projects. */
+async function listProjects({ root }: { root: string }) {
+  const entries: ProjectEntry[] = [];
+  const projectDirs = await fs.promises
+    .readdir(root, { withFileTypes: true })
+    .catch(() => []);
+  for (const projectDir of projectDirs) {
+    if (!projectDir.isDirectory() || projectDir.name.startsWith(".")) {
+      continue;
+    }
+    const files = await fs.promises.readdir(path.join(root, projectDir.name));
+    for (const name of files) {
+      if (!name.endsWith(".json") || name.startsWith(".")) {
+        continue;
+      }
+      const project = await readProject(path.join(root, projectDir.name, name));
+      if (project) {
+        entries.push({
+          path: `${projectDir.name}/${name}`,
+          width: project.canvas.width,
+          height: project.canvas.height,
+          output: project.output.type,
+        });
+      }
+    }
+  }
+  return entries.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+async function readProject(file: string) {
+  try {
+    const json = JSON.parse(await fs.promises.readFile(file, "utf-8"));
+    if (json.canvas && Array.isArray(json.layers)) {
+      return json;
+    }
+  } catch {}
 }
 
 async function handleGetProject({ root, url }: { root: string; url: URL }) {
