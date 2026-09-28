@@ -1,5 +1,5 @@
 import { throttle } from "../utils/timing.ts";
-import { intersect, layerRange, type Range } from "./layout.ts";
+import { layerRange } from "./layout.ts";
 import type { AudioLayer, VideoLayer } from "./project.ts";
 import type { AudioContextTransport } from "./transport.ts";
 
@@ -17,7 +17,6 @@ export class MediaPlayback {
   private readonly transport: AudioContextTransport;
   private readonly element: HTMLMediaElement;
   private layer?: VideoLayer | AudioLayer;
-  private output?: Range;
   private mode?: PlaybackMode;
   private readonly unsubscribe: () => void;
   private readonly correctDriftThrottled = throttle(
@@ -39,15 +38,8 @@ export class MediaPlayback {
     element.addEventListener("loadedmetadata", this.resync);
   }
 
-  setLayer({
-    layer,
-    output,
-  }: {
-    layer: VideoLayer | AudioLayer;
-    output: Range;
-  }): void {
+  setLayer({ layer }: { layer: VideoLayer | AudioLayer }): void {
     this.layer = layer;
-    this.output = output;
     this.element.muted = layer.muted ?? false;
     this.sync();
   }
@@ -106,23 +98,17 @@ export class MediaPlayback {
     }
   };
 
-  /**
-   * The render only mixes audio inside the output range, fading at the edges of
-   * the layer's part of it, so the preview does the same.
-   */
+  /** Fades at the edges of the layer's own range, which trimming decides. */
   private gainAt(position: number): number {
     const layer = this.layer!;
-    const visible = intersect(layerRange(layer), this.output!);
-    if (!visible || position < visible.start || position >= visible.end) {
-      return 0;
-    }
+    const range = layerRange(layer);
     const fadeIn = layer.fadeIn
-      ? (position - visible.start) / layer.fadeIn
+      ? (position - range.start) / layer.fadeIn
       : Infinity;
     const fadeOut = layer.fadeOut
-      ? (visible.end - position) / layer.fadeOut
+      ? (range.end - position) / layer.fadeOut
       : Infinity;
-    return Math.min(1, fadeIn, fadeOut);
+    return Math.max(0, Math.min(1, fadeIn, fadeOut));
   }
 
   private correctDrift(expectedTime: number): void {

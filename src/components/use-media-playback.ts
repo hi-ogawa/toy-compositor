@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Range } from "../lib/layout";
 import { MediaPlayback } from "../lib/media-playback";
 import type { AudioLayer, VideoLayer } from "../lib/project";
 import type { AudioContextTransport } from "../lib/transport";
@@ -8,16 +7,14 @@ import type { AudioContextTransport } from "../lib/transport";
 export function useMediaPlayback({
   transport,
   layer,
-  output,
 }: {
   transport: AudioContextTransport;
   layer: VideoLayer | AudioLayer;
-  output: Range;
 }) {
   const [playback, setPlayback] = useState<MediaPlayback>();
   useEffect(() => {
-    playback?.setLayer({ layer, output });
-  }, [playback, layer, output]);
+    playback?.setLayer({ layer });
+  }, [playback, layer]);
   return useCallback(
     (element: HTMLMediaElement | null) => {
       if (!element) {

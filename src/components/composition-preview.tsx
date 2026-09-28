@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
-import { layerRange, outputRange, type Range } from "../lib/layout";
+import { layerRange } from "../lib/layout";
 import type { AudioLayer, Layer, Project, TextLayer } from "../lib/project";
 import type { EditorSelection } from "../lib/runtime";
 import type { AudioContextTransport } from "../lib/transport";
@@ -25,7 +25,6 @@ export function CompositionPreview({
     setSize({ width: element.clientWidth, height: element.clientHeight }),
   );
   const { canvas } = project;
-  const output = outputRange(project);
   const scale = Math.min(
     size.width / canvas.width,
     size.height / canvas.height,
@@ -63,7 +62,6 @@ export function CompositionPreview({
                   layer={layer}
                   visible={time >= range.start && time < range.end}
                   transport={transport}
-                  output={output}
                   selected={
                     selection?.type === "layer" && selection.index === index
                   }
@@ -83,7 +81,6 @@ export function CompositionPreview({
               key={`${index}:${layer.src}`}
               layer={layer}
               transport={transport}
-              output={output}
               src={resolveMediaUrl(layer.src)}
             />
           ),
@@ -103,7 +100,6 @@ function PreviewLayer({
   layer,
   visible,
   transport,
-  output,
   selected,
   index,
   canvas,
@@ -112,7 +108,6 @@ function PreviewLayer({
   layer: Exclude<Layer, { type: "audio" }>;
   visible: boolean;
   transport: AudioContextTransport;
-  output: Range;
   selected: boolean;
   index: number;
   canvas: Project["canvas"];
@@ -140,7 +135,6 @@ function PreviewLayer({
         <CompositionMedia
           layer={layer}
           transport={transport}
-          output={output}
           resolveMediaUrl={resolveMediaUrl}
         />
       ) : layer.type === "text" ? (
@@ -171,15 +165,13 @@ function PreviewLayer({
 function PreviewAudio({
   layer,
   transport,
-  output,
   src,
 }: {
   layer: AudioLayer;
   transport: AudioContextTransport;
-  output: Range;
   src: string;
 }) {
-  const playbackRef = useMediaPlayback({ transport, layer, output });
+  const playbackRef = useMediaPlayback({ transport, layer });
   return (
     <audio
       ref={playbackRef}

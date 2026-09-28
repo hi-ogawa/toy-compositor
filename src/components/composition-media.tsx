@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from "react";
-import { fitBox, type Range } from "../lib/layout";
+import { fitBox } from "../lib/layout";
 import type { ImageLayer, VideoLayer } from "../lib/project";
 import type { AudioContextTransport } from "../lib/transport";
 import { useMediaPlayback } from "./use-media-playback";
@@ -8,12 +8,10 @@ import { useMediaPlayback } from "./use-media-playback";
 export function CompositionMedia({
   layer,
   transport,
-  output,
   resolveMediaUrl,
 }: {
   layer: ImageLayer | VideoLayer;
   transport: AudioContextTransport;
-  output: Range;
   resolveMediaUrl: (src: string) => string;
 }) {
   const [source, setSource] = useState<{ width: number; height: number }>();
@@ -63,7 +61,6 @@ export function CompositionMedia({
           <CompositionVideo
             layer={layer}
             transport={transport}
-            output={output}
             src={resolveMediaUrl(layer.src)}
             style={mediaStyle}
             onSize={setSource}
@@ -92,7 +89,6 @@ export function CompositionMedia({
 function CompositionVideo({
   layer,
   transport,
-  output,
   src,
   style,
   onSize,
@@ -100,13 +96,12 @@ function CompositionVideo({
 }: {
   layer: VideoLayer;
   transport: AudioContextTransport;
-  output: Range;
   src: string;
   style?: CSSProperties;
   onSize: (size: { width: number; height: number }) => void;
   onError: () => void;
 }) {
-  const playbackRef = useMediaPlayback({ transport, layer, output });
+  const playbackRef = useMediaPlayback({ transport, layer });
   return (
     <video
       ref={playbackRef}

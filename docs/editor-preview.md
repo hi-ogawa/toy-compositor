@@ -45,12 +45,13 @@ The playhead belongs to a transport in [src/lib/transport.ts](../src/lib/transpo
 
 Media elements follow the transport and never drive it. Each video and audio layer's element has a `MediaPlayback` in [src/lib/media-playback.ts](../src/lib/media-playback.ts), which seeks to `in + time − start` while paused, and while playing plays natively and seeks back when it drifts more than 0.1 s from the transport. Outside its source range the element pauses at `in` or `out`.
 
-Audio follows the render: a layer is heard only inside the output range, with `fadeIn` and `fadeOut` at the edges of its part of that range, and `muted` silences it. Unmuted video layers play their own audio the same way.
+A layer is heard wherever its own range covers the playhead, so trimming decides what plays and the output range is only the window that renders. `fadeIn` and `fadeOut` apply at the edges of the layer's range, and `muted` silences it. Unmuted video layers play their own audio the same way.
 
 ## Known gaps
 
 - A paused video shows whatever frame the browser picks for `currentTime`, while the compiler snaps to the nearest source frame, so the preview may be one frame off.
 - Text is DOM text with `-webkit-text-stroke` and an estimated line height, while the compiler draws it with ImageMagick, so glyph placement differs slightly.
 - The transport publishes the playhead through the editor store, so the editor re-renders on every animation frame while playing, like toy-midi's recorder.
+- The compiler fades at the edges of a layer's part inside the output range, while the preview fades at the layer's own edges. They agree whenever a layer is trimmed within the output range.
 - Drift correction seeks, so a media element that falls behind skips instead of catching up smoothly.
 - Layers are keyed by index, which holds until layers can be added or reordered.
