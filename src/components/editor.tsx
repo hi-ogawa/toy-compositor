@@ -1,12 +1,19 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { layerRange } from "../lib/editor/layer-regions";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import { EditorRuntime } from "../lib/runtime";
 import { CompositionPreview } from "./composition-preview";
 import { EditorHeader } from "./editor-header";
 import { Inspector } from "./inspector";
 import { PreviewMonitors } from "./preview-monitors";
-import { Timeline } from "./timeline";
+import {
+  Timeline,
+  TimelineLayerLane,
+  TimelineLocatorRow,
+  TimelineRuler,
+} from "./timeline";
 import { useEditorProject } from "./use-editor-project";
+import { useTimeline } from "./use-timeline";
 import { useWindowEvent } from "./use-window-event";
 
 export function Editor({ projectPath }: { projectPath: string }) {
@@ -16,6 +23,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
     runtime.store.get,
   );
   const project = useEditorProject({ projectPath, runtime });
+  const timeline = useTimeline({ project: state.project });
 
   useEffect(() => {
     document.title = state.file
@@ -65,11 +73,44 @@ export function Editor({ projectPath }: { projectPath: string }) {
             }
           />
           <Timeline
-            runtime={runtime}
-            project={state.project}
-            selection={selection}
+            timeline={timeline}
             playhead={state.playhead}
-          />
+            fps={state.project.canvas.fps}
+            onRenderSettings={() => runtime.select({ type: "output" })}
+          >
+            <TimelineRuler
+              timeline={timeline}
+              onSeek={(time) => runtime.seek({ time })}
+            />
+            <TimelineLocatorRow
+              timeline={timeline}
+              output={state.project.output}
+              locators={state.project.locators ?? []}
+              renderSelected={selection?.type === "output"}
+              onRenderMarkerClick={(time) => {
+                runtime.select({ type: "output" });
+                runtime.seek({ time });
+              }}
+              onSeek={(time) => runtime.seek({ time })}
+            />
+            {/* Top layer first, like tracks in a timeline. */}
+            {layers
+              .map((layer, index) => ({ layer, index }))
+              .reverse()
+              .map(({ layer, index }) => (
+                <TimelineLayerLane
+                  key={index}
+                  timeline={timeline}
+                  layer={layer}
+                  index={index}
+                  range={layerRange({ layer, project: state.project })}
+                  selected={
+                    selection?.type === "layer" && selection.index === index
+                  }
+                  onSelect={() => runtime.select({ type: "layer", index })}
+                />
+              ))}
+          </Timeline>
         </main>
         <aside
           className="w-72 shrink-0 overflow-y-auto border-l border-border"

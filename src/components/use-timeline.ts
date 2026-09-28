@@ -1,9 +1,11 @@
 import { useCallback, useRef, useState } from "react";
 import { layerRange } from "../lib/editor/layer-regions";
-import { outputRange } from "../lib/layout";
+import { intersect, outputRange, type Range } from "../lib/layout";
 import type { Project } from "../lib/project";
 
 export const TIMELINE_LABEL_WIDTH = 144;
+
+export type TimelineView = ReturnType<typeof useTimeline>;
 
 /** Native scrolling and zoom share one time-to-pixel mapping across all rows. */
 export function useTimeline({ project }: { project: Project }) {
@@ -44,16 +46,37 @@ export function useTimeline({ project }: { project: Project }) {
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
+  const visible = { start: visibleStart, end: visibleEnd };
+  const timeToX = (time: number) => (time - start) * pixelsPerSecond;
   return {
-    start,
     timeWidth,
     pixelsPerSecond,
-    visibleStart,
-    visibleEnd,
+    tickStep: rulerStep(pixelsPerSecond),
+    visible,
     viewportRef,
     onScroll: () => setScrollLeft(viewport.current!.scrollLeft),
     setZoom,
-    timeToX: (time: number) => (time - start) * pixelsPerSecond,
+    timeToX,
     xToTime: (x: number) => start + x / pixelsPerSecond,
+    isVisible: (time: number) => time >= visibleStart && time <= visibleEnd,
+    /** Position a range within the graph, or nothing when it is scrolled out of view. */
+    rangeStyle: (range: Range) => {
+      const clipped = intersect(range, visible);
+      return (
+        clipped && {
+          left: timeToX(clipped.start),
+          width: (clipped.end - clipped.start) * pixelsPerSecond,
+        }
+      );
+    },
   };
+}
+
+/** Pick a 1-2-5 tick step that keeps labels at least 80px apart. */
+function rulerStep(pixelsPerSecond: number) {
+  const target = 80 / pixelsPerSecond;
+  const magnitude = 10 ** Math.floor(Math.log10(target));
+  return [1, 2, 5, 10]
+    .map((factor) => factor * magnitude)
+    .find((step) => step >= target)!;
 }
