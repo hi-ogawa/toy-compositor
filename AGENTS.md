@@ -7,20 +7,8 @@
 | `pnpm lint`     | Format, Lint, Typecheck after any changes |
 | `pnpm test-e2e` | E2E tests (e2e/, playwright)              |
 
-## Layout
-
-```text
-src/          editor and renderer
-docs/         design drafts, e.g. the project format
-samples/      committed sample sources
-.local/       local sample sources and editable projects, gitignored
-tools/        analysis scripts and sample setup/generation
-```
-
 ## Conventions
 
-- Source media and renders stay gitignored. Small synthetic samples are committed with a generator that reproduces them
-- An experiment that works moves into `src/`. One that does not is removed, and its code and findings are linked by commit, so dead code and historical notes do not stay in the tree
 - Use [toy-midi](https://github.com/hi-ogawa/toy-midi) (checked out at `../toy-midi`) as the reference for architecture and code style, such as the runtime, store, and component patterns
 - This application is desktop-only. Do not propose, evaluate, implement, or mention mobile or responsive behavior
 - Commit messages: use Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`); add `!` for breaking changes
