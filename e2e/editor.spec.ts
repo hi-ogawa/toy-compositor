@@ -75,20 +75,25 @@ test("open projects from the start page and keep saves inside the root", async (
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  const { origin } = new URL(editor.url);
+  const { cover } = editor;
 
-  // Open the editor without a project and confirm it lists the cover's projects.
-  await page.goto(origin);
-  const list = page.getByTestId("project-list");
-  await expect(list.getByRole("heading", { name: "synthetic" })).toBeVisible();
-  await expect(list.getByRole("link")).toHaveText([
+  // Open the editor without a project and confirm it lists this test's cover
+  // with its projects.
+  await page.goto("/");
+  const section = page
+    .getByTestId("project-list")
+    .getByRole("listitem")
+    .filter({ has: page.getByRole("heading", { name: cover, exact: true }) });
+  await expect(section.getByRole("link")).toHaveText([
     "project.json640x360 video",
     "thumbnail.json640x360 still",
   ]);
 
   // Open the thumbnail project from the list.
-  await list.getByRole("link", { name: /thumbnail\.json/ }).click();
-  await expect(page).toHaveURL(/\?project=synthetic%2Fthumbnail\.json$/);
+  await section.getByRole("link", { name: /thumbnail\.json/ }).click();
+  await expect(page).toHaveURL(
+    `/?${new URLSearchParams({ project: `${cover}/thumbnail.json` })}`,
+  );
   await expect(page.getByTestId("editor-project-file")).toContainText(
     "thumbnail.json",
   );
@@ -109,11 +114,11 @@ test("open projects from the start page and keep saves inside the root", async (
   // files.
   for (const path of [
     "../escape.json",
-    "synthetic/.cache/escape.json",
-    "synthetic/media/image.png",
+    `${cover}/.cache/escape.json`,
+    `${cover}/media/image.png`,
   ]) {
     const response = await request.put(
-      `${origin}/api/project?${new URLSearchParams({ path })}`,
+      `/api/project?${new URLSearchParams({ path })}`,
       { data: {} },
     );
     expect(response.status()).toBe(403);

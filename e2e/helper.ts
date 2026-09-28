@@ -1,54 +1,21 @@
-import { spawn } from "node:child_process";
-import { once } from "node:events";
 import { cp } from "node:fs/promises";
 import path from "node:path";
-import { expect, test as base } from "@playwright/test";
+import { test as base } from "@playwright/test";
 
 export const test = base.extend<{
-  editor: { url: string; projectFile: string };
+  editor: { cover: string; url: string; projectFile: string };
 }>({
   editor: async ({}, use, testInfo) => {
-    const root = testInfo.outputPath("projects");
-    await cp("samples/synthetic", path.join(root, "synthetic"), {
-      recursive: true,
+    // Copy the synthetic sample into its own cover under the server's
+    // projects root, so each test saves edits independently.
+    const cover = testInfo.testId;
+    const directory = path.resolve(".local/e2e-projects", cover);
+    await cp("samples/synthetic", directory, { recursive: true });
+    const url = `/?${new URLSearchParams({ project: `${cover}/project.json` })}`;
+    await use({
+      cover,
+      url,
+      projectFile: path.join(directory, "project.json"),
     });
-    const projectFile = path.join(root, "synthetic", "project.json");
-    await using stack = new AsyncDisposableStack();
-    let output = "";
-    stack.defer(() =>
-      testInfo.attach("editor server log", {
-        body: output,
-        contentType: "text/plain",
-      }),
-    );
-    const server = spawn("pnpm", ["dev", "--port", "0"], {
-      env: {
-        ...process.env,
-        TOY_COMPOSITOR_ROOT: root,
-        NO_COLOR: "1",
-        FORCE_COLOR: "0",
-      },
-    });
-    const exited = once(server, "exit");
-    stack.defer(async () => {
-      if (server.exitCode === null) {
-        server.kill("SIGTERM");
-        await exited;
-      }
-    });
-    server.stdout.on("data", (chunk: Buffer) => {
-      output += chunk.toString();
-    });
-    server.stderr.on("data", (chunk: Buffer) => {
-      output += chunk.toString();
-    });
-    // Use Playwright's default assertion timeout for server startup.
-    await expect
-      .poll(() => output.match(/http:\/\/localhost:\d+\//)?.[0])
-      .toBeDefined();
-    const origin = output.match(/http:\/\/localhost:\d+\//)![0];
-    const url = new URL(origin);
-    url.searchParams.set("project", "synthetic/project.json");
-    await use({ url: url.href, projectFile });
   },
 });
