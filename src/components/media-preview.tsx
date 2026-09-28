@@ -1,23 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type { Layer } from "../lib/project";
 
 export function MediaPreview({
   layer,
-  visible,
   resolveMediaUrl,
 }: {
   layer?: Layer;
-  visible: boolean;
   resolveMediaUrl: (src: string) => string;
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  useEffect(() => {
-    if (!visible) {
-      videoRef.current?.pause();
-      audioRef.current?.pause();
-    }
-  }, [visible]);
   const [failed, setFailed] = useState(false);
   if (!layer || !("src" in layer)) {
     return (
@@ -46,7 +36,6 @@ export function MediaPreview({
       <div className="flex min-h-0 flex-1 items-center justify-center">
         {layer.type === "video" && (
           <video
-            ref={videoRef}
             src={src}
             controls
             playsInline
@@ -57,7 +46,6 @@ export function MediaPreview({
         )}
         {layer.type === "audio" && (
           <audio
-            ref={audioRef}
             src={src}
             controls
             preload="metadata"
