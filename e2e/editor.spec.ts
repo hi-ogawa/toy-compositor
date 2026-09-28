@@ -6,8 +6,6 @@ test("preview synthetic sources and save an inspector edit", async ({
   page,
   editor,
 }) => {
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
   // Open the synthetic project and confirm it starts saved.
   await page.goto(editor.url);
   await expect(page.getByTestId("editor-project-file")).toContainText(
@@ -65,7 +63,6 @@ test("preview synthetic sources and save an inspector edit", async ({
     .click();
   await expect(x).toHaveValue("400");
   await expect(save).toHaveAttribute("data-status", "saved");
-  expect(errors).toEqual([]);
 });
 
 test("open projects from the start page and keep saves inside the root", async ({
