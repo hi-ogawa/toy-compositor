@@ -2,11 +2,22 @@
 
 The renderer in [src/lib/render](../src/lib/render) turns a project file ([project-format.md](project-format.md)) into one ffmpeg command and runs it. The render CLI runs on Node 24 directly.
 
+The renderer is ffmpeg rather than Remotion. Remotion's projects are React code rather than declarative data, so it would need a JSON-to-React interpreter in front of it, and its offline render captures every frame from headless Chrome, which buys nothing for static layouts of existing media. A native ffmpeg filter graph composes the same result directly and gives direct control over encoding and file size.
+
 ```sh
 pnpm setup-sample samples/synthetic
 pnpm render .local/projects/synthetic/project.json .local/projects/synthetic/out/preview.mp4
 pnpm render <project.json> <output> --dry-run   # print the command only
 ```
+
+## Timing and Frames
+
+- The project file's numbers are the timing truth. Offsets are set on waveforms, which are exact data, and playback only confirms them, so preview drift never shifts the final render. This avoids the Kdenlive problem where preview and render disagreed and timeline positions had to be compensated by guesswork.
+- Source time is a presentation timestamp, including a stream's start offset, and the frame shown at a source time is the frame whose timestamp is nearest to it. Every renderer and the editor preview must pick frames this way, because project times are rounded to milliseconds and source frames often sit off the project's frame grid, so a looser rule makes renderers disagree by one frame.
+- The ffmpeg render is the truth for exact frames. The DOM preview draws the same layout within 1px ([Remotion comparison](https://github.com/hi-ogawa/toy-compositor/tree/e315663/research/remotion)), which is enough for placing layers, but a paused seek may land one frame off the nearest-frame rule, so frame choices such as the thumbnail are checked on a render.
+- The editor plays and decodes source media in the browser, so browser codec support such as HEVC matters there, and constant frame rate working files from ingest cover that case.
+- Variable frame rate phone footage is normalized to constant frame rate working files at ingest, which matches the existing manual pre-transcode.
+- Encoding settings are explicit in the compiler output, which avoids Kdenlive's file-size inflation.
 
 ## Gather Facts, Compile, Run
 
@@ -162,7 +173,7 @@ These were measured on the prototype, before it moved into `src/lib`. All four d
 - Stills: rendering the horizontal thumbnail at nearby frames and comparing the camera region with Kdenlive's JPEG peaks at the transcribed time (SSIM 0.991).
 - Durations: both videos match Kdenlive's to the frame (164.933s and 42.367s).
 - Audio: cross-correlation against Kdenlive's renders gives a lag of 0.38ms with correlation 0.99 for both videos (`uv run tools/audio-lag.py`).
-- Video timing: the first version was one frame (33ms) ahead of Kdenlive's camera. The camera's in-point, 15.733s, lands 0.3ms after a source frame (the stream starts at 0.066s), and ffmpeg's accurate seek starts from the first frame at or after the seek time, so it took the next frame. The compiler now seeks to the frame whose timestamp is nearest to the source time, which matches both Kdenlive and Remotion ([research/remotion](../research/remotion/README.md)).
+- Video timing: the first version was one frame (33ms) ahead of Kdenlive's camera. The camera's in-point, 15.733s, lands 0.3ms after a source frame (the stream starts at 0.066s), and ffmpeg's accurate seek starts from the first frame at or after the seek time, so it took the next frame. The compiler now seeks to the frame whose timestamp is nearest to the source time, which matches both Kdenlive and Remotion ([Remotion comparison](https://github.com/hi-ogawa/toy-compositor/tree/e315663/research/remotion)).
 
 ## Known gaps
 

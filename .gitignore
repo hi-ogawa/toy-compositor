@@ -4,7 +4,6 @@ node_modules
 dist
 
 .local/
-research/kdenlive/projects/
 
 # Playwright output
 test-results/
