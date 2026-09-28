@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="340" viewBox="0 0 760 340" role="img" aria-labelledby="title desc">
+<title id="title">Preview time picks visible layers and a source frame for each video</title>
+<desc id="desc">On a project timeline from 0 to 4 seconds, the output runs from 1 to 3, and the preview time is the output start, 1. The video layer starts at 0.5 with in 0.25 and out 3, so it covers 0.5 to 3.25 and is visible at 1. Its source file is drawn below, aligned so source time 0.25 sits at project time 0.5. The preview time crosses the source at 0.75, which is in plus time minus start.</desc>
+<rect width="760" height="340" fill="#fcfaf5"/>
+<g font-family="Arial,sans-serif" font-size="15" fill="#263632">
+<text x="30" y="34" font-size="20" font-weight="700">One project time picks visibility and the source frame</text>
+<text x="30" y="56" font-size="13" fill="#52625d">The e2e setup: output.start 1, video start 0.5, in 0.25, out 3. Scale: 140 px per second.</text>
+
+<rect x="240" y="72" width="280" height="186" fill="#eef1ef"/>
+<text x="380" y="90" font-size="13" fill="#52625d" text-anchor="middle">output range [1, 3)</text>
+
+<text x="100" y="116" font-size="13">video layer · layerRange = [start, start + out − in) = [0.5, 3.25)</text>
+<rect x="170" y="124" width="385" height="18" rx="4" fill="#2f6fb0"/>
+
+<text x="100" y="180" font-size="13">source file (media/video.mp4), aligned to the project</text>
+<rect x="135" y="188" width="35" height="18" rx="4" fill="none" stroke="#2f6fb0" stroke-dasharray="5 4"/>
+<rect x="170" y="188" width="385" height="18" rx="4" fill="#dce8f5" stroke="#2f6fb0"/>
+<g font-size="11" fill="#52625d" text-anchor="middle">
+<text x="135" y="222">0</text><text x="170" y="222">in 0.25</text><text x="310" y="222">1.25</text><text x="555" y="222">out 3</text>
+</g>
+<text x="120" y="244" font-size="12" fill="#52625d">trimmed before in</text>
+
+<path d="M240 122 V146 M240 186 V270" stroke="#b0502f" stroke-width="2"/>
+
+<circle cx="240" cy="133" r="4" fill="#b0502f"/>
+<circle cx="240" cy="197" r="4" fill="#b0502f"/>
+<text x="248" y="162" font-size="13" fill="#b0502f">preview time 1 → visible, so render</text>
+<text x="248" y="244" font-size="13" fill="#b0502f">sourceTime = in + time − start = 0.25 + 1 − 0.5 = 0.75</text>
+
+<path d="M100 282 H680" stroke="#a3b0a9"/>
+<g font-size="12" fill="#52625d" text-anchor="middle">
+<path d="M100 278 V286 M240 278 V286 M380 278 V286 M520 278 V286 M660 278 V286" stroke="#a3b0a9"/>
+<text x="100" y="302">0</text><text x="240" y="302">1</text><text x="380" y="302">2</text><text x="520" y="302">3</text><text x="660" y="302">4 s project</text>
+</g>
+<text x="30" y="330" font-size="13" fill="#52625d">Setting start to 2 moves the layer to [2, 4.75), so time 1 falls outside and the &lt;video&gt; unmounts.</text>
+</g>
+</svg>

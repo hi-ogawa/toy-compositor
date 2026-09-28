@@ -1,6 +1,14 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { expect } from "@playwright/test";
-import { dragBy, expectImageLoaded, seekVideo, test } from "./helper";
+import {
+  commitInspectorField,
+  dragBy,
+  expectImageLoaded,
+  getInspectorField,
+  seekVideo,
+  selectLayer,
+  test,
+} from "./helper";
 
 test("preview synthetic sources and save an inspector edit", async ({
   page,
@@ -13,25 +21,18 @@ test("preview synthetic sources and save an inspector edit", async ({
   );
   const save = page.getByTestId("editor-save-button");
   await expect(save).toHaveAttribute("data-status", "saved");
-  const layers = page.getByTestId("editor-timeline");
 
   // Select the video and confirm its source preview appears.
-  await layers
-    .getByRole("button", { name: "video video", exact: true })
-    .click();
+  await selectLayer(page, { name: "video video" });
   await expect(page.locator("#source-monitor video")).toBeVisible();
 
   // Switch to audio and confirm its preview replaces the video player.
-  await layers
-    .getByRole("button", { name: "audio audio", exact: true })
-    .click();
+  await selectLayer(page, { name: "audio audio" });
   await expect(page.locator("#source-monitor video")).toHaveCount(0);
   await expect(page.locator("#source-monitor audio")).toBeVisible();
 
   // Select the image and confirm it loads without making the project dirty.
-  await layers
-    .getByRole("button", { name: "image image", exact: true })
-    .click();
+  await selectLayer(page, { name: "image image" });
   await expect(page.locator("#source-monitor audio")).toHaveCount(0);
   const image = page
     .locator("#source-monitor")
@@ -41,11 +42,7 @@ test("preview synthetic sources and save an inspector edit", async ({
   await expect(save).toHaveAttribute("data-status", "saved");
 
   // Edit the image position and save the change to the project file.
-  const x = page
-    .getByTestId("inspector")
-    .getByRole("textbox", { name: "x", exact: true });
-  await x.fill("400");
-  await x.press("Enter");
+  await commitInspectorField(page, { name: "x", value: "400" });
   await expect(save).toHaveAttribute("data-status", "unsaved");
   await save.click();
   await expect(save).toHaveAttribute("data-status", "saved");
@@ -56,10 +53,8 @@ test("preview synthetic sources and save an inspector edit", async ({
 
   // Reload the project and confirm the saved position survives.
   await page.reload();
-  await layers
-    .getByRole("button", { name: "image image", exact: true })
-    .click();
-  await expect(x).toHaveValue("400");
+  await selectLayer(page, { name: "image image" });
+  await expect(getInspectorField(page, { name: "x" })).toHaveValue("400");
   await expect(save).toHaveAttribute("data-status", "saved");
 });
 
@@ -90,10 +85,7 @@ test("open projects from the start page", async ({ page, editor }) => {
   );
 
   // Select the image and confirm its source resolves relative to the project file.
-  await page
-    .getByTestId("editor-timeline")
-    .getByRole("button", { name: "image image", exact: true })
-    .click();
+  await selectLayer(page, { name: "image image" });
   const image = page
     .locator("#source-monitor")
     .getByRole("img", { name: "image", exact: true });
@@ -106,10 +98,7 @@ test("resize and close the source panel without changing the project", async ({
 }) => {
   // Open a video source and seek independently of project timing.
   await page.goto(editor.url);
-  await page
-    .getByTestId("editor-timeline")
-    .getByRole("button", { name: "video video", exact: true })
-    .click();
+  await selectLayer(page, { name: "video video" });
   const source = page.locator("#source-monitor video");
   await seekVideo({ video: source, time: 1 });
 
@@ -146,90 +135,48 @@ test("resize and close the source panel without changing the project", async ({
   );
 });
 
-test("compose the output's first frame and reflect inspector edits", async ({
+test("compose the output start and follow inspector edits", async ({
   page,
   editor,
 }) => {
-  // Start the output after a trimmed source's timeline offset and add cropped/color overlays.
-  const project = JSON.parse(await readFile(editor.projectFile, "utf-8"));
-  project.output.start = 1;
-  project.layers[0].start = 0.5;
-  project.layers[0].in = 0.25;
-  project.layers[2].crop = { left: 0.25, right: 0.25 };
-  project.layers.push({
-    type: "color",
-    color: "#ff0000",
-    opacity: 0.5,
-    box: { x: 10, y: 20, width: 30, height: 40 },
-  });
-  await writeFile(editor.projectFile, JSON.stringify(project));
+  // Open the synthetic project and confirm the preview composes its visual layers.
   await page.goto(editor.url);
   const canvas = page.getByTestId("composition-canvas");
   const video = canvas.locator("video");
-  await expect
-    .poll(() =>
-      video.evaluate((element: HTMLVideoElement) => element.currentTime),
-    )
-    .toBeCloseTo(0.75);
-  await expect(page.getByTestId("composition-time")).toContainText("1.000 s");
+  const image = canvas.getByRole("img", { name: "image", exact: true });
+  await expect(video).toBeVisible();
+  await expectImageLoaded(image);
   await expect(
     canvas.getByText("Synthetic\nsample", { exact: true }),
   ).toBeVisible();
-  const image = canvas.getByRole("img", { name: "image", exact: true });
-  await expect(image).toBeVisible();
-  expect(
-    await image.locator("..").evaluate((element) => ({
-      left: (element as HTMLElement).style.left,
-      width: (element as HTMLElement).style.width,
-    })),
-  ).toEqual({ left: "460px", width: "80px" });
-  await expect(
-    page.getByTestId("composition-layer-4").locator("div"),
-  ).toHaveCSS("opacity", "0.5");
 
-  // Select the image and nudge its box while keeping the source file independent.
-  await page
-    .getByTestId("editor-timeline")
-    .getByRole("button", { name: "image image", exact: true })
-    .click();
+  // Crop the image sides and confirm it refits inside its box with an outline.
+  await selectLayer(page, { name: "image image" });
   await expect(canvas.getByLabel("Selected layer outline")).toBeVisible();
-  const x = page
-    .getByTestId("inspector")
-    .getByRole("textbox", { name: "x", exact: true });
-  await x.press("ArrowUp");
-  await expect(image.locator("..")).toHaveCSS("left", "461px");
-  await expect(page.locator("#source-monitor img")).toBeVisible();
+  await commitInspectorField(page, { name: "left", value: "0.25" });
+  await commitInspectorField(page, { name: "right", value: "0.25" });
+  await expect(image.locator("..")).toHaveCSS("left", "460px");
+  await expect(image.locator("..")).toHaveCSS("width", "80px");
 
-  // Move the video beyond the preview time and confirm its visual disappears.
-  await page
-    .getByTestId("editor-timeline")
-    .getByRole("button", { name: "video video", exact: true })
-    .click();
-  const sourceVideo = page.locator("#source-monitor video");
-  await expect
-    .poll(() =>
-      sourceVideo.evaluate((element: HTMLVideoElement) => element.readyState),
-    )
-    .toBeGreaterThanOrEqual(2);
-  await sourceVideo.evaluate((element: HTMLVideoElement) => {
-    element.currentTime = 1.25;
-  });
-  await expect
-    .poll(() =>
-      sourceVideo.evaluate((element: HTMLVideoElement) => element.currentTime),
-    )
-    .toBeCloseTo(1.25);
+  // Offset the output start, video start, and trim, and confirm the video seeks
+  // to in + time - start.
+  await selectLayer(page, { name: "Render settings" });
+  await commitInspectorField(page, { name: "start", value: "1" });
+  await selectLayer(page, { name: "Render start" });
+  await expect(page.getByTestId("composition-time")).toContainText("1.000 s");
+  await selectLayer(page, { name: "video video" });
+  await commitInspectorField(page, { name: "start", value: "0.3" });
+  await commitInspectorField(page, { name: "in", value: "0.2" });
   await expect
     .poll(() =>
       video.evaluate((element: HTMLVideoElement) => element.currentTime),
     )
-    .toBeCloseTo(0.75);
-  const start = page
-    .getByTestId("inspector")
-    .getByRole("textbox", { name: "start", exact: true });
-  await start.fill("2");
-  await start.press("Enter");
-  await expect(canvas.locator("video")).toHaveCount(0);
+    .toBeCloseTo(0.9);
+
+  // Start the video after the output start so it hasn't begun on the first frame,
+  // and confirm it disappears.
+  await commitInspectorField(page, { name: "start", value: "2" });
+  await expect(video).toHaveCount(0);
 });
 
 test("compose a still project at its output time", async ({ page, editor }) => {

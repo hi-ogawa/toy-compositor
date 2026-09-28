@@ -88,3 +88,43 @@ export async function dragBy({
     { box: true },
   );
 }
+
+/** Select a button in the editor timeline by its accessible name. */
+export async function selectLayer(
+  page: Page,
+  { name }: { name: string | RegExp },
+) {
+  await test.step(
+    `Select ${name}`,
+    async () => {
+      await page
+        .getByTestId("editor-timeline")
+        .getByRole("button", { name, exact: typeof name === "string" })
+        .click();
+    },
+    { box: true },
+  );
+}
+
+/** Locate an inspector field by its label. */
+export function getInspectorField(page: Page, { name }: { name: string }) {
+  return page
+    .getByTestId("inspector")
+    .getByRole("textbox", { name, exact: true });
+}
+
+/** Type a value into an inspector field and commit it with Enter. */
+export async function commitInspectorField(
+  page: Page,
+  { name, value }: { name: string; value: string },
+) {
+  await test.step(
+    `Set ${name} to ${value}`,
+    async () => {
+      const field = getInspectorField(page, { name });
+      await field.fill(value);
+      await field.press("Enter");
+    },
+    { box: true },
+  );
+}
