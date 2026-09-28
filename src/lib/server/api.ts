@@ -14,38 +14,16 @@ export function createEditorHandler({ root }: { root: string }) {
   return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url);
-      switch (url.pathname) {
-        case "/api/project": {
-          const file = resolveFile({
-            root,
-            paths: [getParam({ url, name: "path" })],
-          });
-          if (request.method === "PUT") {
-            if (path.extname(file) !== ".json") {
-              throw new HttpError({
-                status: 403,
-                message: "Only .json files can be saved",
-              });
-            }
-            const project = await request.json();
-            await fs.promises.writeFile(
-              file,
-              JSON.stringify(project, null, 2) + "\n",
-            );
-            return Response.json({});
-          }
-          return new Response(await fs.promises.readFile(file), {
-            headers: { "Content-Type": "application/json" },
-          });
+      switch (`${request.method} ${url.pathname}`) {
+        case "GET /api/project": {
+          return await handleGetProject({ root, url });
         }
-        case "/api/media": {
-          const project = getParam({ url, name: "project" });
-          const src = getParam({ url, name: "src" });
-          const file = resolveFile({
-            root,
-            paths: [path.dirname(project), src],
-          });
-          return await serveFile({ file, request });
+        case "PUT /api/project": {
+          return await handlePutProject({ root, url, request });
+        }
+        case "GET /api/media":
+        case "HEAD /api/media": {
+          return await handleMedia({ root, url, request });
         }
         default: {
           return new Response(undefined, { status: 404 });
@@ -68,6 +46,50 @@ export function createEditorHandler({ root }: { root: string }) {
       );
     }
   };
+}
+
+async function handleGetProject({ root, url }: { root: string; url: URL }) {
+  const file = resolveFile({ root, paths: [getParam({ url, name: "path" })] });
+  return new Response(await fs.promises.readFile(file), {
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+async function handlePutProject({
+  root,
+  url,
+  request,
+}: {
+  root: string;
+  url: URL;
+  request: Request;
+}) {
+  const file = resolveFile({ root, paths: [getParam({ url, name: "path" })] });
+  if (path.extname(file) !== ".json") {
+    throw new HttpError({
+      status: 403,
+      message: "Only .json files can be saved",
+    });
+  }
+  const project = await request.json();
+  await fs.promises.writeFile(file, JSON.stringify(project, null, 2) + "\n");
+  return Response.json({});
+}
+
+/** Serve a layer source resolved against the project's directory, as the renderer does. */
+async function handleMedia({
+  root,
+  url,
+  request,
+}: {
+  root: string;
+  url: URL;
+  request: Request;
+}) {
+  const project = getParam({ url, name: "project" });
+  const src = getParam({ url, name: "src" });
+  const file = resolveFile({ root, paths: [path.dirname(project), src] });
+  return await serveFile({ file, request });
 }
 
 class HttpError extends Error {
