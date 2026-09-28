@@ -1,16 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  getProjectPageUrl,
-  projectFiles,
-  type ProjectEntry,
-} from "../lib/project-file";
+import { apiClient, type ProjectEntry } from "../lib/api-client";
+import { getProjectPageUrl } from "../lib/page-url";
 
 /** Start page listing the projects under the root, grouped by project directory. */
 export function ProjectList() {
   const query = useQuery({
     queryKey: ["project-list"],
     retry: false,
-    queryFn: () => projectFiles.list(),
+    queryFn: () => apiClient.listProjects(),
   });
   if (query.error) {
     return <p className="p-4 text-destructive">{query.error.message}</p>;
