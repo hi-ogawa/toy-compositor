@@ -100,7 +100,7 @@ test("open projects from the start page", async ({ page, editor }) => {
   await expectImageLoaded(image);
 });
 
-test("resize and collapse the source monitor without changing the project", async ({
+test("resize and close the source panel without changing the project", async ({
   page,
   editor,
 }) => {
@@ -137,19 +137,25 @@ test("resize and collapse the source monitor without changing the project", asyn
   await split.press("ArrowRight");
   await expect(split).toHaveAttribute("aria-valuenow", "22");
 
-  // Collapse and reopen Source while preserving the split, position, and save status.
-  const toggle = page.getByRole("button", { name: "Hide source", exact: true });
+  // Close and reopen Source while preserving the split and save status.
+  const toggle = page.getByRole("button", {
+    name: "Close source panel",
+    exact: true,
+  });
   const before = await toggle.boundingBox();
   await toggle.click();
-  await expect(source).toBeHidden();
-  const show = page.getByRole("button", { name: "Show source", exact: true });
+  await expect(source).toHaveCount(0);
+  const show = page.getByRole("button", {
+    name: "Open source panel",
+    exact: true,
+  });
   expect((await show.boundingBox())!.x).toBe(before!.x);
   await show.click();
   await expect(split).toHaveAttribute("aria-valuenow", "22");
   await expect(source).toBeVisible();
   await expect
     .poll(() => source.evaluate((video: HTMLVideoElement) => video.currentTime))
-    .toBeCloseTo(1);
+    .toBe(0);
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
     "data-status",
     "saved",
