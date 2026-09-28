@@ -1,0 +1,9 @@
+{
+  "$schema": "https://www.unpkg.com/wrangler@4.58.0/config-schema.json",
+  "name": "toy-compositor",
+  "compatibility_date": "2026-09-29",
+  "assets": {
+    "directory": "dist/demo",
+    "not_found_handling": "single-page-application",
+  },
+}
