@@ -146,28 +146,65 @@ test("resize and close the source panel without changing the project", async ({
   );
 });
 
-test("reflect an inspector edit in the composition preview", async ({
+test("compose the output start and follow inspector edits", async ({
   page,
   editor,
 }) => {
-  // Open the synthetic project and confirm the preview composes its image.
+  // Open the synthetic project and confirm the preview composes its visual layers.
   await page.goto(editor.url);
-  const image = page
-    .getByTestId("composition-canvas")
-    .getByRole("img", { name: "image", exact: true });
+  const canvas = page.getByTestId("composition-canvas");
+  const video = canvas.locator("video");
+  const image = canvas.getByRole("img", { name: "image", exact: true });
+  await expect(video).toBeVisible();
   await expectImageLoaded(image);
-  await expect(image.locator("..")).toHaveCSS("left", "420px");
+  await expect(
+    canvas.getByText("Synthetic\nsample", { exact: true }),
+  ).toBeVisible();
+  const layers = page.getByTestId("editor-layer-list");
+  const field = (name: string) =>
+    page.getByTestId("inspector").getByRole("textbox", { name, exact: true });
+  const commit = async (name: string, value: string) => {
+    await field(name).fill(value);
+    await field(name).press("Enter");
+  };
 
-  // Nudge the image position in the inspector and confirm the preview follows.
-  await page
-    .getByTestId("editor-layer-list")
+  // Crop the image sides and confirm it refits inside its box with an outline.
+  await layers
     .getByRole("button", { name: "image image", exact: true })
     .click();
-  await page
-    .getByTestId("inspector")
-    .getByRole("textbox", { name: "x", exact: true })
-    .press("ArrowUp");
-  await expect(image.locator("..")).toHaveCSS("left", "421px");
+  await expect(canvas.getByLabel("Selected layer outline")).toBeVisible();
+  await commit("left", "0.25");
+  await commit("right", "0.25");
+  await expect(image.locator("..")).toHaveCSS("left", "460px");
+  await expect(image.locator("..")).toHaveCSS("width", "80px");
+
+  // Offset the output start, video start, and trim, and confirm the video seeks
+  // to in + time - start.
+  await layers.getByRole("button", { name: /^Output/ }).click();
+  await commit("start", "1");
+  await expect(page.getByTestId("composition-time")).toContainText("1.000 s");
+  await layers
+    .getByRole("button", { name: "video video", exact: true })
+    .click();
+  await commit("start", "0.5");
+  await commit("in", "0.2");
+  await expect
+    .poll(() =>
+      video.evaluate((element: HTMLVideoElement) => element.currentTime),
+    )
+    .toBeCloseTo(0.7);
+
+  // Seek the source video and confirm the composition keeps its own time.
+  await seekVideo({ video: page.locator("#source-monitor video"), time: 1.25 });
+  await expect
+    .poll(() =>
+      video.evaluate((element: HTMLVideoElement) => element.currentTime),
+    )
+    .toBeCloseTo(0.7);
+
+  // Move the video past the preview time and confirm it disappears.
+  await commit("start", "2");
+  await expect(video).toHaveCount(0);
 });
 
 test("compose a still project at its output time", async ({ page, editor }) => {
