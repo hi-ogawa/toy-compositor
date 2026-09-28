@@ -89,17 +89,17 @@ export async function dragBy({
   );
 }
 
-/** Select a button in the editor timeline by its accessible name. */
-export async function selectLayer(
+/** Click a lane label or marker in the editor timeline by its accessible name. */
+export async function clickTimelineButton(
   page: Page,
-  { name }: { name: string | RegExp },
+  { name }: { name: string },
 ) {
   await test.step(
-    `Select ${name}`,
+    `Click ${name} in the timeline`,
     async () => {
       await page
         .getByTestId("editor-timeline")
-        .getByRole("button", { name, exact: typeof name === "string" })
+        .getByRole("button", { name, exact: true })
         .click();
     },
     { box: true },

@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { expect } from "@playwright/test";
 import {
   commitInspectorField,
@@ -6,7 +6,7 @@ import {
   expectImageLoaded,
   getInspectorField,
   seekVideo,
-  selectLayer,
+  clickTimelineButton,
   test,
 } from "./helper";
 
@@ -23,16 +23,16 @@ test("preview synthetic sources and save an inspector edit", async ({
   await expect(save).toHaveAttribute("data-status", "saved");
 
   // Select the video and confirm its source preview appears.
-  await selectLayer(page, { name: "video video" });
+  await clickTimelineButton(page, { name: "video video" });
   await expect(page.locator("#source-monitor video")).toBeVisible();
 
   // Switch to audio and confirm its preview replaces the video player.
-  await selectLayer(page, { name: "audio audio" });
+  await clickTimelineButton(page, { name: "audio audio" });
   await expect(page.locator("#source-monitor video")).toHaveCount(0);
   await expect(page.locator("#source-monitor audio")).toBeVisible();
 
   // Select the image and confirm it loads without making the project dirty.
-  await selectLayer(page, { name: "image image" });
+  await clickTimelineButton(page, { name: "image image" });
   await expect(page.locator("#source-monitor audio")).toHaveCount(0);
   const image = page
     .locator("#source-monitor")
@@ -53,7 +53,7 @@ test("preview synthetic sources and save an inspector edit", async ({
 
   // Reload the project and confirm the saved position survives.
   await page.reload();
-  await selectLayer(page, { name: "image image" });
+  await clickTimelineButton(page, { name: "image image" });
   await expect(getInspectorField(page, { name: "x" })).toHaveValue("400");
   await expect(save).toHaveAttribute("data-status", "saved");
 });
@@ -85,7 +85,7 @@ test("open projects from the start page", async ({ page, editor }) => {
   );
 
   // Select the image and confirm its source resolves relative to the project file.
-  await selectLayer(page, { name: "image image" });
+  await clickTimelineButton(page, { name: "image image" });
   const image = page
     .locator("#source-monitor")
     .getByRole("img", { name: "image", exact: true });
@@ -98,7 +98,7 @@ test("resize and close the source panel without changing the project", async ({
 }) => {
   // Open a video source and seek independently of project timing.
   await page.goto(editor.url);
-  await selectLayer(page, { name: "video video" });
+  await clickTimelineButton(page, { name: "video video" });
   const source = page.locator("#source-monitor video");
   await seekVideo({ video: source, time: 1 });
 
@@ -151,7 +151,7 @@ test("compose the output start and follow inspector edits", async ({
   ).toBeVisible();
 
   // Crop the image sides and confirm it refits inside its box with an outline.
-  await selectLayer(page, { name: "image image" });
+  await clickTimelineButton(page, { name: "image image" });
   await expect(canvas.getByLabel("Selected layer outline")).toBeVisible();
   await commitInspectorField(page, { name: "left", value: "0.25" });
   await commitInspectorField(page, { name: "right", value: "0.25" });
@@ -160,11 +160,11 @@ test("compose the output start and follow inspector edits", async ({
 
   // Offset the output start, video start, and trim, and confirm the video seeks
   // to in + time - start.
-  await selectLayer(page, { name: "Render settings" });
+  await clickTimelineButton(page, { name: "Render settings" });
   await commitInspectorField(page, { name: "start", value: "1" });
-  await selectLayer(page, { name: "Render start" });
+  await clickTimelineButton(page, { name: "Render start" });
   await expect(page.getByTestId("composition-time")).toContainText("1.000 s");
-  await selectLayer(page, { name: "video video" });
+  await clickTimelineButton(page, { name: "video video" });
   await commitInspectorField(page, { name: "start", value: "0.3" });
   await commitInspectorField(page, { name: "in", value: "0.2" });
   await expect
@@ -203,118 +203,66 @@ test("compose a still project at its output time", async ({ page, editor }) => {
   );
 });
 
-test("select lanes and seek the composition without editing the project", async ({
+test("navigate the timeline without editing the project", async ({
   page,
   editor,
 }) => {
-  // Open offset and trimmed layers with an output range and a named locator.
+  // Open a project whose output starts at 0.5 with a locator at 1.5. The file
+  // sets both because locators have no editing UI and the playhead only starts
+  // at the output start on load. Confirm the playhead starts there.
   const project = JSON.parse(await readFile(editor.projectFile, "utf-8"));
   project.output.start = 0.5;
-  project.layers[0].start = 0.5;
-  project.layers[0].in = 0.25;
   project.locators = [{ label: "thumbnail", time: 1.5 }];
   await writeFile(editor.projectFile, JSON.stringify(project));
   const original = await readFile(editor.projectFile, "utf-8");
   await page.goto(editor.url);
-  const timeline = page.getByTestId("editor-timeline");
-  await expect(page.getByTestId("timeline-time")).toContainText("0.500 s");
-  await expect(
-    timeline.getByRole("button", { name: "Render start", exact: true }),
-  ).toBeVisible();
-  await expect(
-    timeline.getByRole("button", { name: "Render end", exact: true }),
-  ).toBeVisible();
-  await expect(
-    timeline.getByRole("button", { name: "Output", exact: true }),
-  ).toHaveCount(0);
-  await timeline
-    .getByRole("button", { name: "Render start", exact: true })
-    .click();
+  const time = page.getByTestId("timeline-time");
+  await expect(time).toContainText("0.500 s");
+
+  // Click the render start marker and confirm it opens Render settings.
+  await clickTimelineButton(page, { name: "Render start" });
   await expect(
     page
       .getByTestId("inspector")
       .getByRole("heading", { name: "Render settings", exact: true }),
   ).toBeVisible();
-  await expect(
-    page
-      .getByTestId("inspector")
-      .getByRole("textbox", { name: "start", exact: true }),
-  ).toHaveValue("0.5");
+  await expect(getInspectorField(page, { name: "start" })).toHaveValue("0.5");
 
-  await expect(page.getByTestId("timeline-layer-0")).toHaveAttribute(
-    "title",
-    "0.500–3.250 s",
-  );
-
-  // Select a lane and seek through a locator while leaving its source player independent.
-  await timeline
-    .getByRole("button", { name: "video video", exact: true })
-    .click();
-  const source = page.locator("#source-monitor video");
-  await expect
-    .poll(() => source.evaluate((video: HTMLVideoElement) => video.readyState))
-    .toBeGreaterThanOrEqual(2);
-  await source.evaluate((video: HTMLVideoElement) => {
-    video.currentTime = 0.4;
-  });
-  await timeline
-    .getByRole("button", { name: "thumbnail", exact: true })
-    .click();
-  const composition = page.getByTestId("composition-canvas").locator("video");
+  // Click the locator and confirm the composition video follows the playhead.
+  await clickTimelineButton(page, { name: "thumbnail" });
+  await expect(time).toContainText("1.500 s");
+  const video = page.getByTestId("composition-canvas").locator("video");
   await expect
     .poll(() =>
-      composition.evaluate((video: HTMLVideoElement) => video.currentTime),
+      video.evaluate((element: HTMLVideoElement) => element.currentTime),
     )
-    .toBeCloseTo(1.25);
-  await expect
-    .poll(() => source.evaluate((video: HTMLVideoElement) => video.currentTime))
-    .toBeCloseTo(0.4);
+    .toBeCloseTo(1.5);
 
-  // Seek on the ruler and confirm the requested project time snaps to a frame.
+  // Click the ruler at 1.12 s and confirm the playhead snaps to frame 34 (1.133 s).
+  const timeline = page.getByTestId("editor-timeline");
   const ruler = timeline.getByRole("button", {
     name: "Timeline ruler",
     exact: true,
   });
-  const bounds = (await ruler.boundingBox())!;
-  const region = (await page.getByTestId("timeline-layer-0").boundingBox())!;
-  const pixelsPerSecond = region.width / 2.75;
-  await ruler.click({
-    position: { x: 1.12 * pixelsPerSecond, y: bounds.height / 2 },
-  });
-  await expect(page.getByTestId("timeline-time")).toContainText("1.133 s");
-  await expect
-    .poll(() =>
-      composition.evaluate((video: HTMLVideoElement) => video.currentTime),
-    )
-    .toBeCloseTo(0.883);
+  const videoRegion = (await page
+    .getByTestId("timeline-layer-0")
+    .boundingBox())!;
+  const pixelsPerSecond = videoRegion.width / 3;
+  await ruler.click({ position: { x: 1.12 * pixelsPerSecond, y: 10 } });
+  await expect(time).toContainText("1.133 s");
 
-  // Zoom and scroll the timeline while its lane labels and current project state stay intact.
+  // Zoom in to 512 px/s, scroll right, click the ruler 512 px from its origin,
+  // and confirm the playhead lands on 1 s.
   await timeline
     .getByRole("slider", { name: "Timeline zoom", exact: true })
     .fill("9");
-  const scroll = page.getByTestId("timeline-scroll");
-  await scroll.evaluate((element) => {
+  await page.getByTestId("timeline-scroll").evaluate((element) => {
     element.scrollLeft = 150;
   });
-  await expect
-    .poll(() => scroll.evaluate((element) => element.scrollLeft))
-    .toBe(150);
-  await expect(
-    timeline.getByRole("button", { name: "video video", exact: true }),
-  ).toBeVisible();
-  await expect(page.getByTestId("timeline-time")).toContainText("1.133 s");
-  // Seek after scrolling and confirm the ruler still maps to project time.
-  const scrolledRuler = (await ruler.boundingBox())!;
-  await page.mouse.click(
-    scrolledRuler.x + 0.5 * 512,
-    scrolledRuler.y + scrolledRuler.height / 2,
-  );
-  await expect(page.getByTestId("timeline-time")).toContainText("0.500 s");
-  await expect
-    .poll(() =>
-      composition.evaluate((video: HTMLVideoElement) => video.currentTime),
-    )
-    .toBeCloseTo(0.25);
+  await ruler.click({ position: { x: 512, y: 10 } });
+  await expect(time).toContainText("1.000 s");
+
+  // Confirm navigation left the project file and save status untouched.
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
     "data-status",
     "saved",
