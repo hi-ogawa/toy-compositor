@@ -11,7 +11,7 @@ pnpm test-e2e                        # against the built CLI, E2E_SERVER=dev for
 pnpm build                           # dist/client/ and dist/server/cli.js
 ```
 
-The editor and CLI run on Node 24 directly. See [samples/README.md](../samples/README.md) for the synthetic and local samples, and [e2e.md](e2e.md) for E2E traces on GitHub Actions.
+The editor and CLI run on Node 24 directly. See [samples/README.md](../samples/README.md) for the synthetic and local samples, [e2e.md](e2e.md) for E2E traces on GitHub Actions, and [working-media.md](working-media.md) for preparing camera footage.
 
 ## Projects root
 
