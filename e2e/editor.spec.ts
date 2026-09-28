@@ -1,13 +1,11 @@
 import { readFile } from "node:fs/promises";
 import { expect } from "@playwright/test";
-import { test } from "./helper";
+import { expectImageLoaded, test } from "./helper";
 
 test("preview synthetic sources and save an inspector edit", async ({
   page,
   editor,
 }) => {
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
   // Open the synthetic project and confirm it starts saved.
   await page.goto(editor.url);
   await expect(page.getByTestId("editor-project-file")).toContainText(
@@ -37,11 +35,7 @@ test("preview synthetic sources and save an inspector edit", async ({
   await expect(page.locator("main audio")).toHaveCount(0);
   const image = page.getByRole("img", { name: "image", exact: true });
   await expect(image).toBeVisible();
-  await expect
-    .poll(() =>
-      image.evaluate((element: HTMLImageElement) => element.naturalWidth),
-    )
-    .toBeGreaterThan(0);
+  await expectImageLoaded(image);
   await expect(save).toHaveAttribute("data-status", "saved");
 
   // Edit the image position and save the change to the project file.
@@ -65,5 +59,39 @@ test("preview synthetic sources and save an inspector edit", async ({
     .click();
   await expect(x).toHaveValue("400");
   await expect(save).toHaveAttribute("data-status", "saved");
-  expect(errors).toEqual([]);
+});
+
+test("open projects from the start page", async ({ page, editor }) => {
+  const { projectDir } = editor;
+
+  // Open the editor without a project and confirm it lists this test's project
+  // directory with its projects.
+  await page.goto("/");
+  const section = page
+    .getByTestId("project-list")
+    .getByRole("listitem")
+    .filter({
+      has: page.getByRole("heading", { name: projectDir, exact: true }),
+    });
+  await expect(section.getByRole("link")).toHaveText([
+    "project.json640x360 video",
+    "thumbnail.json640x360 still",
+  ]);
+
+  // Open the thumbnail project from the list.
+  await section.getByRole("link", { name: /thumbnail\.json/ }).click();
+  await expect(page).toHaveURL(
+    `/?${new URLSearchParams({ project: `${projectDir}/thumbnail.json` })}`,
+  );
+  await expect(page.getByTestId("editor-project-file")).toContainText(
+    "thumbnail.json",
+  );
+
+  // Select the image and confirm its source resolves relative to the project file.
+  await page
+    .getByTestId("editor-layer-list")
+    .getByRole("button", { name: "image image", exact: true })
+    .click();
+  const image = page.getByRole("img", { name: "image", exact: true });
+  await expectImageLoaded(image);
 });

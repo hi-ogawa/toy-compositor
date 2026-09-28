@@ -1,42 +1,160 @@
 import fs from "node:fs";
 import path from "node:path";
-import { staticMiddleware } from "srvx/static";
+import type { ProjectEntry } from "../project-file.ts";
+import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 
-export function createEditorHandler({ projectFile }: { projectFile: string }) {
-  const serveMedia = staticMiddleware({ dir: path.dirname(projectFile) });
+/**
+ * Editor API over a projects root laid out as `<root>/<project-dir>/<name>.json`
+ * with media next to each project. Files are named by paths relative to
+ * `root` in query parameters, so a file path is never encoded as a URL path.
+ *
+ * - `GET /api/projects` lists the projects.
+ * - `GET /api/project?path=` reads a project, and `PUT` saves it.
+ * - `GET /api/media?project=&src=` serves a layer source resolved against the
+ *   project's directory, as the renderer does, with range requests.
+ */
+export function createEditorHandler({ root }: { root: string }) {
   return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url);
-      if (url.pathname === "/api/project" && request.method === "GET") {
-        const content = await fs.promises.readFile(projectFile, "utf-8");
-        return Response.json({
-          file: path.relative(process.cwd(), projectFile),
-          project: JSON.parse(content),
-        });
+      switch (`${request.method} ${url.pathname}`) {
+        case "GET /api/projects": {
+          return Response.json({
+            root,
+            projects: await listProjects({ root }),
+          });
+        }
+        case "GET /api/project": {
+          return await handleGetProject({ root, url });
+        }
+        case "PUT /api/project": {
+          return await handlePutProject({ root, url, request });
+        }
+        case "GET /api/media":
+        case "HEAD /api/media": {
+          return await handleMedia({ root, url, request });
+        }
+        default: {
+          return new Response(undefined, { status: 404 });
+        }
       }
-      if (url.pathname === "/api/project" && request.method === "PUT") {
-        const project = await request.json();
-        await fs.promises.writeFile(
-          projectFile,
-          JSON.stringify(project, null, 2) + "\n",
-        );
-        return Response.json({});
-      }
-      if (url.pathname.startsWith("/api/media/")) {
-        url.pathname = url.pathname.slice("/api/media".length);
-        return await serveMedia(
-          new Request(url, request),
-          () => new Response(undefined, { status: 404 }),
-        );
-      }
-      return new Response(undefined, { status: 404 });
     } catch (error) {
-      return new Response(
-        error instanceof Error ? error.message : String(error),
-        {
-          status: 500,
-        },
-      );
+      return toErrorResponse(error);
     }
   };
+}
+
+/** List `<root>/<project-dir>/*.json` files that parse as projects. */
+async function listProjects({ root }: { root: string }) {
+  const entries: ProjectEntry[] = [];
+  const projectDirs = await fs.promises
+    .readdir(root, { withFileTypes: true })
+    .catch(() => []);
+  for (const projectDir of projectDirs) {
+    if (!projectDir.isDirectory() || projectDir.name.startsWith(".")) {
+      continue;
+    }
+    const files = await fs.promises.readdir(path.join(root, projectDir.name));
+    for (const name of files) {
+      if (!name.endsWith(".json") || name.startsWith(".")) {
+        continue;
+      }
+      const project = await readProject(path.join(root, projectDir.name, name));
+      if (project) {
+        entries.push({
+          path: `${projectDir.name}/${name}`,
+          width: project.canvas.width,
+          height: project.canvas.height,
+          output: project.output.type,
+        });
+      }
+    }
+  }
+  return entries.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+async function readProject(file: string) {
+  try {
+    const json = JSON.parse(await fs.promises.readFile(file, "utf-8"));
+    if (json.canvas && Array.isArray(json.layers)) {
+      return json;
+    }
+  } catch {}
+}
+
+async function handleGetProject({ root, url }: { root: string; url: URL }) {
+  const file = resolveFile({ root, paths: [getParam({ url, name: "path" })] });
+  if (!fs.existsSync(file)) {
+    throw new HttpError({ status: 404, message: "Project not found" });
+  }
+  return new Response(await fs.promises.readFile(file), {
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+async function handlePutProject({
+  root,
+  url,
+  request,
+}: {
+  root: string;
+  url: URL;
+  request: Request;
+}) {
+  const file = resolveFile({ root, paths: [getParam({ url, name: "path" })] });
+  if (path.extname(file) !== ".json") {
+    throw new HttpError({
+      status: 403,
+      message: "Only .json files can be saved",
+    });
+  }
+  const project = await request.json();
+  await fs.promises.writeFile(file, JSON.stringify(project, null, 2) + "\n");
+  return Response.json({});
+}
+
+/** Serve a layer source resolved against the project's directory, as the renderer does. */
+async function handleMedia({
+  root,
+  url,
+  request,
+}: {
+  root: string;
+  url: URL;
+  request: Request;
+}) {
+  const project = getParam({ url, name: "project" });
+  const src = getParam({ url, name: "src" });
+  const file = resolveFile({ root, paths: [path.dirname(project), src] });
+  if (!fs.existsSync(file)) {
+    throw new HttpError({ status: 404, message: "Media not found" });
+  }
+  return await serveFile({ file, request });
+}
+
+/**
+ * Resolve `paths` against `root`, rejecting files outside it and hidden paths,
+ * such as a project directory's future caches.
+ */
+function resolveFile({
+  root,
+  paths,
+}: {
+  root: string;
+  paths: string[];
+}): string {
+  const file = path.resolve(root, ...paths);
+  if (
+    !file.startsWith(root + path.sep) ||
+    path
+      .relative(root, file)
+      .split(path.sep)
+      .some((s) => s.startsWith("."))
+  ) {
+    throw new HttpError({
+      status: 403,
+      message: "Path is not served by the editor",
+    });
+  }
+  return file;
 }
