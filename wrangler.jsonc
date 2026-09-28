@@ -6,4 +6,6 @@
     "directory": "dist/demo",
     "not_found_handling": "single-page-application",
   },
+  // Branch builds deploy through `wrangler preview`, which requires this block.
+  "previews": {},
 }
