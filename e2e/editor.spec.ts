@@ -5,6 +5,7 @@ import {
   dragBy,
   expectImageLoaded,
   getInspectorField,
+  seekTimeline,
   seekVideo,
   clickTimelineButton,
   test,
@@ -231,27 +232,18 @@ test("navigate the timeline without editing the project", async ({
     .toBeCloseTo(1.5);
 
   // Click the ruler at 1.12 s and confirm the playhead snaps to frame 34 (1.133 s).
-  const timeline = page.getByTestId("editor-timeline");
-  const ruler = timeline.getByRole("button", {
-    name: "Timeline ruler",
-    exact: true,
-  });
-  const videoRegion = (await page
-    .getByTestId("timeline-layer-0")
-    .boundingBox())!;
-  const pixelsPerSecond = videoRegion.width / 3;
-  await ruler.click({ position: { x: 1.12 * pixelsPerSecond, y: 10 } });
+  await seekTimeline(page, { time: 1.12 });
   await expect(time).toContainText("1.133 s");
 
-  // Zoom in to 512 px/s, scroll right, click the ruler 512 px from its origin,
-  // and confirm the playhead lands on 1 s.
-  await timeline
+  // Zoom in, scroll right, click the ruler at 1 s, and confirm the playhead lands there.
+  await page
+    .getByTestId("editor-timeline")
     .getByRole("slider", { name: "Timeline zoom", exact: true })
     .fill("9");
   await page.getByTestId("timeline-scroll").evaluate((element) => {
     element.scrollLeft = 150;
   });
-  await ruler.click({ position: { x: 512, y: 10 } });
+  await seekTimeline(page, { time: 1 });
   await expect(time).toContainText("1.000 s");
 
   // Confirm navigation did not mark the project as having unsaved changes.

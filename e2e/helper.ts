@@ -128,3 +128,34 @@ export async function commitInspectorField(
     { box: true },
   );
 }
+
+/** Click the timeline ruler where its tick labels place a project time. */
+export async function seekTimeline(page: Page, { time }: { time: number }) {
+  await test.step(
+    `Seek timeline to ${time}s`,
+    async () => {
+      const ruler = page
+        .getByTestId("editor-timeline")
+        .getByRole("button", { name: "Timeline ruler", exact: true });
+      const rulerBox = (await ruler.boundingBox())!;
+      const ticks = await Promise.all(
+        [0, 1].map(async (index) => {
+          const tick = ruler.locator("span").nth(index);
+          return {
+            time: Number(await tick.textContent()),
+            x: (await tick.boundingBox())!.x - rulerBox.x,
+          };
+        }),
+      );
+      const pixelsPerSecond =
+        (ticks[1].x - ticks[0].x) / (ticks[1].time - ticks[0].time);
+      await ruler.click({
+        position: {
+          x: ticks[0].x + (time - ticks[0].time) * pixelsPerSecond,
+          y: rulerBox.height / 2,
+        },
+      });
+    },
+    { box: true },
+  );
+}
