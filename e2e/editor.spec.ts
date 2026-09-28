@@ -61,14 +61,11 @@ test("preview synthetic sources and save an inspector edit", async ({
   await expect(save).toHaveAttribute("data-status", "saved");
 });
 
-test("open projects from the start page and keep saves inside the root", async ({
-  page,
-  editor,
-}) => {
+test("open projects from the start page", async ({ page, editor }) => {
   const { projectDir } = editor;
 
   // Open the editor without a project and confirm it lists this test's project
-  // with its projects.
+  // directory with its projects.
   await page.goto("/");
   const section = page
     .getByTestId("project-list")
