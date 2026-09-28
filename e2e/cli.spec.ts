@@ -32,8 +32,13 @@ test("serve a project directory from the built CLI and save an edit", async ({
     await expect.poll(() => output.match(/Editor: (\S+)/)?.[1]).toBeDefined();
     const url = output.match(/Editor: (\S+)/)![1]!;
 
-    // Open the project and select the image to confirm media loads.
-    await page.goto(`${url}?project=/files/synthetic/project.json`);
+    // Open the project from the start page and select the image to confirm
+    // media loads.
+    await page.goto(url);
+    await page
+      .getByTestId("project-list")
+      .getByRole("link", { name: /project\.json/ })
+      .click();
     await page
       .getByTestId("editor-layer-list")
       .getByRole("button", { name: "image image", exact: true })

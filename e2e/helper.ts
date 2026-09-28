@@ -8,11 +8,18 @@ export const test = base.extend<{
   editor: { url: string; projectFile: string };
 }>({
   editor: async ({}, use, testInfo) => {
-    const directory = testInfo.outputPath("project");
-    await cp("samples/synthetic", directory, { recursive: true });
-    const projectFile = path.join(directory, "project.json");
+    const root = testInfo.outputPath("projects");
+    await cp("samples/synthetic", path.join(root, "synthetic"), {
+      recursive: true,
+    });
+    const projectFile = path.join(root, "synthetic", "project.json");
     const server = spawn("pnpm", ["dev", "--port", "0"], {
-      env: { ...process.env, NO_COLOR: "1", FORCE_COLOR: "0" },
+      env: {
+        ...process.env,
+        TOY_COMPOSITOR_ROOT: root,
+        NO_COLOR: "1",
+        FORCE_COLOR: "0",
+      },
       detached: true,
     });
     let output = "";
@@ -29,8 +36,7 @@ export const test = base.extend<{
         .poll(() => output.match(/http:\/\/localhost:\d+\//)?.[0])
         .toBeDefined();
       const origin = output.match(/http:\/\/localhost:\d+\//)![0];
-      const projectPath = path.relative(process.cwd(), projectFile);
-      const url = `${origin}?project=/files/${projectPath.split(path.sep).join("/")}`;
+      const url = `${origin}?project=/files/synthetic/project.json`;
       await use({ url, projectFile });
     } finally {
       if (server.exitCode === null) {

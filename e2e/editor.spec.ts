@@ -68,7 +68,7 @@ test("preview synthetic sources and save an inspector edit", async ({
   expect(errors).toEqual([]);
 });
 
-test("open projects by URL and keep saves inside the editor root", async ({
+test("open projects from the start page and keep saves inside the root", async ({
   page,
   editor,
   request,
@@ -76,18 +76,21 @@ test("open projects by URL and keep saves inside the editor root", async ({
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   const url = new URL(editor.url);
-  const projectPath = url.searchParams.get("project")!;
 
-  // Open the editor without a project and confirm it explains how to pick one.
+  // Open the editor without a project and confirm it lists the cover's projects.
   await page.goto(url.origin);
-  await expect(page.getByText("No project to open.")).toBeVisible();
+  const list = page.getByTestId("project-list");
+  await expect(list.getByRole("heading", { name: "synthetic" })).toBeVisible();
+  await expect(list.getByRole("link")).toHaveText([
+    "project.json640x360 video",
+    "thumbnail.json640x360 still",
+  ]);
 
-  // Open the sibling thumbnail project by changing the project query.
-  url.searchParams.set(
-    "project",
-    projectPath.replace("project.json", "thumbnail.json"),
+  // Open the thumbnail project from the list.
+  await list.getByRole("link", { name: /thumbnail\.json/ }).click();
+  await expect(page).toHaveURL(
+    /\?project=\/files\/synthetic\/thumbnail\.json$/,
   );
-  await page.goto(url.href);
   await expect(page.getByTestId("editor-project-file")).toContainText(
     "thumbnail.json",
   );
@@ -104,18 +107,21 @@ test("open projects by URL and keep saves inside the editor root", async ({
     )
     .toBeGreaterThan(0);
 
-  // Reject saves outside the editor root, into hidden directories, and of
-  // non-JSON files.
+  // Reject saves outside the root, into hidden directories, and of non-JSON
+  // files.
   const outside = await request.put(`${url.origin}/files/..%2Fescape.json`, {
     data: {},
   });
   expect(outside.status()).toBe(403);
-  const hidden = await request.put(`${url.origin}/files/.git/escape.json`, {
-    data: {},
-  });
+  const hidden = await request.put(
+    `${url.origin}/files/synthetic/.cache/escape.json`,
+    {
+      data: {},
+    },
+  );
   expect(hidden.status()).toBe(403);
   const media = await request.put(
-    `${url.origin}${projectPath.replace("project.json", "media/image.png")}`,
+    `${url.origin}/files/synthetic/media/image.png`,
     { data: {} },
   );
   expect(media.status()).toBe(403);

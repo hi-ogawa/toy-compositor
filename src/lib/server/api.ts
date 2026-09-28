@@ -1,24 +1,31 @@
 import fs from "node:fs";
 import path from "node:path";
 import { staticMiddleware } from "srvx/static";
+import type { ProjectEntry } from "../project-storage.ts";
 
-/** URL prefix under which files in the editor root are served. */
+/** URL prefix under which files in the projects root are served. */
 export const FILES_PREFIX = "/files/";
 
-// Local sample projects live under the gitignored `.local/`. Other dot paths,
-// such as `.git/`, stay hidden for reads and saves.
-const ALLOWED_DOTFILES = [".local"];
+const PROJECTS_PATH = "/api/projects";
+
+/** Whether a request path belongs to the editor server rather than the client. */
+export function isEditorPath(pathname: string) {
+  return pathname.startsWith(FILES_PREFIX) || pathname === PROJECTS_PATH;
+}
 
 /**
- * Serve files under `root` at `/files/*`, and accept project saves as `PUT`
- * of `.json` files there. The client resolves media relative to the project
- * URL, so the same layout works from a static host.
+ * Serve a projects root laid out as `<root>/<cover>/<project>.json` with
+ * media next to each project. Files are served at `/files/*`, project saves
+ * are `PUT` of `.json` files there, and `/api/projects` lists the projects.
  */
 export function createEditorHandler({ root }: { root: string }) {
-  const serveFile = staticMiddleware({ dir: root, dotfiles: ALLOWED_DOTFILES });
+  const serveFile = staticMiddleware({ dir: root });
   return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url);
+      if (url.pathname === PROJECTS_PATH && request.method === "GET") {
+        return Response.json({ root, projects: await listProjects({ root }) });
+      }
       if (!url.pathname.startsWith(FILES_PREFIX)) {
         return new Response(undefined, { status: 404 });
       }
@@ -26,12 +33,13 @@ export function createEditorHandler({ root }: { root: string }) {
         url.pathname.slice(FILES_PREFIX.length),
       );
       const file = path.resolve(root, relative);
+      // Keep hidden paths, such as a cover's future caches, out of reach.
       if (
         !file.startsWith(root + path.sep) ||
         path
           .relative(root, file)
           .split(path.sep)
-          .some((s) => s.startsWith(".") && !ALLOWED_DOTFILES.includes(s))
+          .some((s) => s.startsWith("."))
       ) {
         return new Response("Path is not served by the editor", {
           status: 403,
@@ -64,4 +72,42 @@ export function createEditorHandler({ root }: { root: string }) {
       );
     }
   };
+}
+
+/** List `<root>/<cover>/*.json` files that parse as projects. */
+async function listProjects({ root }: { root: string }) {
+  const entries: ProjectEntry[] = [];
+  const covers = await fs.promises
+    .readdir(root, { withFileTypes: true })
+    .catch(() => []);
+  for (const cover of covers) {
+    if (!cover.isDirectory() || cover.name.startsWith(".")) {
+      continue;
+    }
+    const files = await fs.promises.readdir(path.join(root, cover.name));
+    for (const name of files) {
+      if (!name.endsWith(".json") || name.startsWith(".")) {
+        continue;
+      }
+      const project = await readProject(path.join(root, cover.name, name));
+      if (project) {
+        entries.push({
+          path: `${cover.name}/${name}`,
+          width: project.canvas.width,
+          height: project.canvas.height,
+          output: project.output.type,
+        });
+      }
+    }
+  }
+  return entries.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+async function readProject(file: string) {
+  try {
+    const json = JSON.parse(await fs.promises.readFile(file, "utf-8"));
+    if (json.canvas && Array.isArray(json.layers)) {
+      return json;
+    }
+  } catch {}
 }

@@ -15,12 +15,8 @@ export function useEditorProject({ runtime }: { runtime: EditorRuntime }) {
     retry: false,
     staleTime: Infinity,
     queryFn: async () => {
-      const url = getProjectUrl();
-      if (!url) {
-        throw new Error(
-          "No project to open. Add ?project=<url> to the page URL, for example ?project=/files/samples/synthetic/project.json",
-        );
-      }
+      // The app only mounts the editor when the page names a project.
+      const url = getProjectUrl()!;
       runtime.deserializeProject(await editorProjectStorage.load({ url }));
       return true;
     },
