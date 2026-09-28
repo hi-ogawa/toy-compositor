@@ -2,20 +2,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { Readable } from "node:stream";
 
-const CONTENT_TYPES: Record<string, string> = {
-  ".json": "application/json",
-  ".mp4": "video/mp4",
-  ".webm": "video/webm",
-  ".mov": "video/quicktime",
-  ".mp3": "audio/mpeg",
-  ".wav": "audio/wav",
-  ".m4a": "audio/mp4",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".webp": "image/webp",
-};
-
 /**
  * Editor API over files under `root`. Files are named by paths relative to
  * `root` in query parameters, so a file path is never encoded as a URL path.
@@ -126,6 +112,20 @@ function resolveFile({
   }
   return file;
 }
+
+const CONTENT_TYPES: Record<string, string> = {
+  ".json": "application/json",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
+  ".mov": "video/quicktime",
+  ".mp3": "audio/mpeg",
+  ".wav": "audio/wav",
+  ".m4a": "audio/mp4",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+};
 
 /**
  * Stream a file, honoring the single `bytes=<start>-[<end>]` ranges that media
