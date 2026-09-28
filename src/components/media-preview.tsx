@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { mediaUrl } from "../lib/media-url";
 import type { Layer } from "../lib/project";
 
 export function MediaPreview({
   layer,
   visible,
+  resolveMediaUrl,
 }: {
   layer?: Layer;
   visible: boolean;
+  resolveMediaUrl: (src: string) => string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -25,7 +26,7 @@ export function MediaPreview({
       </p>
     );
   }
-  const src = mediaUrl(layer.src);
+  const src = resolveMediaUrl(layer.src);
   const onError = () => setFailed(true);
   return (
     <section className="flex h-full min-h-0 flex-col gap-2">

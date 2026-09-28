@@ -6,9 +6,11 @@ import { MediaPreview } from "./media-preview";
 export function PreviewMonitors({
   layer,
   composition,
+  resolveMediaUrl,
 }: {
   layer?: Layer;
   composition: ReactNode;
+  resolveMediaUrl: (src: string) => string;
 }) {
   const [sourceVisible, setSourceVisible] = useState(true);
   const [sourceShare, setSourceShare] = useState(35);
@@ -52,6 +54,7 @@ export function PreviewMonitors({
             }
             layer={layer}
             visible={sourceVisible}
+            resolveMediaUrl={resolveMediaUrl}
           />
         </div>
         {sourceVisible && (

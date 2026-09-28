@@ -1,13 +1,23 @@
 import path from "node:path";
-import { fitBox, intersect, outputRange } from "../layout.ts";
-import type { AudioLayer, Crop, Project, VideoLayer } from "../project.ts";
+import { fitBox, intersect, outputRange, type Range } from "../layout.ts";
+import type {
+  AudioLayer,
+  ColorLayer,
+  Crop,
+  ImageLayer,
+  Layer,
+  Project,
+  TextLayer,
+  VideoLayer,
+} from "../project.ts";
 import type { Media, Resolved } from "./resolve.ts";
 
 /**
  * Compile a project and its resolved media into the ffmpeg inputs, filter graph,
  * and output options, without any I/O. The caller adds the output file.
- * The graph starts from a solid canvas and overlays each visual layer in order.
- * Audio layers and the audio of video layers are trimmed, faded, delayed, and mixed.
+ * Each layer compiles on its own into the streams it contributes, and then one
+ * graph overlays the visual streams on a solid canvas in layer order and mixes
+ * the audio streams.
  */
 export function compile({
   project,
@@ -21,180 +31,16 @@ export function compile({
   const { canvas } = project;
   const range = outputRange(project);
   const duration = range.end - range.start;
-  const inputs: string[][] = [];
-  const filters: string[] = [];
-  const audioLabels: string[] = [];
-  const resolve = (src: string) => path.resolve(projectDir, src);
-
-  filters.push(
-    `color=c=${canvas.background ?? "#000000"}:s=${canvas.width}x${canvas.height}:r=${canvas.fps}:d=${duration}[base0]`,
+  const scene: Scene = {
+    canvas,
+    range,
+    withAudio: project.output.type === "video",
+  };
+  const layers = project.layers.map((layer, i) =>
+    compileLayer({ layer, index: i, projectDir, resolved, scene }),
   );
-  let base = "base0";
-  const overlay = ({
-    label,
-    x,
-    y,
-  }: {
-    label: string;
-    x: number;
-    y: number;
-  }) => {
-    const next = `base${filters.length}`;
-    filters.push(
-      `[${base}][${label}]overlay=x=${x}:y=${y}:eof_action=pass[${next}]`,
-    );
-    base = next;
-  };
+  const graph = assembleGraph({ canvas, duration, layers });
 
-  const mixAudio = (layer: VideoLayer | AudioLayer, i: number) => {
-    if (project.output.type === "still" || layer.muted) {
-      return;
-    }
-    const visible = intersect(
-      { start: layer.start, end: layer.start + layer.out - layer.in },
-      range,
-    );
-    if (!visible) {
-      return;
-    }
-    const layerDuration = visible.end - visible.start;
-    const k =
-      inputs.push(
-        seekInput({
-          src: resolve(layer.src),
-          seek: layer.in + visible.start - layer.start,
-          duration: layerDuration,
-        }),
-      ) - 1;
-    const fades = [
-      layer.fadeIn ? `afade=t=in:st=0:d=${layer.fadeIn}` : "",
-      layer.fadeOut
-        ? `afade=t=out:st=${layerDuration - layer.fadeOut}:d=${layer.fadeOut}`
-        : "",
-    ].filter(Boolean);
-    const delayMs = Math.round((visible.start - range.start) * 1000);
-    filters.push(
-      `[${k}:a]${["aformat=sample_rates=48000:channel_layouts=stereo", ...fades, `adelay=delays=${delayMs}:all=1`].join(",")}[a${i}]`,
-    );
-    audioLabels.push(`a${i}`);
-  };
-
-  project.layers.forEach((layer, i) => {
-    switch (layer.type) {
-      case "video": {
-        const visible = intersect(
-          { start: layer.start, end: layer.start + layer.out - layer.in },
-          range,
-        );
-        if (!visible) {
-          return;
-        }
-        const src = resolve(layer.src);
-        const media = resolved.media.get(layer.src)!;
-        const seek = frameShownAt({
-          media,
-          time: layer.in + visible.start - layer.start,
-        });
-        const k =
-          inputs.push(
-            seekInput({ src, seek, duration: visible.end - visible.start }),
-          ) - 1;
-        const fit = fitBox({
-          source: media,
-          crop: layer.crop,
-          box: layer.box,
-        });
-        filters.push(
-          `[${k}:v]fps=${canvas.fps},setpts=PTS-STARTPTS+${visible.start - range.start}/TB,${cropFilter(layer.crop)}scale=${fit.width}:${fit.height}[v${i}]`,
-        );
-        overlay({ label: `v${i}`, x: fit.x, y: fit.y });
-        if (media.hasAudio) {
-          mixAudio(layer, i);
-        }
-        return;
-      }
-      case "image": {
-        const visible = intersect(
-          { start: layer.start ?? range.start, end: layer.end ?? range.end },
-          range,
-        );
-        if (!visible) {
-          return;
-        }
-        const k =
-          inputs.push(
-            stillInput({
-              src: resolve(layer.src),
-              fps: canvas.fps,
-              duration: visible.end - visible.start,
-            }),
-          ) - 1;
-        const fit = fitBox({
-          source: resolved.media.get(layer.src)!,
-          crop: layer.crop,
-          box: layer.box,
-        });
-        filters.push(
-          `[${k}:v]${cropFilter(layer.crop)}scale=${fit.width}:${fit.height},setpts=PTS-STARTPTS+${visible.start - range.start}/TB[v${i}]`,
-        );
-        overlay({ label: `v${i}`, x: fit.x, y: fit.y });
-        return;
-      }
-      case "text": {
-        const visible = intersect(
-          { start: layer.start ?? range.start, end: layer.end ?? range.end },
-          range,
-        );
-        if (!visible) {
-          return;
-        }
-        const k =
-          inputs.push(
-            stillInput({
-              src: resolved.texts.get(i)!,
-              fps: canvas.fps,
-              duration: visible.end - visible.start,
-            }),
-          ) - 1;
-        filters.push(
-          `[${k}:v]setpts=PTS-STARTPTS+${visible.start - range.start}/TB[v${i}]`,
-        );
-        // The stroked copy pads the PNG by half the outline width, so shift it back up.
-        overlay({
-          label: `v${i}`,
-          x: layer.box.x,
-          y: layer.box.y - Math.round((layer.outline?.width ?? 0) / 2),
-        });
-        return;
-      }
-      case "color": {
-        const visible = intersect(
-          { start: layer.start ?? range.start, end: layer.end ?? range.end },
-          range,
-        );
-        if (!visible) {
-          return;
-        }
-        const box = layer.box ?? {
-          x: 0,
-          y: 0,
-          width: canvas.width,
-          height: canvas.height,
-        };
-        filters.push(
-          `color=c=${layer.color}@${layer.opacity ?? 1}:s=${box.width}x${box.height}:r=${canvas.fps}:d=${visible.end - visible.start},format=rgba,setpts=PTS-STARTPTS+${visible.start - range.start}/TB[v${i}]`,
-        );
-        overlay({ label: `v${i}`, x: box.x, y: box.y });
-        return;
-      }
-      case "audio": {
-        mixAudio(layer, i);
-        return;
-      }
-    }
-  });
-
-  filters.push(`[${base}]format=yuv420p[vout]`);
   const outputArgs = ["-map", "[vout]"];
   if (project.output.type === "still") {
     outputArgs.push("-frames:v", "1", "-update", "1");
@@ -211,21 +57,344 @@ export function compile({
       "-t",
       String(duration),
     );
-    if (audioLabels.length > 0) {
-      filters.push(
-        `${audioLabels.map((l) => `[${l}]`).join("")}amix=inputs=${audioLabels.length}:normalize=0:duration=longest,apad,atrim=0:${duration}[aout]`,
-      );
+    if (graph.hasAudio) {
       outputArgs.push("-map", "[aout]", "-c:a", "aac", "-b:a", "192k");
     }
     outputArgs.push("-movflags", "+faststart");
   }
 
   return [
-    ...inputs.flat(),
+    ...graph.inputs,
     "-filter_complex",
-    filters.join(";\n"),
+    graph.filters.join(";\n"),
     ...outputArgs,
   ];
+}
+
+/** The output settings every layer compiles against. */
+type Scene = {
+  canvas: Project["canvas"];
+  /** The output's timeline range. */
+  range: Range;
+  /** Whether the output has an audio track, which a still does not. */
+  withAudio: boolean;
+};
+
+/** The streams one layer contributes, before inputs are numbered and streams are labeled. */
+type LayerStreams = {
+  video?: VideoStream;
+  audio?: AudioStream;
+};
+
+type VideoStream = {
+  /** Input args, or undefined when the first filter generates the frames itself. */
+  input?: string[];
+  /** Filters from the input's video to the frames to overlay, already timed to the output. */
+  filters: string[];
+  x: number;
+  y: number;
+};
+
+type AudioStream = {
+  input: string[];
+  /** Filters from the input's audio to samples already timed to the output. */
+  filters: string[];
+};
+
+/** Look up the files and media facts a layer needs, and compile it by type. */
+function compileLayer({
+  layer,
+  index,
+  projectDir,
+  resolved,
+  scene,
+}: {
+  layer: Layer;
+  index: number;
+  projectDir: string;
+  resolved: Resolved;
+  scene: Scene;
+}): LayerStreams {
+  switch (layer.type) {
+    case "video": {
+      return compileVideo({
+        layer,
+        file: path.resolve(projectDir, layer.src),
+        media: resolved.media.get(layer.src)!,
+        scene,
+      });
+    }
+    case "image": {
+      return compileImage({
+        layer,
+        file: path.resolve(projectDir, layer.src),
+        media: resolved.media.get(layer.src)!,
+        scene,
+      });
+    }
+    case "text": {
+      return compileText({ layer, file: resolved.texts.get(index)!, scene });
+    }
+    case "color": {
+      return compileColor({ layer, scene });
+    }
+    case "audio": {
+      return compileAudio({
+        layer,
+        file: path.resolve(projectDir, layer.src),
+        scene,
+      });
+    }
+  }
+}
+
+function compileVideo({
+  layer,
+  file,
+  media,
+  scene,
+}: {
+  layer: VideoLayer;
+  file: string;
+  media: Media;
+  scene: Scene;
+}): LayerStreams {
+  const visible = intersect(sourceSpan(layer), scene.range);
+  if (!visible) {
+    return {};
+  }
+  const fit = fitBox({ source: media, crop: layer.crop, box: layer.box });
+  return {
+    video: {
+      input: seekInput({
+        file,
+        seek: frameShownAt({
+          media,
+          time: layer.in + visible.start - layer.start,
+        }),
+        duration: visible.end - visible.start,
+      }),
+      filters: [
+        `fps=${scene.canvas.fps}`,
+        `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
+        ...cropFilters(layer.crop),
+        `scale=${fit.width}:${fit.height}`,
+      ],
+      x: fit.x,
+      y: fit.y,
+    },
+    audio:
+      scene.withAudio && !layer.muted && media.hasAudio
+        ? audioStream({ layer, file, visible, scene })
+        : undefined,
+  };
+}
+
+function compileImage({
+  layer,
+  file,
+  media,
+  scene,
+}: {
+  layer: ImageLayer;
+  file: string;
+  media: Media;
+  scene: Scene;
+}): LayerStreams {
+  const visible = intersect(openSpan({ layer, scene }), scene.range);
+  if (!visible) {
+    return {};
+  }
+  const fit = fitBox({ source: media, crop: layer.crop, box: layer.box });
+  return {
+    video: {
+      input: stillInput({
+        file,
+        fps: scene.canvas.fps,
+        duration: visible.end - visible.start,
+      }),
+      filters: [
+        ...cropFilters(layer.crop),
+        `scale=${fit.width}:${fit.height}`,
+        `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
+      ],
+      x: fit.x,
+      y: fit.y,
+    },
+  };
+}
+
+function compileText({
+  layer,
+  file,
+  scene,
+}: {
+  layer: TextLayer;
+  file: string;
+  scene: Scene;
+}): LayerStreams {
+  const visible = intersect(openSpan({ layer, scene }), scene.range);
+  if (!visible) {
+    return {};
+  }
+  return {
+    video: {
+      input: stillInput({
+        file,
+        fps: scene.canvas.fps,
+        duration: visible.end - visible.start,
+      }),
+      filters: [`setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`],
+      // The stroked copy pads the PNG by half the outline width, so shift it back up.
+      x: layer.box.x,
+      y: layer.box.y - Math.round((layer.outline?.width ?? 0) / 2),
+    },
+  };
+}
+
+function compileColor({
+  layer,
+  scene,
+}: {
+  layer: ColorLayer;
+  scene: Scene;
+}): LayerStreams {
+  const visible = intersect(openSpan({ layer, scene }), scene.range);
+  if (!visible) {
+    return {};
+  }
+  const { canvas } = scene;
+  const box = layer.box ?? {
+    x: 0,
+    y: 0,
+    width: canvas.width,
+    height: canvas.height,
+  };
+  return {
+    video: {
+      filters: [
+        `color=c=${layer.color}@${layer.opacity ?? 1}:s=${box.width}x${box.height}:r=${canvas.fps}:d=${visible.end - visible.start}`,
+        "format=rgba",
+        `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
+      ],
+      x: box.x,
+      y: box.y,
+    },
+  };
+}
+
+function compileAudio({
+  layer,
+  file,
+  scene,
+}: {
+  layer: AudioLayer;
+  file: string;
+  scene: Scene;
+}): LayerStreams {
+  const visible = intersect(sourceSpan(layer), scene.range);
+  if (!visible || !scene.withAudio || layer.muted) {
+    return {};
+  }
+  return { audio: audioStream({ layer, file, visible, scene }) };
+}
+
+/** Trim, fade, and delay the audio of a video or audio layer to its visible range. */
+function audioStream({
+  layer,
+  file,
+  visible,
+  scene,
+}: {
+  layer: VideoLayer | AudioLayer;
+  file: string;
+  visible: Range;
+  scene: Scene;
+}): AudioStream {
+  const duration = visible.end - visible.start;
+  const delayMs = Math.round((visible.start - scene.range.start) * 1000);
+  return {
+    input: seekInput({
+      file,
+      seek: layer.in + visible.start - layer.start,
+      duration,
+    }),
+    filters: [
+      "aformat=sample_rates=48000:channel_layouts=stereo",
+      ...(layer.fadeIn ? [`afade=t=in:st=0:d=${layer.fadeIn}`] : []),
+      ...(layer.fadeOut
+        ? [`afade=t=out:st=${duration - layer.fadeOut}:d=${layer.fadeOut}`]
+        : []),
+      `adelay=delays=${delayMs}:all=1`,
+    ],
+  };
+}
+
+/**
+ * Wire the layers' streams into one filter graph. Inputs are numbered in layer
+ * order, each visual stream is overlaid on the previous result starting from a
+ * solid canvas, and the audio streams are mixed and padded to the output duration.
+ */
+function assembleGraph({
+  canvas,
+  duration,
+  layers,
+}: {
+  canvas: Project["canvas"];
+  duration: number;
+  layers: LayerStreams[];
+}) {
+  const inputs: string[][] = [];
+  const filters = [
+    `color=c=${canvas.background ?? "#000000"}:s=${canvas.width}x${canvas.height}:r=${canvas.fps}:d=${duration}[canvas]`,
+  ];
+  const audioLabels: string[] = [];
+  let base = "canvas";
+  layers.forEach(({ video, audio }, i) => {
+    if (video) {
+      const source = video.input ? `[${inputs.push(video.input) - 1}:v]` : "";
+      filters.push(`${source}${video.filters.join(",")}[v${i}]`);
+      filters.push(
+        `[${base}][v${i}]overlay=x=${video.x}:y=${video.y}:eof_action=pass[over${i}]`,
+      );
+      base = `over${i}`;
+    }
+    if (audio) {
+      const k = inputs.push(audio.input) - 1;
+      filters.push(`[${k}:a]${audio.filters.join(",")}[a${i}]`);
+      audioLabels.push(`a${i}`);
+    }
+  });
+  filters.push(`[${base}]format=yuv420p[vout]`);
+  if (audioLabels.length > 0) {
+    filters.push(
+      `${audioLabels.map((l) => `[${l}]`).join("")}amix=inputs=${audioLabels.length}:normalize=0:duration=longest,apad,atrim=0:${duration}[aout]`,
+    );
+  }
+  return {
+    inputs: inputs.flat(),
+    filters,
+    hasAudio: audioLabels.length > 0,
+  };
+}
+
+/** Timeline span of a layer placed by its source range. */
+function sourceSpan(layer: VideoLayer | AudioLayer): Range {
+  return { start: layer.start, end: layer.start + layer.out - layer.in };
+}
+
+/** Timeline span of a layer whose missing edges extend to the output range. */
+function openSpan({
+  layer,
+  scene,
+}: {
+  layer: { start?: number; end?: number };
+  scene: Scene;
+}): Range {
+  return {
+    start: layer.start ?? scene.range.start,
+    end: layer.end ?? scene.range.end,
+  };
 }
 
 /**
@@ -243,23 +412,23 @@ function frameShownAt({ media, time }: { media: Media; time: number }) {
 }
 
 function seekInput({
-  src,
+  file,
   seek,
   duration,
 }: {
-  src: string;
+  file: string;
   seek: number;
   duration: number;
 }) {
-  return ["-ss", seek.toFixed(6), "-t", duration.toFixed(6), "-i", src];
+  return ["-ss", seek.toFixed(6), "-t", duration.toFixed(6), "-i", file];
 }
 
 function stillInput({
-  src,
+  file,
   fps,
   duration,
 }: {
-  src: string;
+  file: string;
   fps: number;
   duration: number;
 }) {
@@ -271,14 +440,16 @@ function stillInput({
     "-t",
     duration.toFixed(3),
     "-i",
-    src,
+    file,
   ];
 }
 
-function cropFilter(crop?: Crop) {
+function cropFilters(crop?: Crop) {
   if (!crop) {
-    return "";
+    return [];
   }
   const { left = 0, right = 0, top = 0, bottom = 0 } = crop;
-  return `crop=iw*${1 - left - right}:ih*${1 - top - bottom}:iw*${left}:ih*${top},`;
+  return [
+    `crop=iw*${1 - left - right}:ih*${1 - top - bottom}:iw*${left}:ih*${top}`,
+  ];
 }

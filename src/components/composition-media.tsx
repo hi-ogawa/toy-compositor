@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { fitBox } from "../lib/layout";
-import { mediaUrl } from "../lib/media-url";
 import type { ImageLayer, VideoLayer } from "../lib/project";
 
 /** Fit the cropped source into its canvas box after the browser reads its dimensions. */
 export function CompositionMedia({
   layer,
   time,
+  resolveMediaUrl,
 }: {
   layer: ImageLayer | VideoLayer;
   time: number;
+  resolveMediaUrl: (src: string) => string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [source, setSource] = useState<{ width: number; height: number }>();
@@ -65,7 +66,7 @@ export function CompositionMedia({
         {layer.type === "video" ? (
           <video
             ref={videoRef}
-            src={mediaUrl(layer.src)}
+            src={resolveMediaUrl(layer.src)}
             muted
             playsInline
             preload="auto"
@@ -80,7 +81,7 @@ export function CompositionMedia({
           />
         ) : (
           <img
-            src={mediaUrl(layer.src)}
+            src={resolveMediaUrl(layer.src)}
             alt={layer.name ?? layer.src}
             style={mediaStyle}
             onLoad={(event) => {
