@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { resolveMediaUrl } from "../lib/media-url";
 import type { Layer } from "../lib/project";
+import { resolveProjectMediaUrl } from "../lib/project-file";
 
 export function MediaPreview({
   layer,
@@ -17,7 +17,7 @@ export function MediaPreview({
       </p>
     );
   }
-  const src = resolveMediaUrl({ src: layer.src, projectUrl });
+  const src = resolveProjectMediaUrl({ src: layer.src, projectUrl });
   const onError = () => setFailed(true);
   return (
     <section className="flex h-full min-h-0 flex-col gap-3 p-4">

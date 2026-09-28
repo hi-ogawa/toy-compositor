@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { editorProjectStorage } from "../lib/project-storage";
+import { loadProjectFile, saveProjectFile } from "../lib/project-file";
 import type { EditorRuntime } from "../lib/runtime";
 import { useWindowEvent } from "./use-window-event";
 
@@ -21,9 +21,7 @@ export function useEditorProject({
     retry: false,
     staleTime: Infinity,
     queryFn: async () => {
-      runtime.deserializeProject(
-        await editorProjectStorage.load({ url: projectUrl }),
-      );
+      runtime.deserializeProject(await loadProjectFile({ url: projectUrl }));
       return true;
     },
   });
@@ -35,7 +33,7 @@ export function useEditorProject({
         throw new Error("Cannot save before the project has loaded.");
       }
       const revision = revisionRef.current;
-      await editorProjectStorage.save({
+      await saveProjectFile({
         url: projectUrl,
         project: runtime.serializeProject(),
       });
