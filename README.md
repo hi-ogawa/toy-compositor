@@ -1,66 +1,59 @@
 # toy-compositor
 
-A focused video compositor for my bass-cover videos, meant to replace the last manual Kdenlive step. It is not a general video editor. It only composes finished media into a few fixed deliverables.
+A small video compositor for bass-cover videos. You describe a composition as a JSON project, line things up in a browser editor, and render the final videos and thumbnails with ffmpeg.
 
-- A cover's inputs are a camera recording of the playthrough, the mixed audio, a scrolling score video from [toy-midi](https://github.com/hi-ogawa/toy-midi), the original MV thumbnail, and a title.
-- Each cover ships four deliverables: a horizontal video, its thumbnail, a vertical short, and its thumbnail.
-- A readable JSON project file is the source of truth, so agents and scripts can generate and edit projects. A minimal editor is only for the edits that need an eye, such as camera sync against the mix waveform and layer placement.
-- Rendering compiles a project into one ffmpeg filter graph. Static layouts of existing media do not need per-frame browser capture, and ffmpeg gives direct control over encoding.
+It's built for one job: taking finished media (a camera recording, the mixed audio, a score video from [toy-midi](https://github.com/hi-ogawa/toy-midi), a thumbnail image, and a title) and composing them into a horizontal video, a vertical short, and a thumbnail for each. It isn't a general video editor.
 
-The pinned [roadmap issue](https://github.com/hi-ogawa/toy-compositor/issues/43) is the working plan, [past Kdenlive covers](https://github.com/hi-ogawa/toy-compositor/tree/e315663/research/kdenlive) record how covers were composed, [a Remotion comparison](https://github.com/hi-ogawa/toy-compositor/tree/e315663/research/remotion) checks a browser render against the ffmpeg compiler, [docs/project-format.md](docs/project-format.md) drafts the project file, and [docs/compiler.md](docs/compiler.md) describes the renderer.
+## Getting started
 
-## Setup
-
-```sh
-pnpm install
-uv sync            # Python analysis tools under tools/
-pnpm lint-check    # format, lint, and typecheck
-pnpm test-e2e      # editor smoke and synthetic render, needs Chromium, ffmpeg, and ffprobe
-
-pnpm dev                                           # start the editor
-pnpm render <project.json> <output.(mp4|png)>                          # render a project
-```
-
-Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The editor and the render CLI run on Node 24 directly.
-
-The editor works on a projects root laid out as `<root>/<project-dir>/<name>.json`, with each project directory holding its project JSON files and their media. The dev server's projects root is `.local/projects/`, where `pnpm setup-sample` puts samples, and `TOY_COMPOSITOR_ROOT` overrides it. The start page lists the root's projects, and opening one navigates to `?project=<project-dir>/<name>.json`. The server reads, saves, and serves media for the project through `/api/`, and media resolves relative to the project file as in the renderer. Hidden paths under the root are never served.
-
-## CLI
-
-The package ships a `toy-compositor` command with the editor client prebuilt, so it runs without Vite. Each commit is published to [pkg.pr.new](https://pkg.pr.new/~/hi-ogawa/toy-compositor):
+Install the CLI and open the editor on a folder of projects:
 
 ```sh
 pnpm add -g https://pkg.pr.new/hi-ogawa/toy-compositor@main
 
-toy-compositor serve [root]                      # editor for projects under root, default ~/Documents/toy-compositor
-toy-compositor render <project.json> <output>    # render a project
+toy-compositor serve                         # projects under ~/Documents/toy-compositor
+toy-compositor serve ~/covers                # or any other folder
 ```
 
-`serve` listens on localhost only, rejects requests addressed to other hosts, and serves the editor API over `root` the same way the dev server does over `.local/projects/`. In the repository, `pnpm build` produces `dist/client/` and `dist/server/cli.js`, and `node dist/server/cli.js serve <root>` runs the built CLI.
-
-## Samples
+The start page lists your projects. Open one to preview each layer, adjust positions in the inspector, and save. When it looks right, render it:
 
 ```sh
-pnpm setup-sample samples/synthetic
-pnpm setup-sample ../toy-compositor/.local/samples/rescene.zip
-
-pnpm render .local/projects/synthetic/project.json .local/projects/synthetic/out/preview.mp4
+toy-compositor render ~/covers/my-cover/horizontal-video.json out.mp4
+toy-compositor render ~/covers/my-cover/horizontal-thumbnail.json out.png
 ```
 
-See [samples/README.md](samples/README.md) for setting up the synthetic sample or a local project bundle for iteration.
+Rendering needs `ffmpeg` and ImageMagick (`magick`) on your PATH.
 
-## Layout
+## Projects
+
+Each project directory holds one cover: its project files and the media they use.
 
 ```text
-src/          editor and renderer
-docs/         design drafts, e.g. the project format
-samples/      committed sample sources
-.local/       local sample sources and editable projects, gitignored
-tools/        analysis scripts and sample setup/generation
+~/covers/my-cover/
+  horizontal-video.json
+  horizontal-thumbnail.json
+  vertical-video.json
+  media/camera.mp4
+  media/mix.wav
 ```
 
-## Conventions
+A project file is plain JSON: a canvas, what to render, and a stack of video, audio, image, text, and color layers. Media paths are relative to the project file. Variants like the vertical short are just separate files, so you, a script, or an agent can derive one from another. See [docs/project-format.md](docs/project-format.md).
 
-- Source media and renders stay gitignored. Small synthetic samples are committed with a generator that reproduces them.
-- Project files reference media by paths relative to the project file.
-- An experiment that works moves into `src/`. One that does not is removed, and its code and findings are linked by commit, so dead code and historical notes do not stay in the tree.
+## How it works
+
+The renderer compiles a project into a single ffmpeg filter graph ([docs/compiler.md](docs/compiler.md)), so the render is exact and encoding is under direct control. The editor previews the same layout in the browser and only writes the project file, so the file is always the source of truth.
+
+Plans and open work live in the [roadmap](https://github.com/hi-ogawa/toy-compositor/issues/43).
+
+## Development
+
+```sh
+pnpm install
+pnpm dev                        # editor on .local/projects/ (TOY_COMPOSITOR_ROOT to override)
+pnpm setup-sample samples/synthetic
+pnpm lint-check                 # format, lint, and typecheck
+pnpm test-e2e                   # against the built CLI (E2E_SERVER=dev for the dev server)
+pnpm build                      # dist/client/ and dist/server/cli.js
+```
+
+Node 24 runs the editor and CLI directly. `uv sync` installs the Python tools under `tools/` used to compare renders. See [samples/README.md](samples/README.md) for the synthetic and local samples, and [AGENTS.md](AGENTS.md) for conventions.
