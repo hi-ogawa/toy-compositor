@@ -25,6 +25,19 @@ Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The editor and the 
 
 The editor opens the project given by the page's `?project=` query, a path relative to the projects root, for example `/?project=synthetic/project.json`. The dev server's projects root is `.local/projects/`, where `pnpm setup-sample` puts samples, and `TOY_COMPOSITOR_ROOT` overrides it. The server reads, saves, and serves media for the project through `/api/`, and media resolves relative to the project file as in the renderer. Hidden paths under the root are never served.
 
+## CLI
+
+The package ships a `toy-compositor` command with the editor client prebuilt, so it runs without Vite. Each commit is published to [pkg.pr.new](https://pkg.pr.new/~/hi-ogawa/toy-compositor):
+
+```sh
+pnpm add -g https://pkg.pr.new/hi-ogawa/toy-compositor@main
+
+toy-compositor serve [root]                      # editor for projects under root, default ~/Documents/toy-compositor
+toy-compositor render <project.json> <output>    # render a project
+```
+
+`serve` listens on localhost only, rejects requests addressed to other hosts, and serves the editor API over `root` the same way the dev server does over `.local/projects/`. In the repository, `pnpm build` produces `dist/client/` and `dist/server/cli.js`, and `node dist/server/cli.js serve <root>` runs the built CLI.
+
 ## Samples
 
 ```sh

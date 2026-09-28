@@ -1,4 +1,20 @@
+import net from "node:net";
+import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
+
+const server = process.env.E2E_SERVER ?? "build";
+if (server !== "build" && server !== "dev") {
+  throw new Error(`Invalid E2E_SERVER: ${server}. Expected build or dev.`);
+}
+
+// Resolve the port once and share it with Playwright workers.
+const port = process.env.E2E_PORT
+  ? Number(process.env.E2E_PORT)
+  : await getFreePort();
+process.env.E2E_PORT = String(port);
+
+// Projects root that the server serves and tests copy samples into.
+const root = path.resolve(".local/e2e-projects");
 
 const traceEnabled =
   process.env.E2E_TRACE === "1" ||
@@ -6,6 +22,18 @@ const traceEnabled =
 
 export default defineConfig({
   testDir: "./e2e",
+  webServer: {
+    command:
+      server === "dev"
+        ? `pnpm dev --port ${port} --strictPort`
+        : `pnpm build && node dist/server/cli.js serve ${root} --port ${port}`,
+    env: { TOY_COMPOSITOR_ROOT: root },
+    url: `http://localhost:${port}`,
+    reuseExistingServer: false,
+    // pnpm forwards SIGTERM to Vite, but SIGKILL leaves it running, so never
+    // fall back to SIGKILL.
+    gracefulShutdown: { signal: "SIGTERM", timeout: 0 },
+  },
   forbidOnly: !!process.env.CI,
   reporter: [
     ["list"],
@@ -14,6 +42,7 @@ export default defineConfig({
     ...(process.env.CI ? [["github"] as const] : []),
   ],
   use: {
+    baseURL: `http://localhost:${port}`,
     trace: traceEnabled ? { mode: "on", screenshots: false } : "off",
   },
   projects: [
@@ -23,3 +52,14 @@ export default defineConfig({
     },
   ],
 });
+
+function getFreePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.once("error", reject);
+    server.listen(0, () => {
+      const { port } = server.address() as net.AddressInfo;
+      server.close(() => resolve(port));
+    });
+  });
+}

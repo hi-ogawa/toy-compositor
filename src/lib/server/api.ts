@@ -87,7 +87,7 @@ async function handleMedia({
 
 /**
  * Resolve `paths` against `root`, rejecting files outside it and hidden paths,
- * such as a cover's future caches.
+ * such as a project directory's future caches.
  */
 function resolveFile({
   root,
