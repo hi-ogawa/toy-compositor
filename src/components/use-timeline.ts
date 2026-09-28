@@ -1,6 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { layerRange } from "../lib/editor/layer-regions";
-import { intersect, outputRange, type Range } from "../lib/layout";
+import { intersect, layerRange, outputRange, type Range } from "../lib/layout";
 import type { Project } from "../lib/project";
 
 export const TIMELINE_LABEL_WIDTH = 144;
@@ -11,7 +10,7 @@ export type TimelineView = ReturnType<typeof useTimeline>;
 export function useTimeline({ project }: { project: Project }) {
   const ranges = [
     outputRange(project),
-    ...project.layers.map((layer) => layerRange({ layer, project })),
+    ...project.layers.map((layer) => layerRange(layer)),
   ];
   const start = Math.floor(
     Math.min(

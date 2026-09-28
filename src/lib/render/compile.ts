@@ -1,5 +1,11 @@
 import path from "node:path";
-import { fitBox, intersect, outputRange, type Range } from "../layout.ts";
+import {
+  fitBox,
+  intersect,
+  layerRange,
+  outputRange,
+  type Range,
+} from "../layout.ts";
 import type {
   AudioLayer,
   ColorLayer,
@@ -159,7 +165,7 @@ function compileVideo({
   media: Media;
   scene: Scene;
 }): LayerStreams {
-  const visible = intersect(sourceSpan(layer), scene.range);
+  const visible = intersect(layerRange(layer), scene.range);
   if (!visible) {
     return {};
   }
@@ -201,7 +207,7 @@ function compileImage({
   media: Media;
   scene: Scene;
 }): LayerStreams {
-  const visible = intersect(openSpan({ layer, scene }), scene.range);
+  const visible = intersect(layerRange(layer), scene.range);
   if (!visible) {
     return {};
   }
@@ -233,7 +239,7 @@ function compileText({
   file: string;
   scene: Scene;
 }): LayerStreams {
-  const visible = intersect(openSpan({ layer, scene }), scene.range);
+  const visible = intersect(layerRange(layer), scene.range);
   if (!visible) {
     return {};
   }
@@ -259,7 +265,7 @@ function compileColor({
   layer: ColorLayer;
   scene: Scene;
 }): LayerStreams {
-  const visible = intersect(openSpan({ layer, scene }), scene.range);
+  const visible = intersect(layerRange(layer), scene.range);
   if (!visible) {
     return {};
   }
@@ -292,7 +298,7 @@ function compileAudio({
   file: string;
   scene: Scene;
 }): LayerStreams {
-  const visible = intersect(sourceSpan(layer), scene.range);
+  const visible = intersect(layerRange(layer), scene.range);
   if (!visible || !scene.withAudio || layer.muted) {
     return {};
   }
@@ -375,25 +381,6 @@ function assembleGraph({
     inputs: inputs.flat(),
     filters,
     hasAudio: audioLabels.length > 0,
-  };
-}
-
-/** Timeline span of a layer placed by its source range. */
-function sourceSpan(layer: VideoLayer | AudioLayer): Range {
-  return { start: layer.start, end: layer.start + layer.out - layer.in };
-}
-
-/** Timeline span of a layer whose missing edges extend to the output range. */
-function openSpan({
-  layer,
-  scene,
-}: {
-  layer: { start?: number; end?: number };
-  scene: Scene;
-}): Range {
-  return {
-    start: layer.start ?? scene.range.start,
-    end: layer.end ?? scene.range.end,
   };
 }
 
