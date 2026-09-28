@@ -4,7 +4,7 @@ import type { ProjectEntry } from "../project-file.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 
 /**
- * Editor API over a projects root laid out as `<root>/<cover>/<project>.json`
+ * Editor API over a projects root laid out as `<root>/<dir>/<project>.json`
  * with media next to each project. Files are named by paths relative to
  * `root` in query parameters, so a file path is never encoded as a URL path.
  *
@@ -44,25 +44,25 @@ export function createEditorHandler({ root }: { root: string }) {
   };
 }
 
-/** List `<root>/<cover>/*.json` files that parse as projects. */
+/** List `<root>/<dir>/*.json` files that parse as projects. */
 async function listProjects({ root }: { root: string }) {
   const entries: ProjectEntry[] = [];
-  const covers = await fs.promises
+  const dirs = await fs.promises
     .readdir(root, { withFileTypes: true })
     .catch(() => []);
-  for (const cover of covers) {
-    if (!cover.isDirectory() || cover.name.startsWith(".")) {
+  for (const dir of dirs) {
+    if (!dir.isDirectory() || dir.name.startsWith(".")) {
       continue;
     }
-    const files = await fs.promises.readdir(path.join(root, cover.name));
+    const files = await fs.promises.readdir(path.join(root, dir.name));
     for (const name of files) {
       if (!name.endsWith(".json") || name.startsWith(".")) {
         continue;
       }
-      const project = await readProject(path.join(root, cover.name, name));
+      const project = await readProject(path.join(root, dir.name, name));
       if (project) {
         entries.push({
-          path: `${cover.name}/${name}`,
+          path: `${dir.name}/${name}`,
           width: project.canvas.width,
           height: project.canvas.height,
           output: project.output.type,
@@ -134,7 +134,7 @@ async function handleMedia({
 
 /**
  * Resolve `paths` against `root`, rejecting files outside it and hidden paths,
- * such as a cover's future caches.
+ * such as a project directory's future caches.
  */
 function resolveFile({
   root,

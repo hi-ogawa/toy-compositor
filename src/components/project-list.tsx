@@ -5,7 +5,7 @@ import {
   type ProjectEntry,
 } from "../lib/project-file";
 
-/** Start page listing the projects under the root, grouped by cover directory. */
+/** Start page listing the projects under the root, grouped by project directory. */
 export function ProjectList() {
   const query = useQuery({
     queryKey: ["project-list"],
@@ -19,23 +19,23 @@ export function ProjectList() {
     return null;
   }
   const { root, projects } = query.data;
-  const covers = Map.groupBy(projects, (entry) => entry.path.split("/")[0]!);
+  const dirs = Map.groupBy(projects, (entry) => entry.path.split("/")[0]!);
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6 p-6">
       <header>
         <h1 className="text-lg font-medium">Toy Compositor</h1>
         <p className="font-mono text-sm text-muted-foreground">{root}</p>
       </header>
-      {covers.size === 0 && (
+      {dirs.size === 0 && (
         <p className="text-sm text-muted-foreground">
-          No projects yet. Put each cover in its own directory under the root,
-          with project JSON files and their media next to them.
+          No projects yet. Put each project in its own directory under the root,
+          with its project JSON files and their media.
         </p>
       )}
       <ul className="flex flex-col gap-4" data-testid="project-list">
-        {[...covers].map(([cover, entries]) => (
-          <li key={cover}>
-            <h2 className="font-medium">{cover}</h2>
+        {[...dirs].map(([dir, entries]) => (
+          <li key={dir}>
+            <h2 className="font-medium">{dir}</h2>
             <ul className="mt-1 flex flex-col">
               {entries.map((entry) => (
                 <ProjectRow key={entry.path} entry={entry} />

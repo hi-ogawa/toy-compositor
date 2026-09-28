@@ -23,7 +23,7 @@ pnpm render <project.json> <output.(mp4|png)>                          # render 
 
 Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The editor and the render CLI run on Node 24 directly.
 
-The editor works on a projects root laid out as `<root>/<cover>/<project>.json`, with each project's media next to it. The dev server's projects root is `.local/projects/`, where `pnpm setup-sample` puts samples, and `TOY_COMPOSITOR_ROOT` overrides it. The start page lists the root's projects, and opening one navigates to `?project=<cover>/<project>.json`. The server reads, saves, and serves media for the project through `/api/`, and media resolves relative to the project file as in the renderer. Hidden paths under the root are never served.
+The editor works on a projects root laid out as `<root>/<dir>/<project>.json`, with each project directory holding its project JSON files and their media. The dev server's projects root is `.local/projects/`, where `pnpm setup-sample` puts samples, and `TOY_COMPOSITOR_ROOT` overrides it. The start page lists the root's projects, and opening one navigates to `?project=<dir>/<project>.json`. The server reads, saves, and serves media for the project through `/api/`, and media resolves relative to the project file as in the renderer. Hidden paths under the root are never served.
 
 ## CLI
 
