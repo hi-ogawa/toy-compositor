@@ -23,6 +23,7 @@ Setup preserves every file in the sample, including additional project variants.
 - A dark gray 160×90 image with a yellow border overlays the video at `(420, 240)` throughout the clip.
 - A centered white “Synthetic sample” text layer with a black outline sits on the image throughout the clip.
 - A separate 660 Hz WAV tone plays throughout, fading in over the first 0.2 seconds and fading out over the last 0.5 seconds.
+- A `thumbnail` locator marks 1.5 seconds, the frame that `thumbnail.json` renders.
 
 [synthetic/thumbnail.json](synthetic/thumbnail.json) is the same composition with a still output at 1.5 seconds, so it renders only frame 45 of the test pattern as a PNG.
 

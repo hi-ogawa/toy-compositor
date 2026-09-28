@@ -1,12 +1,11 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { matchKeyboardEvent } from "../lib/keyboard";
-import { outputRange } from "../lib/layout";
 import { EditorRuntime } from "../lib/runtime";
 import { CompositionPreview } from "./composition-preview";
 import { EditorHeader } from "./editor-header";
 import { Inspector } from "./inspector";
 import { PreviewMonitors } from "./preview-monitors";
-import { cn } from "./ui/utils";
+import { Timeline } from "./timeline";
 import { useEditorProject } from "./use-editor-project";
 import { useWindowEvent } from "./use-window-event";
 
@@ -41,7 +40,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
   }
 
   const { selection } = state;
-  const { layers, canvas } = state.project;
+  const { layers } = state.project;
   const previewLayer =
     selection?.type === "layer" ? layers[selection.index] : undefined;
   return (
@@ -60,44 +59,17 @@ export function Editor({ projectPath }: { projectPath: string }) {
               <CompositionPreview
                 project={state.project}
                 selection={selection}
-                time={outputRange(state.project).start}
+                time={state.playhead}
                 resolveMediaUrl={project.resolveMediaUrl}
               />
             }
           />
-          <nav
-            className="flex h-56 shrink-0 flex-col overflow-y-auto border-t border-border py-2 text-sm"
-            data-testid="editor-layer-list"
-          >
-            <SelectableRow
-              selected={selection?.type === "output"}
-              onClick={() => runtime.select({ type: "output" })}
-            >
-              <span>Output</span>
-              <span className="text-xs text-muted-foreground">
-                {canvas.width}x{canvas.height} {canvas.fps}fps
-              </span>
-            </SelectableRow>
-            <div className="mx-3 my-2 border-t border-border" />
-            {/* Top layer first, like tracks in a timeline. */}
-            {layers
-              .map((layer, index) => ({ layer, index }))
-              .reverse()
-              .map(({ layer, index }) => (
-                <SelectableRow
-                  key={index}
-                  selected={
-                    selection?.type === "layer" && selection.index === index
-                  }
-                  onClick={() => runtime.select({ type: "layer", index })}
-                >
-                  <span>{layer.name ?? layer.type}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {layer.type}
-                  </span>
-                </SelectableRow>
-              ))}
-          </nav>
+          <Timeline
+            runtime={runtime}
+            project={state.project}
+            selection={selection}
+            playhead={state.playhead}
+          />
         </main>
         <aside
           className="w-72 shrink-0 overflow-y-auto border-l border-border"
@@ -111,28 +83,5 @@ export function Editor({ projectPath }: { projectPath: string }) {
         </aside>
       </div>
     </div>
-  );
-}
-
-function SelectableRow({
-  selected,
-  onClick,
-  children,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        "flex items-baseline justify-between gap-2 px-3 py-1.5 text-left",
-        selected ? "bg-accent" : "hover:bg-secondary",
-      )}
-      onClick={onClick}
-    >
-      {children}
-    </button>
   );
 }

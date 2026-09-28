@@ -89,17 +89,17 @@ export async function dragBy({
   );
 }
 
-/** Select a row in the editor layer list by its accessible name. */
-export async function selectLayer(
+/** Click a lane label or marker in the editor timeline by its accessible name. */
+export async function clickTimelineButton(
   page: Page,
-  { name }: { name: string | RegExp },
+  { name }: { name: string },
 ) {
   await test.step(
-    `Select ${name}`,
+    `Click ${name} in the timeline`,
     async () => {
       await page
-        .getByTestId("editor-layer-list")
-        .getByRole("button", { name, exact: typeof name === "string" })
+        .getByTestId("editor-timeline")
+        .getByRole("button", { name, exact: true })
         .click();
     },
     { box: true },
@@ -124,6 +124,21 @@ export async function commitInspectorField(
       const field = getInspectorField(page, { name });
       await field.fill(value);
       await field.press("Enter");
+    },
+    { box: true },
+  );
+}
+
+/** Click the timeline ruler at an offset from its origin, which is project time 0. */
+export async function seekTimelineByPixels(page: Page, pixels: number) {
+  await test.step(
+    `Seek timeline to ${pixels}px`,
+    async () => {
+      const ruler = page
+        .getByTestId("editor-timeline")
+        .getByRole("button", { name: "Timeline ruler", exact: true });
+      const box = (await ruler.boundingBox())!;
+      await page.mouse.click(box.x + pixels, box.y + box.height / 2);
     },
     { box: true },
   );

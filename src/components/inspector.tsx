@@ -14,7 +14,7 @@ export function Inspector({
   if (!selection) {
     return (
       <p className="p-3 text-sm text-muted-foreground">
-        Select the output or a layer.
+        Select render settings or a layer.
       </p>
     );
   }
@@ -23,7 +23,7 @@ export function Inspector({
     const { output } = project;
     return (
       <div className="flex flex-col gap-4 p-3" data-testid="inspector">
-        <InspectorTitle title="Output" subtitle={output.type} />
+        <InspectorTitle title="Render settings" subtitle={output.type} />
         <Group title="Range">
           {output.type === "video" ? (
             <>
