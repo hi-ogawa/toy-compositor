@@ -1,4 +1,4 @@
-import type { Box, Crop, Project } from "./project.ts";
+import type { Box, Crop, Layer, Project } from "./project.ts";
 
 export type Range = { start: number; end: number };
 
@@ -7,6 +7,14 @@ export function outputRange(project: Project): Range {
   return output.type === "video"
     ? output
     : { start: output.time, end: output.time + 1 / canvas.fps };
+}
+
+/** Timeline span of a layer, from its source range for video and audio. */
+export function layerRange(layer: Layer): Range {
+  if (layer.type === "video" || layer.type === "audio") {
+    return { start: layer.start, end: layer.start + layer.out - layer.in };
+  }
+  return { start: layer.start, end: layer.end };
 }
 
 export function intersect(a: Range, b: Range): Range | undefined {

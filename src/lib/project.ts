@@ -57,8 +57,8 @@ export type ImageLayer = LayerBase & {
   src: string;
   box: Box;
   crop?: Crop;
-  start?: number;
-  end?: number;
+  start: number;
+  end: number;
 };
 
 export type TextLayer = LayerBase & {
@@ -69,8 +69,8 @@ export type TextLayer = LayerBase & {
   font: { family: string; size: number; weight?: number; lineSpacing?: number };
   color: string;
   outline?: { width: number; color: string };
-  start?: number;
-  end?: number;
+  start: number;
+  end: number;
 };
 
 export type ColorLayer = LayerBase & {
@@ -78,6 +78,6 @@ export type ColorLayer = LayerBase & {
   color: string;
   opacity?: number;
   box?: Box;
-  start?: number;
-  end?: number;
+  start: number;
+  end: number;
 };

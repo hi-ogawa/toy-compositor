@@ -1,22 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="340" viewBox="0 0 760 340" role="img" aria-labelledby="title desc">
 <title id="title">Each layer is cut to the output range and shifted onto the output timeline</title>
-<desc id="desc">On a timeline from 0 to 10 seconds, the output covers 3 to 7 seconds. A video layer spans 1 to 6 seconds, so its visible part is 3 to 6 and it starts at the output start. An image layer starts at 4 with no end, so it runs to the output end, 4 to 7, one second after the output start. A text layer with no start or end covers the whole output. Only the visible parts become streams, each shifted by its offset from the output start.</desc>
+<desc id="desc">On a timeline from 0 to 10 seconds, the output covers 3 to 7 seconds. A video layer spans 1 to 6 seconds, so its visible part is 3 to 6 and it starts at the output start. An image layer spans 4 to 8, so its visible part is 4 to 7, one second after the output start. A text layer spans 2 to 7, so its visible part is 3 to 7 and it starts at the output start. Only the visible parts become streams, each shifted by its offset from the output start.</desc>
 <rect width="760" height="340" fill="#fcfaf5"/>
 <g font-family="Arial,sans-serif" font-size="15" fill="#263632">
 <text x="30" y="34" font-size="20" font-weight="700">Cut each layer to the output, then place it on the output timeline</text>
-<text x="30" y="56" font-size="13" fill="#52625d">Solid: the part that becomes a stream. Dashed: the rest of a video layer's source range.</text>
+<text x="30" y="56" font-size="13" fill="#52625d">Solid: the part that becomes a stream. Dashed: the rest of a layer's range, outside the output.</text>
 <rect x="280" y="64" width="240" height="214" fill="#eef1ef"/>
 <text x="400" y="84" text-anchor="middle" font-size="13" fill="#52625d">output range</text>
 <text x="100" y="110" font-size="13">video layer: start 1, source range 5 s long</text>
 <rect x="160" y="118" width="300" height="18" rx="4" fill="none" stroke="#2f6fb0" stroke-dasharray="5 4"/>
 <rect x="280" y="118" width="180" height="18" rx="4" fill="#2f6fb0"/>
 <text x="468" y="132" font-size="13" fill="#52625d">seek the source 2 s past its in-point</text>
-<text x="100" y="170" font-size="13">image layer: start 4, no end</text>
+<text x="100" y="170" font-size="13">image layer: start 4, end 8</text>
+<rect x="340" y="178" width="240" height="18" rx="4" fill="none" stroke="#2f6fb0" stroke-dasharray="5 4"/>
 <rect x="340" y="178" width="180" height="18" rx="4" fill="#2f6fb0"/>
-<text x="528" y="192" font-size="13" fill="#52625d">a missing end runs to the output end</text>
-<text x="100" y="230" font-size="13">text layer: no start, no end</text>
+<text x="588" y="192" font-size="13" fill="#52625d">cut at the output end</text>
+<text x="100" y="230" font-size="13">text layer: start 2, end 7</text>
+<rect x="220" y="238" width="300" height="18" rx="4" fill="none" stroke="#2f6fb0" stroke-dasharray="5 4"/>
 <rect x="280" y="238" width="240" height="18" rx="4" fill="#2f6fb0"/>
-<text x="528" y="252" font-size="13" fill="#52625d">covers the whole output</text>
+<text x="528" y="252" font-size="13" fill="#52625d">cut at the output start</text>
 <path d="M100 300 H680" stroke="#a3b0a9"/>
 <g font-size="12" fill="#52625d" text-anchor="middle">
 <path d="M100 296 V304 M160 296 V304 M220 296 V304 M280 296 V304 M340 296 V304 M400 296 V304 M460 296 V304 M520 296 V304 M580 296 V304 M640 296 V304" stroke="#a3b0a9"/>
