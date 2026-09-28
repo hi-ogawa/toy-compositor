@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { expect } from "@playwright/test";
-import { test } from "./helper";
+import { expectImageLoaded, test } from "./helper";
 
 test("preview synthetic sources and save an inspector edit", async ({
   page,
@@ -35,11 +35,7 @@ test("preview synthetic sources and save an inspector edit", async ({
   await expect(page.locator("main audio")).toHaveCount(0);
   const image = page.getByRole("img", { name: "image", exact: true });
   await expect(image).toBeVisible();
-  await expect
-    .poll(() =>
-      image.evaluate((element: HTMLImageElement) => element.naturalWidth),
-    )
-    .toBeGreaterThan(0);
+  await expectImageLoaded(image);
   await expect(save).toHaveAttribute("data-status", "saved");
 
   // Edit the image position and save the change to the project file.

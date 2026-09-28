@@ -1,6 +1,6 @@
 import { cp } from "node:fs/promises";
 import path from "node:path";
-import { test as base } from "@playwright/test";
+import { expect, type Locator, test as base } from "@playwright/test";
 
 export const test = base.extend<{
   editor: { url: string; projectFile: string };
@@ -15,3 +15,12 @@ export const test = base.extend<{
     await use({ url, projectFile: path.join(projectDirPath, "project.json") });
   },
 });
+
+/** Wait until an image element has loaded its source. */
+export async function expectImageLoaded(image: Locator) {
+  await expect
+    .poll(() =>
+      image.evaluate((element: HTMLImageElement) => element.naturalWidth),
+    )
+    .toBeGreaterThan(0);
+}
