@@ -7,8 +7,10 @@ import { DEFAULT_ROOT, serveEditor } from "./lib/server/serve.ts";
 
 const HELP = `\
 Usage:
-  toy-compositor serve [root] [--port <port>]
+  toy-compositor serve [root] [--port <port>] [--allowed-hosts <hosts>]
       Open the editor for projects under root (default: ${DEFAULT_ROOT})
+      --allowed-hosts accepts comma-separated hosts beyond localhost, and a
+      leading dot allows a domain and its subdomains
   toy-compositor render <project.json> <output> [--dry-run]
       Render a project to a video or still with ffmpeg`;
 
@@ -17,6 +19,7 @@ async function main() {
     allowPositionals: true,
     options: {
       port: { type: "string", default: "5190" },
+      "allowed-hosts": { type: "string", default: "" },
       "dry-run": { type: "boolean" },
       help: { type: "boolean", short: "h" },
     },
@@ -36,6 +39,7 @@ async function main() {
         root,
         port: Number(values.port),
         clientDir,
+        allowedHosts: values["allowed-hosts"].split(",").filter(Boolean),
       });
       console.log(`Serving projects under ${root}`);
       const url = new URL(server.url!);
