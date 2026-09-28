@@ -14,15 +14,19 @@ export const DEFAULT_ROOT = path.join(
 /**
  * Serve the prebuilt editor client and the editor API over `root` on
  * localhost, with the same `/api/` handler that the dev server mounts.
+ * `allowedHosts` adds hosts beyond localhost, as exact names or as `.domain`
+ * for a domain and its subdomains, like Vite's `server.allowedHosts`.
  */
 export async function serveEditor({
   root,
   port,
   clientDir,
+  allowedHosts,
 }: {
   root: string;
   port: number;
   clientDir: string;
+  allowedHosts: string[];
 }) {
   fs.mkdirSync(root, { recursive: true });
   const handleApi = createEditorHandler({ root });
@@ -32,9 +36,9 @@ export async function serveEditor({
     port,
     silent: true,
     fetch: async (request) => {
-      // Only answer requests addressed to localhost, so a page on another
+      // Only answer requests addressed to allowed hosts, so a page on another
       // origin that rebinds its DNS to 127.0.0.1 cannot read or write files.
-      if (!isLocalHost(request.headers.get("host"))) {
+      if (!isAllowedHost({ host: request.headers.get("host"), allowedHosts })) {
         return new Response("Forbidden host", { status: 403 });
       }
       if (new URL(request.url).pathname.startsWith("/api/")) {
@@ -50,7 +54,20 @@ export async function serveEditor({
   return server;
 }
 
-function isLocalHost(host: string | null) {
+function isAllowedHost({
+  host,
+  allowedHosts,
+}: {
+  host: string | null;
+  allowedHosts: string[];
+}) {
   const name = host?.replace(/:\d+$/, "");
-  return name === "localhost" || name === "127.0.0.1" || name === "[::1]";
+  if (!name) {
+    return false;
+  }
+  return ["localhost", "127.0.0.1", "[::1]", ...allowedHosts].some((allowed) =>
+    allowed.startsWith(".")
+      ? name === allowed.slice(1) || name.endsWith(allowed)
+      : name === allowed,
+  );
 }

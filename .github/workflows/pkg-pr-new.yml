@@ -25,4 +25,5 @@ jobs:
       - run: corepack enable
       - run: pnpm i
       - run: pnpm build
-      - run: pnpm exec pkg-pr-new publish --no-compact --commentWithSha .
+      - run: mkdir -p templates/synthetic/projects && cp -r samples/synthetic templates/synthetic/projects/
+      - run: pnpm exec pkg-pr-new publish --no-compact --commentWithSha --template './templates/*' .
