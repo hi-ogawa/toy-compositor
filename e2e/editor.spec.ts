@@ -172,7 +172,7 @@ test("compose the output start and follow inspector edits", async ({
     )
     .toBeCloseTo(0.9);
 
-  // Start the video at 2 so its range [2, 4.8) begins after the preview time 1,
+  // Start the video after the output start so it hasn't begun on the first frame,
   // and confirm it disappears.
   await commitInspectorField(page, { name: "start", value: "2" });
   await expect(video).toHaveCount(0);
