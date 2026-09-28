@@ -1,4 +1,5 @@
-import { useCallback, useState, type CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
+import { useResizeObserver } from "../hooks/use-resize-observer";
 import { layerRange } from "../lib/editor/layer-regions";
 import type { Layer, Project, TextLayer } from "../lib/project";
 import type { EditorSelection } from "../lib/runtime";
@@ -16,19 +17,9 @@ export function CompositionPreview({
   resolveMediaUrl: (src: string) => string;
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
-  const viewportRef = useCallback((element: HTMLDivElement | null) => {
-    if (!element) {
-      return;
-    }
-    const observer = new ResizeObserver(([entry]) =>
-      setSize({
-        width: entry.contentRect.width,
-        height: entry.contentRect.height,
-      }),
-    );
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
+  const viewportRef = useResizeObserver((element) =>
+    setSize({ width: element.clientWidth, height: element.clientHeight }),
+  );
   const { canvas } = project;
   const scale = Math.min(
     size.width / canvas.width,
