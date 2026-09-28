@@ -46,20 +46,15 @@ const projects = new Map(
   ).map(([key, project]) => [key.replace("./", "synthetic/"), project]),
 );
 
-// Static hosts such as Cloudflare may answer range requests with the whole
-// file, and a video cannot seek without ranges, so media is served from blobs.
+// Media is inlined as data URLs, because static hosts such as Cloudflare may
+// answer range requests with the whole file, and a video cannot seek without them.
 const mediaUrls = new Map(
-  await Promise.all(
-    Object.entries(
-      import.meta.glob<string>("./media/*", {
-        base: "../../samples/synthetic",
-        eager: true,
-        query: "?url",
-        import: "default",
-      }),
-    ).map(async ([key, url]): Promise<[string, string]> => {
-      const blob = await (await fetch(url)).blob();
-      return [key.replace("./", ""), URL.createObjectURL(blob)];
+  Object.entries(
+    import.meta.glob<string>("./media/*", {
+      base: "../../samples/synthetic",
+      eager: true,
+      query: "?inline",
+      import: "default",
     }),
-  ),
+  ).map(([key, url]) => [key.replace("./", ""), url]),
 );
