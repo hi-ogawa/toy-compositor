@@ -97,11 +97,7 @@ test("open projects from the start page and keep saves inside the root", async (
     .getByRole("button", { name: "image image", exact: true })
     .click();
   const image = page.getByRole("img", { name: "image", exact: true });
-  await expect
-    .poll(() =>
-      image.evaluate((element: HTMLImageElement) => element.naturalWidth),
-    )
-    .toBeGreaterThan(0);
+  await expectImageLoaded(image);
 
   // Reject saves outside the root, into hidden directories, and of non-JSON
   // files.
