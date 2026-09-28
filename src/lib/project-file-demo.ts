@@ -1,4 +1,4 @@
-import type { ProjectFile, ProjectList } from "./project-file.ts";
+import type { projectFiles as serverProjectFiles } from "./project-file.ts";
 import type { Project } from "./project.ts";
 
 // The demo build uses this module in place of `project-file.ts`, so the
@@ -6,45 +6,37 @@ import type { Project } from "./project.ts";
 
 export { getProjectPageUrl } from "./project-file.ts";
 
-export async function listProjectFiles(): Promise<ProjectList> {
-  return {
-    root: "demo",
-    projects: [...projects].map(([path, project]) => ({
-      path,
-      width: project.canvas.width,
-      height: project.canvas.height,
-      output: project.output.type,
-    })),
-  };
-}
+export const projectFiles: typeof serverProjectFiles = {
+  async list() {
+    return {
+      root: "demo",
+      projects: [...projects].map(([path, project]) => ({
+        path,
+        width: project.canvas.width,
+        height: project.canvas.height,
+        output: project.output.type,
+      })),
+    };
+  },
 
-export async function loadProjectFile({
-  path,
-}: {
-  path: string;
-}): Promise<ProjectFile> {
-  const project = projects.get(path);
-  if (!project) {
-    throw new Error(`Failed to load project: ${path} is not in the demo`);
-  }
-  return { file: path, project: structuredClone(project) };
-}
+  async load({ path }) {
+    const project = projects.get(path);
+    if (!project) {
+      throw new Error(`Failed to load project: ${path} is not in the demo`);
+    }
+    return { file: path, project: structuredClone(project) };
+  },
 
-/** Saves last until the page reloads. */
-export async function saveProjectFile({
-  path,
-  project,
-}: {
-  path: string;
-  project: Project;
-}): Promise<void> {
-  projects.set(path, structuredClone(project));
-}
+  /** Saves last until the page reloads. */
+  async save({ path, project }) {
+    projects.set(path, structuredClone(project));
+  },
 
-/** Every demo project sits beside the sample's `media/`, so `src` is the key. */
-export function resolveProjectMediaUrl({ src }: { src: string }): string {
-  return mediaUrls.get(src) ?? src;
-}
+  /** Every demo project sits beside the sample's `media/`, so `src` is the key. */
+  resolveMediaUrl({ src }) {
+    return mediaUrls.get(src) ?? src;
+  },
+};
 
 const projects = new Map(
   Object.entries(
