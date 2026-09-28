@@ -1,5 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { matchKeyboardEvent } from "../lib/keyboard";
+import { isShortcutTextInputTarget, matchKeyboardEvent } from "../lib/keyboard";
 import { EditorRuntime } from "../lib/runtime";
 import { CompositionPreview } from "./composition-preview";
 import { EditorHeader } from "./editor-header";
@@ -29,6 +29,27 @@ export function Editor({ projectPath }: { projectPath: string }) {
       if (project.ready && project.saveStatus !== "saving") {
         project.save();
       }
+      return;
+    }
+    if (!project.ready || isShortcutTextInputTarget(event.target)) {
+      return;
+    }
+    // Arrow keys repeat while held, stepping frame by frame.
+    for (const [shortcut, frames] of [
+      ["ArrowLeft", -1],
+      ["ArrowRight", 1],
+      ["Shift+ArrowLeft", -10],
+      ["Shift+ArrowRight", 10],
+    ] as const) {
+      if (matchKeyboardEvent(event, shortcut)) {
+        event.preventDefault();
+        runtime.seekFrames({ frames });
+        return;
+      }
+    }
+    if (matchKeyboardEvent(event, "Space") && !event.repeat) {
+      event.preventDefault();
+      runtime.togglePlayback();
     }
   });
 
@@ -60,6 +81,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
                 project={state.project}
                 selection={selection}
                 time={state.playhead}
+                transport={runtime.transport}
                 resolveMediaUrl={project.resolveMediaUrl}
               />
             }
@@ -69,6 +91,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
             project={state.project}
             selection={selection}
             playhead={state.playhead}
+            playing={state.playing}
           />
         </main>
         <aside

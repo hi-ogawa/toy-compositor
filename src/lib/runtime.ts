@@ -2,6 +2,7 @@ import { createStore } from "../utils/store.ts";
 import { outputRange } from "./layout.ts";
 import type { ProjectFile } from "./project-file.ts";
 import type { Layer, Project } from "./project.ts";
+import { AudioContextTransport } from "./transport.ts";
 
 export type EditorSelection =
   | { type: "output" }
@@ -11,7 +12,9 @@ export interface EditorState {
   /** Project file path relative to the projects root, which is also where saves go. */
   file: string;
   project: Project;
+  /** Follows the transport, on the frame grid whenever playback is stopped. */
   playhead: number;
+  playing: boolean;
   selection?: EditorSelection;
 }
 
@@ -26,8 +29,18 @@ export class EditorRuntime {
     file: "",
     project: EMPTY_PROJECT,
     playhead: 0,
+    playing: false,
     selection: undefined,
   }));
+
+  readonly transport = new AudioContextTransport();
+
+  constructor() {
+    this.transport.store.subscribe(() => {
+      const { position, isPlaying } = this.transport.store.get();
+      this.store.update({ playhead: position, playing: isPlaying });
+    });
+  }
 
   select(selection: EditorSelection | undefined): void {
     this.store.update({ selection });
@@ -35,10 +48,27 @@ export class EditorRuntime {
 
   seek({ time }: { time: number }): void {
     const { project } = this.store.get();
-    const playhead = Number(
-      (Math.round(time * project.canvas.fps) / project.canvas.fps).toFixed(3),
+    this.transport.seek(
+      Number(
+        (Math.round(time * project.canvas.fps) / project.canvas.fps).toFixed(3),
+      ),
     );
-    this.store.update({ playhead });
+  }
+
+  /** Steps the playhead by whole frames. */
+  seekFrames({ frames }: { frames: number }): void {
+    const { project, playhead } = this.store.get();
+    this.seek({ time: playhead + frames / project.canvas.fps });
+  }
+
+  togglePlayback(): void {
+    if (this.store.get().playing) {
+      this.transport.pause();
+      // Land on a frame, so the paused preview matches a rendered frame.
+      this.seek({ time: this.store.get().playhead });
+    } else {
+      this.transport.play();
+    }
   }
 
   updateLayer({
@@ -69,12 +99,8 @@ export class EditorRuntime {
   }
 
   deserializeProject({ file, project }: ProjectFile): void {
-    this.store.update({
-      file,
-      project,
-      playhead: outputRange(project).start,
-      selection: undefined,
-    });
+    this.store.update({ file, project, selection: undefined });
+    this.seek({ time: outputRange(project).start });
   }
 
   subscribePersistableState(listener: () => void): () => void {

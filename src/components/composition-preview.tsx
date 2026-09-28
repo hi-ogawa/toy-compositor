@@ -1,19 +1,23 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
-import { layerRange } from "../lib/layout";
-import type { Layer, Project, TextLayer } from "../lib/project";
+import { layerRange, outputRange, type Range } from "../lib/layout";
+import type { AudioLayer, Layer, Project, TextLayer } from "../lib/project";
 import type { EditorSelection } from "../lib/runtime";
+import type { AudioContextTransport } from "../lib/transport";
 import { CompositionMedia } from "./composition-media";
+import { useMediaPlayback } from "./use-media-playback";
 
 export function CompositionPreview({
   project,
   selection,
   time,
+  transport,
   resolveMediaUrl,
 }: {
   project: Project;
   selection?: EditorSelection;
   time: number;
+  transport: AudioContextTransport;
   resolveMediaUrl: (src: string) => string;
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -21,6 +25,7 @@ export function CompositionPreview({
     setSize({ width: element.clientWidth, height: element.clientHeight }),
   );
   const { canvas } = project;
+  const output = outputRange(project);
   const scale = Math.min(
     size.width / canvas.width,
     size.height / canvas.height,
@@ -46,20 +51,19 @@ export function CompositionPreview({
               background: canvas.background ?? "#000000",
             }}
           >
+            {/* Every layer stays mounted, so media is ready when playback reaches it. */}
             {project.layers.map((layer, index) => {
-              const range = layerRange(layer);
-              if (
-                time < range.start ||
-                time >= range.end ||
-                layer.type === "audio"
-              ) {
+              if (layer.type === "audio") {
                 return undefined;
               }
+              const range = layerRange(layer);
               return (
                 <PreviewLayer
                   key={"src" in layer ? `${index}:${layer.src}` : index}
                   layer={layer}
-                  time={time}
+                  visible={time >= range.start && time < range.end}
+                  transport={transport}
+                  output={output}
                   selected={
                     selection?.type === "layer" && selection.index === index
                   }
@@ -72,6 +76,18 @@ export function CompositionPreview({
           </div>
         </div>
       </div>
+      {project.layers.map(
+        (layer, index) =>
+          layer.type === "audio" && (
+            <PreviewAudio
+              key={`${index}:${layer.src}`}
+              layer={layer}
+              transport={transport}
+              output={output}
+              src={resolveMediaUrl(layer.src)}
+            />
+          ),
+      )}
       <p
         className="mt-2 text-xs tabular-nums text-muted-foreground"
         data-testid="composition-time"
@@ -85,14 +101,18 @@ export function CompositionPreview({
 
 function PreviewLayer({
   layer,
-  time,
+  visible,
+  transport,
+  output,
   selected,
   index,
   canvas,
   resolveMediaUrl,
 }: {
   layer: Exclude<Layer, { type: "audio" }>;
-  time: number;
+  visible: boolean;
+  transport: AudioContextTransport;
+  output: Range;
   selected: boolean;
   index: number;
   canvas: Project["canvas"];
@@ -115,11 +135,12 @@ function PreviewLayer({
     height: box.height,
   };
   return (
-    <div data-testid={`composition-layer-${index}`}>
+    <div data-testid={`composition-layer-${index}`} hidden={!visible}>
       {layer.type === "video" || layer.type === "image" ? (
         <CompositionMedia
           layer={layer}
-          time={time}
+          transport={transport}
+          output={output}
           resolveMediaUrl={resolveMediaUrl}
         />
       ) : layer.type === "text" ? (
@@ -143,6 +164,29 @@ function PreviewLayer({
         </div>
       )}
     </div>
+  );
+}
+
+/** Audio layers play through elements outside the canvas, since they draw nothing. */
+function PreviewAudio({
+  layer,
+  transport,
+  output,
+  src,
+}: {
+  layer: AudioLayer;
+  transport: AudioContextTransport;
+  output: Range;
+  src: string;
+}) {
+  const playbackRef = useMediaPlayback({ transport, layer, output });
+  return (
+    <audio
+      ref={playbackRef}
+      src={src}
+      preload="auto"
+      aria-label={layer.name ?? layer.src}
+    />
   );
 }
 

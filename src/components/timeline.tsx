@@ -14,11 +14,13 @@ export function Timeline({
   project,
   selection,
   playhead,
+  playing,
 }: {
   runtime: EditorRuntime;
   project: Project;
   selection?: EditorSelection;
   playhead: number;
+  playing: boolean;
 }) {
   const timeline = useTimeline({ project });
   const selectOutput = () => runtime.select({ type: "output" });
@@ -31,6 +33,14 @@ export function Timeline({
     >
       <div className="flex items-center gap-3 border-b px-3 py-2">
         <h2 className="font-medium">Timeline</h2>
+        <button
+          type="button"
+          className="w-14 rounded border px-2 py-1 text-xs hover:bg-secondary"
+          title={playing ? "Pause (Space)" : "Play (Space)"}
+          onClick={() => runtime.togglePlayback()}
+        >
+          {playing ? "Pause" : "Play"}
+        </button>
         <button
           type="button"
           className="rounded border px-2 py-1 text-xs hover:bg-secondary"

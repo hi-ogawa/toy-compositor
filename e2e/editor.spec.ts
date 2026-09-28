@@ -175,16 +175,72 @@ test("compose the output start and follow inspector edits", async ({
     .toBeCloseTo(0.9);
 
   // Start the video after the output start so it hasn't begun on the first frame,
-  // and confirm it disappears.
+  // and confirm it hides.
   await commitInspectorField(page, { name: "start", value: "2" });
-  await expect(video).toHaveCount(0);
+  await expect(video).toBeHidden();
 
-  // End the text at the playhead and confirm it disappears, because its range
+  // End the text at the playhead and confirm it hides, because its range
   // excludes its end.
-  const text = canvas.getByText("Synthetic\nsample", { exact: true });
   await clickTimelineButton(page, { name: "label text" });
   await commitInspectorField(page, { name: "end", value: "1" });
-  await expect(text).toHaveCount(0);
+  await expect(page.getByTestId("composition-layer-3")).toBeHidden();
+});
+
+test("play the composition and step by frames", async ({ page, editor }) => {
+  // Open the synthetic project, where the video and the audio tone start at 0.
+  await page.goto(editor.url);
+  const timeline = page.getByTestId("editor-timeline");
+  const time = page.getByTestId("timeline-time");
+  const video = page.getByTestId("composition-canvas").locator("video");
+  const audio = page
+    .getByRole("region", { name: "Composition monitor" })
+    .locator("audio");
+  const playhead = async () => parseFloat((await time.textContent())!);
+
+  // Play and confirm the playhead advances with the video and audio playing.
+  await timeline.getByRole("button", { name: "Play", exact: true }).click();
+  await expect(
+    timeline.getByRole("button", { name: "Pause", exact: true }),
+  ).toBeVisible();
+  await expect.poll(playhead).toBeGreaterThan(0.5);
+  expect(
+    await video.evaluate((element: HTMLVideoElement) => element.paused),
+  ).toBe(false);
+  expect(
+    await audio.evaluate((element: HTMLAudioElement) => element.paused),
+  ).toBe(false);
+  expect(
+    await audio.evaluate((element: HTMLAudioElement) => element.volume),
+  ).toBe(1);
+
+  // Pause with Space and confirm the playhead lands on a frame that the paused
+  // video shows.
+  await page.keyboard.press("Space");
+  await expect(
+    timeline.getByRole("button", { name: "Play", exact: true }),
+  ).toBeVisible();
+  expect(
+    await video.evaluate((element: HTMLVideoElement) => element.paused),
+  ).toBe(true);
+  const paused = await playhead();
+  expect(Math.abs(paused * 30 - Math.round(paused * 30))).toBeLessThan(0.05);
+  await expect
+    .poll(() =>
+      video.evaluate((element: HTMLVideoElement) => element.currentTime),
+    )
+    .toBeCloseTo(paused, 2);
+
+  // Step one frame forward, then ten back with Shift.
+  await page.keyboard.press("ArrowRight");
+  await expect.poll(playhead).toBeCloseTo(paused + 1 / 30, 2);
+  await page.keyboard.press("Shift+ArrowLeft");
+  await expect.poll(playhead).toBeCloseTo(paused - 9 / 30, 2);
+
+  // Confirm playback did not mark the project as having unsaved changes.
+  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
 });
 
 test("compose a still project at its output time", async ({ page, editor }) => {

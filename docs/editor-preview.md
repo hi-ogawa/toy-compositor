@@ -12,9 +12,9 @@ Each component answers one question about the preview, and the preview holds no 
 Editor                     editor.tsx               runtime store, selection, playhead
 ├─ PreviewMonitors         preview-monitors.tsx     source panel open state and width only
 │  ├─ MediaPreview         media-preview.tsx        the selected layer's raw file
-│  └─ CompositionPreview   composition-preview.tsx  viewport scale, layers visible at time
+│  └─ CompositionPreview   composition-preview.tsx  viewport scale, layers visible at time, audio
 │     └─ PreviewLayer × N                           box to CSS, per-type rendering, outline
-│        └─ CompositionMedia  composition-media.tsx natural size, fit and crop, video seek
+│        └─ CompositionMedia  composition-media.tsx natural size, fit and crop, video
 ├─ Timeline                timeline.tsx             selection, seeking the playhead
 └─ Inspector               inspector.tsx            project edits
 ```
@@ -31,17 +31,26 @@ Video and image layers go through the compiler's `fitBox`, which returns the vis
 
 ## Pick Layers and Frames by Time
 
-The preview time decides which layers render and which frame each video shows. A layer renders when the time falls in its half-open range from `layerRange` in [src/lib/layout.ts](../src/lib/layout.ts), which the compiler uses too. Video and audio layers span their trimmed source from `start`, and other layers span from `start` to `end`. A visible video seeks to `in + time − start`.
+The preview time decides which layers show and which frame each video shows. A layer shows when the time falls in its half-open range from `layerRange` in [src/lib/layout.ts](../src/lib/layout.ts), which the compiler uses too. Video and audio layers span their trimmed source from `start`, and other layers span from `start` to `end`. A visible video seeks to `in + time − start`.
 
 ![One project time picks which layers are visible and which source frame each video shows](images/time-mapping.svg)
 
-Layers draw in project order, so later layers sit on top, matching the compiler's overlay order. Audio layers are not drawn.
+Every layer stays mounted and is hidden outside its range, so its media is loaded before playback reaches it. Layers draw in project order, so later layers sit on top, matching the compiler's overlay order. Audio layers are `<audio>` elements outside the canvas, because they draw nothing.
 
 The selected layer gets a read-only outline, drawn as a second div with the same box. Text layers have no height, so the outline holds an invisible copy of the text to match it.
+
+## Play Along the Transport
+
+The playhead belongs to a transport in [src/lib/transport.ts](../src/lib/transport.ts), after toy-midi's recorder transport. Its clock is `AudioContext.currentTime`, which keeps running when a project has no audio, and it publishes the position on every animation frame while playing. Pausing lands the playhead back on the frame grid, so a paused preview always corresponds to a rendered frame. Space plays and pauses, and the arrow keys step by one frame, ten with Shift.
+
+Media elements follow the transport and never drive it. Each video and audio layer's element has a `MediaPlayback` in [src/lib/media-playback.ts](../src/lib/media-playback.ts), which seeks to `in + time − start` while paused, and while playing plays natively and seeks back when it drifts more than 0.1 s from the transport. Outside its source range the element pauses at `in` or `out`.
+
+Audio follows the render: a layer is heard only inside the output range, with `fadeIn` and `fadeOut` at the edges of its part of that range, and `muted` silences it. Unmuted video layers play their own audio the same way.
 
 ## Known gaps
 
 - A paused video shows whatever frame the browser picks for `currentTime`, while the compiler snaps to the nearest source frame, so the preview may be one frame off.
 - Text is DOM text with `-webkit-text-stroke` and an estimated line height, while the compiler draws it with ImageMagick, so glyph placement differs slightly.
-- Video seeks run in a React effect whenever the time changes. Playback will need media elements to follow a transport natively and to stay mounted around their range, and audio layers will need elements outside the visual tree.
+- The transport publishes the playhead through the editor store, so the editor re-renders on every animation frame while playing, like toy-midi's recorder.
+- Drift correction seeks, so a media element that falls behind skips instead of catching up smoothly.
 - Layers are keyed by index, which holds until layers can be added or reordered.

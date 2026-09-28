@@ -1,27 +1,23 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { fitBox } from "../lib/layout";
+import { useState, type CSSProperties } from "react";
+import { fitBox, type Range } from "../lib/layout";
 import type { ImageLayer, VideoLayer } from "../lib/project";
+import type { AudioContextTransport } from "../lib/transport";
+import { useMediaPlayback } from "./use-media-playback";
 
 /** Fit the cropped source into its canvas box after the browser reads its dimensions. */
 export function CompositionMedia({
   layer,
-  time,
+  transport,
+  output,
   resolveMediaUrl,
 }: {
   layer: ImageLayer | VideoLayer;
-  time: number;
+  transport: AudioContextTransport;
+  output: Range;
   resolveMediaUrl: (src: string) => string;
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [source, setSource] = useState<{ width: number; height: number }>();
   const [failed, setFailed] = useState(false);
-  const sourceTime = layer.type === "video" ? layer.in + time - layer.start : 0;
-  useEffect(() => {
-    const video = videoRef.current;
-    if (video && video.readyState >= 1) {
-      video.currentTime = sourceTime;
-    }
-  }, [sourceTime]);
 
   const crop = layer.crop ?? {};
   const fit = source && fitBox({ source, crop, box: layer.box });
@@ -64,19 +60,13 @@ export function CompositionMedia({
         }
       >
         {layer.type === "video" ? (
-          <video
-            ref={videoRef}
+          <CompositionVideo
+            layer={layer}
+            transport={transport}
+            output={output}
             src={resolveMediaUrl(layer.src)}
-            muted
-            playsInline
-            preload="auto"
-            aria-label={layer.name ?? layer.src}
             style={mediaStyle}
-            onLoadedMetadata={(event) => {
-              const video = event.currentTarget;
-              setSource({ width: video.videoWidth, height: video.videoHeight });
-              video.currentTime = sourceTime;
-            }}
+            onSize={setSource}
             onError={() => setFailed(true)}
           />
         ) : (
@@ -96,5 +86,40 @@ export function CompositionMedia({
         )}
       </div>
     </>
+  );
+}
+
+function CompositionVideo({
+  layer,
+  transport,
+  output,
+  src,
+  style,
+  onSize,
+  onError,
+}: {
+  layer: VideoLayer;
+  transport: AudioContextTransport;
+  output: Range;
+  src: string;
+  style?: CSSProperties;
+  onSize: (size: { width: number; height: number }) => void;
+  onError: () => void;
+}) {
+  const playbackRef = useMediaPlayback({ transport, layer, output });
+  return (
+    <video
+      ref={playbackRef}
+      src={src}
+      playsInline
+      preload="auto"
+      aria-label={layer.name ?? layer.src}
+      style={style}
+      onLoadedMetadata={(event) => {
+        const video = event.currentTarget;
+        onSize({ width: video.videoWidth, height: video.videoHeight });
+      }}
+      onError={onError}
+    />
   );
 }
