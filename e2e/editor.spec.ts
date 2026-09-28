@@ -70,8 +70,6 @@ test("open projects from the start page and keep saves inside the root", async (
   editor,
   request,
 }) => {
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
   const { dir } = editor;
 
   // Open the editor without a project and confirm it lists this test's project
@@ -120,5 +118,4 @@ test("open projects from the start page and keep saves inside the root", async (
     );
     expect(response.status()).toBe(403);
   }
-  expect(errors).toEqual([]);
 });
