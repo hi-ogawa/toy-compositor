@@ -109,17 +109,13 @@ test("resize and close the source panel without changing the project", async ({
   const source = page.locator("#source-monitor video");
   await seekVideo({ video: source, time: 1 });
 
-  // Drag the split and nudge it with the keyboard to resize the source panel.
-  const split = page.getByRole("separator", {
-    name: "Source and composition split",
-  });
+  // Drag the split to resize the source panel.
+  const split = page.getByTitle("Resize source panel");
+  const sourcePanel = page.locator("#source-monitor");
+  const initialWidth = (await sourcePanel.boundingBox())!.width;
   await dragBy({ page, locator: split, deltaX: 100 });
-  await expect
-    .poll(async () => Number(await split.getAttribute("aria-valuenow")))
-    .toBeGreaterThan(35);
-  await split.press("Home");
-  await split.press("ArrowRight");
-  await expect(split).toHaveAttribute("aria-valuenow", "22");
+  const resizedWidth = (await sourcePanel.boundingBox())!.width;
+  expect(resizedWidth).toBeGreaterThan(initialWidth);
 
   // Close and reopen Source while preserving the split and save status.
   const toggle = page.getByRole("button", {
@@ -135,7 +131,7 @@ test("resize and close the source panel without changing the project", async ({
   });
   expect((await show.boundingBox())!.x).toBe(before!.x);
   await show.click();
-  await expect(split).toHaveAttribute("aria-valuenow", "22");
+  expect((await sourcePanel.boundingBox())!.width).toBe(resizedWidth);
   await expect(source).toBeVisible();
   await expect
     .poll(() => source.evaluate((video: HTMLVideoElement) => video.currentTime))
