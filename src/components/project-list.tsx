@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient, type ProjectEntry } from "../lib/api-client";
-import { getProjectPageUrl } from "../lib/page-url";
+import { getProjectPageUrl } from "../lib/routes";
 
 /** Start page listing the projects under the root, grouped by project directory. */
 export function ProjectList() {
