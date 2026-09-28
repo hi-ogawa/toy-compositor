@@ -43,6 +43,9 @@ export function createEditorHandler({ root }: { root: string }) {
 
 async function handleGetProject({ root, url }: { root: string; url: URL }) {
   const file = resolveFile({ root, paths: [getParam({ url, name: "path" })] });
+  if (!fs.existsSync(file)) {
+    throw new HttpError({ status: 404, message: "Project not found" });
+  }
   return new Response(await fs.promises.readFile(file), {
     headers: { "Content-Type": "application/json" },
   });
@@ -82,6 +85,9 @@ async function handleMedia({
   const project = getParam({ url, name: "project" });
   const src = getParam({ url, name: "src" });
   const file = resolveFile({ root, paths: [path.dirname(project), src] });
+  if (!fs.existsSync(file)) {
+    throw new HttpError({ status: 404, message: "Media not found" });
+  }
   return await serveFile({ file, request });
 }
 
