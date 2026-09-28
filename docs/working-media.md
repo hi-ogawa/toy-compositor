@@ -27,8 +27,6 @@ The editor seeks whenever the playhead moves while paused, so long keyframe inte
 
 At a fixed bitrate, more keyframes leave slightly fewer bits for the other frames, but the SSIM difference above is far below what is visible. The seek time scales with the distance from the previous keyframe, so the default interval ranges from fast just after a keyframe to over half a second before the next.
 
-A `g` in a render preset, such as the `g=15` in Kdenlive's MP4 preset, only affects that rendered output. Working files need their own `-g`.
-
 ## Check a working file
 
 ```sh
