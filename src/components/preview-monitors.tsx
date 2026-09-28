@@ -12,7 +12,7 @@ export function PreviewMonitors({
   composition: ReactNode;
   resolveMediaUrl: (src: string) => string;
 }) {
-  const [sourceVisible, setSourceVisible] = useState(true);
+  const [sourceOpen, setSourceOpen] = useState(true);
   const [sourceShare, setSourceShare] = useState(35);
   const monitorsRef = useRef<HTMLDivElement>(null);
   const resize = (share: number) =>
@@ -35,29 +35,29 @@ export function PreviewMonitors({
           type="button"
           className="rounded border px-2 py-1 text-xs hover:bg-secondary"
           aria-controls="source-monitor"
-          aria-expanded={sourceVisible}
-          onClick={() => setSourceVisible(!sourceVisible)}
+          aria-expanded={sourceOpen}
+          onClick={() => setSourceOpen(!sourceOpen)}
         >
-          {sourceVisible ? "Hide source" : "Show source"}
+          {sourceOpen ? "Close source panel" : "Open source panel"}
         </button>
       </div>
       <div ref={monitorsRef} className="flex min-h-0 flex-1 gap-2">
-        <div
-          id="source-monitor"
-          hidden={!sourceVisible}
-          className="min-w-0 shrink-0"
-          style={{ width: `calc(${sourceShare}% - 8px)` }}
-        >
-          <MediaPreview
-            key={
-              layer && "src" in layer ? `${layer.type}:${layer.src}` : "none"
-            }
-            layer={layer}
-            visible={sourceVisible}
-            resolveMediaUrl={resolveMediaUrl}
-          />
-        </div>
-        {sourceVisible && (
+        {sourceOpen && (
+          <div
+            id="source-monitor"
+            className="min-w-0 shrink-0"
+            style={{ width: `calc(${sourceShare}% - 8px)` }}
+          >
+            <MediaPreview
+              key={
+                layer && "src" in layer ? `${layer.type}:${layer.src}` : "none"
+              }
+              layer={layer}
+              resolveMediaUrl={resolveMediaUrl}
+            />
+          </div>
+        )}
+        {sourceOpen && (
           <div
             ref={dividerRef}
             role="separator"
