@@ -1,13 +1,11 @@
-import type { projectFiles as serverProjectFiles } from "./project-file.ts";
+import type { apiClient as serverApiClient } from "./api-client.ts";
 import type { Project } from "./project.ts";
 
-// The demo build uses this module in place of `project-file.ts`, so the
-// editor runs as a static site over the bundled synthetic sample.
+// The demo build uses this module in place of `api-client.ts`, so the editor
+// runs as a static site over the bundled synthetic sample.
 
-export { getProjectPageUrl } from "./project-file.ts";
-
-export const projectFiles: typeof serverProjectFiles = {
-  async list() {
+export const apiClient: typeof serverApiClient = {
+  async listProjects() {
     return {
       root: "demo",
       projects: [...projects].map(([path, project]) => ({
@@ -19,7 +17,7 @@ export const projectFiles: typeof serverProjectFiles = {
     };
   },
 
-  async load({ path }) {
+  async loadProject({ path }) {
     const project = projects.get(path);
     if (!project) {
       throw new Error(`Failed to load project: ${path} is not in the demo`);
@@ -28,12 +26,12 @@ export const projectFiles: typeof serverProjectFiles = {
   },
 
   /** Saves last until the page reloads. */
-  async save({ path, project }) {
+  async saveProject({ path, project }) {
     projects.set(path, structuredClone(project));
   },
 
   /** Every demo project sits beside the sample's `media/`, so `src` is the key. */
-  resolveMediaUrl({ src }) {
+  getMediaUrl({ src }) {
     return mediaUrls.get(src) ?? src;
   },
 };
