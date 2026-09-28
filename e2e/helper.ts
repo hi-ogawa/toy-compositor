@@ -1,6 +1,11 @@
 import { cp } from "node:fs/promises";
 import path from "node:path";
-import { expect, type Locator, test as base } from "@playwright/test";
+import {
+  expect,
+  type Locator,
+  type Page,
+  test as base,
+} from "@playwright/test";
 
 export const test = base.extend<{
   editor: { projectDir: string; url: string; projectFile: string };
@@ -27,4 +32,59 @@ export async function expectImageLoaded(image: Locator) {
       image.evaluate((element: HTMLImageElement) => element.naturalWidth),
     )
     .toBeGreaterThan(0);
+}
+
+/** Seek a video after its media is ready and wait for the requested time. */
+export async function seekVideo({
+  video,
+  time,
+}: {
+  video: Locator;
+  time: number;
+}) {
+  await test.step(
+    `Seek video to ${time}s`,
+    async () => {
+      await expect
+        .poll(() =>
+          video.evaluate((element: HTMLVideoElement) => element.readyState),
+        )
+        .toBeGreaterThanOrEqual(2);
+      await video.evaluate((element: HTMLVideoElement, time) => {
+        element.currentTime = time;
+      }, time);
+      await expect
+        .poll(() =>
+          video.evaluate((element: HTMLVideoElement) => element.currentTime),
+        )
+        .toBeCloseTo(time);
+    },
+    { box: true },
+  );
+}
+
+/** Drag a locator horizontally from its center. */
+export async function dragBy({
+  page,
+  locator,
+  deltaX,
+}: {
+  page: Page;
+  locator: Locator;
+  deltaX: number;
+}) {
+  await test.step(
+    `Drag by ${deltaX}px`,
+    async () => {
+      const bounds = await locator.boundingBox();
+      expect(bounds).not.toBeNull();
+      const x = bounds!.x + bounds!.width / 2;
+      const y = bounds!.y + bounds!.height / 2;
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      await page.mouse.move(x + deltaX, y, { steps: 4 });
+      await page.mouse.up();
+    },
+    { box: true },
+  );
 }

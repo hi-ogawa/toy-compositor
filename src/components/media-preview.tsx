@@ -5,7 +5,7 @@ export function MediaPreview({
   layer,
   resolveMediaUrl,
 }: {
-  layer: Layer | undefined;
+  layer?: Layer;
   resolveMediaUrl: (src: string) => string;
 }) {
   const [failed, setFailed] = useState(false);
@@ -19,9 +19,9 @@ export function MediaPreview({
   const src = resolveMediaUrl(layer.src);
   const onError = () => setFailed(true);
   return (
-    <section className="flex h-full min-h-0 flex-col gap-3 p-4">
+    <section className="flex h-full min-h-0 flex-col gap-2">
       <div className="text-sm">
-        <h2 className="font-medium">Source media</h2>
+        <h2 className="font-medium">Source</h2>
         <p className="break-all text-muted-foreground">{layer.src}</p>
         <p className="text-muted-foreground">
           Full source file, independent of project timing and layout.
@@ -41,7 +41,7 @@ export function MediaPreview({
             playsInline
             preload="metadata"
             onError={onError}
-            className="max-h-full w-full bg-black"
+            className="max-h-full max-w-full bg-black"
           />
         )}
         {layer.type === "audio" && (
