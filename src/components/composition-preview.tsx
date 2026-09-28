@@ -1,29 +1,21 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
 import { layerRange } from "../lib/layout";
-import type {
-  AudioLayer,
-  Layer,
-  Project,
-  TextLayer,
-  VideoLayer,
-} from "../lib/project";
-import type { EditorSelection } from "../lib/runtime";
-import type { AudioContextTransport } from "../lib/transport";
+import type { Layer, Project, TextLayer } from "../lib/project";
+import type { EditorRuntime, EditorSelection } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
-import { useAudioBufferPlayback } from "./use-transport-playback";
 
 export function CompositionPreview({
   project,
   selection,
   time,
-  transport,
+  runtime,
   resolveMediaUrl,
 }: {
   project: Project;
   selection?: EditorSelection;
   time: number;
-  transport: AudioContextTransport;
+  runtime: EditorRuntime;
   resolveMediaUrl: (src: string) => string;
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -67,7 +59,7 @@ export function CompositionPreview({
                   key={"src" in layer ? `${index}:${layer.src}` : index}
                   layer={layer}
                   visible={time >= range.start && time < range.end}
-                  transport={transport}
+                  runtime={runtime}
                   selected={
                     selection?.type === "layer" && selection.index === index
                   }
@@ -80,19 +72,6 @@ export function CompositionPreview({
           </div>
         </div>
       </div>
-      {/* Audio plays on the transport, including an unmuted video layer's own. */}
-      {project.layers.map(
-        (layer, index) =>
-          (layer.type === "audio" ||
-            (layer.type === "video" && !layer.muted)) && (
-            <LayerAudio
-              key={`${index}:${layer.src}`}
-              layer={layer}
-              transport={transport}
-              src={resolveMediaUrl(layer.src)}
-            />
-          ),
-      )}
       <p
         className="mt-2 text-xs tabular-nums text-muted-foreground"
         data-testid="composition-time"
@@ -107,7 +86,7 @@ export function CompositionPreview({
 function PreviewLayer({
   layer,
   visible,
-  transport,
+  runtime,
   selected,
   index,
   canvas,
@@ -115,7 +94,7 @@ function PreviewLayer({
 }: {
   layer: Exclude<Layer, { type: "audio" }>;
   visible: boolean;
-  transport: AudioContextTransport;
+  runtime: EditorRuntime;
   selected: boolean;
   index: number;
   canvas: Project["canvas"];
@@ -142,7 +121,8 @@ function PreviewLayer({
       {layer.type === "video" || layer.type === "image" ? (
         <CompositionMedia
           layer={layer}
-          transport={transport}
+          runtime={runtime}
+          index={index}
           resolveMediaUrl={resolveMediaUrl}
         />
       ) : layer.type === "text" ? (
@@ -167,19 +147,6 @@ function PreviewLayer({
       )}
     </div>
   );
-}
-
-function LayerAudio({
-  layer,
-  transport,
-  src,
-}: {
-  layer: VideoLayer | AudioLayer;
-  transport: AudioContextTransport;
-  src: string;
-}) {
-  useAudioBufferPlayback({ transport, layer, src });
-  return undefined;
 }
 
 function textStyle(layer: TextLayer): CSSProperties {

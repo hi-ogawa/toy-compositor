@@ -81,7 +81,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
                 project={state.project}
                 selection={selection}
                 time={state.playhead}
-                transport={runtime.transport}
+                runtime={runtime}
                 resolveMediaUrl={project.resolveMediaUrl}
               />
             }

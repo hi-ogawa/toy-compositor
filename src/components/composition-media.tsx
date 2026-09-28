@@ -1,17 +1,18 @@
-import { useState, type CSSProperties } from "react";
+import { useCallback, useState, type CSSProperties } from "react";
 import { fitBox } from "../lib/layout";
 import type { ImageLayer, VideoLayer } from "../lib/project";
-import type { AudioContextTransport } from "../lib/transport";
-import { useVideoPlayback } from "./use-transport-playback";
+import type { EditorRuntime } from "../lib/runtime";
 
 /** Fit the cropped source into its canvas box after the browser reads its dimensions. */
 export function CompositionMedia({
   layer,
-  transport,
+  runtime,
+  index,
   resolveMediaUrl,
 }: {
   layer: ImageLayer | VideoLayer;
-  transport: AudioContextTransport;
+  runtime: EditorRuntime;
+  index: number;
   resolveMediaUrl: (src: string) => string;
 }) {
   const [source, setSource] = useState<{ width: number; height: number }>();
@@ -60,7 +61,8 @@ export function CompositionMedia({
         {layer.type === "video" ? (
           <CompositionVideo
             layer={layer}
-            transport={transport}
+            runtime={runtime}
+            index={index}
             src={resolveMediaUrl(layer.src)}
             style={mediaStyle}
             onSize={setSource}
@@ -88,20 +90,26 @@ export function CompositionMedia({
 
 function CompositionVideo({
   layer,
-  transport,
+  runtime,
+  index,
   src,
   style,
   onSize,
   onError,
 }: {
   layer: VideoLayer;
-  transport: AudioContextTransport;
+  runtime: EditorRuntime;
+  index: number;
   src: string;
   style?: CSSProperties;
   onSize: (size: { width: number; height: number }) => void;
   onError: () => void;
 }) {
-  const playbackRef = useVideoPlayback({ transport, layer });
+  const playbackRef = useCallback(
+    (element: HTMLVideoElement | null) =>
+      element ? runtime.attachVideo({ index, element }) : undefined,
+    [runtime, index],
+  );
   return (
     <video
       ref={playbackRef}

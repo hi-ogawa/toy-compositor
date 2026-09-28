@@ -1,8 +1,10 @@
 import { createStore } from "../utils/store.ts";
-import type { ProjectFile } from "./api-client.ts";
+import { apiClient, type ProjectFile } from "./api-client.ts";
+import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
 import { outputRange } from "./layout.ts";
-import type { Layer, Project } from "./project.ts";
+import type { AudioLayer, Layer, Project, VideoLayer } from "./project.ts";
 import { AudioContextTransport } from "./transport.ts";
+import { VideoPlayback } from "./video-playback.ts";
 
 export type EditorSelection =
   | { type: "output" }
@@ -35,12 +37,41 @@ export class EditorRuntime {
 
   readonly context = new AudioContext();
   readonly transport = new AudioContextTransport(this.context);
+  /** Keyed by layer index and source, so a replaced source loads afresh. */
+  private readonly audioPlaybacks = new Map<string, AudioBufferPlayback>();
+  private readonly videoPlaybacks = new Map<number, VideoPlayback>();
 
   constructor() {
     this.transport.store.subscribe(() => {
       const { position, isPlaying } = this.transport.store.get();
       this.store.update({ playhead: position, playing: isPlaying });
     });
+    this.store.subscribeWithSelector({
+      selector: (state) => state.project,
+      listener: () => this.syncPlayback(),
+    });
+  }
+
+  /**
+   * Makes a composition `<video>` follow the transport as the video layer at
+   * `index`, like toy-midi's `attachYouTubePlayer`. Returns its detacher.
+   */
+  attachVideo({
+    index,
+    element,
+  }: {
+    index: number;
+    element: HTMLVideoElement;
+  }): () => void {
+    const playback = new VideoPlayback({ transport: this.transport, element });
+    this.videoPlaybacks.set(index, playback);
+    this.syncPlayback();
+    return () => {
+      playback.dispose();
+      if (this.videoPlaybacks.get(index) === playback) {
+        this.videoPlaybacks.delete(index);
+      }
+    };
   }
 
   select(selection: EditorSelection | undefined): void {
@@ -104,6 +135,57 @@ export class EditorRuntime {
   deserializeProject({ file, project }: ProjectFile): void {
     this.store.update({ file, project, selection: undefined });
     this.seek({ time: outputRange(project).start });
+  }
+
+  /** Brings playback in line with the project after it loads or changes. */
+  private syncPlayback(): void {
+    const { project } = this.store.get();
+    for (const [index, playback] of this.videoPlaybacks) {
+      const layer = project.layers[index];
+      if (layer?.type === "video") {
+        playback.setLayer({ layer });
+      }
+    }
+
+    // Audio layers, and video layers whose own audio is unmuted, are heard.
+    const audible = new Map<string, VideoLayer | AudioLayer>(
+      project.layers.flatMap((layer, index) =>
+        layer.type === "audio" || (layer.type === "video" && !layer.muted)
+          ? [[`${index}:${layer.src}`, layer] as const]
+          : [],
+      ),
+    );
+    for (const [key, playback] of this.audioPlaybacks) {
+      if (!audible.has(key)) {
+        playback.dispose();
+        this.audioPlaybacks.delete(key);
+      }
+    }
+    for (const [key, layer] of audible) {
+      let playback = this.audioPlaybacks.get(key);
+      if (!playback) {
+        playback = new AudioBufferPlayback({ transport: this.transport });
+        this.audioPlaybacks.set(key, playback);
+        void this.loadAudio({ key, src: layer.src });
+      }
+      playback.setLayer({ layer });
+    }
+  }
+
+  private async loadAudio({ key, src }: { key: string; src: string }) {
+    const url = apiClient.getMediaUrl({
+      src,
+      projectPath: this.store.get().file,
+    });
+    try {
+      const response = await fetch(url);
+      const buffer = await this.context.decodeAudioData(
+        await response.arrayBuffer(),
+      );
+      this.audioPlaybacks.get(key)?.setBuffer({ buffer });
+    } catch {
+      // A video file without an audio stream contributes nothing, as in the render.
+    }
   }
 
   subscribePersistableState(listener: () => void): () => void {
