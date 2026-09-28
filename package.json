@@ -6,6 +6,8 @@
   "scripts": {
     "prepare": "vp config",
     "dev": "vite --config vite.app.config.ts",
+    "build": "vite build --config vite.app.config.ts && mkdir -p dist/files && cp -r samples dist/files/",
+    "preview": "vite preview --config vite.app.config.ts",
     "typecheck": "tsc -b",
     "lint": "vp check --fix && pnpm typecheck",
     "lint-check": "vp check && pnpm typecheck",

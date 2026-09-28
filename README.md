@@ -25,6 +25,8 @@ Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The editor and the 
 
 The editor serves the repository at `/files/` and opens the project given by the page's `?project=` URL, for example `/?project=/files/.local/projects/synthetic/project.json`. Any project under the repository opens by changing the query. Media resolves relative to the project URL, and saving writes the JSON back with `PUT`.
 
+`pnpm build` produces a static, read-only editor in `dist/` with `samples/` copied to `dist/files/samples/`, so `/?project=/files/samples/synthetic/project.json` opens the same way. `pnpm preview` serves it locally, and `wrangler.jsonc` deploys it as a Cloudflare Workers static-assets site, like toy-midi.
+
 ## Samples
 
 ```sh

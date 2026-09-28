@@ -22,6 +22,13 @@ export const editorProjectStorage = {
   },
 
   async save({ url, project }: { url: string; project: Project }) {
+    // Only the dev server writes files. Static hosts may answer PUT like GET,
+    // which would look like a successful save.
+    if (!import.meta.env.DEV) {
+      throw new Error(
+        "This build is read-only. Run pnpm dev to save project edits.",
+      );
+    }
     const res = await fetch(url, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
