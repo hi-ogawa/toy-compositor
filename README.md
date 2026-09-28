@@ -5,7 +5,7 @@ A small video compositor that composes finished media from a JSON project, with 
 ## Features
 
 - Describe each deliverable as a plain JSON project of video, audio, image, text, and color layers ([project format](docs/project-format.md)).
-- Browse projects on a start page, preview each layer's source media, and adjust layout in an inspector.
+- Browse projects on a start page, preview each layer's source media next to the composed project ([editor preview](docs/editor-preview.md)), and adjust layout in an inspector.
 - Render videos and stills through one ffmpeg filter graph ([compiler](docs/compiler.md)).
 - Run it as a `toy-compositor` CLI against a folder of projects.
 
