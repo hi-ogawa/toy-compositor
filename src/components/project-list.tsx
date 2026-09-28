@@ -1,16 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import {
-  editorProjectStorage,
+  listProjectFiles,
   projectPageUrl,
   type ProjectEntry,
-} from "../lib/project-storage";
+} from "../lib/project-file";
 
 /** Start page listing the projects under the root, grouped by cover directory. */
 export function ProjectList() {
   const query = useQuery({
     queryKey: ["project-list"],
     retry: false,
-    queryFn: () => editorProjectStorage.list(),
+    queryFn: listProjectFiles,
   });
   if (query.error) {
     return <p className="p-4 text-destructive">{query.error.message}</p>;

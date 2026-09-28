@@ -1,75 +1,45 @@
 import fs from "node:fs";
 import path from "node:path";
-import { staticMiddleware } from "srvx/static";
-import type { ProjectEntry } from "../project-storage.ts";
-
-/** URL prefix under which files in the projects root are served. */
-export const FILES_PREFIX = "/files/";
-
-const PROJECTS_PATH = "/api/projects";
-
-/** Whether a request path belongs to the editor server rather than the client. */
-export function isEditorPath(pathname: string) {
-  return pathname.startsWith(FILES_PREFIX) || pathname === PROJECTS_PATH;
-}
+import type { ProjectEntry } from "../project-file.ts";
+import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 
 /**
- * Serve a projects root laid out as `<root>/<cover>/<project>.json` with
- * media next to each project. Files are served at `/files/*`, project saves
- * are `PUT` of `.json` files there, and `/api/projects` lists the projects.
+ * Editor API over a projects root laid out as `<root>/<cover>/<project>.json`
+ * with media next to each project. Files are named by paths relative to
+ * `root` in query parameters, so a file path is never encoded as a URL path.
+ *
+ * - `GET /api/projects` lists the projects.
+ * - `GET /api/project?path=` reads a project, and `PUT` saves it.
+ * - `GET /api/media?project=&src=` serves a layer source resolved against the
+ *   project's directory, as the renderer does, with range requests.
  */
 export function createEditorHandler({ root }: { root: string }) {
-  const serveFile = staticMiddleware({ dir: root });
   return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url);
-      if (url.pathname === PROJECTS_PATH && request.method === "GET") {
-        return Response.json({ root, projects: await listProjects({ root }) });
-      }
-      if (!url.pathname.startsWith(FILES_PREFIX)) {
-        return new Response(undefined, { status: 404 });
-      }
-      const relative = decodeURIComponent(
-        url.pathname.slice(FILES_PREFIX.length),
-      );
-      const file = path.resolve(root, relative);
-      // Keep hidden paths, such as a cover's future caches, out of reach.
-      if (
-        !file.startsWith(root + path.sep) ||
-        path
-          .relative(root, file)
-          .split(path.sep)
-          .some((s) => s.startsWith("."))
-      ) {
-        return new Response("Path is not served by the editor", {
-          status: 403,
-        });
-      }
-      if (request.method === "PUT") {
-        if (path.extname(file) !== ".json") {
-          return new Response("Only .json files can be saved", {
-            status: 403,
+      switch (`${request.method} ${url.pathname}`) {
+        case "GET /api/projects": {
+          return Response.json({
+            root,
+            projects: await listProjects({ root }),
           });
         }
-        const project = await request.json();
-        await fs.promises.writeFile(
-          file,
-          JSON.stringify(project, null, 2) + "\n",
-        );
-        return Response.json({});
+        case "GET /api/project": {
+          return await handleGetProject({ root, url });
+        }
+        case "PUT /api/project": {
+          return await handlePutProject({ root, url, request });
+        }
+        case "GET /api/media":
+        case "HEAD /api/media": {
+          return await handleMedia({ root, url, request });
+        }
+        default: {
+          return new Response(undefined, { status: 404 });
+        }
       }
-      url.pathname = "/" + url.pathname.slice(FILES_PREFIX.length);
-      return await serveFile(
-        new Request(url, request),
-        () => new Response(undefined, { status: 404 }),
-      );
     } catch (error) {
-      return new Response(
-        error instanceof Error ? error.message : String(error),
-        {
-          status: 500,
-        },
-      );
+      return toErrorResponse(error);
     }
   };
 }
@@ -110,4 +80,81 @@ async function readProject(file: string) {
       return json;
     }
   } catch {}
+}
+
+async function handleGetProject({ root, url }: { root: string; url: URL }) {
+  const file = resolveFile({ root, paths: [getParam({ url, name: "path" })] });
+  if (!fs.existsSync(file)) {
+    throw new HttpError({ status: 404, message: "Project not found" });
+  }
+  return new Response(await fs.promises.readFile(file), {
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+async function handlePutProject({
+  root,
+  url,
+  request,
+}: {
+  root: string;
+  url: URL;
+  request: Request;
+}) {
+  const file = resolveFile({ root, paths: [getParam({ url, name: "path" })] });
+  if (path.extname(file) !== ".json") {
+    throw new HttpError({
+      status: 403,
+      message: "Only .json files can be saved",
+    });
+  }
+  const project = await request.json();
+  await fs.promises.writeFile(file, JSON.stringify(project, null, 2) + "\n");
+  return Response.json({});
+}
+
+/** Serve a layer source resolved against the project's directory, as the renderer does. */
+async function handleMedia({
+  root,
+  url,
+  request,
+}: {
+  root: string;
+  url: URL;
+  request: Request;
+}) {
+  const project = getParam({ url, name: "project" });
+  const src = getParam({ url, name: "src" });
+  const file = resolveFile({ root, paths: [path.dirname(project), src] });
+  if (!fs.existsSync(file)) {
+    throw new HttpError({ status: 404, message: "Media not found" });
+  }
+  return await serveFile({ file, request });
+}
+
+/**
+ * Resolve `paths` against `root`, rejecting files outside it and hidden paths,
+ * such as a cover's future caches.
+ */
+function resolveFile({
+  root,
+  paths,
+}: {
+  root: string;
+  paths: string[];
+}): string {
+  const file = path.resolve(root, ...paths);
+  if (
+    !file.startsWith(root + path.sep) ||
+    path
+      .relative(root, file)
+      .split(path.sep)
+      .some((s) => s.startsWith("."))
+  ) {
+    throw new HttpError({
+      status: 403,
+      message: "Path is not served by the editor",
+    });
+  }
+  return file;
 }

@@ -13,6 +13,14 @@ export const test = base.extend<{
       recursive: true,
     });
     const projectFile = path.join(root, "synthetic", "project.json");
+    await using stack = new AsyncDisposableStack();
+    let output = "";
+    stack.defer(() =>
+      testInfo.attach("editor server log", {
+        body: output,
+        contentType: "text/plain",
+      }),
+    );
     const server = spawn("pnpm", ["dev", "--port", "0"], {
       env: {
         ...process.env,
@@ -20,34 +28,27 @@ export const test = base.extend<{
         NO_COLOR: "1",
         FORCE_COLOR: "0",
       },
-      detached: true,
     });
-    let output = "";
     const exited = once(server, "exit");
-    try {
-      server.stdout.on("data", (chunk: Buffer) => {
-        output += chunk.toString();
-      });
-      server.stderr.on("data", (chunk: Buffer) => {
-        output += chunk.toString();
-      });
-      // Use Playwright's default assertion timeout for server startup.
-      await expect
-        .poll(() => output.match(/http:\/\/localhost:\d+\//)?.[0])
-        .toBeDefined();
-      const origin = output.match(/http:\/\/localhost:\d+\//)![0];
-      const url = `${origin}?project=/files/synthetic/project.json`;
-      await use({ url, projectFile });
-    } finally {
+    stack.defer(async () => {
       if (server.exitCode === null) {
-        // Stop pnpm and the Vite process it started.
-        process.kill(-server.pid!, "SIGTERM");
+        server.kill("SIGTERM");
         await exited;
       }
-      await testInfo.attach("editor server log", {
-        body: output,
-        contentType: "text/plain",
-      });
-    }
+    });
+    server.stdout.on("data", (chunk: Buffer) => {
+      output += chunk.toString();
+    });
+    server.stderr.on("data", (chunk: Buffer) => {
+      output += chunk.toString();
+    });
+    // Use Playwright's default assertion timeout for server startup.
+    await expect
+      .poll(() => output.match(/http:\/\/localhost:\d+\//)?.[0])
+      .toBeDefined();
+    const origin = output.match(/http:\/\/localhost:\d+\//)![0];
+    const url = new URL(origin);
+    url.searchParams.set("project", "synthetic/project.json");
+    await use({ url: url.href, projectFile });
   },
 });

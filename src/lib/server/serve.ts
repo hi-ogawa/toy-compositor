@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { serve } from "srvx";
 import { staticMiddleware } from "srvx/static";
-import { createEditorHandler, isEditorPath } from "./api.ts";
+import { createEditorHandler } from "./api.ts";
 
 export const DEFAULT_ROOT = path.join(
   os.homedir(),
@@ -12,8 +12,8 @@ export const DEFAULT_ROOT = path.join(
 );
 
 /**
- * Serve the prebuilt editor client and the files under `root` on localhost,
- * the same handler that the dev server mounts.
+ * Serve the prebuilt editor client and the editor API over `root` on
+ * localhost, with the same `/api/` handler that the dev server mounts.
  */
 export async function serveEditor({
   root,
@@ -25,7 +25,7 @@ export async function serveEditor({
   clientDir: string;
 }) {
   fs.mkdirSync(root, { recursive: true });
-  const handleEditor = createEditorHandler({ root });
+  const handleApi = createEditorHandler({ root });
   const serveClient = staticMiddleware({ dir: clientDir });
   const server = serve({
     hostname: "localhost",
@@ -37,8 +37,8 @@ export async function serveEditor({
       if (!isLocalHost(request.headers.get("host"))) {
         return new Response("Forbidden host", { status: 403 });
       }
-      if (isEditorPath(new URL(request.url).pathname)) {
-        return handleEditor(request);
+      if (new URL(request.url).pathname.startsWith("/api/")) {
+        return handleApi(request);
       }
       return serveClient(
         request,

@@ -35,7 +35,7 @@ The sample exercises video scaling, image placement, text rendering with an outl
 For example, with `pnpm dev` running, the start page lists them under `rescene`, and each opens at a URL such as:
 
 ```text
-http://localhost:5173/?project=/files/rescene/vertical-video.json
+http://localhost:5173/?project=rescene/vertical-video.json
 ```
 
 These projects were transcribed from the finished Kdenlive composition. The original project JSON, archive fetch script, and layout notes are preserved at [11e9808](https://github.com/hi-ogawa/toy-compositor/tree/11e9808/covers/2026-06-27-rescene-love-attack). The horizontal values were copied directly. The vertical layout maps the Kdenlive center window to a native 1080×1920 canvas. The [compiler results](../docs/compiler.md) and [Remotion comparison](../research/remotion/README.md) record the render checks.

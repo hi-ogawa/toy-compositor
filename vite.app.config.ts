@@ -4,20 +4,20 @@ import react from "@vitejs/plugin-react";
 import type { NodeHttp1Handler } from "srvx";
 import { toNodeHandler } from "srvx/node";
 import { defineConfig, type Plugin } from "vite";
-import { createEditorHandler, isEditorPath } from "./src/lib/server/api.ts";
+import { createEditorHandler } from "./src/lib/server/api.ts";
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), editorFiles()],
+  plugins: [react(), tailwindcss(), editorApi()],
 });
 
 /**
- * Serve the projects root during development only. It defaults to
- * `.local/projects/`, where `pnpm setup-sample` puts samples, and
+ * Serve the editor API over the projects root during development only. It
+ * defaults to `.local/projects/`, where `pnpm setup-sample` puts samples, and
  * `TOY_COMPOSITOR_ROOT` overrides it, for example for e2e tests.
  */
-function editorFiles(): Plugin {
+function editorApi(): Plugin {
   return {
-    name: "editor-files",
+    name: "editor-api",
     configureServer(server) {
       const handler = toNodeHandler(
         createEditorHandler({
@@ -29,7 +29,7 @@ function editorFiles(): Plugin {
       ) as NodeHttp1Handler;
       server.middlewares.use(async (req, res, next) => {
         const url = new URL(req.url ?? "/", "http://localhost");
-        if (!isEditorPath(url.pathname)) {
+        if (!url.pathname.startsWith("/api/")) {
           next();
           return;
         }

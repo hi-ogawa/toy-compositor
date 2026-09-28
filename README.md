@@ -23,7 +23,7 @@ pnpm render <project.json> <output.(mp4|png)>                          # render 
 
 Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The editor and the render CLI run on Node 24 directly.
 
-The editor works on a projects root laid out as `<root>/<cover>/<project>.json`, with each project's media next to it. In development the root is `.local/projects/`, where `pnpm setup-sample` puts samples, and `TOY_COMPOSITOR_ROOT` overrides it. The start page lists the root's projects, and opening one navigates to `?project=/files/<cover>/<project>.json`. Media resolves relative to the project URL, and saving writes the JSON back with `PUT`.
+The editor works on a projects root laid out as `<root>/<cover>/<project>.json`, with each project's media next to it. The dev server's projects root is `.local/projects/`, where `pnpm setup-sample` puts samples, and `TOY_COMPOSITOR_ROOT` overrides it. The start page lists the root's projects, and opening one navigates to `?project=<cover>/<project>.json`. The server reads, saves, and serves media for the project through `/api/`, and media resolves relative to the project file as in the renderer. Hidden paths under the root are never served.
 
 ## CLI
 
@@ -36,7 +36,7 @@ toy-compositor serve [dir]                       # editor for projects under dir
 toy-compositor render <project.json> <output>    # render a project
 ```
 
-`serve` listens on localhost only, rejects requests addressed to other hosts, and serves `dir` as the projects root the same way the dev server serves `.local/projects/`. In the repository, `pnpm build` produces `dist/cli.js` and `dist/client/`, and `node dist/cli.js serve <dir>` runs the built CLI.
+`serve` listens on localhost only, rejects requests addressed to other hosts, and serves the editor API over `dir` the same way the dev server does over `.local/projects/`. In the repository, `pnpm build` produces `dist/cli.js` and `dist/client/`, and `node dist/cli.js serve <dir>` runs the built CLI.
 
 ## Samples
 

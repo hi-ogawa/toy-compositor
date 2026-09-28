@@ -75,10 +75,10 @@ test("open projects from the start page and keep saves inside the root", async (
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  const url = new URL(editor.url);
+  const { origin } = new URL(editor.url);
 
   // Open the editor without a project and confirm it lists the cover's projects.
-  await page.goto(url.origin);
+  await page.goto(origin);
   const list = page.getByTestId("project-list");
   await expect(list.getByRole("heading", { name: "synthetic" })).toBeVisible();
   await expect(list.getByRole("link")).toHaveText([
@@ -88,9 +88,7 @@ test("open projects from the start page and keep saves inside the root", async (
 
   // Open the thumbnail project from the list.
   await list.getByRole("link", { name: /thumbnail\.json/ }).click();
-  await expect(page).toHaveURL(
-    /\?project=\/files\/synthetic\/thumbnail\.json$/,
-  );
+  await expect(page).toHaveURL(/\?project=synthetic%2Fthumbnail\.json$/);
   await expect(page.getByTestId("editor-project-file")).toContainText(
     "thumbnail.json",
   );
@@ -109,21 +107,16 @@ test("open projects from the start page and keep saves inside the root", async (
 
   // Reject saves outside the root, into hidden directories, and of non-JSON
   // files.
-  const outside = await request.put(`${url.origin}/files/..%2Fescape.json`, {
-    data: {},
-  });
-  expect(outside.status()).toBe(403);
-  const hidden = await request.put(
-    `${url.origin}/files/synthetic/.cache/escape.json`,
-    {
-      data: {},
-    },
-  );
-  expect(hidden.status()).toBe(403);
-  const media = await request.put(
-    `${url.origin}/files/synthetic/media/image.png`,
-    { data: {} },
-  );
-  expect(media.status()).toBe(403);
+  for (const path of [
+    "../escape.json",
+    "synthetic/.cache/escape.json",
+    "synthetic/media/image.png",
+  ]) {
+    const response = await request.put(
+      `${origin}/api/project?${new URLSearchParams({ path })}`,
+      { data: {} },
+    );
+    expect(response.status()).toBe(403);
+  }
   expect(errors).toEqual([]);
 });
