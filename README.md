@@ -1,6 +1,6 @@
 # toy-compositor
 
-A small video compositor for bass-cover videos. It composes finished media from a JSON project, adjusts it in a browser editor, and renders with ffmpeg.
+A small video compositor that composes finished media from a JSON project, with a browser editor for adjustments and ffmpeg for rendering.
 
 ## Features
 
