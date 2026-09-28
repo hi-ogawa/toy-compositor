@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { expect } from "@playwright/test";
 import {
   commitInspectorField,
@@ -181,12 +181,9 @@ test("compose the output start and follow inspector edits", async ({
 
 test("compose a still project at its output time", async ({ page, editor }) => {
   // Open the still-output sample and seek its video to the requested thumbnail time.
-  const thumbnail = await readFile(
-    editor.projectFile.replace("project.json", "thumbnail.json"),
-    "utf-8",
+  await page.goto(
+    `/?${new URLSearchParams({ project: `${editor.projectDir}/thumbnail.json` })}`,
   );
-  await writeFile(editor.projectFile, thumbnail);
-  await page.goto(editor.url);
   const video = page.getByTestId("composition-canvas").locator("video");
   await expect
     .poll(() =>
