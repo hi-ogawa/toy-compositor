@@ -72,14 +72,12 @@ export function Inspector({
               label="in"
               value={layer.in}
               {...time}
-              min={0}
               onCommit={(value) => update({ in: value })}
             />
             <NumberField
               label="out"
               value={layer.out}
               {...time}
-              min={0}
               onCommit={(out) => update({ out })}
             />
           </Group>
@@ -98,14 +96,12 @@ export function Inspector({
               label="fade in"
               value={layer.fadeIn ?? 0}
               {...time}
-              min={0}
               onCommit={(fadeIn) => update({ fadeIn: fadeIn || undefined })}
             />
             <NumberField
               label="fade out"
               value={layer.fadeOut ?? 0}
               {...time}
-              min={0}
               onCommit={(fadeOut) => update({ fadeOut: fadeOut || undefined })}
             />
           </Group>
@@ -211,11 +207,13 @@ const PIXEL_FIELD = { step: 1, round: Math.round };
 
 /**
  * Times snap to the project's frame grid and are stored in milliseconds, like
- * the rest of the format. Arrow keys step by one frame.
+ * the rest of the format. Arrow keys step by one frame, and times never go
+ * below 0.
  */
 function timeField(fps: number) {
   return {
     step: 1 / fps,
+    min: 0,
     round: (value: number) => roundTo(Math.round(value * fps) / fps, 1e-3),
   };
 }
