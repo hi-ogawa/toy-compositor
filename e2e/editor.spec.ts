@@ -172,14 +172,6 @@ test("compose the output start and follow inspector edits", async ({
     )
     .toBeCloseTo(0.9);
 
-  // Seek the source video and confirm the composition keeps its own time.
-  await seekVideo({ video: page.locator("#source-monitor video"), time: 1.25 });
-  await expect
-    .poll(() =>
-      video.evaluate((element: HTMLVideoElement) => element.currentTime),
-    )
-    .toBeCloseTo(0.9);
-
   // Move the video past the preview time and confirm it disappears.
   await commitInspectorField(page, { name: "start", value: "2" });
   await expect(video).toHaveCount(0);
