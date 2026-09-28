@@ -64,7 +64,6 @@ test("preview synthetic sources and save an inspector edit", async ({
 test("open projects from the start page and keep saves inside the root", async ({
   page,
   editor,
-  request,
 }) => {
   const { projectDir } = editor;
 
