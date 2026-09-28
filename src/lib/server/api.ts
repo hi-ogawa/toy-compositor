@@ -33,13 +33,6 @@ export function createEditorHandler({ root }: { root: string }) {
       if (error instanceof HttpError) {
         return new Response(error.message, { status: error.status });
       }
-      if (
-        error instanceof Error &&
-        "code" in error &&
-        error.code === "ENOENT"
-      ) {
-        return new Response("File not found", { status: 404 });
-      }
       return new Response(
         error instanceof Error ? error.message : String(error),
         { status: 500 },
