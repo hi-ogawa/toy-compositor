@@ -3,7 +3,6 @@ node_modules
 *.tsbuildinfo
 
 .local/
-research/kdenlive/projects/
 
 # Playwright output
 test-results/

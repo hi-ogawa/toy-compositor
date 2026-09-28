@@ -1,6 +1,6 @@
 # Project format (draft)
 
-A project is one JSON file that describes one deliverable: a canvas, what to render, and a stack of layers. Variants of a cover, such as the horizontal video and its thumbnail, are separate files that share timing values. This draft is derived from the Kdenlive findings in [research/kdenlive/](../research/kdenlive/README.md) and follows the composition model in the [roadmap](https://github.com/hi-ogawa/toy-compositor/issues/43). It is expected to change as prototypes run into gaps.
+A project is one JSON file that describes one deliverable: a canvas, what to render, and a stack of layers. Variants of a cover, such as the horizontal video and its thumbnail, are separate files that share timing values. This draft is derived from the [Kdenlive findings](https://github.com/hi-ogawa/toy-compositor/tree/e315663/research/kdenlive) and follows the composition model in the [roadmap](https://github.com/hi-ogawa/toy-compositor/issues/43). It is expected to change as prototypes run into gaps.
 
 ```jsonc
 {

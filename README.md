@@ -7,7 +7,7 @@ A focused video compositor for my bass-cover videos, meant to replace the last m
 - A readable JSON project file is the source of truth, so agents and scripts can generate and edit projects. A minimal editor is only for the edits that need an eye, such as camera sync against the mix waveform and layer placement.
 - Rendering compiles a project into one ffmpeg filter graph. Static layouts of existing media do not need per-frame browser capture, and ffmpeg gives direct control over encoding.
 
-The pinned [roadmap issue](https://github.com/hi-ogawa/toy-compositor/issues/43) is the working plan, [research/kdenlive](research/kdenlive/README.md) records how past covers were composed, [research/remotion](research/remotion/README.md) compares a browser render against the ffmpeg compiler, [docs/project-format.md](docs/project-format.md) drafts the project file, and [docs/compiler.md](docs/compiler.md) describes the renderer.
+The pinned [roadmap issue](https://github.com/hi-ogawa/toy-compositor/issues/43) is the working plan, [past Kdenlive covers](https://github.com/hi-ogawa/toy-compositor/tree/e315663/research/kdenlive) record how covers were composed, [a Remotion comparison](https://github.com/hi-ogawa/toy-compositor/tree/e315663/research/remotion) checks a browser render against the ffmpeg compiler, [docs/project-format.md](docs/project-format.md) drafts the project file, and [docs/compiler.md](docs/compiler.md) describes the renderer.
 
 ## Setup
 
@@ -39,7 +39,6 @@ See [samples/README.md](samples/README.md) for setting up the synthetic sample o
 ```text
 src/          editor and renderer
 docs/         design drafts, e.g. the project format
-research/     findings from past covers and finished experiments
 samples/      committed sample sources
 .local/       local sample sources and editable projects, gitignored
 tools/        analysis scripts and sample setup/generation
@@ -49,4 +48,4 @@ tools/        analysis scripts and sample setup/generation
 
 - Source media and renders stay gitignored. Small synthetic samples are committed with a generator that reproduces them.
 - Project files reference media by paths relative to the project file.
-- An experiment that works moves into `src/`. One that does not keeps its findings under `research/<slug>/` and links to its code by commit, so dead code does not stay in the tree.
+- An experiment that works moves into `src/`. One that does not is removed, and its code and findings are linked by commit, so dead code and historical notes do not stay in the tree.

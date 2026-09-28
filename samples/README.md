@@ -39,6 +39,6 @@ pnpm dev .local/projects/rescene/project.json
 pnpm dev .local/projects/rescene/vertical-video.json
 ```
 
-These projects were transcribed from the finished Kdenlive composition. The original project JSON, archive fetch script, and layout notes are preserved at [11e9808](https://github.com/hi-ogawa/toy-compositor/tree/11e9808/covers/2026-06-27-rescene-love-attack). The horizontal values were copied directly. The vertical layout maps the Kdenlive center window to a native 1080×1920 canvas. The [compiler results](../docs/compiler.md) and [Remotion comparison](../research/remotion/README.md) record the render checks.
+These projects were transcribed from the finished Kdenlive composition. The original project JSON, archive fetch script, and layout notes are preserved at [11e9808](https://github.com/hi-ogawa/toy-compositor/tree/11e9808/covers/2026-06-27-rescene-love-attack). The horizontal values were copied directly. The vertical layout maps the Kdenlive center window to a native 1080×1920 canvas. The [compiler results](../docs/compiler.md) and [Remotion comparison](https://github.com/hi-ogawa/toy-compositor/tree/e315663/research/remotion) record the render checks.
 
 To prepare another local bundle, zip its `project.json`, `media/`, and any additional project variants into main's `.local/samples/<name>.zip`. Keep project paths relative and keep renders outside the bundle.
