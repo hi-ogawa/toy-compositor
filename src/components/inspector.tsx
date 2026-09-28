@@ -107,6 +107,24 @@ export function Inspector({
           </Group>
         </>
       )}
+      {(layer.type === "image" ||
+        layer.type === "text" ||
+        layer.type === "color") && (
+        <Group title="Timing">
+          <NumberField
+            label="start"
+            value={layer.start}
+            {...time}
+            onCommit={(start) => update({ start })}
+          />
+          <NumberField
+            label="end"
+            value={layer.end}
+            {...time}
+            onCommit={(end) => update({ end })}
+          />
+        </Group>
+      )}
       {(layer.type === "video" || layer.type === "image") && (
         <>
           <BoxFields box={layer.box} onCommit={(box) => update({ box })} />

@@ -179,6 +179,13 @@ test("compose the output start and follow inspector edits", async ({
   // and confirm it disappears.
   await commitInspectorField(page, { name: "start", value: "2" });
   await expect(video).toHaveCount(0);
+
+  // End the text at the playhead and confirm it disappears, because its range
+  // excludes its end.
+  const text = canvas.getByText("Synthetic\nsample", { exact: true });
+  await clickTimelineButton(page, { name: "label text" });
+  await commitInspectorField(page, { name: "end", value: "1" });
+  await expect(text).toHaveCount(0);
 });
 
 test("compose a still project at its output time", async ({ page, editor }) => {

@@ -27,7 +27,7 @@ All times are seconds. Timeline times (`start`, `end`, `output.*`) are positions
 
 A video or audio layer plays its source from `in` to `out`, starting at timeline position `start`. Alignment can be expressed through either `start` or `in`, because moving both by the same amount is a no-op.
 
-Image, text, and color layers are visible for the whole output unless they set `start` or `end`.
+An image, text, or color layer is visible from timeline position `start` to `end`. Every layer sets its range, so a layer's timing never depends on the output. An overlay meant for the whole cover, such as the title, spans the main video's output range, which also covers variants whose output falls inside it, such as the thumbnail.
 
 ## Layers
 
@@ -73,6 +73,8 @@ A video layer carries its file's audio, like a clip in Kdenlive, and the audio i
 {
   "type": "image",
   "src": "media/mv-thumbnail.jpg",
+  "start": 23.7,
+  "end": 188.633,
   "box": { "x": 960, "y": 540, "width": 960, "height": 540 },
 }
 ```
@@ -83,6 +85,8 @@ A video layer carries its file's audio, like a clip in Kdenlive, and the audio i
 {
   "type": "text",
   "text": "RESCENE\nLOVE ATTACK\n(John Park ver.)",
+  "start": 23.7,
+  "end": 188.633,
   "box": { "x": 336, "y": 222, "width": 1247 },
   "align": "center",
   "font": {
@@ -101,7 +105,13 @@ Text is rendered to a transparent PNG and composited like an image, so the rende
 ### `color`
 
 ```jsonc
-{ "type": "color", "color": "#000000", "opacity": 0.51 }
+{
+  "type": "color",
+  "color": "#000000",
+  "opacity": 0.51,
+  "start": 23.7,
+  "end": 188.633,
+}
 ```
 
 A solid fill, used for the translucent dim under thumbnail titles. It covers the whole canvas unless it sets a `box`.

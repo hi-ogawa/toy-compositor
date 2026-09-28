@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
-import { layerRange } from "../lib/editor/layer-regions";
+import { layerRange } from "../lib/layout";
 import type { Layer, Project, TextLayer } from "../lib/project";
 import type { EditorSelection } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
@@ -47,7 +47,7 @@ export function CompositionPreview({
             }}
           >
             {project.layers.map((layer, index) => {
-              const range = layerRange({ layer, project });
+              const range = layerRange(layer);
               if (
                 time < range.start ||
                 time >= range.end ||

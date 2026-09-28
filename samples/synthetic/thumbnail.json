@@ -39,6 +39,8 @@
       "name": "image",
       "type": "image",
       "src": "media/image.png",
+      "start": 0,
+      "end": 3,
       "box": {
         "x": 420,
         "y": 240,
@@ -50,6 +52,8 @@
       "name": "label",
       "type": "text",
       "text": "Synthetic\nsample",
+      "start": 0,
+      "end": 3,
       "box": {
         "x": 420,
         "y": 260,
