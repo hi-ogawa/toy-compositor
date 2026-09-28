@@ -42,7 +42,7 @@ async function main() {
       url.hostname = "localhost";
       console.log(`Editor: ${url.href}`);
       console.log(
-        `Open a project with ?project=/files/<path to project.json relative to ${root}>`,
+        `Open a project with ?project=<path to project.json relative to ${root}>`,
       );
       break;
     }
