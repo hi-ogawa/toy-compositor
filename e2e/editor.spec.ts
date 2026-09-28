@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { expect } from "@playwright/test";
-import { expectImageLoaded, test } from "./helper";
+import { dragBy, expectImageLoaded, seekVideo, test } from "./helper";
 
 test("preview synthetic sources and save an inspector edit", async ({
   page,
@@ -107,25 +107,13 @@ test("resize and close the source panel without changing the project", async ({
     .getByRole("button", { name: "video video", exact: true })
     .click();
   const source = page.locator("#source-monitor video");
-  await expect
-    .poll(() => source.evaluate((video: HTMLVideoElement) => video.readyState))
-    .toBeGreaterThanOrEqual(2);
-  await source.evaluate((video: HTMLVideoElement) => {
-    video.currentTime = 1;
-  });
-  await expect
-    .poll(() => source.evaluate((video: HTMLVideoElement) => video.currentTime))
-    .toBeCloseTo(1);
+  await seekVideo({ video: source, time: 1 });
 
   // Drag the split and nudge it with the keyboard to resize the source panel.
   const split = page.getByRole("separator", {
     name: "Source and composition split",
   });
-  const bounds = (await split.boundingBox())!;
-  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + 20);
-  await page.mouse.down();
-  await page.mouse.move(bounds.x + 100, bounds.y + 20);
-  await page.mouse.up();
+  await dragBy({ page, locator: split, deltaX: 100 });
   await expect
     .poll(async () => Number(await split.getAttribute("aria-valuenow")))
     .toBeGreaterThan(35);
