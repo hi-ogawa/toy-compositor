@@ -2,6 +2,8 @@
 
 A project file was rendered with Remotion, as the first step toward using Remotion Studio as the editor. Studio's preview is Remotion rendering the composition, so it is only useful as an editor if Remotion reproduces what the ffmpeg compiler renders. Studio then turned out to be a dead end as the editor ([#2](https://github.com/hi-ogawa/toy-compositor/pull/2)), and the prototype was removed, but these results still show that a browser draws the same layout as the ffmpeg compiler, which is why the editor preview is composed in the DOM.
 
+The renderer stays on ffmpeg rather than Remotion. Remotion's projects are React code rather than declarative data, so it would need a JSON-to-React interpreter in front of it, and its offline render captures every frame from headless Chrome, which buys nothing for static layouts of existing media. A native ffmpeg filter graph composes the same result directly and gives direct control over encoding and file size.
+
 One generic `Project` composition took a project file as its input props. `calculateMetadata` sized the canvas and duration from the project and probed source sizes, and each layer was drawn with the same fit math as the ffmpeg compiler. The code is at [bca3b97](https://github.com/hi-ogawa/toy-compositor/tree/bca3b97/prototypes/2026-09-26-remotion-render).
 
 ## Results on the rescene cover (2026-09-26)

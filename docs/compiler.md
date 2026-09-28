@@ -8,6 +8,15 @@ pnpm render .local/projects/synthetic/project.json .local/projects/synthetic/out
 pnpm render <project.json> <output> --dry-run   # print the command only
 ```
 
+## Timing and Frames
+
+- The project file's numbers are the timing truth. Offsets are set on waveforms, which are exact data, and playback only confirms them, so preview drift never shifts the final render. This avoids the Kdenlive problem where preview and render disagreed and timeline positions had to be compensated by guesswork.
+- Source time is a presentation timestamp, including a stream's start offset, and the frame shown at a source time is the frame whose timestamp is nearest to it. Every renderer and the editor preview must pick frames this way, because project times are rounded to milliseconds and source frames often sit off the project's frame grid, so a looser rule makes renderers disagree by one frame.
+- The ffmpeg render is the truth for exact frames. The DOM preview draws the same layout within 1px ([research/remotion](../research/remotion/README.md)), which is enough for placing layers, but a paused seek may land one frame off the nearest-frame rule, so frame choices such as the thumbnail are checked on a render.
+- The editor plays and decodes source media in the browser, so browser codec support such as HEVC matters there, and constant frame rate working files from ingest cover that case.
+- Variable frame rate phone footage is normalized to constant frame rate working files at ingest, which matches the existing manual pre-transcode.
+- Encoding settings are explicit in the compiler output, which avoids Kdenlive's file-size inflation.
+
 ## Gather Facts, Compile, Run
 
 A render has three steps. First, it gathers what the project file cannot say about its media. Each video and image source is probed once for its size, frame timing, and whether it has audio, and each text layer is drawn to a transparent PNG with ImageMagick. Then the project and those facts are compiled into ffmpeg arguments. Finally, ffmpeg runs.
