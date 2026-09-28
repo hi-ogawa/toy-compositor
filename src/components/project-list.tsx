@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
-  listProjectFiles,
   getProjectPageUrl,
+  projectFiles,
   type ProjectEntry,
 } from "../lib/project-file";
 
@@ -10,7 +10,7 @@ export function ProjectList() {
   const query = useQuery({
     queryKey: ["project-list"],
     retry: false,
-    queryFn: listProjectFiles,
+    queryFn: () => projectFiles.list(),
   });
   if (query.error) {
     return <p className="p-4 text-destructive">{query.error.message}</p>;
