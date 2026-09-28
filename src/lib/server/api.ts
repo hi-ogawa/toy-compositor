@@ -2,10 +2,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { Readable } from "node:stream";
 
-// Local sample projects live under the gitignored `.local/`. Other dot paths,
-// such as `.git/`, stay hidden for reads and saves.
-const ALLOWED_DOTFILES = [".local"];
-
 const CONTENT_TYPES: Record<string, string> = {
   ".json": "application/json",
   ".mp4": "video/mp4",
@@ -104,7 +100,10 @@ function getParam({ url, name }: { url: URL; name: string }): string {
   return value;
 }
 
-/** Resolve `paths` against `root`, rejecting files outside it and dot paths. */
+/**
+ * Resolve `paths` against `root`, rejecting files outside it and hidden paths,
+ * such as a cover's future caches.
+ */
 function resolveFile({
   root,
   paths,
@@ -118,7 +117,7 @@ function resolveFile({
     path
       .relative(root, file)
       .split(path.sep)
-      .some((s) => s.startsWith(".") && !ALLOWED_DOTFILES.includes(s))
+      .some((s) => s.startsWith("."))
   ) {
     throw new HttpError({
       status: 403,

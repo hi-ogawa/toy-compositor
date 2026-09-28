@@ -6,8 +6,8 @@ export function App() {
     return (
       <p className="p-4 text-destructive">
         No project to open. Add ?project=&lt;path&gt; to the page URL with a
-        path relative to the editor root, for example
-        ?project=samples/synthetic/project.json
+        path relative to the projects root, for example
+        ?project=synthetic/project.json
       </p>
     );
   }

@@ -23,7 +23,7 @@ pnpm render <project.json> <output.(mp4|png)>                          # render 
 
 Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The editor and the render CLI run on Node 24 directly.
 
-The editor opens the project given by the page's `?project=` query, a path relative to the repository root, for example `/?project=.local/projects/synthetic/project.json`. Any project under the repository opens by changing the query. The dev server reads, saves, and serves media for it through `/api/`, and media resolves relative to the project file as in the renderer.
+The editor opens the project given by the page's `?project=` query, a path relative to the projects root, for example `/?project=synthetic/project.json`. The dev server's projects root is `.local/projects/`, where `pnpm setup-sample` puts samples, and `TOY_COMPOSITOR_ROOT` overrides it. The server reads, saves, and serves media for the project through `/api/`, and media resolves relative to the project file as in the renderer. Hidden paths under the root are never served.
 
 ## Samples
 
