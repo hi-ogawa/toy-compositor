@@ -150,7 +150,9 @@ test("compose the output's first frame and reflect inspector edits", async ({
   page,
   editor,
 }) => {
-  // Start the output after a trimmed source's timeline offset and add cropped/color overlays.
+  // Offset the output, video, and trim so only a correct seek lands on 0.75 s,
+  // crop the image so it no longer fills its box as-is, and add the color layer
+  // the sample lacks. The unmodified sample would pass a naive preview.
   const project = JSON.parse(await readFile(editor.projectFile, "utf-8"));
   project.output.start = 1;
   project.layers[0].start = 0.5;
