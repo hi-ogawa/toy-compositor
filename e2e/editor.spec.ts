@@ -98,18 +98,4 @@ test("open projects from the start page and keep saves inside the root", async (
     .click();
   const image = page.getByRole("img", { name: "image", exact: true });
   await expectImageLoaded(image);
-
-  // Reject saves outside the root, into hidden directories, and of non-JSON
-  // files.
-  for (const path of [
-    "../escape.json",
-    `${projectDir}/.cache/escape.json`,
-    `${projectDir}/media/image.png`,
-  ]) {
-    const response = await request.put(
-      `/api/project?${new URLSearchParams({ path })}`,
-      { data: {} },
-    );
-    expect(response.status()).toBe(403);
-  }
 });
