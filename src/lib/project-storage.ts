@@ -2,16 +2,6 @@ import type { Project } from "./project.ts";
 
 export type EditorProjectFile = { file: string; project: Project };
 
-/**
- * The project file URL from the page's `?project=` query. Switching projects
- * is a page navigation, so it stays fixed for the page's lifetime.
- */
-export function getProjectUrl(): string | undefined {
-  return (
-    new URLSearchParams(window.location.search).get("project") ?? undefined
-  );
-}
-
 export const editorProjectStorage = {
   async load({ url }: { url: string }): Promise<EditorProjectFile> {
     const res = await fetch(url);

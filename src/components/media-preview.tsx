@@ -1,8 +1,14 @@
 import { useState } from "react";
-import { mediaUrl } from "../lib/media-url";
+import { resolveMediaUrl } from "../lib/media-url";
 import type { Layer } from "../lib/project";
 
-export function MediaPreview({ layer }: { layer: Layer | undefined }) {
+export function MediaPreview({
+  layer,
+  projectUrl,
+}: {
+  layer: Layer | undefined;
+  projectUrl: string;
+}) {
   const [failed, setFailed] = useState(false);
   if (!layer || !("src" in layer)) {
     return (
@@ -11,7 +17,7 @@ export function MediaPreview({ layer }: { layer: Layer | undefined }) {
       </p>
     );
   }
-  const src = mediaUrl(layer.src);
+  const src = resolveMediaUrl({ src: layer.src, projectUrl });
   const onError = () => setFailed(true);
   return (
     <section className="flex h-full min-h-0 flex-col gap-3 p-4">

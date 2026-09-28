@@ -8,13 +8,13 @@ import { cn } from "./ui/utils";
 import { useEditorProject } from "./use-editor-project";
 import { useWindowEvent } from "./use-window-event";
 
-export function Editor() {
+export function Editor({ projectUrl }: { projectUrl: string }) {
   const [runtime] = useState(() => new EditorRuntime());
   const state = useSyncExternalStore(
     runtime.store.subscribe,
     runtime.store.get,
   );
-  const project = useEditorProject({ runtime });
+  const project = useEditorProject({ projectUrl, runtime });
 
   useEffect(() => {
     document.title = state.file
@@ -91,6 +91,7 @@ export function Editor() {
                 : "none"
             }
             layer={previewLayer}
+            projectUrl={projectUrl}
           />
         </main>
         <aside className="w-72 shrink-0 overflow-y-auto border-l border-border">
