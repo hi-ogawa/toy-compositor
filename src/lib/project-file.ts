@@ -20,8 +20,8 @@ export async function listProjectFiles(): Promise<ProjectList> {
   return res.json();
 }
 
-/** The editor page URL that opens a project. */
-export function projectPageUrl({ path }: { path: string }): string {
+/** Get the editor page URL that opens a project. */
+export function getProjectPageUrl({ path }: { path: string }): string {
   return `?${new URLSearchParams({ project: path })}`;
 }
 

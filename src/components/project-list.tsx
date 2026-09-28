@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   listProjectFiles,
-  projectPageUrl,
+  getProjectPageUrl,
   type ProjectEntry,
 } from "../lib/project-file";
 
@@ -52,7 +52,7 @@ function ProjectRow({ entry }: { entry: ProjectEntry }) {
   return (
     <li>
       <a
-        href={projectPageUrl({ path: entry.path })}
+        href={getProjectPageUrl({ path: entry.path })}
         className="flex items-baseline gap-3 rounded px-2 py-1 text-sm hover:bg-accent"
       >
         <span className="font-mono">{entry.path.split("/").at(-1)}</span>
