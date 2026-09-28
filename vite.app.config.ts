@@ -8,6 +8,19 @@ import { createEditorHandler } from "./src/lib/server/api.ts";
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), editorApi()],
+  builder: {},
+  environments: {
+    client: {
+      build: { outDir: "dist/client" },
+    },
+    ssr: {
+      build: {
+        outDir: "dist/server",
+        target: "node24",
+        rolldownOptions: { input: { cli: "src/cli.ts" } },
+      },
+    },
+  },
 });
 
 /**
