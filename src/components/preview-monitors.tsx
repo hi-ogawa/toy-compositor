@@ -18,10 +18,10 @@ export function PreviewMonitors({
   const resize = (share: number) =>
     setSourceShare(Math.max(20, Math.min(60, share)));
   const dividerRef = usePointerDrag({
-    onStart: (event) => {
-      (event.currentTarget as HTMLElement).focus();
-      return { share: sourceShare, width: monitorsRef.current!.clientWidth };
-    },
+    onStart: () => ({
+      share: sourceShare,
+      width: monitorsRef.current!.clientWidth,
+    }),
     onMove: ({ data, deltaX }) =>
       resize(data.share + (deltaX / data.width) * 100),
   });
@@ -60,26 +60,8 @@ export function PreviewMonitors({
         {sourceOpen && (
           <div
             ref={dividerRef}
-            role="separator"
-            tabIndex={0}
-            aria-label="Source and composition split"
-            aria-orientation="vertical"
-            aria-valuemin={20}
-            aria-valuemax={60}
-            aria-valuenow={Math.round(sourceShare)}
-            className="relative w-2 shrink-0 touch-none cursor-col-resize rounded bg-border/40 hover:bg-accent focus-visible:bg-accent"
-            onKeyDown={(event) => {
-              const share = {
-                ArrowLeft: sourceShare - 2,
-                ArrowRight: sourceShare + 2,
-                Home: 20,
-                End: 60,
-              }[event.key];
-              if (share !== undefined) {
-                event.preventDefault();
-                resize(share);
-              }
-            }}
+            title="Resize source panel"
+            className="relative w-2 shrink-0 touch-none cursor-col-resize rounded bg-border/40 hover:bg-accent"
           >
             <div className="absolute inset-x-0 top-1/2 h-8 -translate-y-1/2 rounded bg-muted-foreground/50" />
           </div>
