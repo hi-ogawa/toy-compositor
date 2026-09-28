@@ -164,13 +164,13 @@ test("compose the output start and follow inspector edits", async ({
   await commitInspectorField(page, { name: "start", value: "1" });
   await expect(page.getByTestId("composition-time")).toContainText("1.000 s");
   await selectLayer(page, { name: "video video" });
-  await commitInspectorField(page, { name: "start", value: "0.5" });
+  await commitInspectorField(page, { name: "start", value: "0.3" });
   await commitInspectorField(page, { name: "in", value: "0.2" });
   await expect
     .poll(() =>
       video.evaluate((element: HTMLVideoElement) => element.currentTime),
     )
-    .toBeCloseTo(0.7);
+    .toBeCloseTo(0.9);
 
   // Seek the source video and confirm the composition keeps its own time.
   await seekVideo({ video: page.locator("#source-monitor video"), time: 1.25 });
@@ -178,7 +178,7 @@ test("compose the output start and follow inspector edits", async ({
     .poll(() =>
       video.evaluate((element: HTMLVideoElement) => element.currentTime),
     )
-    .toBeCloseTo(0.7);
+    .toBeCloseTo(0.9);
 
   // Move the video past the preview time and confirm it disappears.
   await commitInspectorField(page, { name: "start", value: "2" });
