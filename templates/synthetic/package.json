@@ -1,0 +1,11 @@
+{
+  "name": "toy-compositor-synthetic",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node setup.js && toy-compositor serve projects --allowed-hosts .webcontainer-api.io"
+  },
+  "dependencies": {
+    "toy-compositor": "*"
+  }
+}

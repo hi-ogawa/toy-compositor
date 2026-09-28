@@ -4,7 +4,9 @@ node_modules
 dist
 
 .local/
-research/kdenlive/projects/
+
+# Filled from samples/ before publishing templates
+templates/synthetic/projects/
 
 # Playwright output
 test-results/
