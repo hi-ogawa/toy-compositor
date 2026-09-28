@@ -16,7 +16,7 @@ pnpm render <project.json> <output> --dry-run   # print the command only
 - Source time is a presentation timestamp, including a stream's start offset, and the frame shown at a source time is the frame whose timestamp is nearest to it. Every renderer and the editor preview must pick frames this way, because project times are rounded to milliseconds and source frames often sit off the project's frame grid, so a looser rule makes renderers disagree by one frame.
 - The ffmpeg render is the truth for exact frames. The DOM preview draws the same layout within 1px ([Remotion comparison](https://github.com/hi-ogawa/toy-compositor/tree/e315663/research/remotion)), which is enough for placing layers, but a paused seek may land one frame off the nearest-frame rule, so frame choices such as the thumbnail are checked on a render.
 - The editor plays and decodes source media in the browser, so browser codec support such as HEVC matters there, and constant frame rate working files from ingest cover that case.
-- Variable frame rate phone footage is normalized to constant frame rate working files at ingest, which matches the existing manual pre-transcode.
+- Variable frame rate phone footage is normalized to constant frame rate working files at ingest, which matches the existing manual pre-transcode. The working files also use a one-second keyframe interval so the editor can seek quickly ([working media](working-media.md)).
 - Encoding settings are explicit in the compiler output, which avoids Kdenlive's file-size inflation.
 
 ## Gather Facts, Compile, Run

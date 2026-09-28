@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { ProjectEntry } from "../project-file.ts";
+import type { ProjectEntry } from "../api-client.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 
 /**
