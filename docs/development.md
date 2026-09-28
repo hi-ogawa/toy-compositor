@@ -12,7 +12,7 @@ pnpm build                           # dist/client/ and dist/server/cli.js
 pnpm dev-demo                        # editor as a static site, see below
 ```
 
-The editor and CLI run on Node 24 directly. See [samples/README.md](../samples/README.md) for the synthetic and local samples, and [e2e.md](e2e.md) for E2E traces on GitHub Actions.
+The editor and CLI run on Node 24 directly. See [samples/README.md](../samples/README.md) for the synthetic and local samples, [e2e.md](e2e.md) for E2E traces on GitHub Actions, and [working-media.md](working-media.md) for preparing camera footage.
 
 ## Projects root
 
