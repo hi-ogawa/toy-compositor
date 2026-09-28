@@ -19,14 +19,24 @@ const projects = new Map(
   ).map(([key, project]) => [`synthetic/${key.split("/").pop()}`, project]),
 );
 
-const mediaUrls = new Map(
-  Object.entries(
-    import.meta.glob<string>("../../samples/synthetic/media/*", {
-      eager: true,
-      query: "?url",
-      import: "default",
+// Media is fetched up front into blob URLs, because static hosts such as
+// Cloudflare may ignore range requests, and a video cannot seek without them.
+const mediaUrls = new Map<string, string>(
+  await Promise.all(
+    Object.entries(
+      import.meta.glob<string>("../../samples/synthetic/media/*", {
+        eager: true,
+        query: "?url",
+        import: "default",
+      }),
+    ).map(async ([key, url]) => {
+      const blob = await (await fetch(url)).blob();
+      return [
+        `media/${key.split("/").pop()}`,
+        URL.createObjectURL(blob),
+      ] as const;
     }),
-  ).map(([key, url]) => [`media/${key.split("/").pop()}`, url]),
+  ),
 );
 
 export async function listProjectFiles(): Promise<ProjectList> {
