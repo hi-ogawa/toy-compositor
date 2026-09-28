@@ -2,7 +2,7 @@ import type { Project } from "./project.ts";
 
 export type ProjectFile = { file: string; project: Project };
 
-/** A project file found under the projects root, as `<dir>/<name>.json`. */
+/** A project file found under the projects root, as `<project-dir>/<name>.json`. */
 export type ProjectEntry = {
   path: string;
   width: number;

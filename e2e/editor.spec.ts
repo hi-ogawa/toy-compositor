@@ -70,7 +70,7 @@ test("open projects from the start page and keep saves inside the root", async (
   editor,
   request,
 }) => {
-  const { dir } = editor;
+  const { projectDir } = editor;
 
   // Open the editor without a project and confirm it lists this test's project
   // with its projects.
@@ -78,7 +78,9 @@ test("open projects from the start page and keep saves inside the root", async (
   const section = page
     .getByTestId("project-list")
     .getByRole("listitem")
-    .filter({ has: page.getByRole("heading", { name: dir, exact: true }) });
+    .filter({
+      has: page.getByRole("heading", { name: projectDir, exact: true }),
+    });
   await expect(section.getByRole("link")).toHaveText([
     "project.json640x360 video",
     "thumbnail.json640x360 still",
@@ -87,7 +89,7 @@ test("open projects from the start page and keep saves inside the root", async (
   // Open the thumbnail project from the list.
   await section.getByRole("link", { name: /thumbnail\.json/ }).click();
   await expect(page).toHaveURL(
-    `/?${new URLSearchParams({ project: `${dir}/thumbnail.json` })}`,
+    `/?${new URLSearchParams({ project: `${projectDir}/thumbnail.json` })}`,
   );
   await expect(page.getByTestId("editor-project-file")).toContainText(
     "thumbnail.json",
@@ -109,8 +111,8 @@ test("open projects from the start page and keep saves inside the root", async (
   // files.
   for (const path of [
     "../escape.json",
-    `${dir}/.cache/escape.json`,
-    `${dir}/media/image.png`,
+    `${projectDir}/.cache/escape.json`,
+    `${projectDir}/media/image.png`,
   ]) {
     const response = await request.put(
       `/api/project?${new URLSearchParams({ path })}`,

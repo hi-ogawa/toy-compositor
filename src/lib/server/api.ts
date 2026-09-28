@@ -4,7 +4,7 @@ import type { ProjectEntry } from "../project-file.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 
 /**
- * Editor API over a projects root laid out as `<root>/<dir>/<project>.json`
+ * Editor API over a projects root laid out as `<root>/<project-dir>/<name>.json`
  * with media next to each project. Files are named by paths relative to
  * `root` in query parameters, so a file path is never encoded as a URL path.
  *
@@ -44,25 +44,25 @@ export function createEditorHandler({ root }: { root: string }) {
   };
 }
 
-/** List `<root>/<dir>/*.json` files that parse as projects. */
+/** List `<root>/<project-dir>/*.json` files that parse as projects. */
 async function listProjects({ root }: { root: string }) {
   const entries: ProjectEntry[] = [];
-  const dirs = await fs.promises
+  const projectDirs = await fs.promises
     .readdir(root, { withFileTypes: true })
     .catch(() => []);
-  for (const dir of dirs) {
-    if (!dir.isDirectory() || dir.name.startsWith(".")) {
+  for (const projectDir of projectDirs) {
+    if (!projectDir.isDirectory() || projectDir.name.startsWith(".")) {
       continue;
     }
-    const files = await fs.promises.readdir(path.join(root, dir.name));
+    const files = await fs.promises.readdir(path.join(root, projectDir.name));
     for (const name of files) {
       if (!name.endsWith(".json") || name.startsWith(".")) {
         continue;
       }
-      const project = await readProject(path.join(root, dir.name, name));
+      const project = await readProject(path.join(root, projectDir.name, name));
       if (project) {
         entries.push({
-          path: `${dir.name}/${name}`,
+          path: `${projectDir.name}/${name}`,
           width: project.canvas.width,
           height: project.canvas.height,
           output: project.output.type,

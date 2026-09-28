@@ -23,7 +23,7 @@ pnpm render <project.json> <output.(mp4|png)>                          # render 
 
 Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The editor and the render CLI run on Node 24 directly.
 
-The editor works on a projects root laid out as `<root>/<dir>/<project>.json`, with each project directory holding its project JSON files and their media. The dev server's projects root is `.local/projects/`, where `pnpm setup-sample` puts samples, and `TOY_COMPOSITOR_ROOT` overrides it. The start page lists the root's projects, and opening one navigates to `?project=<dir>/<project>.json`. The server reads, saves, and serves media for the project through `/api/`, and media resolves relative to the project file as in the renderer. Hidden paths under the root are never served.
+The editor works on a projects root laid out as `<root>/<project-dir>/<name>.json`, with each project directory holding its project JSON files and their media. The dev server's projects root is `.local/projects/`, where `pnpm setup-sample` puts samples, and `TOY_COMPOSITOR_ROOT` overrides it. The start page lists the root's projects, and opening one navigates to `?project=<project-dir>/<name>.json`. The server reads, saves, and serves media for the project through `/api/`, and media resolves relative to the project file as in the renderer. Hidden paths under the root are never served.
 
 ## CLI
 
@@ -32,11 +32,11 @@ The package ships a `toy-compositor` command with the editor client prebuilt, so
 ```sh
 pnpm add -g https://pkg.pr.new/hi-ogawa/toy-compositor@main
 
-toy-compositor serve [dir]                       # editor for projects under dir, default ~/Documents/toy-compositor
+toy-compositor serve [root]                      # editor for projects under root, default ~/Documents/toy-compositor
 toy-compositor render <project.json> <output>    # render a project
 ```
 
-`serve` listens on localhost only, rejects requests addressed to other hosts, and serves the editor API over `dir` the same way the dev server does over `.local/projects/`. In the repository, `pnpm build` produces `dist/client/` and `dist/server/cli.js`, and `node dist/server/cli.js serve <dir>` runs the built CLI.
+`serve` listens on localhost only, rejects requests addressed to other hosts, and serves the editor API over `root` the same way the dev server does over `.local/projects/`. In the repository, `pnpm build` produces `dist/client/` and `dist/server/cli.js`, and `node dist/server/cli.js serve <root>` runs the built CLI.
 
 ## Samples
 

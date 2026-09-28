@@ -7,8 +7,8 @@ import { DEFAULT_ROOT, serveEditor } from "./lib/server/serve.ts";
 
 const HELP = `\
 Usage:
-  toy-compositor serve [dir] [--port <port>]
-      Open the editor for projects under dir (default: ${DEFAULT_ROOT})
+  toy-compositor serve [root] [--port <port>]
+      Open the editor for projects under root (default: ${DEFAULT_ROOT})
   toy-compositor render <project.json> <output> [--dry-run]
       Render a project to a video or still with ffmpeg`;
 

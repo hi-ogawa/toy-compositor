@@ -3,15 +3,19 @@ import path from "node:path";
 import { test as base } from "@playwright/test";
 
 export const test = base.extend<{
-  editor: { dir: string; url: string; projectFile: string };
+  editor: { projectDir: string; url: string; projectFile: string };
 }>({
   editor: async ({}, use, testInfo) => {
     // Copy the synthetic sample into its own project directory under the
     // server's projects root, so each test saves edits independently.
-    const dir = testInfo.testId;
-    const dirPath = path.resolve(".local/e2e-projects", dir);
-    await cp("samples/synthetic", dirPath, { recursive: true });
-    const url = `/?${new URLSearchParams({ project: `${dir}/project.json` })}`;
-    await use({ dir, url, projectFile: path.join(dirPath, "project.json") });
+    const projectDir = testInfo.testId;
+    const projectDirPath = path.resolve(".local/e2e-projects", projectDir);
+    await cp("samples/synthetic", projectDirPath, { recursive: true });
+    const url = `/?${new URLSearchParams({ project: `${projectDir}/project.json` })}`;
+    await use({
+      projectDir,
+      url,
+      projectFile: path.join(projectDirPath, "project.json"),
+    });
   },
 });

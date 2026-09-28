@@ -19,23 +19,26 @@ export function ProjectList() {
     return null;
   }
   const { root, projects } = query.data;
-  const dirs = Map.groupBy(projects, (entry) => entry.path.split("/")[0]!);
+  const projectDirs = Map.groupBy(
+    projects,
+    (entry) => entry.path.split("/")[0]!,
+  );
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6 p-6">
       <header>
         <h1 className="text-lg font-medium">Toy Compositor</h1>
         <p className="font-mono text-sm text-muted-foreground">{root}</p>
       </header>
-      {dirs.size === 0 && (
+      {projectDirs.size === 0 && (
         <p className="text-sm text-muted-foreground">
           No projects yet. Put each project in its own directory under the root,
           with its project JSON files and their media.
         </p>
       )}
       <ul className="flex flex-col gap-4" data-testid="project-list">
-        {[...dirs].map(([dir, entries]) => (
-          <li key={dir}>
-            <h2 className="font-medium">{dir}</h2>
+        {[...projectDirs].map(([projectDir, entries]) => (
+          <li key={projectDir}>
+            <h2 className="font-medium">{projectDir}</h2>
             <ul className="mt-1 flex flex-col">
               {entries.map((entry) => (
                 <ProjectRow key={entry.path} entry={entry} />
