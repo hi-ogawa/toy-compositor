@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="520" viewBox="0 0 760 520" role="img" aria-labelledby="title desc">
+<title id="title">Each editor component owns one question about the preview</title>
+<desc id="desc">The editor screen drawn as nested component regions. Editor owns the runtime store and picks the preview time. PreviewMonitors only splits space between the Source monitor and a composition slot. MediaPreview shows the selected file independent of project timing. CompositionPreview scales the canvas and filters layers visible at the time, and each PreviewLayer places one layer, with CompositionMedia handling fit, crop, and seek for media. The layer list sends selection, and the Inspector sends project edits through the runtime.</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7d8a84"/></marker>
+</defs>
+<rect width="760" height="520" fill="#fcfaf5"/>
+<g font-family="Arial,sans-serif" font-size="15" fill="#263632">
+<text x="30" y="34" font-size="20" font-weight="700">The editor screen as component regions</text>
+<text x="30" y="56" font-size="13" fill="#52625d">Each box is a component, drawn where it sits on screen, with the one question it answers.</text>
+
+<rect x="30" y="72" width="700" height="404" rx="8" fill="#ffffff" stroke="#a3b0a9"/>
+<text x="46" y="94" font-weight="700">Editor</text>
+<text x="104" y="94" font-size="13" fill="#52625d">owns the runtime store and selection · picks time = outputRange(project).start</text>
+
+<rect x="46" y="106" width="500" height="258" rx="6" fill="#f6f7f5" stroke="#a3b0a9"/>
+<text x="58" y="126" font-weight="700">PreviewMonitors</text>
+<text x="186" y="126" font-size="13" fill="#52625d">splits space only · source open, width share</text>
+
+<rect x="58" y="138" width="150" height="214" rx="6" fill="#f0ebf8" stroke="#6b4fa0"/>
+<text x="70" y="160" font-weight="700">MediaPreview</text>
+<text x="70" y="178" font-size="13" fill="#52625d">#source-monitor</text>
+<text x="70" y="206" font-size="13">raw file of the</text>
+<text x="70" y="222" font-size="13">selected layer</text>
+<text x="70" y="250" font-size="13">native controls,</text>
+<text x="70" y="266" font-size="13">own currentTime</text>
+<text x="70" y="294" font-size="13">ignores time, box,</text>
+<text x="70" y="310" font-size="13">crop, and trim</text>
+
+<rect x="220" y="138" width="314" height="214" rx="6" fill="#ffffff" stroke="#2f6fb0" stroke-width="1.5"/>
+<text x="232" y="160" font-weight="700">CompositionPreview</text>
+<text x="232" y="178" font-size="13" fill="#52625d">viewport size → scale · layers visible at time</text>
+
+<rect x="232" y="190" width="290" height="150" rx="6" fill="#263632"/>
+<text x="244" y="210" font-size="13" fill="#eef1ef" font-weight="700">PreviewLayer × N</text>
+<text x="360" y="210" font-size="12" fill="#c6cfca">box → CSS · outline</text>
+<rect x="244" y="220" width="266" height="28" rx="4" fill="#eef1ef"/>
+<text x="254" y="239" font-size="13">text → div + textStyle()</text>
+<rect x="244" y="254" width="266" height="28" rx="4" fill="#eef1ef"/>
+<text x="254" y="273" font-size="13">color → div background, opacity</text>
+<rect x="244" y="288" width="266" height="42" rx="4" fill="#dce8f5" stroke="#2f6fb0"/>
+<text x="254" y="306" font-size="13" font-weight="700">video / image → CompositionMedia</text>
+<text x="254" y="322" font-size="12" fill="#52625d">natural size · fitBox + crop · seek</text>
+
+<rect x="46" y="380" width="500" height="84" rx="6" fill="#f6f7f5" stroke="#a3b0a9"/>
+<text x="58" y="402" font-weight="700">layer list</text>
+<text x="136" y="402" font-size="13" fill="#52625d">nav in Editor · Output row plus layers, top first</text>
+<text x="58" y="444" font-size="13">click → runtime.select()</text>
+
+<rect x="562" y="106" width="152" height="358" rx="6" fill="#f6f7f5" stroke="#a3b0a9"/>
+<text x="574" y="128" font-weight="700">Inspector</text>
+<text x="574" y="156" font-size="13">edits the selected</text>
+<text x="574" y="172" font-size="13">layer's fields</text>
+<text x="574" y="200" font-size="13">→ runtime</text>
+<text x="574" y="216" font-size="13">→ state.project</text>
+<text x="574" y="232" font-size="13">→ re-render</text>
+
+<path d="M133 380 V354" fill="none" stroke="#7d8a84" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M377 380 V342" fill="none" stroke="#7d8a84" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="210" y="424" font-size="12" fill="#52625d" text-anchor="middle">selection → source file</text>
+<text x="420" y="424" font-size="12" fill="#52625d" text-anchor="middle">selection → outline</text>
+<path d="M562 250 H536" fill="none" stroke="#7d8a84" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="574" y="256" font-size="12" fill="#52625d">project edits</text>
+
+<rect x="30" y="492" width="12" height="12" rx="2" fill="#ffffff" stroke="#2f6fb0"/>
+<text x="50" y="503" font-size="13" fill="#52625d">driven by project + time</text>
+<rect x="230" y="492" width="12" height="12" rx="2" fill="#f0ebf8" stroke="#6b4fa0"/>
+<text x="250" y="503" font-size="13" fill="#52625d">independent of project timing and layout</text>
+<rect x="520" y="492" width="12" height="12" rx="2" fill="#f6f7f5" stroke="#a3b0a9"/>
+<text x="540" y="503" font-size="13" fill="#52625d">UI chrome</text>
+</g>
+</svg>
