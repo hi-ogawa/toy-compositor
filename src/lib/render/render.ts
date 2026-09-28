@@ -6,14 +6,16 @@ import type { Project } from "../project.ts";
 import { compile } from "./compile.ts";
 import { resolveProject } from "./resolve.ts";
 
-async function main() {
-  const [projectFile, outFile] = process.argv
-    .slice(2)
-    .filter((a) => !a.startsWith("--"));
-  if (!projectFile || !outFile) {
-    console.error("Usage: pnpm render <project.json> <output> [--dry-run]");
-    process.exit(1);
-  }
+/** Render a project file to a video or still with ffmpeg. */
+export async function renderProject({
+  projectFile,
+  outFile,
+  dryRun,
+}: {
+  projectFile: string;
+  outFile: string;
+  dryRun?: boolean;
+}) {
   const project: Project = JSON.parse(fs.readFileSync(projectFile, "utf-8"));
   const projectDir = path.dirname(path.resolve(projectFile));
   const outPath = path.resolve(outFile);
@@ -32,7 +34,7 @@ async function main() {
     outPath,
   ];
   console.error(["ffmpeg", ...args.map(quote)].join(" "));
-  if (process.argv.includes("--dry-run")) {
+  if (dryRun) {
     return;
   }
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
@@ -50,8 +52,3 @@ async function main() {
 function quote(s: string) {
   return /^[\w./:=@,+-]+$/.test(s) ? s : `'${s.replaceAll("'", `'\\''`)}'`;
 }
-
-main().catch((error: unknown) => {
-  console.error(error);
-  process.exitCode = 1;
-});

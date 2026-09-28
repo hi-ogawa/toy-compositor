@@ -25,6 +25,19 @@ Rendering needs `ffmpeg` and ImageMagick (`magick`) on PATH. The editor and the 
 
 The editor serves the repository at `/files/` and opens the project given by the page's `?project=` URL, for example `/?project=/files/.local/projects/synthetic/project.json`. Any project under the repository opens by changing the query. Media resolves relative to the project URL, and saving writes the JSON back with `PUT`.
 
+## CLI
+
+The package ships a `toy-compositor` command with the editor client prebuilt, so it runs without Vite. Each commit is published to [pkg.pr.new](https://pkg.pr.new/~/hi-ogawa/toy-compositor):
+
+```sh
+pnpm add -g https://pkg.pr.new/hi-ogawa/toy-compositor@main
+
+toy-compositor serve [dir]                       # editor for projects under dir, default ~/Documents/toy-compositor
+toy-compositor render <project.json> <output>    # render a project
+```
+
+`serve` listens on localhost only, rejects requests addressed to other hosts, and serves `dir` at `/files/` the same way the dev server serves the repository. In the repository, `pnpm build` produces `dist/cli.js` and `dist/client/`, and `node dist/cli.js serve <dir>` runs the built CLI.
+
 ## Samples
 
 ```sh
