@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { editorProjectStorage } from "../lib/project-storage";
+import { editorProjectStorage, getProjectUrl } from "../lib/project-storage";
 import type { EditorRuntime } from "../lib/runtime";
 import { useWindowEvent } from "./use-window-event";
 
@@ -15,7 +15,13 @@ export function useEditorProject({ runtime }: { runtime: EditorRuntime }) {
     retry: false,
     staleTime: Infinity,
     queryFn: async () => {
-      runtime.deserializeProject(await editorProjectStorage.load());
+      const url = getProjectUrl();
+      if (!url) {
+        throw new Error(
+          "No project to open. Add ?project=<url> to the page URL, for example ?project=/files/samples/synthetic/project.json",
+        );
+      }
+      runtime.deserializeProject(await editorProjectStorage.load({ url }));
       return true;
     },
   });
@@ -27,7 +33,10 @@ export function useEditorProject({ runtime }: { runtime: EditorRuntime }) {
         throw new Error("Cannot save before the project has loaded.");
       }
       const revision = revisionRef.current;
-      await editorProjectStorage.save(runtime.serializeProject());
+      await editorProjectStorage.save({
+        url: runtime.store.get().file,
+        project: runtime.serializeProject(),
+      });
       return revision;
     },
     onSuccess: (savedRevision) => {

@@ -11,11 +11,10 @@ export const test = base.extend<{
     const directory = testInfo.outputPath("project");
     await cp("samples/synthetic", directory, { recursive: true });
     const projectFile = path.join(directory, "project.json");
-    const server = spawn(
-      process.execPath,
-      ["src/lib/server/dev-cli.ts", projectFile],
-      { env: { ...process.env, NO_COLOR: "1", FORCE_COLOR: "0" } },
-    );
+    const server = spawn("pnpm", ["dev", "--port", "0"], {
+      env: { ...process.env, NO_COLOR: "1", FORCE_COLOR: "0" },
+      detached: true,
+    });
     let output = "";
     const exited = once(server, "exit");
     try {
@@ -29,11 +28,14 @@ export const test = base.extend<{
       await expect
         .poll(() => output.match(/http:\/\/localhost:\d+\//)?.[0])
         .toBeDefined();
-      const url = output.match(/http:\/\/localhost:\d+\//)![0];
+      const origin = output.match(/http:\/\/localhost:\d+\//)![0];
+      const projectPath = path.relative(process.cwd(), projectFile);
+      const url = `${origin}?project=/files/${projectPath.split(path.sep).join("/")}`;
       await use({ url, projectFile });
     } finally {
       if (server.exitCode === null) {
-        server.kill("SIGTERM");
+        // Stop pnpm and the Vite process it started.
+        process.kill(-server.pid!, "SIGTERM");
         await exited;
       }
       await testInfo.attach("editor server log", {

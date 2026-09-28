@@ -7,7 +7,7 @@ export type EditorSelection =
   | { type: "layer"; index: number };
 
 export interface EditorState {
-  /** Project file path relative to where the editor was started. */
+  /** Project file URL, which is also where saves go. */
   file: string;
   project: Project;
   selection?: EditorSelection;
