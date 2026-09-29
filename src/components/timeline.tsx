@@ -126,7 +126,14 @@ function TimelineRuler({
     ticks.push(time);
   }
   return (
-    <TimelineRow timeline={timeline}>
+    <TimelineRow
+      timeline={timeline}
+      label={
+        <span className="px-3 text-xs font-semibold text-muted-foreground">
+          Layers
+        </span>
+      }
+    >
       <button
         type="button"
         aria-label="Timeline ruler"
@@ -298,7 +305,7 @@ function TimelineRow({
   children,
 }: {
   timeline: TimelineView;
-  label?: ReactNode;
+  label: ReactNode;
   children: ReactNode;
 }) {
   return (
