@@ -31,11 +31,8 @@ export type Crop = {
 export type VideoLayer = LayerBase & {
   type: "video";
   src: string;
-  /** Timeline position where `in` plays. The source's alignment is `start - in`, so a start trim moves both. */
   start: number;
-  /** Source time where the layer begins. Changing it alone shifts the source against the timeline. */
   in: number;
-  /** Source time where the layer ends. */
   out: number;
   box: Box;
   crop?: Crop;
@@ -47,11 +44,8 @@ export type VideoLayer = LayerBase & {
 export type AudioLayer = LayerBase & {
   type: "audio";
   src: string;
-  /** Timeline position where `in` plays. The source's alignment is `start - in`, so a start trim moves both. */
   start: number;
-  /** Source time where the layer begins. Changing it alone shifts the source against the timeline. */
   in: number;
-  /** Source time where the layer ends. */
   out: number;
   fadeIn?: number;
   fadeOut?: number;
