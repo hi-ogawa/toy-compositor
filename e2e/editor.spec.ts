@@ -255,7 +255,7 @@ test("scroll and zoom the timeline with the wheel", async ({
   editor,
 }) => {
   // Open the synthetic project and scroll left past the start, and confirm the
-  // viewport stays at 0 so 50 px on the ruler still seeks to 0.5 s.
+  // viewport stays at 0 so the ruler point 0.5 s in still seeks to 0.5 s.
   await page.goto(editor.url);
   const time = page.getByTestId("timeline-time");
   const ruler = page
@@ -263,27 +263,32 @@ test("scroll and zoom the timeline with the wheel", async ({
     .getByRole("button", { name: "Timeline ruler", exact: true });
   const box = (await ruler.boundingBox())!;
   const y = box.y + box.height / 2;
-  await page.mouse.move(box.x + 50, y);
+  const pointerX = 0.5 * DEFAULT_PIXELS_PER_SECOND;
+  await page.mouse.move(box.x + pointerX, y);
   await page.mouse.wheel(0, -500);
-  await seekTimelineByPixels(page, 50);
+  await seekTimelineByPixels(page, pointerX);
   await expect(time).toContainText("0.500 s");
 
-  // Scroll right by 100 px, which is 1 s at the default zoom, and confirm the
-  // same ruler point now seeks to 1.5 s.
-  await page.mouse.wheel(0, DEFAULT_PIXELS_PER_SECOND);
+  // Scroll right by 1 s at the default zoom, and confirm the same ruler point
+  // now seeks to 1.5 s.
+  const scrollX = 1 * DEFAULT_PIXELS_PER_SECOND;
+  await page.mouse.wheel(0, scrollX);
   await expect(ruler.locator("span").first()).toHaveText("1");
-  await seekTimelineByPixels(page, 50);
+  await seekTimelineByPixels(page, pointerX);
   await expect(time).toContainText("1.500 s");
 
-  // Zoom in by 10% with Ctrl+wheel at 150 px (2.5 s). The point under the
-  // pointer stays at 2.5 s, and 110 px to its right is now 1 s later.
-  await page.mouse.move(box.x + 150, y);
+  // Zoom in by 10% with Ctrl+wheel 1.5 s into the viewport, which is 2.5 s.
+  // The point under the pointer stays at 2.5 s, and one second to its right
+  // at the zoomed scale is 3.5 s.
+  const zoomAnchorX = 1.5 * DEFAULT_PIXELS_PER_SECOND;
+  const zoomedPixelsPerSecond = 1.1 * DEFAULT_PIXELS_PER_SECOND;
+  await page.mouse.move(box.x + zoomAnchorX, y);
   await page.keyboard.down("Control");
   await page.mouse.wheel(0, -100);
   await page.keyboard.up("Control");
   await expect(ruler.locator("span").first()).toHaveText("2");
-  await seekTimelineByPixels(page, 150);
+  await seekTimelineByPixels(page, zoomAnchorX);
   await expect(time).toContainText("2.500 s");
-  await seekTimelineByPixels(page, 260);
+  await seekTimelineByPixels(page, zoomAnchorX + zoomedPixelsPerSecond);
   await expect(time).toContainText("3.500 s");
 });
