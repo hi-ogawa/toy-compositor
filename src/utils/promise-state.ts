@@ -10,14 +10,16 @@ export interface TrackedPromise<T> {
 
 /**
  * Mirrors a promise's settlement into a state that reads synchronously.
- * `onFulfilled` runs after the state is fulfilled, so it can read the value.
+ * Each callback runs after the state settles, so it reads the settled state.
  */
 export function trackPromise<T>({
   promise,
   onFulfilled,
+  onRejected,
 }: {
   promise: Promise<T>;
   onFulfilled: (value: T) => void;
+  onRejected: (error: unknown) => void;
 }): TrackedPromise<T> {
   const tracked: TrackedPromise<T> = {
     state: { status: "pending", promise },
@@ -29,6 +31,7 @@ export function trackPromise<T>({
     },
     (error: unknown) => {
       tracked.state = { status: "rejected", error };
+      onRejected(error);
     },
   );
   return tracked;

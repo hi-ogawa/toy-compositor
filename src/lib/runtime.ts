@@ -2,6 +2,7 @@ import { trackPromise, type TrackedPromise } from "../utils/promise-state.ts";
 import { createStore } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
+import { createAudioView, type AudioView } from "./audio-view.ts";
 import { getOutputRange } from "./layout.ts";
 import type { AudioLayer, Layer, Project, VideoLayer } from "./project.ts";
 import { AudioContextTransport } from "./transport.ts";
@@ -11,6 +12,11 @@ export type EditorSelection =
   | { type: "output" }
   | { type: "layer"; index: number };
 
+export type AudioSource =
+  | { status: "loading" }
+  | { status: "loaded"; view: AudioView }
+  | { status: "missing" };
+
 export interface EditorState {
   /** Project file path relative to the projects root, which is also where saves go. */
   file: string;
@@ -19,6 +25,7 @@ export interface EditorState {
   playhead: number;
   playing: boolean;
   selection?: EditorSelection;
+  audioSources: Record<string, AudioSource>;
 }
 
 const EMPTY_PROJECT: Project = {
@@ -34,11 +41,12 @@ export class EditorRuntime {
     playhead: 0,
     playing: false,
     selection: undefined,
+    audioSources: {},
   }));
 
   readonly context = new AudioContext();
   readonly transport = new AudioContextTransport(this.context);
-  private readonly audioSources = new Map<
+  private readonly audioBuffers = new Map<
     string,
     TrackedPromise<AudioBuffer>
   >();
@@ -175,7 +183,7 @@ export class EditorRuntime {
         this.audioPlaybacks.set(key, playback);
       }
       playback.setLayer({ layer });
-      const source = this.audioSources.get(layer.src);
+      const source = this.audioBuffers.get(layer.src);
       if (source?.state.status === "fulfilled") {
         playback.setBuffer({ buffer: source.state.value });
       }
@@ -191,13 +199,34 @@ export class EditorRuntime {
       });
       return this.context.decodeAudioData(data);
     };
-    this.audioSources.set(
+    this.setAudioSource({ src, source: { status: "loading" } });
+    this.audioBuffers.set(
       src,
       trackPromise({
         promise: decodeAudio(),
-        onFulfilled: () => this.reschedulePlayback(() => this.syncPlayback()),
+        onFulfilled: (buffer) => {
+          this.setAudioSource({
+            src,
+            source: { status: "loaded", view: createAudioView(buffer) },
+          });
+          this.reschedulePlayback(() => this.syncPlayback());
+        },
+        onRejected: () => {
+          this.setAudioSource({ src, source: { status: "missing" } });
+        },
       }),
     );
+  }
+
+  private setAudioSource({
+    src,
+    source,
+  }: {
+    src: string;
+    source: AudioSource;
+  }): void {
+    const { audioSources } = this.store.get();
+    this.store.update({ audioSources: { ...audioSources, [src]: source } });
   }
 
   serializeProject(): Project {

@@ -2,6 +2,7 @@ import {
   AudioLinesIcon,
   FilmIcon,
   ImageIcon,
+  LoaderCircleIcon,
   PauseIcon,
   PlayIcon,
   SquareIcon,
@@ -10,9 +11,14 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { getLayerRange, type Range } from "../lib/layout";
+import { getLayerRange, intersect, type Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
-import type { EditorRuntime, EditorSelection } from "../lib/runtime";
+import type {
+  AudioSource,
+  EditorRuntime,
+  EditorSelection,
+} from "../lib/runtime";
+import { AudioWaveformView } from "./audio-waveform";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { TIMELINE_LABEL_WIDTH, type TimelineView } from "./use-timeline";
@@ -24,6 +30,7 @@ export function Timeline({
   selection,
   playhead,
   playing,
+  audioSources,
 }: {
   timeline: TimelineView;
   runtime: EditorRuntime;
@@ -31,6 +38,7 @@ export function Timeline({
   selection?: EditorSelection;
   playhead: number;
   playing: boolean;
+  audioSources: Record<string, AudioSource>;
 }) {
   const selectOutput = () => runtime.select({ type: "output" });
   const seek = (time: number) => runtime.seek(time);
@@ -98,6 +106,11 @@ export function Timeline({
                 layer={layer}
                 index={index}
                 range={getLayerRange(layer)}
+                audioSource={
+                  layer.type === "video" || layer.type === "audio"
+                    ? audioSources[layer.src]
+                    : undefined
+                }
                 selected={
                   selection?.type === "layer" && selection.index === index
                 }
@@ -270,6 +283,7 @@ function TimelineLayerLane({
   layer,
   index,
   range,
+  audioSource,
   selected,
   onSelect,
 }: {
@@ -277,11 +291,15 @@ function TimelineLayerLane({
   layer: Layer;
   index: number;
   range: Range;
+  audioSource?: AudioSource;
   selected: boolean;
   onSelect: () => void;
 }) {
   const name = layer.name ?? layer.type;
   const region = timeline.rangeStyle(range);
+  const visible = intersect(range, timeline.visible);
+  const audioLayer =
+    layer.type === "video" || layer.type === "audio" ? layer : undefined;
   return (
     <TimelineRow
       timeline={timeline}
@@ -315,6 +333,15 @@ function TimelineLayerLane({
           )}
           style={region}
         >
+          {audioLayer && visible && audioSource?.status === "loaded" && (
+            <AudioWaveformView
+              audioView={audioSource.view}
+              sourceStart={audioLayer.in + visible.start - audioLayer.start}
+              sourceEnd={audioLayer.in + visible.end - audioLayer.start}
+              pixelsPerSecond={timeline.pixelsPerSecond}
+              dimmed={audioLayer.muted ?? false}
+            />
+          )}
           {/* The lane's header already names the layer, so the clip shows only state. */}
           {(layer.type === "video" || layer.type === "audio") &&
             layer.muted && (
@@ -324,6 +351,13 @@ function TimelineLayerLane({
                 className="absolute left-1 top-1 size-3.5"
               />
             )}
+          {audioSource?.status === "loading" && (
+            <LoaderCircleIcon
+              role="img"
+              aria-label="loading audio"
+              className="absolute right-1 top-1 size-3.5 animate-spin text-muted-foreground"
+            />
+          )}
         </button>
       )}
     </TimelineRow>
