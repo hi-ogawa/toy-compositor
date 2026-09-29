@@ -242,15 +242,26 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
   });
   await expectInspectorFields(page, { start: "0", end: "2" });
 
-  // Start dragging the image, press Escape, and release, and confirm the drag
-  // is cancelled.
-  const box = (await image.boundingBox())!;
-  const y = box.y + box.height / 2;
-  await page.mouse.move(box.x + 10, y);
-  await page.mouse.down();
-  await page.mouse.move(box.x + 10 + secondsToPixels(1), y, { steps: 4 });
+  // Hold a drag of the image 1 s right, and confirm the region previews the
+  // move while the inspector keeps the committed start.
+  const original = (await image.boundingBox())!;
+  const readImageX = async () => (await image.boundingBox())!.x;
+  const pointer = await dragBy(page, image, {
+    deltaX: secondsToPixels(1),
+    release: false,
+  });
+  await expect.poll(readImageX).toBeCloseTo(original.x + secondsToPixels(1), 0);
+  await expectInspectorFields(page, { start: "0", end: "2" });
+
+  // Press Escape, keep dragging, and release, and confirm the move stays
+  // cancelled.
   await page.keyboard.press("Escape");
+  await expect.poll(readImageX).toBeCloseTo(original.x, 0);
+  await page.mouse.move(pointer.x + secondsToPixels(2), pointer.y, {
+    steps: 4,
+  });
   await page.mouse.up();
+  await expect.poll(readImageX).toBeCloseTo(original.x, 0);
   await expectInspectorFields(page, { start: "0", end: "2" });
 
   // Save and confirm the edits reach the project file.

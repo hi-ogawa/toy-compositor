@@ -57,14 +57,14 @@ export async function seekVideo(video: Locator, { time }: { time: number }) {
   );
 }
 
-/** Drag a locator horizontally from its center. */
+/** Drag a locator horizontally from its center, and return where the pointer started. */
 export async function dragBy(
   page: Page,
   locator: Locator,
-  { deltaX }: { deltaX: number },
+  { deltaX, release = true }: { deltaX: number; release?: boolean },
 ) {
-  await test.step(
-    `Drag by ${deltaX}px`,
+  return await test.step(
+    `Drag by ${deltaX}px${release ? "" : " without releasing"}`,
     async () => {
       const bounds = await locator.boundingBox();
       expect(bounds).not.toBeNull();
@@ -73,7 +73,10 @@ export async function dragBy(
       await page.mouse.move(x, y);
       await page.mouse.down();
       await page.mouse.move(x + deltaX, y, { steps: 4 });
-      await page.mouse.up();
+      if (release) {
+        await page.mouse.up();
+      }
+      return { x, y };
     },
     { box: true },
   );
