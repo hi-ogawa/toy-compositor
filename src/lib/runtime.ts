@@ -12,7 +12,6 @@ export type EditorSelection =
   | { type: "output" }
   | { type: "layer"; index: number };
 
-/** A source's audio track, loaded whether or not any layer is heard. */
 export type AudioSource =
   | { status: "loading" }
   | { status: "loaded"; view: AudioView }
@@ -48,7 +47,6 @@ export class EditorRuntime {
 
   readonly context = new AudioContext();
   readonly transport = new AudioContextTransport(this.context);
-  /** Each source decodes once, shared by its layers' playback and waveforms. */
   private readonly audioBuffers = new Map<
     string,
     TrackedPromise<AudioBuffer>

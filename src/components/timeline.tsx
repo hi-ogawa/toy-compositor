@@ -343,13 +343,14 @@ function TimelineLayerLane({
             />
           )}
           {/* The lane's header already names the layer, so the clip shows only state. */}
-          {audioLayer?.muted && (
-            <VolumeXIcon
-              role="img"
-              aria-label="muted"
-              className="absolute left-1 top-1 size-3.5"
-            />
-          )}
+          {(layer.type === "video" || layer.type === "audio") &&
+            layer.muted && (
+              <VolumeXIcon
+                role="img"
+                aria-label="muted"
+                className="absolute left-1 top-1 size-3.5"
+              />
+            )}
           {audioSource?.status === "loading" && (
             <LoaderCircleIcon
               role="img"

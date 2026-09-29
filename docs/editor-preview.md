@@ -56,10 +56,8 @@ EditorRuntime              runtime.ts                source loading, restarts ar
 - **The heard position comes from `getOutputTimestamp`,** because Chromium on Linux reports `outputLatency` as 0.
 - **Audio is scheduled, never steered.** A layer plays wherever its own range covers the playhead, so trimming decides what plays. Fades are gain ramps, and `muted` silences the layer.
 - **Playbacks start only at the anchor.** An edit, or a buffer that arrives during playback, restarts the transport around the change, like toy-midi's `updateClips`.
-- **Sources load in the background.** Loading a project decodes each source once, shared by its layers, so opening never waits on a long source.
+- **Sources load in the background.** Loading a project decodes each source once, shared by its layers' playback and lane waveforms, so opening never waits on a long source.
 - **Pausing lands on the frame grid,** so a paused preview matches a rendered frame.
-
-Each source's audio is fetched and decoded once, whether or not any layer using it is heard, because the muted camera's waveform is what camera sync is set against. The decoded buffer feeds both the layer's playback and a waveform: peaks from [src/lib/audio-view.ts](../src/lib/audio-view.ts), ported from toy-midi, which the timeline draws in the layer's lane over its source range. Peaks are normalized to the loudest one, because camera audio is quiet. A lane shows that its audio is loading until the buffer arrives, and a source without an audio track draws no waveform. A muted layer's waveform is dimmed.
 
 ## Known gaps
 
