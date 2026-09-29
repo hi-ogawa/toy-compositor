@@ -1,5 +1,6 @@
 import type { Box, Crop, Layer, Project } from "../lib/project";
 import type { EditorRuntime, EditorSelection } from "../lib/runtime";
+import { PanelHeader } from "./panel-header";
 import { useDraftInput } from "./use-draft-input";
 
 export function Inspector({
@@ -13,42 +14,47 @@ export function Inspector({
 }) {
   if (!selection) {
     return (
-      <p className="p-3 text-sm text-muted-foreground">
-        Select render settings or a layer.
-      </p>
+      <>
+        <PanelHeader title="Inspector" />
+        <p className="p-3 text-xs text-neutral-500">
+          Select render settings or a layer.
+        </p>
+      </>
     );
   }
   const time = getTimeFieldOptions(project.canvas.fps);
   if (selection.type === "output") {
     const { output } = project;
     return (
-      <div className="flex flex-col gap-4 p-3" data-testid="inspector">
+      <div data-testid="inspector">
         <InspectorTitle title="Render settings" subtitle={output.type} />
-        <Group title="Range">
-          {output.type === "video" ? (
-            <>
+        <div className="flex flex-col gap-4 p-3">
+          <Group title="Range">
+            {output.type === "video" ? (
+              <>
+                <NumberField
+                  label="start"
+                  value={output.start}
+                  {...time}
+                  onCommit={(start) => runtime.setOutput({ ...output, start })}
+                />
+                <NumberField
+                  label="end"
+                  value={output.end}
+                  {...time}
+                  onCommit={(end) => runtime.setOutput({ ...output, end })}
+                />
+              </>
+            ) : (
               <NumberField
-                label="start"
-                value={output.start}
+                label="time"
+                value={output.time}
                 {...time}
-                onCommit={(start) => runtime.setOutput({ ...output, start })}
+                onCommit={(time) => runtime.setOutput({ ...output, time })}
               />
-              <NumberField
-                label="end"
-                value={output.end}
-                {...time}
-                onCommit={(end) => runtime.setOutput({ ...output, end })}
-              />
-            </>
-          ) : (
-            <NumberField
-              label="time"
-              value={output.time}
-              {...time}
-              onCommit={(time) => runtime.setOutput({ ...output, time })}
-            />
-          )}
-        </Group>
+            )}
+          </Group>
+        </div>
       </div>
     );
   }
@@ -57,10 +63,62 @@ export function Inspector({
   const update = (update: Partial<Layer>) =>
     runtime.updateLayer({ index, update });
   return (
-    <div className="flex flex-col gap-4 p-3" data-testid="inspector">
+    <div data-testid="inspector">
       <InspectorTitle title={layer.name ?? layer.type} subtitle={layer.type} />
-      {(layer.type === "video" || layer.type === "audio") && (
-        <>
+      <div className="flex flex-col gap-4 p-3">
+        {(layer.type === "video" || layer.type === "audio") && (
+          <>
+            <Group title="Timing">
+              <NumberField
+                label="start"
+                value={layer.start}
+                {...time}
+                onCommit={(start) => update({ start })}
+              />
+              <NumberField
+                label="in"
+                value={layer.in}
+                {...time}
+                onCommit={(value) => update({ in: value })}
+              />
+              <NumberField
+                label="out"
+                value={layer.out}
+                {...time}
+                onCommit={(out) => update({ out })}
+              />
+            </Group>
+            <Group title="Audio">
+              <label className="col-span-2 flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  checked={layer.muted ?? false}
+                  onChange={(e) =>
+                    update({ muted: e.target.checked || undefined })
+                  }
+                />
+                muted
+              </label>
+              <NumberField
+                label="fade in"
+                value={layer.fadeIn ?? 0}
+                {...time}
+                onCommit={(fadeIn) => update({ fadeIn: fadeIn || undefined })}
+              />
+              <NumberField
+                label="fade out"
+                value={layer.fadeOut ?? 0}
+                {...time}
+                onCommit={(fadeOut) =>
+                  update({ fadeOut: fadeOut || undefined })
+                }
+              />
+            </Group>
+          </>
+        )}
+        {(layer.type === "image" ||
+          layer.type === "text" ||
+          layer.type === "color") && (
           <Group title="Timing">
             <NumberField
               label="start"
@@ -69,103 +127,58 @@ export function Inspector({
               onCommit={(start) => update({ start })}
             />
             <NumberField
-              label="in"
-              value={layer.in}
+              label="end"
+              value={layer.end}
               {...time}
-              onCommit={(value) => update({ in: value })}
-            />
-            <NumberField
-              label="out"
-              value={layer.out}
-              {...time}
-              onCommit={(out) => update({ out })}
+              onCommit={(end) => update({ end })}
             />
           </Group>
-          <Group title="Audio">
-            <label className="col-span-2 flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={layer.muted ?? false}
-                onChange={(e) =>
-                  update({ muted: e.target.checked || undefined })
+        )}
+        {(layer.type === "video" || layer.type === "image") && (
+          <>
+            <BoxFields box={layer.box} onCommit={(box) => update({ box })} />
+            <CropFields
+              crop={layer.crop}
+              onCommit={(crop) => update({ crop })}
+            />
+          </>
+        )}
+        {layer.type === "text" && (
+          <Group title="Box">
+            {(["x", "y", "width"] as const).map((key) => (
+              <NumberField
+                key={key}
+                label={key}
+                value={layer.box[key]}
+                {...PIXEL_FIELD}
+                onCommit={(value) =>
+                  update({ box: { ...layer.box, [key]: value } })
                 }
               />
-              muted
-            </label>
-            <NumberField
-              label="fade in"
-              value={layer.fadeIn ?? 0}
-              {...time}
-              onCommit={(fadeIn) => update({ fadeIn: fadeIn || undefined })}
-            />
-            <NumberField
-              label="fade out"
-              value={layer.fadeOut ?? 0}
-              {...time}
-              onCommit={(fadeOut) => update({ fadeOut: fadeOut || undefined })}
-            />
+            ))}
           </Group>
-        </>
-      )}
-      {(layer.type === "image" ||
-        layer.type === "text" ||
-        layer.type === "color") && (
-        <Group title="Timing">
-          <NumberField
-            label="start"
-            value={layer.start}
-            {...time}
-            onCommit={(start) => update({ start })}
-          />
-          <NumberField
-            label="end"
-            value={layer.end}
-            {...time}
-            onCommit={(end) => update({ end })}
-          />
-        </Group>
-      )}
-      {(layer.type === "video" || layer.type === "image") && (
-        <>
-          <BoxFields box={layer.box} onCommit={(box) => update({ box })} />
-          <CropFields crop={layer.crop} onCommit={(crop) => update({ crop })} />
-        </>
-      )}
-      {layer.type === "text" && (
-        <Group title="Box">
-          {(["x", "y", "width"] as const).map((key) => (
-            <NumberField
-              key={key}
-              label={key}
-              value={layer.box[key]}
-              {...PIXEL_FIELD}
-              onCommit={(value) =>
-                update({ box: { ...layer.box, [key]: value } })
-              }
-            />
-          ))}
-        </Group>
-      )}
-      {layer.type === "color" && (
-        <>
-          <Group title="Fill">
-            <NumberField
-              label="opacity"
-              value={layer.opacity ?? 1}
-              step={0.01}
-              min={0}
-              max={1}
-              round={(value) => roundTo(value, 1e-3)}
-              onCommit={(opacity) =>
-                update({ opacity: opacity === 1 ? undefined : opacity })
-              }
-            />
-          </Group>
-          {layer.box && (
-            <BoxFields box={layer.box} onCommit={(box) => update({ box })} />
-          )}
-        </>
-      )}
+        )}
+        {layer.type === "color" && (
+          <>
+            <Group title="Fill">
+              <NumberField
+                label="opacity"
+                value={layer.opacity ?? 1}
+                step={0.01}
+                min={0}
+                max={1}
+                round={(value) => roundTo(value, 1e-3)}
+                onCommit={(opacity) =>
+                  update({ opacity: opacity === 1 ? undefined : opacity })
+                }
+              />
+            </Group>
+            {layer.box && (
+              <BoxFields box={layer.box} onCommit={(box) => update({ box })} />
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -265,13 +278,13 @@ function NumberField({
     onCommit: (next) => onCommit(round(next)),
   });
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="text-xs text-muted-foreground">{label}</span>
+    <label className="flex flex-col gap-1">
+      <span className="text-[10px] text-neutral-400">{label}</span>
       <input
         type="text"
         inputMode="decimal"
         aria-label={label}
-        className="w-full min-w-0 rounded-md border border-input bg-transparent px-2 py-1 font-mono tabular-nums outline-none focus-visible:border-ring"
+        className="h-8 w-full min-w-0 rounded border border-neutral-600 bg-neutral-900 px-2 font-mono text-sm tabular-nums outline-none focus-visible:border-ring"
         {...input.props}
       />
     </label>
@@ -287,7 +300,7 @@ function Group({
 }) {
   return (
     <section className="flex flex-col gap-2">
-      <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <h3 className="text-[10px] font-medium uppercase tracking-wide text-neutral-400">
         {title}
       </h3>
       <div className="grid grid-cols-2 gap-2">{children}</div>
@@ -303,9 +316,8 @@ function InspectorTitle({
   subtitle: string;
 }) {
   return (
-    <div className="flex items-baseline gap-2">
-      <h2 className="font-medium">{title}</h2>
-      <span className="text-xs text-muted-foreground">{subtitle}</span>
-    </div>
+    <PanelHeader title={title}>
+      <span className="text-[10px] text-neutral-400">{subtitle}</span>
+    </PanelHeader>
   );
 }

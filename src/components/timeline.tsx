@@ -22,26 +22,10 @@ export function Timeline({
   const seek = (time: number) => runtime.seek(time);
   return (
     <section
-      className="flex h-72 shrink-0 flex-col border-t border-border text-sm"
+      className="flex h-72 shrink-0 flex-col border-t border-neutral-700 text-sm"
       data-testid="editor-timeline"
       aria-label="Timeline"
     >
-      <div className="flex items-center gap-3 border-b px-3 py-2">
-        <h2 className="font-medium">Timeline</h2>
-        <button
-          type="button"
-          className="rounded border px-2 py-1 text-xs hover:bg-secondary"
-          onClick={selectOutput}
-        >
-          Render settings
-        </button>
-        <span
-          className="text-xs tabular-nums text-muted-foreground"
-          data-testid="timeline-time"
-        >
-          {playhead.toFixed(3)} s · {project.canvas.fps} fps
-        </span>
-      </div>
       <div className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {/* Measures the graph width and receives wheel scrolling and zoom. */}
         <div

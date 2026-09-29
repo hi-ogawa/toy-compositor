@@ -15,7 +15,7 @@
 
 <rect x="46" y="106" width="500" height="258" rx="6" fill="#f6f7f5" stroke="#a3b0a9"/>
 <text x="58" y="126" font-weight="700">PreviewMonitors</text>
-<text x="186" y="126" font-size="13" fill="#52625d">splits space only · source open, width share</text>
+<text x="186" y="126" font-size="13" fill="#52625d">splits space only · width share</text>
 
 <rect x="58" y="138" width="150" height="214" rx="6" fill="#f0ebf8" stroke="#6b4fa0"/>
 <text x="70" y="160" font-weight="700">MediaPreview</text>

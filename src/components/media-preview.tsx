@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Layer } from "../lib/project";
+import { PanelHeader } from "./panel-header";
 
 export function MediaPreview({
   layer,
@@ -9,31 +10,43 @@ export function MediaPreview({
   resolveMediaUrl: (src: string) => string;
 }) {
   const [failed, setFailed] = useState(false);
+  const header = (
+    <PanelHeader
+      title="Source"
+      titleTooltip="Full source file, independent of project timing and layout."
+    >
+      {layer && "src" in layer && (
+        <span
+          className="truncate font-mono text-[10px] text-neutral-400"
+          title={layer.src}
+        >
+          {layer.src}
+        </span>
+      )}
+    </PanelHeader>
+  );
   if (!layer || !("src" in layer)) {
     return (
-      <p className="p-4 text-sm text-muted-foreground">
-        Select a video, audio, or image layer to preview its source.
-      </p>
+      <>
+        {header}
+        <p className="grid flex-1 place-items-center p-3 text-center text-xs text-neutral-500">
+          Select a video, audio, or image layer to preview its source.
+        </p>
+      </>
     );
   }
   const src = resolveMediaUrl(layer.src);
   const onError = () => setFailed(true);
   return (
-    <section className="flex h-full min-h-0 flex-col gap-2">
-      <div className="text-sm">
-        <h2 className="font-medium">Source</h2>
-        <p className="break-all text-muted-foreground">{layer.src}</p>
-        <p className="text-muted-foreground">
-          Full source file, independent of project timing and layout.
-        </p>
-      </div>
+    <>
+      {header}
       {failed && (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="px-3 pt-3 text-xs text-destructive">
           Could not load {layer.src}. Check that the file exists and your
           browser supports its format.
         </p>
       )}
-      <div className="flex min-h-0 flex-1 items-center justify-center">
+      <div className="flex min-h-0 flex-1 items-center justify-center p-3">
         {layer.type === "video" && (
           <video
             src={src}
@@ -62,6 +75,6 @@ export function MediaPreview({
           />
         )}
       </div>
-    </section>
+    </>
   );
 }

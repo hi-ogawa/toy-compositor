@@ -4,17 +4,18 @@ import type { Layer } from "../lib/project";
 import { MediaPreview } from "./media-preview";
 
 export function PreviewMonitors({
+  sourceOpen,
   layer,
   composition,
   resolveMediaUrl,
 }: {
+  sourceOpen: boolean;
   layer?: Layer;
   composition: ReactNode;
   resolveMediaUrl: (src: string) => string;
 }) {
-  const [sourceOpen, setSourceOpen] = useState(true);
   const [sourceShare, setSourceShare] = useState(35);
-  const monitorsRef = useRef<HTMLDivElement>(null);
+  const monitorsRef = useRef<HTMLElement>(null);
   const resize = (share: number) =>
     setSourceShare(Math.max(20, Math.min(60, share)));
   const dividerRef = usePointerDrag({
@@ -27,53 +28,38 @@ export function PreviewMonitors({
   });
   return (
     <section
-      className="flex min-h-0 flex-1 flex-col gap-2 p-3"
+      ref={monitorsRef}
+      className="flex min-h-0 flex-1"
       aria-label="Preview monitors"
     >
-      <div>
-        <button
-          type="button"
-          className="rounded border px-2 py-1 text-xs hover:bg-secondary"
-          aria-controls="source-monitor"
-          aria-expanded={sourceOpen}
-          onClick={() => setSourceOpen(!sourceOpen)}
+      {sourceOpen && (
+        <div
+          id="source-monitor"
+          className="flex min-w-0 shrink-0 flex-col"
+          style={{ width: `${sourceShare}%` }}
         >
-          {sourceOpen ? "Close source panel" : "Open source panel"}
-        </button>
-      </div>
-      <div ref={monitorsRef} className="flex min-h-0 flex-1 gap-2">
-        {sourceOpen && (
-          <div
-            id="source-monitor"
-            className="min-w-0 shrink-0"
-            style={{ width: `calc(${sourceShare}% - 8px)` }}
-          >
-            <MediaPreview
-              key={
-                layer && "src" in layer ? `${layer.type}:${layer.src}` : "none"
-              }
-              layer={layer}
-              resolveMediaUrl={resolveMediaUrl}
-            />
-          </div>
-        )}
-        {sourceOpen && (
-          <div
-            ref={dividerRef}
-            title="Resize source panel"
-            className="relative w-2 shrink-0 touch-none cursor-col-resize rounded bg-border/40 hover:bg-accent"
-          >
-            <div className="absolute inset-x-0 top-1/2 h-8 -translate-y-1/2 rounded bg-muted-foreground/50" />
-          </div>
-        )}
-        <section
-          className="flex min-h-0 min-w-0 flex-1 flex-col"
-          aria-label="Composition monitor"
-        >
-          <h2 className="mb-2 text-sm font-medium">Composition</h2>
-          {composition}
-        </section>
-      </div>
+          <MediaPreview
+            key={
+              layer && "src" in layer ? `${layer.type}:${layer.src}` : "none"
+            }
+            layer={layer}
+            resolveMediaUrl={resolveMediaUrl}
+          />
+        </div>
+      )}
+      {sourceOpen && (
+        <div
+          ref={dividerRef}
+          title="Resize source panel"
+          className="relative z-10 w-px shrink-0 touch-none cursor-col-resize bg-neutral-700 after:absolute after:inset-y-0 after:-left-1 after:w-2 hover:bg-neutral-500"
+        />
+      )}
+      <section
+        className="flex min-h-0 min-w-0 flex-1 flex-col"
+        aria-label="Composition monitor"
+      >
+        {composition}
+      </section>
     </section>
   );
 }

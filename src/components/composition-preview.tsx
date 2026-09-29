@@ -4,6 +4,7 @@ import { getLayerRange } from "../lib/layout";
 import type { Layer, Project, TextLayer } from "../lib/project";
 import type { EditorSelection } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
+import { PanelHeader } from "./panel-header";
 
 export function CompositionPreview({
   project,
@@ -27,58 +28,62 @@ export function CompositionPreview({
   );
   return (
     <>
-      <div
-        ref={viewportRef}
-        className="flex min-h-0 flex-1 items-center justify-center overflow-hidden"
-        data-testid="composition-viewport"
-      >
+      <PanelHeader title="Composition">
+        <span className="font-mono text-[10px] tabular-nums text-neutral-400">
+          {canvas.width} × {canvas.height} · {canvas.fps} fps
+        </span>
+      </PanelHeader>
+      {/* Pads outside the measured viewport so the scale fits the inner size. */}
+      <div className="flex min-h-0 flex-1 p-3">
         <div
-          className="relative shrink-0"
-          style={{ width: canvas.width * scale, height: canvas.height * scale }}
+          ref={viewportRef}
+          className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden"
+          data-testid="composition-viewport"
         >
           <div
-            className="absolute origin-top-left overflow-hidden"
-            data-testid="composition-canvas"
+            className="relative shrink-0"
             style={{
-              width: canvas.width,
-              height: canvas.height,
-              transform: `scale(${scale})`,
-              background: canvas.background ?? "#000000",
+              width: canvas.width * scale,
+              height: canvas.height * scale,
             }}
           >
-            {project.layers.map((layer, index) => {
-              const range = getLayerRange(layer);
-              if (
-                time < range.start ||
-                time >= range.end ||
-                layer.type === "audio"
-              ) {
-                return undefined;
-              }
-              return (
-                <PreviewLayer
-                  key={"src" in layer ? `${index}:${layer.src}` : index}
-                  layer={layer}
-                  time={time}
-                  selected={
-                    selection?.type === "layer" && selection.index === index
-                  }
-                  index={index}
-                  canvas={canvas}
-                  resolveMediaUrl={resolveMediaUrl}
-                />
-              );
-            })}
+            <div
+              className="absolute origin-top-left overflow-hidden"
+              data-testid="composition-canvas"
+              style={{
+                width: canvas.width,
+                height: canvas.height,
+                transform: `scale(${scale})`,
+                background: canvas.background ?? "#000000",
+              }}
+            >
+              {project.layers.map((layer, index) => {
+                const range = getLayerRange(layer);
+                if (
+                  time < range.start ||
+                  time >= range.end ||
+                  layer.type === "audio"
+                ) {
+                  return undefined;
+                }
+                return (
+                  <PreviewLayer
+                    key={"src" in layer ? `${index}:${layer.src}` : index}
+                    layer={layer}
+                    time={time}
+                    selected={
+                      selection?.type === "layer" && selection.index === index
+                    }
+                    index={index}
+                    canvas={canvas}
+                    resolveMediaUrl={resolveMediaUrl}
+                  />
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
-      <p
-        className="mt-2 text-xs tabular-nums text-muted-foreground"
-        data-testid="composition-time"
-      >
-        Project time {time.toFixed(3)} s · {canvas.width} × {canvas.height} ·{" "}
-        {canvas.fps} fps
-      </p>
     </>
   );
 }
