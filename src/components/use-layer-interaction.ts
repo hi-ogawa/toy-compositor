@@ -64,11 +64,10 @@ export function useLayerInteraction({
       return;
     }
     setEdit(undefined);
-    const layer = getEditedLayer(edit, delta);
-    // A drag that snaps back to where it started leaves the project unchanged.
-    if (JSON.stringify(layer) !== JSON.stringify(layers[edit.index])) {
-      runtime.updateLayer({ index: edit.index, update: layer });
-    }
+    runtime.updateLayer({
+      index: edit.index,
+      update: getEditedLayer(edit, delta),
+    });
   }
 
   return {
