@@ -116,12 +116,9 @@ test("fade audio at the layer's own edges when the output cuts into them", async
   // and out over 0.5s across 0 to 3s, then cut the output into both fades.
   const directory = testInfo.outputPath("project");
   await cp("samples/synthetic", directory, { recursive: true });
-  await editJson<Project>({
-    file: `${directory}/project.json`,
-    edit: (project) => {
-      project.layers = project.layers.filter((layer) => layer.type === "audio");
-      project.output = { type: "video", start: 0.1, end: 2.8 };
-    },
+  await editJson<Project>(`${directory}/project.json`, (project) => {
+    project.layers = project.layers.filter((layer) => layer.type === "audio");
+    project.output = { type: "video", start: 0.1, end: 2.8 };
   });
   const output = testInfo.outputPath("cut.mp4");
   await execFileAsync(process.execPath, [
