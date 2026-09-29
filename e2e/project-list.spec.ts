@@ -33,4 +33,10 @@ test("open projects from the start page", async ({ page, editor }) => {
     .locator("#source-monitor")
     .getByRole("img", { name: "image", exact: true });
   await expectImageLoaded(image);
+
+  // Go back home from the editor menu and confirm the project list shows again.
+  await page.getByRole("button", { name: "Editor menu", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Home", exact: true }).click();
+  await expect(page).toHaveURL("/");
+  await expect(section.getByRole("link")).toHaveCount(2);
 });

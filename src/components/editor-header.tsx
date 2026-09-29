@@ -1,12 +1,21 @@
 import {
   CircleAlertIcon,
   ClapperboardIcon,
+  HouseIcon,
   LoaderCircleIcon,
+  MoreVerticalIcon,
   PanelLeftIcon,
   SaveCheckIcon,
   SaveIcon,
 } from "lucide-react";
+import { getHomePageUrl } from "../lib/routes";
 import { Button } from "./ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { cn } from "./ui/utils";
 import type { SaveStatus } from "./use-editor-project";
 
@@ -57,6 +66,25 @@ export function EditorHeader({
         <ClapperboardIcon className="size-5" />
       </Button>
       <EditorSaveButton status={saveStatus} onSave={onSave} />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            title="Editor menu"
+            aria-label="Editor menu"
+            className="size-9 text-neutral-300 hover:bg-neutral-700/50 hover:text-neutral-100"
+          >
+            <MoreVerticalIcon className="size-5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <a href={getHomePageUrl()}>
+              <HouseIcon />
+              Home
+            </a>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </header>
   );
 }
