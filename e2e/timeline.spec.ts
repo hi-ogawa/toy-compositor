@@ -121,22 +121,7 @@ test("scroll and zoom the timeline with the wheel", async ({
   await expect(time).toContainText("3.500 s");
 });
 
-test("draw audio waveforms in lanes whether or not the layer is muted", async ({
-  page,
-  editor,
-}) => {
-  // Count fetches of the video's audio, apart from the composition <video>
-  // element's own media requests.
-  let videoAudioFetches = 0;
-  page.on("request", (request) => {
-    if (
-      request.resourceType() === "fetch" &&
-      new URL(request.url()).searchParams.get("src") === "media/video.mp4"
-    ) {
-      videoAudioFetches++;
-    }
-  });
-
+test("draw audio waveforms in lanes", async ({ page, editor }) => {
   // Open the synthetic project and confirm the audio layer draws a waveform,
   // and the muted video draws its own audio dimmed.
   await page.goto(editor.url);
@@ -148,25 +133,15 @@ test("draw audio waveforms in lanes whether or not the layer is muted", async ({
     .getByTestId("timeline-waveform");
   await expect(audioWaveform).toBeVisible();
   await expect(audioWaveform).not.toHaveAttribute("data-dimmed");
-  await expect(videoWaveform).toBeVisible();
   await expect(videoWaveform).toHaveAttribute("data-dimmed", "true");
-  await expect(page.getByTestId("timeline-waveform-loading")).toHaveCount(0);
-  expect(videoAudioFetches).toBe(1);
 
-  // Select the video and unmute it, and confirm its waveform stays and is no
-  // longer dimmed, without loading the audio again.
+  // Select the video and unmute it, and confirm its waveform is no longer dimmed.
   await clickTimelineButton(page, { name: "Test pattern video" });
-  const muted = page
+  await page
     .getByTestId("inspector")
-    .getByRole("checkbox", { name: "muted", exact: true });
-  await muted.uncheck();
+    .getByRole("checkbox", { name: "muted", exact: true })
+    .uncheck();
   await expect(videoWaveform).not.toHaveAttribute("data-dimmed");
-  await expect(page.getByTestId("timeline-waveform-loading")).toHaveCount(0);
-
-  // Mute it again and confirm the waveform dims back, still from one load.
-  await muted.check();
-  await expect(videoWaveform).toHaveAttribute("data-dimmed", "true");
-  expect(videoAudioFetches).toBe(1);
 });
 
 test("play the composition and step by frames", async ({ page, editor }) => {

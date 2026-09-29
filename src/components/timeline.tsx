@@ -355,7 +355,6 @@ function TimelineLayerLane({
             <LoaderCircleIcon
               role="img"
               aria-label="loading audio"
-              data-testid="timeline-waveform-loading"
               className="absolute right-1 top-1 size-3.5 animate-spin text-muted-foreground"
             />
           )}
