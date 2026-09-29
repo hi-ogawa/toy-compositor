@@ -1,4 +1,4 @@
-import { cp, readFile, writeFile } from "node:fs/promises";
+import { cp } from "node:fs/promises";
 import path from "node:path";
 import {
   expect,
@@ -24,19 +24,6 @@ export const test = base.extend<{
     });
   },
 });
-
-/** Read a JSON file, change it in place with `edit`, and write it back. */
-export async function editJson<T>({
-  file,
-  edit,
-}: {
-  file: string;
-  edit: (json: T) => void;
-}) {
-  const json: T = JSON.parse(await readFile(file, "utf-8"));
-  edit(json);
-  await writeFile(file, JSON.stringify(json, null, 2) + "\n");
-}
 
 /** Wait until an image element has loaded its source. */
 export async function expectImageLoaded(image: Locator) {
