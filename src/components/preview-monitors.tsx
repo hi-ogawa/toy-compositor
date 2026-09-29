@@ -54,9 +54,6 @@ export function PreviewMonitors({
           style={{ width: `${sourceShare}%` }}
         >
           <MediaPreview
-            key={
-              layer && "src" in layer ? `${layer.type}:${layer.src}` : "none"
-            }
             layer={layer}
             resolveMediaUrl={resolveMediaUrl}
             onCollapse={() => setSourceOpen(false)}
