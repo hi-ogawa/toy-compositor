@@ -1,3 +1,4 @@
+import { trackPromise, type PromiseState } from "../utils/promise-state.ts";
 import { createStore } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
@@ -20,11 +21,6 @@ export interface EditorState {
   selection?: EditorSelection;
 }
 
-type AudioSource =
-  | { status: "loading"; promise: Promise<void> }
-  | { status: "loaded"; buffer: AudioBuffer }
-  | { status: "missing" };
-
 const EMPTY_PROJECT: Project = {
   canvas: { width: 1920, height: 1080, fps: 30 },
   output: { type: "video", start: 0, end: 0 },
@@ -42,7 +38,10 @@ export class EditorRuntime {
 
   readonly context = new AudioContext();
   readonly transport = new AudioContextTransport(this.context);
-  private readonly audioSources = new Map<string, AudioSource>();
+  private readonly audioSources = new Map<
+    string,
+    { state: PromiseState<AudioBuffer> }
+  >();
   private readonly audioPlaybacks = new Map<string, AudioBufferPlayback>();
   private readonly videoPlaybacks = new Map<number, VideoPlayback>();
 
@@ -158,37 +157,33 @@ export class EditorRuntime {
         this.audioPlaybacks.set(key, playback);
       }
       playback.setLayer({ layer });
+      // A rejected source, such as a video file without an audio stream,
+      // contributes nothing, as in the render.
       const source = this.audioSources.get(layer.src);
-      if (source?.status === "loaded") {
-        playback.setBuffer({ buffer: source.buffer });
+      if (source?.state.status === "fulfilled") {
+        playback.setBuffer({ buffer: source.state.value });
       }
     }
   }
 
-  /** Starts decoding a source, which is `loading` until it settles. */
+  /** Starts decoding a source, and syncs playback once its buffer arrives. */
   private loadAudio(src: string): void {
-    this.audioSources.set(src, {
-      status: "loading",
-      promise: this.decodeAudio(src),
-    });
+    this.audioSources.set(
+      src,
+      trackPromise({
+        promise: this.decodeAudio(src),
+        onFulfilled: () => this.syncPlayback(),
+      }),
+    );
   }
 
-  private async decodeAudio(src: string): Promise<void> {
+  private async decodeAudio(src: string): Promise<AudioBuffer> {
     const url = apiClient.getMediaUrl({
       src,
       projectPath: this.store.get().file,
     });
-    try {
-      const response = await fetch(url);
-      const buffer = await this.context.decodeAudioData(
-        await response.arrayBuffer(),
-      );
-      this.audioSources.set(src, { status: "loaded", buffer });
-      this.syncPlayback();
-    } catch {
-      // A video file without an audio stream contributes nothing, as in the render.
-      this.audioSources.set(src, { status: "missing" });
-    }
+    const response = await fetch(url);
+    return this.context.decodeAudioData(await response.arrayBuffer());
   }
 
   serializeProject(): Project {
