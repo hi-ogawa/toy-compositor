@@ -61,7 +61,7 @@ export class AudioBufferPlayback implements TransportParticipant {
     this.source = source;
 
     const gain = this.gain.gain;
-    gain.setValueAtTime(gainAt({ layer, time: from }), toContextTime(from));
+    gain.setValueAtTime(getGainAt({ layer, time: from }), toContextTime(from));
     if (layer.fadeIn && from < range.start + layer.fadeIn) {
       gain.linearRampToValueAtTime(
         1,
@@ -71,7 +71,7 @@ export class AudioBufferPlayback implements TransportParticipant {
     if (layer.fadeOut) {
       const fadeStart = Math.max(from, range.end - layer.fadeOut);
       gain.setValueAtTime(
-        gainAt({ layer, time: fadeStart }),
+        getGainAt({ layer, time: fadeStart }),
         toContextTime(fadeStart),
       );
       gain.linearRampToValueAtTime(0, toContextTime(range.end));
@@ -91,7 +91,7 @@ export class AudioBufferPlayback implements TransportParticipant {
   }
 }
 
-function gainAt({
+function getGainAt({
   layer,
   time,
 }: {
