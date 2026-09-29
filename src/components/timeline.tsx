@@ -138,7 +138,7 @@ function TimelineRuler({
       <button
         type="button"
         aria-label="Timeline ruler"
-        className="relative h-full w-full cursor-crosshair text-left text-xs tabular-nums text-muted-foreground"
+        className="relative h-full w-full cursor-crosshair text-left font-mono text-[10px] tabular-nums text-neutral-400"
         onClick={(event) =>
           onSeek(
             timeline.xToTime(
@@ -208,6 +208,19 @@ function TimelineLocatorRow({
         </span>
       }
     >
+      {/* Seeks from empty space, underneath the markers. */}
+      <button
+        type="button"
+        aria-label="Locator row"
+        className="absolute inset-0 cursor-crosshair"
+        onClick={(event) =>
+          onSeek(
+            timeline.xToTime(
+              event.clientX - event.currentTarget.getBoundingClientRect().left,
+            ),
+          )
+        }
+      />
       {renderMarkers
         .filter((marker) => timeline.isVisible(marker.time))
         .map((marker) => (
