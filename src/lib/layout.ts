@@ -2,7 +2,7 @@ import type { Box, Crop, Layer, Project } from "./project.ts";
 
 export type Range = { start: number; end: number };
 
-export function outputRange(project: Project): Range {
+export function getOutputRange(project: Project): Range {
   const { output, canvas } = project;
   return output.type === "video"
     ? output
@@ -10,7 +10,7 @@ export function outputRange(project: Project): Range {
 }
 
 /** Timeline span of a layer, from its source range for video and audio. */
-export function layerRange(layer: Layer): Range {
+export function getLayerRange(layer: Layer): Range {
   if (layer.type === "video" || layer.type === "audio") {
     return { start: layer.start, end: layer.start + layer.out - layer.in };
   }
@@ -36,8 +36,8 @@ export function fitBox({
   const cw = source.width * (1 - (crop.left ?? 0) - (crop.right ?? 0));
   const ch = source.height * (1 - (crop.top ?? 0) - (crop.bottom ?? 0));
   const scale = Math.min(box.width / cw, box.height / ch);
-  const width = even(cw * scale);
-  const height = even(ch * scale);
+  const width = roundToEven(cw * scale);
+  const height = roundToEven(ch * scale);
   return {
     width,
     height,
@@ -46,6 +46,6 @@ export function fitBox({
   };
 }
 
-function even(n: number) {
+function roundToEven(n: number) {
   return Math.max(2, 2 * Math.round(n / 2));
 }

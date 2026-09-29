@@ -12,7 +12,7 @@ export class HttpError extends Error {
 }
 
 /** A required query parameter, or a 400 error. */
-export function getParam({ url, name }: { url: URL; name: string }): string {
+export function getParam(url: URL, name: string): string {
   const value = url.searchParams.get(name);
   if (!value) {
     throw new HttpError({ status: 400, message: `Missing ?${name}=` });

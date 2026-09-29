@@ -1,6 +1,6 @@
 import { createStore } from "../utils/store.ts";
 import type { ProjectFile } from "./api-client.ts";
-import { outputRange } from "./layout.ts";
+import { getOutputRange } from "./layout.ts";
 import type { Layer, Project } from "./project.ts";
 
 export type EditorSelection =
@@ -33,7 +33,7 @@ export class EditorRuntime {
     this.store.update({ selection });
   }
 
-  seek({ time }: { time: number }): void {
+  seek(time: number): void {
     const { project } = this.store.get();
     const frame = Math.max(0, Math.round(time * project.canvas.fps));
     const playhead = Number((frame / project.canvas.fps).toFixed(3));
@@ -41,9 +41,9 @@ export class EditorRuntime {
   }
 
   /** Steps the playhead by whole frames. */
-  seekFrames({ frames }: { frames: number }): void {
+  seekFrames(frames: number): void {
     const { project, playhead } = this.store.get();
-    this.seek({ time: playhead + frames / project.canvas.fps });
+    this.seek(playhead + frames / project.canvas.fps);
   }
 
   updateLayer({
@@ -77,7 +77,7 @@ export class EditorRuntime {
     this.store.update({
       file,
       project,
-      playhead: outputRange(project).start,
+      playhead: getOutputRange(project).start,
       selection: undefined,
     });
   }

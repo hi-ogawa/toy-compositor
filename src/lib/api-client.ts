@@ -24,7 +24,7 @@ export const apiClient = {
 
   async loadProject({ path }: { path: string }): Promise<ProjectFile> {
     const res = await fetch(
-      apiUrl({ pathname: "/api/project", params: { path } }),
+      getApiUrl({ pathname: "/api/project", params: { path } }),
     );
     if (!res.ok) {
       throw new Error(`Failed to load project: ${await res.text()}`);
@@ -40,7 +40,7 @@ export const apiClient = {
     project: Project;
   }): Promise<void> {
     const res = await fetch(
-      apiUrl({ pathname: "/api/project", params: { path } }),
+      getApiUrl({ pathname: "/api/project", params: { path } }),
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -63,14 +63,14 @@ export const apiClient = {
     src: string;
     projectPath: string;
   }): string {
-    return apiUrl({
+    return getApiUrl({
       pathname: "/api/media",
       params: { project: projectPath, src },
     });
   },
 };
 
-function apiUrl({
+function getApiUrl({
   pathname,
   params,
 }: {

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { readJson, writeJson } from "../../utils/fs.ts";
 import type { ProjectEntry } from "../api-client.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 
@@ -75,7 +76,7 @@ async function listProjects({ root }: { root: string }) {
 
 async function readProject(file: string) {
   try {
-    const json = JSON.parse(await fs.promises.readFile(file, "utf-8"));
+    const json = await readJson<any>(file);
     if (json.canvas && Array.isArray(json.layers)) {
       return json;
     }
@@ -83,7 +84,7 @@ async function readProject(file: string) {
 }
 
 async function handleGetProject({ root, url }: { root: string; url: URL }) {
-  const file = resolveFile({ root, paths: [getParam({ url, name: "path" })] });
+  const file = resolveFile({ root, paths: [getParam(url, "path")] });
   if (!fs.existsSync(file)) {
     throw new HttpError({ status: 404, message: "Project not found" });
   }
@@ -101,15 +102,14 @@ async function handlePutProject({
   url: URL;
   request: Request;
 }) {
-  const file = resolveFile({ root, paths: [getParam({ url, name: "path" })] });
+  const file = resolveFile({ root, paths: [getParam(url, "path")] });
   if (path.extname(file) !== ".json") {
     throw new HttpError({
       status: 403,
       message: "Only .json files can be saved",
     });
   }
-  const project = await request.json();
-  await fs.promises.writeFile(file, JSON.stringify(project, null, 2) + "\n");
+  await writeJson(file, await request.json());
   return Response.json({});
 }
 
@@ -123,8 +123,8 @@ async function handleMedia({
   url: URL;
   request: Request;
 }) {
-  const project = getParam({ url, name: "project" });
-  const src = getParam({ url, name: "src" });
+  const project = getParam(url, "project");
+  const src = getParam(url, "src");
   const file = resolveFile({ root, paths: [path.dirname(project), src] });
   if (!fs.existsSync(file)) {
     throw new HttpError({ status: 404, message: "Media not found" });

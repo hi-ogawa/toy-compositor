@@ -43,7 +43,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
     ] as const) {
       if (matchKeyboardEvent(event, shortcut)) {
         event.preventDefault();
-        runtime.seekFrames({ frames });
+        runtime.seekFrames(frames);
         return;
       }
     }

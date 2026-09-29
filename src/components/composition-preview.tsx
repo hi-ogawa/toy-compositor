@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
-import { layerRange } from "../lib/layout";
+import { getLayerRange } from "../lib/layout";
 import type { Layer, Project, TextLayer } from "../lib/project";
 import type { EditorSelection } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
@@ -47,7 +47,7 @@ export function CompositionPreview({
             }}
           >
             {project.layers.map((layer, index) => {
-              const range = layerRange(layer);
+              const range = getLayerRange(layer);
               if (
                 time < range.start ||
                 time >= range.end ||
@@ -123,7 +123,7 @@ function PreviewLayer({
           resolveMediaUrl={resolveMediaUrl}
         />
       ) : layer.type === "text" ? (
-        <div style={{ ...style, ...textStyle(layer) }}>{layer.text}</div>
+        <div style={{ ...style, ...getTextStyle(layer) }}>{layer.text}</div>
       ) : (
         <div
           style={{ ...style, background: layer.color, opacity: layer.opacity }}
@@ -136,7 +136,7 @@ function PreviewLayer({
           style={style}
         >
           {layer.type === "text" && (
-            <div className="invisible" style={textStyle(layer)}>
+            <div className="invisible" style={getTextStyle(layer)}>
               {layer.text}
             </div>
           )}
@@ -146,7 +146,7 @@ function PreviewLayer({
   );
 }
 
-function textStyle(layer: TextLayer): CSSProperties {
+function getTextStyle(layer: TextLayer): CSSProperties {
   return {
     fontFamily: layer.font.family,
     fontSize: layer.font.size,
