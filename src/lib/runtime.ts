@@ -125,7 +125,6 @@ export class EditorRuntime {
     };
   }
 
-  /** Brings playback in line with the project after it loads or changes. */
   private syncPlayback(): void {
     const { project } = this.store.get();
     for (const [index, playback] of this.videoPlaybacks) {
