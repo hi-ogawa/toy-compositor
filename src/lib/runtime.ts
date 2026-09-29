@@ -107,6 +107,11 @@ export class EditorRuntime {
     });
   }
 
+  setCanvas(canvas: Project["canvas"]): void {
+    const { project } = this.store.get();
+    this.store.update({ project: { ...project, canvas } });
+  }
+
   setOutput(output: Project["output"]): void {
     const { project } = this.store.get();
     this.store.update({ project: { ...project, output } });

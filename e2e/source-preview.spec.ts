@@ -17,32 +17,32 @@ test("preview synthetic sources", async ({ page, editor }) => {
   await expect(save).toHaveAttribute("data-status", "saved");
 
   // Select the video and confirm its source preview appears.
-  await clickTimelineButton(page, { name: "video video" });
+  await clickTimelineButton(page, { name: "Test pattern video" });
   await expect(page.locator("#source-monitor video")).toBeVisible();
 
   // Switch to audio and confirm its preview replaces the video player.
-  await clickTimelineButton(page, { name: "audio audio" });
+  await clickTimelineButton(page, { name: "Tone 660 Hz audio" });
   await expect(page.locator("#source-monitor video")).toHaveCount(0);
   await expect(page.locator("#source-monitor audio")).toBeVisible();
 
   // Select the image and confirm it loads without making the project dirty.
-  await clickTimelineButton(page, { name: "image image" });
+  await clickTimelineButton(page, { name: "Label backdrop image" });
   await expect(page.locator("#source-monitor audio")).toHaveCount(0);
   const image = page
     .locator("#source-monitor")
-    .getByRole("img", { name: "image", exact: true });
+    .getByRole("img", { name: "Label backdrop", exact: true });
   await expect(image).toBeVisible();
   await expectImageLoaded(image);
   await expect(save).toHaveAttribute("data-status", "saved");
 });
 
-test("resize and close the source panel without changing the project", async ({
+test("resize and collapse the source panel without changing the project", async ({
   page,
   editor,
 }) => {
   // Open a video source and seek independently of project timing.
   await page.goto(editor.url);
-  await clickTimelineButton(page, { name: "video video" });
+  await clickTimelineButton(page, { name: "Test pattern video" });
   const source = page.locator("#source-monitor video");
   await seekVideo(source, { time: 1 });
 
@@ -54,20 +54,15 @@ test("resize and close the source panel without changing the project", async ({
   const resizedWidth = (await sourcePanel.boundingBox())!.width;
   expect(resizedWidth).toBeGreaterThan(initialWidth);
 
-  // Close and reopen Source while preserving the split and save status.
-  const toggle = page.getByRole("button", {
-    name: "Close source panel",
-    exact: true,
-  });
-  const before = await toggle.boundingBox();
-  await toggle.click();
+  // Collapse Source to its edge strip, then expand it while preserving the
+  // split and save status.
+  await page
+    .getByRole("button", { name: "Collapse source panel", exact: true })
+    .click();
   await expect(source).toHaveCount(0);
-  const show = page.getByRole("button", {
-    name: "Open source panel",
-    exact: true,
-  });
-  expect((await show.boundingBox())!.x).toBe(before!.x);
-  await show.click();
+  await page
+    .getByRole("button", { name: "Expand source panel", exact: true })
+    .click();
   expect((await sourcePanel.boundingBox())!.width).toBe(resizedWidth);
   await expect(source).toBeVisible();
   await expect

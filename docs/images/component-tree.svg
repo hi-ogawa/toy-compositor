@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="520" viewBox="0 0 760 520" role="img" aria-labelledby="title desc">
 <title id="title">Each editor component owns one question about the preview</title>
-<desc id="desc">The editor screen drawn as nested component regions. Editor owns the runtime store, whose playhead is the preview time. PreviewMonitors only splits space between the Source monitor and a composition slot. MediaPreview shows the selected file independent of project timing. CompositionPreview scales the canvas and filters layers visible at the time, and each PreviewLayer places one layer, with CompositionMedia handling fit, crop, and seek for media. The Timeline sends selection and seeks the playhead, and the Inspector sends project edits through the runtime.</desc>
+<desc id="desc">The editor screen drawn as nested component regions. Editor owns the runtime store, whose playhead is the preview time. CollapsibleSplit only splits space between the Source monitor and the composition, and knows neither. MediaPreview shows the selected file independent of project timing. CompositionPreview scales the canvas and filters layers visible at the time, and each PreviewLayer places one layer, with CompositionMedia handling fit, crop, and seek for media. The Timeline sends selection and seeks the playhead, and the Inspector sends project edits through the runtime.</desc>
 <defs>
 <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7d8a84"/></marker>
 </defs>
@@ -14,8 +14,8 @@
 <text x="104" y="94" font-size="13" fill="#52625d">owns the runtime store, selection, and playhead · preview time = playhead</text>
 
 <rect x="46" y="106" width="500" height="258" rx="6" fill="#f6f7f5" stroke="#a3b0a9"/>
-<text x="58" y="126" font-weight="700">PreviewMonitors</text>
-<text x="186" y="126" font-size="13" fill="#52625d">splits space only · source open, width share</text>
+<text x="58" y="126" font-weight="700">CollapsibleSplit</text>
+<text x="196" y="126" font-size="13" fill="#52625d">splits space only · width share, collapsed strip</text>
 
 <rect x="58" y="138" width="150" height="214" rx="6" fill="#f0ebf8" stroke="#6b4fa0"/>
 <text x="70" y="160" font-weight="700">MediaPreview</text>

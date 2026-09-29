@@ -1,34 +1,86 @@
 import {
   CircleAlertIcon,
+  ClapperboardIcon,
+  HouseIcon,
   LoaderCircleIcon,
+  MoreVerticalIcon,
   SaveCheckIcon,
   SaveIcon,
 } from "lucide-react";
+import { getHomePageUrl } from "../lib/routes";
 import { Button } from "./ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { cn } from "./ui/utils";
 import type { SaveStatus } from "./use-editor-project";
 
 export function EditorHeader({
   file,
   saveStatus,
+  compositionSettingsSelected,
   onSave,
+  onCompositionSettingsSelect,
 }: {
   file: string;
   saveStatus: SaveStatus;
+  compositionSettingsSelected: boolean;
   onSave: () => void;
+  onCompositionSettingsSelect: () => void;
 }) {
   return (
-    <header className="flex items-center gap-3 border-b border-border px-3 py-2">
-      <h1 className="shrink-0 font-medium">Toy Compositor</h1>
+    <header className="flex h-[53px] shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-4 shadow-sm">
       <span
-        className="truncate font-mono text-sm text-muted-foreground"
+        className="max-w-[320px] truncate font-mono text-sm text-neutral-300"
+        title={file}
         data-testid="editor-project-file"
       >
         {file}
       </span>
       <div className="flex-1" />
+      <Button
+        aria-label="Composition settings"
+        title="Composition settings"
+        aria-pressed={compositionSettingsSelected}
+        className={cn(
+          "size-9",
+          getToggleClassName(compositionSettingsSelected),
+        )}
+        onClick={onCompositionSettingsSelect}
+      >
+        <ClapperboardIcon className="size-5" />
+      </Button>
       <EditorSaveButton status={saveStatus} onSave={onSave} />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            title="Editor menu"
+            aria-label="Editor menu"
+            className="size-9 text-neutral-300 hover:bg-neutral-700/50 hover:text-neutral-100"
+          >
+            <MoreVerticalIcon className="size-5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <a href={getHomePageUrl()}>
+              <HouseIcon />
+              Home
+            </a>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </header>
   );
+}
+
+function getToggleClassName(active: boolean) {
+  return active
+    ? "bg-neutral-700 text-neutral-100 hover:bg-neutral-700"
+    : "text-neutral-300 hover:bg-neutral-700/50 hover:text-neutral-100";
 }
 
 function EditorSaveButton({
@@ -45,10 +97,10 @@ function EditorSaveButton({
     error: "Save failed, retry (Ctrl+S)",
   }[status];
   const icon = {
-    saved: <SaveCheckIcon className="size-4" />,
-    unsaved: <SaveIcon className="size-4" />,
-    saving: <LoaderCircleIcon className="size-3.5 animate-spin" />,
-    error: <CircleAlertIcon className="size-3.5" />,
+    saved: <SaveCheckIcon className="size-5" />,
+    unsaved: <SaveIcon className="size-5" />,
+    saving: <LoaderCircleIcon className="size-4 animate-spin" />,
+    error: <CircleAlertIcon className="size-4" />,
   }[status];
   return (
     <Button
@@ -57,13 +109,14 @@ function EditorSaveButton({
       aria-label={label}
       title={label}
       disabled={status === "saving"}
-      className={
+      className={cn(
+        "size-9 hover:bg-neutral-700/50",
         status === "error"
-          ? "size-8 text-destructive"
+          ? "text-destructive"
           : status === "unsaved"
-            ? "size-8 hover:bg-accent"
-            : "size-8 text-muted-foreground hover:bg-accent"
-      }
+            ? "text-neutral-100"
+            : "text-neutral-400 hover:text-neutral-100",
+      )}
       onClick={onSave}
     >
       {icon}

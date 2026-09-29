@@ -29,56 +29,64 @@ export function CompositionPreview({
   );
   return (
     <>
-      <div
-        ref={viewportRef}
-        className="flex min-h-0 flex-1 items-center justify-center overflow-hidden"
-        data-testid="composition-viewport"
-      >
+      <div className="flex h-7 shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-3 text-xs">
+        <h2 className="shrink-0 font-semibold">Composition</h2>
+        <span
+          className="font-mono text-[10px] tabular-nums text-neutral-400"
+          data-testid="composition-readout"
+        >
+          {canvas.width} × {canvas.height} · {canvas.fps} fps
+        </span>
+      </div>
+      {/* Pads outside the measured viewport so the scale fits the inner size. */}
+      <div className="flex min-h-0 flex-1 p-3">
         <div
-          className="relative shrink-0"
-          style={{ width: canvas.width * scale, height: canvas.height * scale }}
+          ref={viewportRef}
+          className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden"
+          data-testid="composition-viewport"
         >
           <div
-            className="absolute origin-top-left overflow-hidden"
-            data-testid="composition-canvas"
+            className="relative shrink-0"
             style={{
-              width: canvas.width,
-              height: canvas.height,
-              transform: `scale(${scale})`,
-              background: canvas.background ?? "#000000",
+              width: canvas.width * scale,
+              height: canvas.height * scale,
             }}
           >
-            {/* Every layer stays mounted, so media is ready when playback reaches it. */}
-            {project.layers.map((layer, index) => {
-              if (layer.type === "audio") {
-                return undefined;
-              }
-              const range = getLayerRange(layer);
-              return (
-                <PreviewLayer
-                  key={"src" in layer ? `${index}:${layer.src}` : index}
-                  layer={layer}
-                  visible={time >= range.start && time < range.end}
-                  runtime={runtime}
-                  selected={
-                    selection?.type === "layer" && selection.index === index
-                  }
-                  index={index}
-                  canvas={canvas}
-                  resolveMediaUrl={resolveMediaUrl}
-                />
-              );
-            })}
+            <div
+              className="absolute origin-top-left overflow-hidden"
+              data-testid="composition-canvas"
+              style={{
+                width: canvas.width,
+                height: canvas.height,
+                transform: `scale(${scale})`,
+                background: canvas.background ?? "#000000",
+              }}
+            >
+              {/* Every layer stays mounted, so media is ready when playback reaches it. */}
+              {project.layers.map((layer, index) => {
+                if (layer.type === "audio") {
+                  return undefined;
+                }
+                const range = getLayerRange(layer);
+                return (
+                  <PreviewLayer
+                    key={"src" in layer ? `${index}:${layer.src}` : index}
+                    layer={layer}
+                    visible={time >= range.start && time < range.end}
+                    runtime={runtime}
+                    selected={
+                      selection?.type === "layer" && selection.index === index
+                    }
+                    index={index}
+                    canvas={canvas}
+                    resolveMediaUrl={resolveMediaUrl}
+                  />
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
-      <p
-        className="mt-2 text-xs tabular-nums text-muted-foreground"
-        data-testid="composition-time"
-      >
-        Project time {time.toFixed(3)} s · {canvas.width} × {canvas.height} ·{" "}
-        {canvas.fps} fps
-      </p>
     </>
   );
 }
