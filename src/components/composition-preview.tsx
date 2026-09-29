@@ -79,6 +79,7 @@ export function CompositionPreview({
                     }
                     index={index}
                     canvas={canvas}
+                    sources={project.sources}
                     resolveMediaUrl={resolveMediaUrl}
                   />
                 );
@@ -98,6 +99,7 @@ function PreviewLayer({
   selected,
   index,
   canvas,
+  sources,
   resolveMediaUrl,
 }: {
   layer: Exclude<Layer, { type: "audio" }>;
@@ -106,6 +108,7 @@ function PreviewLayer({
   selected: boolean;
   index: number;
   canvas: Project["canvas"];
+  sources: Project["sources"];
   resolveMediaUrl: (src: string) => string;
 }) {
   const box: TextLayer["box"] & { height?: number } =
@@ -129,6 +132,7 @@ function PreviewLayer({
       {layer.type === "video" || layer.type === "image" ? (
         <CompositionMedia
           layer={layer}
+          source={sources[layer.src].video!}
           runtime={runtime}
           index={index}
           resolveMediaUrl={resolveMediaUrl}

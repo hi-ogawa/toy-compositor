@@ -21,7 +21,6 @@ export async function renderProject({
   const outPath = path.resolve(outFile);
   const resolved = await resolveProject({
     project,
-    projectDir,
     textDir: path.join(path.dirname(outPath), ".text", path.basename(outPath)),
   });
   const args = [

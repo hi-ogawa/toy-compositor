@@ -77,5 +77,34 @@
         "color": "#000000"
       }
     }
-  ]
+  ],
+  "sources": {
+    "media/video.mp4": {
+      "start": 0,
+      "end": 3,
+      "video": {
+        "width": 320,
+        "height": 180,
+        "startTime": 0,
+        "frameRate": 30
+      },
+      "audio": true
+    },
+    "media/audio.wav": {
+      "start": 0,
+      "end": 3,
+      "audio": true
+    },
+    "media/image.png": {
+      "start": 0,
+      "end": 0,
+      "video": {
+        "width": 160,
+        "height": 90,
+        "startTime": 0,
+        "frameRate": 25
+      },
+      "audio": false
+    }
+  }
 }

@@ -6,7 +6,6 @@ import type { EditorRuntime, EditorState } from "../lib/runtime";
 type LayerEdit = {
   type: LayerEditType;
   index: number;
-  sourceDuration: number;
   layer: Layer;
 };
 
@@ -23,24 +22,11 @@ export function useLayerInteraction({
   state: EditorState;
 }) {
   const [edit, setEdit] = useState<LayerEdit>();
-  const { layers, canvas } = state.project;
-
-  /** A video or audio layer is editable once its source duration loads. */
-  function getSourceDuration(layer: Layer): number | undefined {
-    if (layer.type !== "video" && layer.type !== "audio") {
-      return Infinity;
-    }
-    const duration = state.sourceDurations[layer.src];
-    return duration?.status === "fulfilled" ? duration.value : undefined;
-  }
+  const { layers, canvas, sources } = state.project;
 
   function startEdit({ type, index }: { type: LayerEditType; index: number }) {
-    const sourceDuration = getSourceDuration(layers[index]);
-    if (sourceDuration === undefined) {
-      return;
-    }
     runtime.select({ type: "layer", index });
-    setEdit({ type, index, sourceDuration, layer: layers[index] });
+    setEdit({ type, index, layer: layers[index] });
   }
 
   function getEditedLayer(edit: LayerEdit, delta: number): Layer {
@@ -48,7 +34,7 @@ export function useLayerInteraction({
       type: edit.type,
       delta,
       fps: canvas.fps,
-      sourceDuration: edit.sourceDuration,
+      sources,
     });
   }
 
@@ -73,7 +59,6 @@ export function useLayerInteraction({
   return {
     layers: edit ? layers.with(edit.index, edit.layer) : layers,
     editing: edit !== undefined,
-    canEdit: (index: number) => getSourceDuration(layers[index]) !== undefined,
     startEdit,
     updateEdit,
     finishEdit,

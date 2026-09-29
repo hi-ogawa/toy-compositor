@@ -6,9 +6,33 @@ export type Project = {
     | { type: "still"; time: number };
   layers: Layer[];
   locators?: Locator[];
+  /** Facts about every media file a layer uses, keyed by the layers' `src`. */
+  sources: Record<string, Source>;
 };
 
 export type Locator = { label: string; time: number };
+
+/**
+ * What ffprobe reports about a media file, and nothing else, so checking a file
+ * later means probing it again and comparing.
+ */
+export type Source = {
+  /**
+   * The file's source time range, in the presentation timestamps that `in` and
+   * `out` use, so it includes the container's start offset. A still image has
+   * no duration, so both are 0.
+   */
+  start: number;
+  end: number;
+  video?: {
+    width: number;
+    height: number;
+    /** The video stream's own start time, which frame timing counts from. */
+    startTime: number;
+    frameRate: number;
+  };
+  audio: boolean;
+};
 
 /** Canvas presets for new projects, named as their first project file. */
 export const CANVAS_PRESETS = [
@@ -33,6 +57,7 @@ export function createEmptyProject(preset: CanvasPreset): Project {
     output: { type: "video", start: 0, end: 10 },
     layers: [],
     locators: [],
+    sources: {},
   };
 }
 

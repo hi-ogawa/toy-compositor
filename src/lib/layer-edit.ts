@@ -1,6 +1,6 @@
 import { clamp } from "../utils/math.ts";
 import { getLayerRange } from "./layout.ts";
-import type { Layer } from "./project.ts";
+import type { Layer, Project } from "./project.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 
 export type LayerEditType = "move" | "trim-start" | "trim-end";
@@ -9,7 +9,7 @@ export type LayerEditType = "move" | "trim-start" | "trim-end";
  * Moves or trims a layer by a timeline delta, like toy-midi's clip move and
  * trims. The dragged edge snaps to the frame grid, the layer keeps at least one
  * frame and starts at or after 0, and a video or audio layer stays within its
- * source. A start trim on a video or audio layer moves `start` and `in`
+ * source's time range from `sources`. A start trim on a video or audio layer moves `start` and `in`
  * together, so its source stays in place against the rest of the timeline.
  */
 export function applyLayerEdit(
@@ -18,13 +18,12 @@ export function applyLayerEdit(
     type,
     delta,
     fps,
-    sourceDuration,
+    sources,
   }: {
     type: LayerEditType;
     delta: number;
     fps: number;
-    /** Infinity for an image, text, or color layer, because a still covers any time. */
-    sourceDuration: number;
+    sources: Project["sources"];
   },
 ): Layer {
   const range = getLayerRange(layer);
@@ -46,7 +45,7 @@ export function applyLayerEdit(
         const start = roundToMillisecond(
           clamp(
             snap(range.start + delta),
-            Math.max(0, layer.start - layer.in),
+            Math.max(0, layer.start - layer.in + sources[layer.src].start),
             range.end - frame,
           ),
         );
@@ -68,7 +67,7 @@ export function applyLayerEdit(
         const end = clamp(
           snap(range.end + delta),
           range.start + frame,
-          layer.start - layer.in + sourceDuration,
+          layer.start - layer.in + sources[layer.src].end,
         );
         return {
           ...layer,

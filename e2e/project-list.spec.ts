@@ -80,6 +80,7 @@ test("create a project from the start page", async ({ page }, testInfo) => {
     output: { type: "video", start: 0, end: 10 },
     layers: [],
     locators: [],
+    sources: {},
   });
 
   // Go home and confirm the list shows the new project.
