@@ -1,5 +1,5 @@
-import { readFile } from "node:fs/promises";
 import { expect } from "@playwright/test";
+import { readJson } from "../src/utils/fs.ts";
 import {
   commitInspectorField,
   expectImageLoaded,
@@ -62,17 +62,15 @@ test("compose the output start, follow inspector edits, and save them", async ({
   await expect(save).toHaveAttribute("data-status", "unsaved");
   await save.click();
   await expect(save).toHaveAttribute("data-status", "saved");
-  expect(JSON.parse(await readFile(editor.projectFile, "utf-8"))).toMatchObject(
-    {
-      output: { start: 1 },
-      layers: [
-        { start: 2, in: 0.2 },
-        {},
-        { crop: { left: 0.25, right: 0.25 } },
-        { end: 1 },
-      ],
-    },
-  );
+  expect(await readJson(editor.projectFile)).toMatchObject({
+    output: { start: 1 },
+    layers: [
+      { start: 2, in: 0.2 },
+      {},
+      { crop: { left: 0.25, right: 0.25 } },
+      { end: 1 },
+    ],
+  });
 
   // Reload the project, return to the output start, and confirm the saved edits
   // compose the same frame.

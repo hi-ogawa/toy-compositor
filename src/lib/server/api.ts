@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { readJson, writeJson } from "../../utils/fs.ts";
 import type { ProjectEntry } from "../api-client.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 
@@ -75,7 +76,7 @@ async function listProjects({ root }: { root: string }) {
 
 async function readProject(file: string) {
   try {
-    const json = JSON.parse(await fs.promises.readFile(file, "utf-8"));
+    const json = await readJson<any>(file);
     if (json.canvas && Array.isArray(json.layers)) {
       return json;
     }
@@ -108,8 +109,7 @@ async function handlePutProject({
       message: "Only .json files can be saved",
     });
   }
-  const project = await request.json();
-  await fs.promises.writeFile(file, JSON.stringify(project, null, 2) + "\n");
+  await writeJson({ file, json: await request.json() });
   return Response.json({});
 }
 
