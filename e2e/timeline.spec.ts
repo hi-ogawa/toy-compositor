@@ -113,7 +113,7 @@ test("play the composition and step by frames", async ({ page, editor }) => {
   const timeline = page.getByTestId("editor-timeline");
   const time = page.getByTestId("timeline-time");
   const video = page.getByTestId("composition-canvas").locator("video");
-  const playhead = async () => parseFloat((await time.textContent())!);
+  const readPlayhead = async () => parseFloat((await time.textContent())!);
 
   // Play and confirm the playhead advances with the video playing.
   await timeline.getByRole("button", { name: "Play", exact: true }).click();
@@ -134,7 +134,7 @@ test("play the composition and step by frames", async ({ page, editor }) => {
   expect(
     await video.evaluate((element: HTMLVideoElement) => element.paused),
   ).toBe(true);
-  const paused = await playhead();
+  const paused = await readPlayhead();
   expect(Math.abs(paused * 30 - Math.round(paused * 30))).toBeLessThan(0.05);
   await expect
     .poll(() =>
