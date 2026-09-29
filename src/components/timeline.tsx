@@ -347,7 +347,7 @@ function TimelineLayerLane({
             onClick={onSelect}
             data-testid={`timeline-layer-${index}`}
             className={cn(
-              "absolute inset-0 cursor-ew-resize touch-none select-none overflow-hidden rounded-sm border text-left text-[11px]",
+              "absolute inset-0 cursor-pointer touch-none select-none overflow-hidden rounded-sm border text-left text-[11px]",
               LAYER_CLIP_CLASSES[layer.type].fill,
               selected
                 ? "border-sky-300 ring-1 ring-inset ring-sky-300"
