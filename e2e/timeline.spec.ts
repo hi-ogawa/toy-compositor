@@ -57,6 +57,18 @@ test("navigate the timeline without editing the project", async ({
   await page.keyboard.press("ArrowLeft");
   await expect(time).toContainText("0.000 s");
 
+  // Click empty space in the locator row at 5 s, past the markers, and confirm
+  // it seeks like the ruler.
+  const locatorRow = page
+    .getByTestId("editor-timeline")
+    .getByRole("button", { name: "Locator row", exact: true });
+  const locatorRowBox = (await locatorRow.boundingBox())!;
+  await page.mouse.click(
+    locatorRowBox.x + 5 * DEFAULT_PIXELS_PER_SECOND,
+    locatorRowBox.y + locatorRowBox.height / 2,
+  );
+  await expect(time).toContainText("5.000 s");
+
   // Confirm navigation did not mark the project as having unsaved changes.
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
     "data-status",

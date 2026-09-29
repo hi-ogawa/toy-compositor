@@ -1,11 +1,14 @@
+import { MonitorPlayIcon } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { isShortcutTextInputTarget, matchKeyboardEvent } from "../lib/keyboard";
 import { EditorRuntime } from "../lib/runtime";
+import { CollapsibleSplit } from "./collapsible-split";
 import { CompositionPreview } from "./composition-preview";
 import { EditorHeader } from "./editor-header";
 import { Inspector } from "./inspector";
-import { PreviewMonitors } from "./preview-monitors";
+import { MediaPreview } from "./media-preview";
 import { Timeline } from "./timeline";
+import { Button } from "./ui/button";
 import { useEditorProject } from "./use-editor-project";
 import { useTimeline } from "./use-timeline";
 import { useWindowEvent } from "./use-window-event";
@@ -63,19 +66,36 @@ export function Editor({ projectPath }: { projectPath: string }) {
       <EditorHeader
         file={state.file}
         saveStatus={project.saveStatus}
-        sourceOpen={sourceOpen}
         renderSettingsSelected={selection?.type === "output"}
         onSave={() => project.save()}
-        onSourceOpenChange={setSourceOpen}
         onRenderSettingsSelect={() => runtime.select({ type: "output" })}
       />
       <div className="flex min-h-0 flex-1">
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <PreviewMonitors
-            sourceOpen={sourceOpen}
-            layer={previewLayer}
-            resolveMediaUrl={project.resolveMediaUrl}
-            composition={
+          <CollapsibleSplit
+            open={sourceOpen}
+            sideId="source-monitor"
+            sideLabel="source panel"
+            side={
+              <MediaPreview
+                layer={previewLayer}
+                resolveMediaUrl={project.resolveMediaUrl}
+                onCollapse={() => setSourceOpen(false)}
+              />
+            }
+            strip={
+              <Button
+                aria-label="Expand source panel"
+                title="Source"
+                aria-expanded={false}
+                aria-controls="source-monitor"
+                className="size-7 text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100"
+                onClick={() => setSourceOpen(true)}
+              >
+                <MonitorPlayIcon className="size-4" />
+              </Button>
+            }
+            main={
               <CompositionPreview
                 project={state.project}
                 selection={selection}

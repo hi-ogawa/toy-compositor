@@ -1,45 +1,74 @@
+import { PanelLeftCloseIcon } from "lucide-react";
 import { useState } from "react";
 import type { Layer } from "../lib/project";
-import { PanelHeader } from "./panel-header";
+import { Button } from "./ui/button";
 
 export function MediaPreview({
   layer,
   resolveMediaUrl,
+  onCollapse,
 }: {
   layer?: Layer;
   resolveMediaUrl: (src: string) => string;
+  onCollapse: () => void;
 }) {
-  const [failed, setFailed] = useState(false);
-  const header = (
-    <PanelHeader
-      title="Source"
-      titleTooltip="Full source file, independent of project timing and layout."
-    >
-      {layer && "src" in layer && (
-        <span
-          className="truncate font-mono text-[10px] text-neutral-400"
-          title={layer.src}
+  const source = layer && "src" in layer ? layer : undefined;
+  return (
+    <>
+      <div className="flex h-7 shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-3 text-xs">
+        <h2
+          className="shrink-0 font-semibold"
+          title="Full source file, independent of project timing and layout."
         >
-          {layer.src}
-        </span>
-      )}
-    </PanelHeader>
-  );
-  if (!layer || !("src" in layer)) {
-    return (
-      <>
-        {header}
+          Source
+        </h2>
+        {source && (
+          <span
+            className="truncate font-mono text-[10px] text-neutral-400"
+            title={source.src}
+          >
+            {source.src}
+          </span>
+        )}
+        <Button
+          aria-label="Collapse source panel"
+          title="Collapse source panel"
+          aria-expanded={true}
+          aria-controls="source-monitor"
+          className="ml-auto size-5 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-100"
+          onClick={onCollapse}
+        >
+          <PanelLeftCloseIcon className="size-3.5" />
+        </Button>
+      </div>
+      {source ? (
+        // Remounts per source so a load failure does not carry over.
+        <SourceMedia
+          key={`${source.type}:${source.src}`}
+          layer={source}
+          resolveMediaUrl={resolveMediaUrl}
+        />
+      ) : (
         <p className="grid flex-1 place-items-center p-3 text-center text-xs text-neutral-500">
           Select a video, audio, or image layer to preview its source.
         </p>
-      </>
-    );
-  }
-  const src = resolveMediaUrl(layer.src);
-  const onError = () => setFailed(true);
+      )}
+    </>
+  );
+}
+
+type SourceLayer = Extract<Layer, { src: string }>;
+
+function SourceMedia({
+  layer,
+  resolveMediaUrl,
+}: {
+  layer: SourceLayer;
+  resolveMediaUrl: (src: string) => string;
+}) {
+  const [failed, setFailed] = useState(false);
   return (
     <>
-      {header}
       {failed && (
         <p role="alert" className="px-3 pt-3 text-xs text-destructive">
           Could not load {layer.src}. Check that the file exists and your
@@ -47,34 +76,58 @@ export function MediaPreview({
         </p>
       )}
       <div className="flex min-h-0 flex-1 items-center justify-center p-3">
-        {layer.type === "video" && (
-          <video
-            src={src}
-            controls
-            playsInline
-            preload="metadata"
-            onError={onError}
-            className="max-h-full max-w-full bg-black"
-          />
-        )}
-        {layer.type === "audio" && (
-          <audio
-            src={src}
-            controls
-            preload="metadata"
-            onError={onError}
-            className="w-full"
-          />
-        )}
-        {layer.type === "image" && (
-          <img
-            src={src}
-            alt={layer.name ?? layer.src}
-            onError={onError}
-            className="max-h-full max-w-full object-contain"
-          />
-        )}
+        <SourceElement
+          layer={layer}
+          src={resolveMediaUrl(layer.src)}
+          onError={() => setFailed(true)}
+        />
       </div>
     </>
   );
+}
+
+function SourceElement({
+  layer,
+  src,
+  onError,
+}: {
+  layer: SourceLayer;
+  src: string;
+  onError: () => void;
+}) {
+  switch (layer.type) {
+    case "video": {
+      return (
+        <video
+          src={src}
+          controls
+          playsInline
+          preload="metadata"
+          onError={onError}
+          className="max-h-full max-w-full bg-black"
+        />
+      );
+    }
+    case "audio": {
+      return (
+        <audio
+          src={src}
+          controls
+          preload="metadata"
+          onError={onError}
+          className="w-full"
+        />
+      );
+    }
+    case "image": {
+      return (
+        <img
+          src={src}
+          alt={layer.name ?? layer.src}
+          onError={onError}
+          className="max-h-full max-w-full object-contain"
+        />
+      );
+    }
+  }
 }
