@@ -318,15 +318,15 @@ function TimelineLayerLane({
   const name = layer.name ?? layer.type;
   const region = timeline.rangeStyle(range);
   const editable = layerInteraction.canEdit(index);
-  const toSeconds = (deltaX: number) => deltaX / timeline.pixelsPerSecond;
+  const pixelsToSeconds = (deltaX: number) => deltaX / timeline.pixelsPerSecond;
   // A click without dragging selects through the button's own click.
   const moveRef = usePointerGesture({
     onStart: (event) => event.preventDefault(),
     onDragStart: () => layerInteraction.startEdit({ type: "move", index }),
     onDragMove: (_event, { deltaX }) =>
-      layerInteraction.updateEdit(toSeconds(deltaX)),
+      layerInteraction.updateEdit(pixelsToSeconds(deltaX)),
     onDragEnd: (_event, { deltaX }) =>
-      layerInteraction.finishEdit(toSeconds(deltaX)),
+      layerInteraction.finishEdit(pixelsToSeconds(deltaX)),
     onCancel: layerInteraction.cancelEdit,
   });
   const visible = intersect(range, timeline.visible);
@@ -440,7 +440,7 @@ function LayerTrimHandle({
   timeline: TimelineView;
   layerInteraction: LayerInteraction;
 }) {
-  const toSeconds = (deltaX: number) => deltaX / timeline.pixelsPerSecond;
+  const pixelsToSeconds = (deltaX: number) => deltaX / timeline.pixelsPerSecond;
   const trimRef = usePointerDrag({
     onStart: (event) => {
       event.preventDefault();
@@ -448,9 +448,9 @@ function LayerTrimHandle({
       layerInteraction.startEdit({ type, index });
     },
     onMove: (_event, { deltaX }) =>
-      layerInteraction.updateEdit(toSeconds(deltaX)),
+      layerInteraction.updateEdit(pixelsToSeconds(deltaX)),
     onEnd: (_event, { deltaX }) =>
-      layerInteraction.finishEdit(toSeconds(deltaX)),
+      layerInteraction.finishEdit(pixelsToSeconds(deltaX)),
     onCancel: layerInteraction.cancelEdit,
   });
   return (

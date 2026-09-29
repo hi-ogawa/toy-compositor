@@ -199,7 +199,8 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
   // Open the synthetic project, where every layer spans 0 to 3 s and the video
   // source is 3 s long.
   await page.goto(editor.url);
-  const pixels = (seconds: number) => seconds * DEFAULT_PIXELS_PER_SECOND;
+  const secondsToPixels = (seconds: number) =>
+    seconds * DEFAULT_PIXELS_PER_SECOND;
   const video = page.getByTestId("timeline-layer-0");
   const videoTrimStart = page.getByTestId("timeline-layer-0-trim-start");
   const videoTrimEnd = page.getByTestId("timeline-layer-0-trim-end");
@@ -211,37 +212,37 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
 
   // Drag the video region 1 s right, a little off the frame grid, and confirm
   // it selects the layer and moves its start to the nearest frame.
-  await dragBy(page, video, { deltaX: pixels(1.01) });
+  await dragBy(page, video, { deltaX: secondsToPixels(1.01) });
   await expectFields({ start: "1", in: "0", out: "3" });
 
   // Trim the video's start 0.5 s later, and confirm `in` follows `start` so the
   // source stays in place.
-  await dragBy(page, videoTrimStart, { deltaX: pixels(0.5) });
+  await dragBy(page, videoTrimStart, { deltaX: secondsToPixels(0.5) });
   await expectFields({ start: "1.5", in: "0.5", out: "3" });
 
   // Trim the start 1 s earlier, and confirm it stops where the source begins.
-  await dragBy(page, videoTrimStart, { deltaX: pixels(-1) });
+  await dragBy(page, videoTrimStart, { deltaX: secondsToPixels(-1) });
   await expectFields({ start: "1", in: "0", out: "3" });
 
   // Trim the end 1 s earlier, then 2 s later, and confirm it stops where the
   // source ends.
-  await dragBy(page, videoTrimEnd, { deltaX: pixels(-1) });
+  await dragBy(page, videoTrimEnd, { deltaX: secondsToPixels(-1) });
   await expectFields({ start: "1", in: "0", out: "2" });
-  await dragBy(page, videoTrimEnd, { deltaX: pixels(2) });
+  await dragBy(page, videoTrimEnd, { deltaX: secondsToPixels(2) });
   await expectFields({ start: "1", in: "0", out: "3" });
 
   // Drag the image region 0.5 s right, and confirm its end moves with it.
   const image = page.getByTestId("timeline-layer-2");
-  await dragBy(page, image, { deltaX: pixels(0.5) });
+  await dragBy(page, image, { deltaX: secondsToPixels(0.5) });
   await expectFields({ start: "0.5", end: "3.5" });
 
   // Drag it 2 s left, and confirm it stops at the timeline start.
-  await dragBy(page, image, { deltaX: pixels(-2) });
+  await dragBy(page, image, { deltaX: secondsToPixels(-2) });
   await expectFields({ start: "0", end: "3" });
 
   // Trim the image's end 1 s earlier, which changes only its end.
   await dragBy(page, page.getByTestId("timeline-layer-2-trim-end"), {
-    deltaX: pixels(-1),
+    deltaX: secondsToPixels(-1),
   });
   await expectFields({ start: "0", end: "2" });
 
@@ -251,7 +252,7 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
   const y = box.y + box.height / 2;
   await page.mouse.move(box.x + 10, y);
   await page.mouse.down();
-  await page.mouse.move(box.x + 10 + pixels(1), y, { steps: 4 });
+  await page.mouse.move(box.x + 10 + secondsToPixels(1), y, { steps: 4 });
   await page.keyboard.press("Escape");
   await page.mouse.up();
   await expectFields({ start: "0", end: "2" });
