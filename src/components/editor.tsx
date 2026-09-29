@@ -86,6 +86,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
             selection={selection}
             playhead={state.playhead}
             playing={state.playing}
+            audioSources={state.audioSources}
           />
         </main>
         <aside

@@ -1,6 +1,7 @@
 import { createStore } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
+import { createAudioView, type AudioView } from "./audio-view.ts";
 import { getOutputRange } from "./layout.ts";
 import type { AudioLayer, Layer, Project, VideoLayer } from "./project.ts";
 import { AudioContextTransport } from "./transport.ts";
@@ -10,6 +11,12 @@ export type EditorSelection =
   | { type: "output" }
   | { type: "layer"; index: number };
 
+/** A source's audio track, loaded whether or not any layer is heard. */
+export type AudioSource =
+  | { status: "loading" }
+  | { status: "loaded"; view: AudioView }
+  | { status: "missing" };
+
 export interface EditorState {
   /** Project file path relative to the projects root, which is also where saves go. */
   file: string;
@@ -18,6 +25,8 @@ export interface EditorState {
   playhead: number;
   playing: boolean;
   selection?: EditorSelection;
+  /** Keyed by the source path of every video and audio layer. */
+  audioSources: Record<string, AudioSource>;
 }
 
 const EMPTY_PROJECT: Project = {
@@ -33,11 +42,17 @@ export class EditorRuntime {
     playhead: 0,
     playing: false,
     selection: undefined,
+    audioSources: {},
   }));
 
   readonly context = new AudioContext();
   readonly transport = new AudioContextTransport(this.context);
-  /** Keyed by layer index and source, so a replaced source loads afresh. */
+  /** Each source decodes once, shared by its layers' playback and waveforms. */
+  private readonly audioBuffers = new Map<
+    string,
+    Promise<AudioBuffer | undefined>
+  >();
+  /** Keyed by layer index and source, so a replaced source restarts playback. */
   private readonly audioPlaybacks = new Map<string, AudioBufferPlayback>();
   private readonly videoPlaybacks = new Map<number, VideoPlayback>();
 
@@ -144,32 +159,49 @@ export class EditorRuntime {
       }
     }
 
-    // Audio layers, and video layers whose own audio is unmuted, are heard.
-    const audible = new Map<string, VideoLayer | AudioLayer>(
+    // Every video and audio layer gets a playback, and muting only decides
+    // whether it schedules sound, so the muted camera still loads its audio
+    // for the waveform and unmuting needs no load.
+    const layers = new Map<string, VideoLayer | AudioLayer>(
       project.layers.flatMap((layer, index) =>
-        layer.type === "audio" || (layer.type === "video" && !layer.muted)
+        layer.type === "video" || layer.type === "audio"
           ? [[`${index}:${layer.src}`, layer] as const]
           : [],
       ),
     );
     for (const [key, playback] of this.audioPlaybacks) {
-      if (!audible.has(key)) {
+      if (!layers.has(key)) {
         playback.dispose();
         this.audioPlaybacks.delete(key);
       }
     }
-    for (const [key, layer] of audible) {
+    for (const [key, layer] of layers) {
       let playback = this.audioPlaybacks.get(key);
       if (!playback) {
         playback = new AudioBufferPlayback({ transport: this.transport });
         this.audioPlaybacks.set(key, playback);
-        void this.loadAudio({ key, src: layer.src });
+        void this.loadAudio(layer.src).then((buffer) => {
+          if (buffer) {
+            this.audioPlaybacks.get(key)?.setBuffer({ buffer });
+          }
+        });
       }
       playback.setLayer({ layer });
     }
   }
 
-  private async loadAudio({ key, src }: { key: string; src: string }) {
+  /** Fetches and decodes a source's audio once, however many layers use it. */
+  private loadAudio(src: string): Promise<AudioBuffer | undefined> {
+    let buffer = this.audioBuffers.get(src);
+    if (!buffer) {
+      buffer = this.decodeAudio(src);
+      this.audioBuffers.set(src, buffer);
+    }
+    return buffer;
+  }
+
+  private async decodeAudio(src: string): Promise<AudioBuffer | undefined> {
+    this.setAudioSource({ src, source: { status: "loading" } });
     const url = apiClient.getMediaUrl({
       src,
       projectPath: this.store.get().file,
@@ -179,10 +211,27 @@ export class EditorRuntime {
       const buffer = await this.context.decodeAudioData(
         await response.arrayBuffer(),
       );
-      this.audioPlaybacks.get(key)?.setBuffer({ buffer });
+      this.setAudioSource({
+        src,
+        source: { status: "loaded", view: createAudioView(buffer) },
+      });
+      return buffer;
     } catch {
       // A video file without an audio stream contributes nothing, as in the render.
+      this.setAudioSource({ src, source: { status: "missing" } });
+      return undefined;
     }
+  }
+
+  private setAudioSource({
+    src,
+    source,
+  }: {
+    src: string;
+    source: AudioSource;
+  }): void {
+    const { audioSources } = this.store.get();
+    this.store.update({ audioSources: { ...audioSources, [src]: source } });
   }
 
   subscribePersistableState(listener: () => void): () => void {
