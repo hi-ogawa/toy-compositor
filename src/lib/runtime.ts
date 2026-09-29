@@ -146,10 +146,7 @@ export class EditorRuntime {
       ),
     );
     for (const src of sources) {
-      this.audioSources.set(src, {
-        status: "loading",
-        promise: this.loadAudio(src),
-      });
+      this.loadAudio(src);
     }
   }
 
@@ -192,7 +189,15 @@ export class EditorRuntime {
     }
   }
 
-  private async loadAudio(src: string): Promise<void> {
+  /** Starts decoding a source, which is `loading` until it settles. */
+  private loadAudio(src: string): void {
+    this.audioSources.set(src, {
+      status: "loading",
+      promise: this.decodeAudio(src),
+    });
+  }
+
+  private async decodeAudio(src: string): Promise<void> {
     const url = apiClient.getMediaUrl({
       src,
       projectPath: this.store.get().file,
