@@ -31,7 +31,7 @@ export function useLayerInteraction({
       return Infinity;
     }
     const duration = state.sourceDurations[layer.src];
-    return duration?.status === "loaded" ? duration.duration : undefined;
+    return duration?.status === "fulfilled" ? duration.value : undefined;
   }
 
   function startEdit({ type, index }: { type: LayerEditType; index: number }) {

@@ -21,8 +21,8 @@ import type {
   AudioSource,
   EditorRuntime,
   EditorSelection,
-  SourceDuration,
 } from "../lib/runtime";
+import type { PromiseState } from "../utils/promise-state";
 import { AudioWaveformView } from "./audio-waveform";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
@@ -48,7 +48,7 @@ export function Timeline({
   playhead: number;
   playing: boolean;
   audioSources: Record<string, AudioSource>;
-  sourceDurations: Record<string, SourceDuration>;
+  sourceDurations: Record<string, PromiseState<number>>;
 }) {
   const selectOutput = () => runtime.select({ type: "output" });
   const seek = (time: number) => runtime.seek(time);
@@ -311,7 +311,7 @@ function TimelineLayerLane({
   index: number;
   range: Range;
   audioSource?: AudioSource;
-  sourceDuration?: SourceDuration;
+  sourceDuration?: PromiseState<number>;
   selected: boolean;
   onSelect: () => void;
 }) {
@@ -385,14 +385,14 @@ function TimelineLayerLane({
                 />
               )}
             {(audioSource?.status === "loading" ||
-              sourceDuration?.status === "loading") && (
+              sourceDuration?.status === "pending") && (
               <LoaderCircleIcon
                 role="img"
                 aria-label="loading source"
                 className="absolute right-1 top-1 size-3.5 animate-spin text-muted-foreground"
               />
             )}
-            {sourceDuration?.status === "missing" && (
+            {sourceDuration?.status === "rejected" && (
               <TriangleAlertIcon
                 role="img"
                 aria-label="source unavailable"

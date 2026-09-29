@@ -1,5 +1,10 @@
 import { loadMediaDuration } from "../utils/media.ts";
-import { trackPromise, type TrackedPromise } from "../utils/promise-state.ts";
+import {
+  trackPromise,
+  watchPromise,
+  type PromiseState,
+  type TrackedPromise,
+} from "../utils/promise-state.ts";
 import { createStore } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
@@ -19,11 +24,6 @@ export type AudioSource =
   | { status: "loaded"; view: AudioView }
   | { status: "missing" };
 
-export type SourceDuration =
-  | { status: "loading" }
-  | { status: "loaded"; duration: number }
-  | { status: "missing" };
-
 export interface EditorState {
   /** Project file path relative to the projects root, which is also where saves go. */
   file: string;
@@ -32,7 +32,7 @@ export interface EditorState {
   playhead: number;
   playing: boolean;
   selection?: EditorSelection;
-  sourceDurations: Record<string, SourceDuration>;
+  sourceDurations: Record<string, PromiseState<number>>;
   audioSources: Record<string, AudioSource>;
 }
 
@@ -55,7 +55,6 @@ export class EditorRuntime {
 
   readonly context = new AudioContext();
   readonly transport = new AudioContextTransport(this.context);
-  private readonly durations = new Map<string, TrackedPromise<number>>();
   private readonly audioBuffers = new Map<
     string,
     TrackedPromise<AudioBuffer>
@@ -237,34 +236,11 @@ export class EditorRuntime {
       src,
       projectPath: this.store.get().file,
     });
-    this.setSourceDuration({ src, duration: { status: "loading" } });
-    this.durations.set(
-      src,
-      trackPromise({
-        promise: loadMediaDuration(url),
-        onFulfilled: (duration) => {
-          this.setSourceDuration({
-            src,
-            duration: { status: "loaded", duration },
-          });
-        },
-        onRejected: () => {
-          this.setSourceDuration({ src, duration: { status: "missing" } });
-        },
-      }),
-    );
-  }
-
-  private setSourceDuration({
-    src,
-    duration,
-  }: {
-    src: string;
-    duration: SourceDuration;
-  }): void {
-    const { sourceDurations } = this.store.get();
-    this.store.update({
-      sourceDurations: { ...sourceDurations, [src]: duration },
+    watchPromise(loadMediaDuration(url), (duration) => {
+      const { sourceDurations } = this.store.get();
+      this.store.update({
+        sourceDurations: { ...sourceDurations, [src]: duration },
+      });
     });
   }
 
