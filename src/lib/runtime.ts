@@ -25,7 +25,6 @@ export interface EditorState {
   playhead: number;
   playing: boolean;
   selection?: EditorSelection;
-  /** Keyed by the source path of every video and audio layer. */
   audioSources: Record<string, AudioSource>;
 }
 
