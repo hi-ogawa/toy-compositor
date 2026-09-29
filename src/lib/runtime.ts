@@ -82,16 +82,18 @@ export class EditorRuntime {
     index: number;
     update: Partial<Layer>;
   }): void {
-    const { project } = this.store.get();
-    this.store.update({
-      project: {
-        ...project,
-        layers: project.layers.map((layer, i) =>
-          i === index ? ({ ...layer, ...update } as Layer) : layer,
-        ),
-      },
+    this.reschedulePlayback(() => {
+      const { project } = this.store.get();
+      this.store.update({
+        project: {
+          ...project,
+          layers: project.layers.map((layer, i) =>
+            i === index ? ({ ...layer, ...update } as Layer) : layer,
+          ),
+        },
+      });
+      this.syncPlayback();
     });
-    this.syncPlayback();
   }
 
   setOutput(output: Project["output"]): void {
@@ -123,6 +125,20 @@ export class EditorRuntime {
         this.videoPlaybacks.delete(index);
       }
     };
+  }
+
+  /**
+   * Applies a change that playback must reschedule for, restarting the
+   * transport around it like toy-midi's `updateClips`, because participants
+   * only ever start at the transport's playback anchor.
+   */
+  private reschedulePlayback(change: () => void): void {
+    const wasPlaying = this.transport.store.get().isPlaying;
+    this.transport.pause();
+    change();
+    if (wasPlaying) {
+      this.transport.play();
+    }
   }
 
   private syncPlayback(): void {
@@ -174,7 +190,7 @@ export class EditorRuntime {
       src,
       trackPromise({
         promise: decodeAudio(),
-        onFulfilled: () => this.syncPlayback(),
+        onFulfilled: () => this.reschedulePlayback(() => this.syncPlayback()),
       }),
     );
   }
