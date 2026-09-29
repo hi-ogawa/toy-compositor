@@ -1,6 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { PlusIcon } from "lucide-react";
 import { apiClient, type ProjectEntry } from "../lib/api-client";
+import {
+  CANVAS_PRESETS,
+  type CanvasPreset,
+  createEmptyProject,
+} from "../lib/project";
 import { getProjectPageUrl } from "../lib/routes";
+import { Button } from "./ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 /** Start page listing the projects under the root, grouped by project directory. */
 export function ProjectList() {
@@ -29,8 +42,9 @@ export function ProjectList() {
 
         <main className="mt-10 min-h-0 flex-1">
           <div className="flex max-h-full min-h-0 flex-col overflow-hidden rounded-xl border border-neutral-700/70 bg-neutral-800/45 shadow-2xl shadow-black/20">
-            <div className="shrink-0 border-b border-neutral-700/70 p-4">
+            <div className="flex shrink-0 items-center justify-between gap-4 border-b border-neutral-700/70 p-4">
               <h2 className="font-semibold">Projects</h2>
+              <NewProjectMenu />
             </div>
             <section
               aria-label="Projects"
@@ -46,8 +60,7 @@ export function ProjectList() {
                     No projects yet
                   </p>
                   <p className="mt-1 text-sm text-neutral-500">
-                    Put each project in its own directory under the root, with
-                    its project JSON files and their media.
+                    Create a project to begin.
                   </p>
                 </div>
               ) : (
@@ -58,6 +71,61 @@ export function ProjectList() {
         </main>
       </div>
     </div>
+  );
+}
+
+/**
+ * Create `<name>/<preset>.json` from a canvas preset and a prompted name, and
+ * open it in the editor.
+ */
+function NewProjectMenu() {
+  const createProjectMutation = useMutation({
+    mutationFn: async ({
+      path,
+      preset,
+    }: {
+      path: string;
+      preset: CanvasPreset;
+    }) =>
+      apiClient.createProject({ path, project: createEmptyProject(preset) }),
+    onSuccess: (_, { path }) => {
+      window.location.href = getProjectPageUrl({ path });
+    },
+    onError: (error) => window.alert(error.message),
+  });
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          disabled={createProjectMutation.isPending}
+          className="gap-1.5 bg-emerald-600 px-4 py-2 text-sm text-white shadow-lg shadow-emerald-900/30 hover:bg-emerald-500"
+        >
+          <PlusIcon className="size-4" />
+          New project
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {CANVAS_PRESETS.map((preset) => (
+          <DropdownMenuItem
+            key={preset.name}
+            onSelect={() => {
+              const name = window.prompt("Project name")?.trim();
+              if (name) {
+                createProjectMutation.mutate({
+                  path: `${name}/${preset.name}.json`,
+                  preset,
+                });
+              }
+            }}
+          >
+            {preset.name}
+            <span className="ml-auto pl-4 text-xs text-neutral-500">
+              {preset.width}x{preset.height}
+            </span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

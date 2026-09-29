@@ -52,6 +52,27 @@ export const apiClient = {
     }
   },
 
+  /** Creates a project file, failing if it already exists. */
+  async createProject({
+    path,
+    project,
+  }: {
+    path: string;
+    project: Project;
+  }): Promise<void> {
+    const res = await fetch(
+      getApiUrl({ pathname: "/api/project", params: { path } }),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(project),
+      },
+    );
+    if (!res.ok) {
+      throw new Error(`Failed to create project: ${await res.text()}`);
+    }
+  },
+
   /**
    * The server resolves a layer source against the project's directory, as the
    * renderer does, so `src` is a file path everywhere.

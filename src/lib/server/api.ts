@@ -10,7 +10,8 @@ import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
  * `root` in query parameters, so a file path is never encoded as a URL path.
  *
  * - `GET /api/projects` lists the projects.
- * - `GET /api/project?path=` reads a project, and `PUT` saves it.
+ * - `GET /api/project?path=` reads a project, `PUT` saves it, and `POST`
+ *   creates a new one.
  * - `GET /api/media?project=&src=` serves a layer source resolved against the
  *   project's directory, as the renderer does, with range requests.
  */
@@ -30,6 +31,9 @@ export function createEditorHandler({ root }: { root: string }) {
         }
         case "PUT /api/project": {
           return await handlePutProject({ root, url, request });
+        }
+        case "POST /api/project": {
+          return await handleCreateProject({ root, url, request });
         }
         case "GET /api/media":
         case "HEAD /api/media": {
@@ -110,6 +114,48 @@ async function handlePutProject({
     });
   }
   await writeJson(file, await request.json());
+  return Response.json({});
+}
+
+/**
+ * Create `<project-dir>/<name>.json`, and the project directory if needed. The
+ * directory may already exist, such as when media was put there first, but an
+ * existing project file is never overwritten.
+ */
+async function handleCreateProject({
+  root,
+  url,
+  request,
+}: {
+  root: string;
+  url: URL;
+  request: Request;
+}) {
+  const projectPath = getParam(url, "path");
+  const segments = projectPath.split("/");
+  if (
+    segments.length !== 2 ||
+    segments.some((s) => !s) ||
+    path.extname(projectPath) !== ".json"
+  ) {
+    throw new HttpError({
+      status: 400,
+      message: "Project path must be <project-dir>/<name>.json",
+    });
+  }
+  const file = resolveFile({ root, paths: [projectPath] });
+  await fs.promises.mkdir(path.dirname(file), { recursive: true });
+  try {
+    await writeJson(file, await request.json(), { flag: "wx" });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+      throw new HttpError({
+        status: 409,
+        message: `${projectPath} already exists`,
+      });
+    }
+    throw error;
+  }
   return Response.json({});
 }
 
