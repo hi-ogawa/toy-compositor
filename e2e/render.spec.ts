@@ -130,13 +130,15 @@ test("fade audio at the layer's own edges when the output cuts into them", async
 
   // Check that the cut edges keep the partial level of the layer's fades,
   // about half of full level, instead of fading from and to silence.
-  const full = await rmsLevel(output, { time: 1.3 });
-  expect(full - (await rmsLevel(output, { time: 0 }))).toBeLessThan(9);
-  expect(full - (await rmsLevel(output, { time: 2.68 }))).toBeLessThan(9);
+  const full = await measureRmsLevel(output, { time: 1.3 });
+  expect(full - (await measureRmsLevel(output, { time: 0 }))).toBeLessThan(9);
+  expect(full - (await measureRmsLevel(output, { time: 2.68 }))).toBeLessThan(
+    9,
+  );
 });
 
 /** RMS level in dB of a 20ms window of a file's audio at a time. */
-async function rmsLevel(file: string, { time }: { time: number }) {
+async function measureRmsLevel(file: string, { time }: { time: number }) {
   const { stdout } = await execFileAsync("ffmpeg", [
     "-v",
     "error",
