@@ -43,6 +43,13 @@ The selected layer gets a read-only outline, drawn as a second div with the same
 
 The runtime owns playback, like toy-midi's recorder runtime. Audio on the `AudioContext` clock sets the time, and the playhead and video follow what is heard.
 
+```text
+EditorRuntime              runtime.ts                source loading, restarts around changes
+└─ AudioContextTransport   transport.ts              playhead, play, pause, seek
+   ├─ AudioBufferPlayback  audio-buffer-playback.ts  one per audio and video layer, scheduled on the clock
+   └─ VideoPlayback        video-playback.ts         one per composition <video>, follows the heard position
+```
+
 ![Play schedules audio at one anchor, the playhead follows the heard sound, and video closes its drift by rate](images/playback-clock.svg)
 
 - **The heard position comes from `getOutputTimestamp`,** because Chromium on Linux reports `outputLatency` as 0.
