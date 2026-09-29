@@ -46,16 +46,16 @@ test("compose the output start, follow inspector edits, and save them", async ({
     .toBeCloseTo(0.9);
 
   // Start the video after the output start so it hasn't begun on the first frame,
-  // and confirm it disappears.
+  // and confirm it hides.
   await commitInspectorField(page, { name: "start", value: "2" });
-  await expect(video).toHaveCount(0);
+  await expect(video).toBeHidden();
 
-  // End the text at the playhead and confirm it disappears, because its range
+  // End the text at the playhead and confirm it hides, because its range
   // excludes its end.
-  const text = canvas.getByText("Synthetic\nsample", { exact: true });
+  const text = page.getByTestId("composition-layer-3");
   await clickTimelineButton(page, { name: "label text" });
   await commitInspectorField(page, { name: "end", value: "1" });
-  await expect(text).toHaveCount(0);
+  await expect(text).toBeHidden();
 
   // Save the edits and confirm they reach the project file.
   const save = page.getByTestId("editor-save-button");
@@ -80,8 +80,8 @@ test("compose the output start, follow inspector edits, and save them", async ({
   await expectImageLoaded(image);
   await expect(image.locator("..")).toHaveCSS("left", "460px");
   await expect(image.locator("..")).toHaveCSS("width", "80px");
-  await expect(video).toHaveCount(0);
-  await expect(text).toHaveCount(0);
+  await expect(video).toBeHidden();
+  await expect(text).toBeHidden();
   await expect(save).toHaveAttribute("data-status", "saved");
 });
 

@@ -2,18 +2,20 @@ import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
 import { getLayerRange } from "../lib/layout";
 import type { Layer, Project, TextLayer } from "../lib/project";
-import type { EditorSelection } from "../lib/runtime";
+import type { EditorRuntime, EditorSelection } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
 
 export function CompositionPreview({
   project,
   selection,
   time,
+  runtime,
   resolveMediaUrl,
 }: {
   project: Project;
   selection?: EditorSelection;
   time: number;
+  runtime: EditorRuntime;
   resolveMediaUrl: (src: string) => string;
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -46,20 +48,18 @@ export function CompositionPreview({
               background: canvas.background ?? "#000000",
             }}
           >
+            {/* Every layer stays mounted, so media is ready when playback reaches it. */}
             {project.layers.map((layer, index) => {
-              const range = getLayerRange(layer);
-              if (
-                time < range.start ||
-                time >= range.end ||
-                layer.type === "audio"
-              ) {
+              if (layer.type === "audio") {
                 return undefined;
               }
+              const range = getLayerRange(layer);
               return (
                 <PreviewLayer
                   key={"src" in layer ? `${index}:${layer.src}` : index}
                   layer={layer}
-                  time={time}
+                  visible={time >= range.start && time < range.end}
+                  runtime={runtime}
                   selected={
                     selection?.type === "layer" && selection.index === index
                   }
@@ -85,14 +85,16 @@ export function CompositionPreview({
 
 function PreviewLayer({
   layer,
-  time,
+  visible,
+  runtime,
   selected,
   index,
   canvas,
   resolveMediaUrl,
 }: {
   layer: Exclude<Layer, { type: "audio" }>;
-  time: number;
+  visible: boolean;
+  runtime: EditorRuntime;
   selected: boolean;
   index: number;
   canvas: Project["canvas"];
@@ -115,11 +117,12 @@ function PreviewLayer({
     height: box.height,
   };
   return (
-    <div data-testid={`composition-layer-${index}`}>
+    <div data-testid={`composition-layer-${index}`} hidden={!visible}>
       {layer.type === "video" || layer.type === "image" ? (
         <CompositionMedia
           layer={layer}
-          time={time}
+          runtime={runtime}
+          index={index}
           resolveMediaUrl={resolveMediaUrl}
         />
       ) : layer.type === "text" ? (

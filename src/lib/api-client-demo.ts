@@ -34,6 +34,14 @@ export const apiClient: typeof serverApiClient = {
   getMediaUrl({ src }) {
     return mediaUrls.get(src) ?? src;
   },
+
+  async loadAudioData({ src, projectPath }) {
+    const res = await fetch(apiClient.getMediaUrl({ src, projectPath }));
+    if (!res.ok) {
+      throw new Error(`Failed to load audio data: ${await res.text()}`);
+    }
+    return res.arrayBuffer();
+  },
 };
 
 const projects = new Map(

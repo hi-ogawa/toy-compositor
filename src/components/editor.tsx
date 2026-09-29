@@ -38,6 +38,11 @@ export function Editor({ projectPath }: { projectPath: string }) {
     }
     if (timeline.handleFrameStepShortcut(event)) {
       event.preventDefault();
+      return;
+    }
+    if (matchKeyboardEvent(event, "Space") && !event.repeat) {
+      event.preventDefault();
+      void runtime.togglePlayback();
     }
   });
 
@@ -69,6 +74,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
                 project={state.project}
                 selection={selection}
                 time={state.playhead}
+                runtime={runtime}
                 resolveMediaUrl={project.resolveMediaUrl}
               />
             }
@@ -79,6 +85,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
             project={state.project}
             selection={selection}
             playhead={state.playhead}
+            playing={state.playing}
           />
         </main>
         <aside
