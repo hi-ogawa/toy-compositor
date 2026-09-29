@@ -1,4 +1,14 @@
-import { PauseIcon, PlayIcon } from "lucide-react";
+import {
+  AudioLinesIcon,
+  FilmIcon,
+  ImageIcon,
+  PauseIcon,
+  PlayIcon,
+  SquareIcon,
+  TypeIcon,
+  VolumeXIcon,
+  type LucideIcon,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { getLayerRange, type Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
@@ -280,11 +290,12 @@ function TimelineLayerLane({
       label={
         <button
           type="button"
-          className="flex h-full w-full items-center justify-between gap-2 px-3 text-left"
+          title={name}
+          className="flex h-full w-full items-center justify-between gap-2 px-3 text-left hover:bg-neutral-800/60"
           onClick={onSelect}
         >
           <span className="truncate text-xs font-semibold">{name}</span>
-          <span className="text-xs text-muted-foreground">{layer.type}</span>
+          <LayerTypeIcon type={layer.type} />
         </button>
       }
     >
@@ -304,17 +315,42 @@ function TimelineLayerLane({
           )}
           style={region}
         >
-          <span className="absolute left-1 top-0.5 whitespace-nowrap">
-            {name}
-            {(layer.type === "video" || layer.type === "audio") &&
-              layer.muted &&
-              " · muted"}
-          </span>
+          {/* The lane's header already names the layer, so the clip shows only state. */}
+          {(layer.type === "video" || layer.type === "audio") &&
+            layer.muted && (
+              <VolumeXIcon
+                role="img"
+                aria-label="muted"
+                className="absolute left-1 top-1 size-3.5"
+              />
+            )}
         </button>
       )}
     </TimelineRow>
   );
 }
+
+/** Marks the layer type by icon, keeping the header column for the name. */
+function LayerTypeIcon({ type }: { type: Layer["type"] }) {
+  const Icon = LAYER_TYPE_ICONS[type];
+  return (
+    <Icon
+      role="img"
+      aria-label={type}
+      className="size-3.5 shrink-0 text-neutral-400"
+    >
+      <title>{type}</title>
+    </Icon>
+  );
+}
+
+const LAYER_TYPE_ICONS: Record<Layer["type"], LucideIcon> = {
+  video: FilmIcon,
+  audio: AudioLinesIcon,
+  image: ImageIcon,
+  text: TypeIcon,
+  color: SquareIcon,
+};
 
 const LAYER_CLIP_CLASSES: Record<
   Layer["type"],
