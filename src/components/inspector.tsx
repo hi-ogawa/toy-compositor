@@ -1,5 +1,15 @@
 import type { EditorProject } from "../lib/editor-project";
-import type { Box, Crop, Layer } from "../lib/project";
+import type {
+  AudioLayer,
+  Box,
+  ColorLayer,
+  Crop,
+  ImageLayer,
+  Layer,
+  Project,
+  TextLayer,
+  VideoLayer,
+} from "../lib/project";
 import type { EditorRuntime, EditorSelection } from "../lib/runtime";
 import { useDraftInput } from "./use-draft-input";
 
@@ -14,17 +24,99 @@ export function Inspector({
 }) {
   if (!selection) {
     return (
-      <p className="p-3 text-sm text-muted-foreground">
-        Select render settings or a layer.
-      </p>
+      <>
+        <InspectorTitle />
+        <p className="p-3 text-xs text-neutral-500">
+          Select composition settings or a layer.
+        </p>
+      </>
     );
   }
   const time = getTimeFieldOptions(project.canvas.fps);
-  if (selection.type === "output") {
-    const { output } = project;
-    return (
-      <div className="flex flex-col gap-4 p-3" data-testid="inspector">
-        <InspectorTitle title="Render settings" subtitle={output.type} />
+  switch (selection.type) {
+    case "output": {
+      return (
+        <OutputInspector
+          canvas={project.canvas}
+          output={project.output}
+          time={time}
+          onCanvasCommit={(canvas) => runtime.setCanvas(canvas)}
+          onOutputCommit={(output) => runtime.setOutput(output)}
+        />
+      );
+    }
+    case "layer": {
+      const { id } = selection;
+      const { layer } = project.layers.find((entry) => entry.id === id)!;
+      return (
+        <LayerInspector
+          layer={layer}
+          time={time}
+          onUpdate={(update) => runtime.updateLayer({ id, update })}
+        />
+      );
+    }
+  }
+}
+
+type Canvas = Project["canvas"];
+
+type Output = Project["output"];
+
+type TimeFieldOptions = ReturnType<typeof getTimeFieldOptions>;
+
+type LayerUpdate = (update: Partial<Layer>) => void;
+
+/** Composition settings: the canvas together with what to render from it. */
+function OutputInspector({
+  canvas,
+  output,
+  time,
+  onCanvasCommit,
+  onOutputCommit,
+}: {
+  canvas: Canvas;
+  output: Output;
+  time: TimeFieldOptions;
+  onCanvasCommit: (canvas: Canvas) => void;
+  onOutputCommit: (output: Output) => void;
+}) {
+  return (
+    <div data-testid="inspector">
+      <InspectorTitle title="Composition settings" subtitle={output.type} />
+      <div className="flex flex-col gap-4 p-3">
+        <Group title="Canvas">
+          {(["width", "height"] as const).map((key) => (
+            <NumberField
+              key={key}
+              label={key}
+              value={canvas[key]}
+              {...PIXEL_FIELD}
+              min={1}
+              onCommit={(value) => onCanvasCommit({ ...canvas, [key]: value })}
+            />
+          ))}
+          <NumberField
+            label="fps"
+            value={canvas.fps}
+            step={1}
+            min={1}
+            round={(value) => roundTo(value, 1e-3)}
+            onCommit={(fps) => onCanvasCommit({ ...canvas, fps })}
+          />
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] text-neutral-400">background</span>
+            <input
+              type="color"
+              aria-label="background"
+              className="h-8 w-full min-w-0 cursor-pointer rounded border border-neutral-600 bg-neutral-900 px-1 outline-none focus-visible:border-ring"
+              value={canvas.background ?? "#000000"}
+              onChange={(e) =>
+                onCanvasCommit({ ...canvas, background: e.target.value })
+              }
+            />
+          </label>
+        </Group>
         <Group title="Range">
           {output.type === "video" ? (
             <>
@@ -32,13 +124,13 @@ export function Inspector({
                 label="start"
                 value={output.start}
                 {...time}
-                onCommit={(start) => runtime.setOutput({ ...output, start })}
+                onCommit={(start) => onOutputCommit({ ...output, start })}
               />
               <NumberField
                 label="end"
                 value={output.end}
                 {...time}
-                onCommit={(end) => runtime.setOutput({ ...output, end })}
+                onCommit={(end) => onOutputCommit({ ...output, end })}
               />
             </>
           ) : (
@@ -46,109 +138,102 @@ export function Inspector({
               label="time"
               value={output.time}
               {...time}
-              onCommit={(time) => runtime.setOutput({ ...output, time })}
+              onCommit={(time) => onOutputCommit({ ...output, time })}
             />
           )}
         </Group>
       </div>
-    );
-  }
-  const { id } = selection;
-  const { layer } = project.layers.find((entry) => entry.id === id)!;
-  const update = (update: Partial<Layer>) =>
-    runtime.updateLayer({ id, update });
+    </div>
+  );
+}
+
+function LayerInspector({
+  layer,
+  time,
+  onUpdate,
+}: {
+  layer: Layer;
+  time: TimeFieldOptions;
+  onUpdate: LayerUpdate;
+}) {
   return (
-    <div className="flex flex-col gap-4 p-3" data-testid="inspector">
+    <div data-testid="inspector">
       <InspectorTitle title={layer.name ?? layer.type} subtitle={layer.type} />
-      {(layer.type === "video" || layer.type === "audio") && (
+      <div className="flex flex-col gap-4 p-3">
+        <LayerFields layer={layer} time={time} onUpdate={onUpdate} />
+      </div>
+    </div>
+  );
+}
+
+/** Lists each layer type's groups in display order. */
+function LayerFields({
+  layer,
+  time,
+  onUpdate,
+}: {
+  layer: Layer;
+  time: TimeFieldOptions;
+  onUpdate: LayerUpdate;
+}) {
+  switch (layer.type) {
+    case "video": {
+      return (
         <>
-          <Group title="Timing">
-            <NumberField
-              label="start"
-              value={layer.start}
-              {...time}
-              onCommit={(start) => update({ start })}
-            />
-            <NumberField
-              label="in"
-              value={layer.in}
-              {...time}
-              onCommit={(value) => update({ in: value })}
-            />
-            <NumberField
-              label="out"
-              value={layer.out}
-              {...time}
-              onCommit={(out) => update({ out })}
-            />
-          </Group>
-          <Group title="Audio">
-            <label className="col-span-2 flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={layer.muted ?? false}
-                onChange={(e) =>
-                  update({ muted: e.target.checked || undefined })
+          <SourceTimingFields layer={layer} time={time} onUpdate={onUpdate} />
+          <AudioFields layer={layer} time={time} onUpdate={onUpdate} />
+          <BoxFields box={layer.box} onCommit={(box) => onUpdate({ box })} />
+          <CropFields
+            crop={layer.crop}
+            onCommit={(crop) => onUpdate({ crop })}
+          />
+        </>
+      );
+    }
+    case "audio": {
+      return (
+        <>
+          <SourceTimingFields layer={layer} time={time} onUpdate={onUpdate} />
+          <AudioFields layer={layer} time={time} onUpdate={onUpdate} />
+        </>
+      );
+    }
+    case "image": {
+      return (
+        <>
+          <RangeTimingFields layer={layer} time={time} onUpdate={onUpdate} />
+          <BoxFields box={layer.box} onCommit={(box) => onUpdate({ box })} />
+          <CropFields
+            crop={layer.crop}
+            onCommit={(crop) => onUpdate({ crop })}
+          />
+        </>
+      );
+    }
+    case "text": {
+      return (
+        <>
+          <RangeTimingFields layer={layer} time={time} onUpdate={onUpdate} />
+          <Group title="Box">
+            {(["x", "y", "width"] as const).map((key) => (
+              <NumberField
+                key={key}
+                label={key}
+                value={layer.box[key]}
+                {...PIXEL_FIELD}
+                onCommit={(value) =>
+                  onUpdate({ box: { ...layer.box, [key]: value } })
                 }
               />
-              muted
-            </label>
-            <NumberField
-              label="fade in"
-              value={layer.fadeIn ?? 0}
-              {...time}
-              onCommit={(fadeIn) => update({ fadeIn: fadeIn || undefined })}
-            />
-            <NumberField
-              label="fade out"
-              value={layer.fadeOut ?? 0}
-              {...time}
-              onCommit={(fadeOut) => update({ fadeOut: fadeOut || undefined })}
-            />
+            ))}
           </Group>
         </>
-      )}
-      {(layer.type === "image" ||
-        layer.type === "text" ||
-        layer.type === "color") && (
-        <Group title="Timing">
-          <NumberField
-            label="start"
-            value={layer.start}
-            {...time}
-            onCommit={(start) => update({ start })}
-          />
-          <NumberField
-            label="end"
-            value={layer.end}
-            {...time}
-            onCommit={(end) => update({ end })}
-          />
-        </Group>
-      )}
-      {(layer.type === "video" || layer.type === "image") && (
+      );
+    }
+    case "color": {
+      return (
         <>
-          <BoxFields box={layer.box} onCommit={(box) => update({ box })} />
-          <CropFields crop={layer.crop} onCommit={(crop) => update({ crop })} />
-        </>
-      )}
-      {layer.type === "text" && (
-        <Group title="Box">
-          {(["x", "y", "width"] as const).map((key) => (
-            <NumberField
-              key={key}
-              label={key}
-              value={layer.box[key]}
-              {...PIXEL_FIELD}
-              onCommit={(value) =>
-                update({ box: { ...layer.box, [key]: value } })
-              }
-            />
-          ))}
-        </Group>
-      )}
-      {layer.type === "color" && (
-        <>
+          <RangeTimingFields layer={layer} time={time} onUpdate={onUpdate} />
           <Group title="Fill">
             <NumberField
               label="opacity"
@@ -158,16 +243,113 @@ export function Inspector({
               max={1}
               round={(value) => roundTo(value, 1e-3)}
               onCommit={(opacity) =>
-                update({ opacity: opacity === 1 ? undefined : opacity })
+                onUpdate({ opacity: opacity === 1 ? undefined : opacity })
               }
             />
           </Group>
           {layer.box && (
-            <BoxFields box={layer.box} onCommit={(box) => update({ box })} />
+            <BoxFields box={layer.box} onCommit={(box) => onUpdate({ box })} />
           )}
         </>
-      )}
-    </div>
+      );
+    }
+  }
+}
+
+/** Timing for layers that play a source range: timeline start plus source in and out. */
+function SourceTimingFields({
+  layer,
+  time,
+  onUpdate,
+}: {
+  layer: VideoLayer | AudioLayer;
+  time: TimeFieldOptions;
+  onUpdate: LayerUpdate;
+}) {
+  return (
+    <Group title="Timing">
+      <NumberField
+        label="start"
+        value={layer.start}
+        {...time}
+        onCommit={(start) => onUpdate({ start })}
+      />
+      <NumberField
+        label="in"
+        value={layer.in}
+        {...time}
+        onCommit={(value) => onUpdate({ in: value })}
+      />
+      <NumberField
+        label="out"
+        value={layer.out}
+        {...time}
+        onCommit={(out) => onUpdate({ out })}
+      />
+    </Group>
+  );
+}
+
+/** Timing for layers without a source range, which span start to end. */
+function RangeTimingFields({
+  layer,
+  time,
+  onUpdate,
+}: {
+  layer: ImageLayer | TextLayer | ColorLayer;
+  time: TimeFieldOptions;
+  onUpdate: LayerUpdate;
+}) {
+  return (
+    <Group title="Timing">
+      <NumberField
+        label="start"
+        value={layer.start}
+        {...time}
+        onCommit={(start) => onUpdate({ start })}
+      />
+      <NumberField
+        label="end"
+        value={layer.end}
+        {...time}
+        onCommit={(end) => onUpdate({ end })}
+      />
+    </Group>
+  );
+}
+
+function AudioFields({
+  layer,
+  time,
+  onUpdate,
+}: {
+  layer: VideoLayer | AudioLayer;
+  time: TimeFieldOptions;
+  onUpdate: LayerUpdate;
+}) {
+  return (
+    <Group title="Audio">
+      <label className="col-span-2 flex items-center gap-2 text-xs">
+        <input
+          type="checkbox"
+          checked={layer.muted ?? false}
+          onChange={(e) => onUpdate({ muted: e.target.checked || undefined })}
+        />
+        muted
+      </label>
+      <NumberField
+        label="fade in"
+        value={layer.fadeIn ?? 0}
+        {...time}
+        onCommit={(fadeIn) => onUpdate({ fadeIn: fadeIn || undefined })}
+      />
+      <NumberField
+        label="fade out"
+        value={layer.fadeOut ?? 0}
+        {...time}
+        onCommit={(fadeOut) => onUpdate({ fadeOut: fadeOut || undefined })}
+      />
+    </Group>
   );
 }
 
@@ -266,13 +448,13 @@ function NumberField({
     onCommit: (next) => onCommit(round(next)),
   });
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="text-xs text-muted-foreground">{label}</span>
+    <label className="flex flex-col gap-1">
+      <span className="text-[10px] text-neutral-400">{label}</span>
       <input
         type="text"
         inputMode="decimal"
         aria-label={label}
-        className="w-full min-w-0 rounded-md border border-input bg-transparent px-2 py-1 font-mono tabular-nums outline-none focus-visible:border-ring"
+        className="h-8 w-full min-w-0 rounded border border-neutral-600 bg-neutral-900 px-2 font-mono text-sm tabular-nums outline-none focus-visible:border-ring"
         {...input.props}
       />
     </label>
@@ -288,7 +470,7 @@ function Group({
 }) {
   return (
     <section className="flex flex-col gap-2">
-      <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <h3 className="text-[10px] font-medium uppercase tracking-wide text-neutral-400">
         {title}
       </h3>
       <div className="grid grid-cols-2 gap-2">{children}</div>
@@ -296,17 +478,27 @@ function Group({
   );
 }
 
+/** Keeps the panel name fixed, with the selection after it like the Source band's file. */
 function InspectorTitle({
   title,
   subtitle,
 }: {
-  title: string;
-  subtitle: string;
+  title?: string;
+  subtitle?: string;
 }) {
   return (
-    <div className="flex items-baseline gap-2">
-      <h2 className="font-medium">{title}</h2>
-      <span className="text-xs text-muted-foreground">{subtitle}</span>
+    <div className="flex h-7 shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-3 text-xs">
+      <h2 className="shrink-0 font-semibold">Inspector</h2>
+      {title && (
+        <h3 className="truncate text-neutral-300" title={title}>
+          {title}
+        </h3>
+      )}
+      {subtitle && (
+        <span className="shrink-0 text-[10px] text-neutral-400">
+          {subtitle}
+        </span>
+      )}
     </div>
   );
 }

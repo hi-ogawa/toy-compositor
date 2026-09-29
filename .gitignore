@@ -5,9 +5,6 @@ dist
 
 .local/
 
-# Filled from samples/ before publishing templates
-templates/synthetic/projects/
-
 # Playwright output
 test-results/
 playwright-report/

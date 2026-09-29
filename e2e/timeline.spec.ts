@@ -17,12 +17,12 @@ test("navigate the timeline without editing the project", async ({
   await page.goto(editor.url);
   const time = page.getByTestId("timeline-time");
 
-  // Click the render start marker and confirm it opens Render settings.
+  // Click the render start marker and confirm it opens Composition settings.
   await clickTimelineButton(page, { name: "Render start" });
   await expect(
     page
       .getByTestId("inspector")
-      .getByRole("heading", { name: "Render settings", exact: true }),
+      .getByRole("heading", { name: "Composition settings", exact: true }),
   ).toBeVisible();
   await expect(getInspectorField(page, { name: "start" })).toHaveValue("0");
 
@@ -56,6 +56,18 @@ test("navigate the timeline without editing the project", async ({
   await expect(time).toContainText("0.000 s");
   await page.keyboard.press("ArrowLeft");
   await expect(time).toContainText("0.000 s");
+
+  // Click empty space in the locator row at 5 s, past the markers, and confirm
+  // it seeks like the ruler.
+  const locatorRow = page
+    .getByTestId("editor-timeline")
+    .getByRole("button", { name: "Locator row", exact: true });
+  const locatorRowBox = (await locatorRow.boundingBox())!;
+  await page.mouse.click(
+    locatorRowBox.x + 5 * DEFAULT_PIXELS_PER_SECOND,
+    locatorRowBox.y + locatorRowBox.height / 2,
+  );
+  await expect(time).toContainText("5.000 s");
 
   // Confirm navigation did not mark the project as having unsaved changes.
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
@@ -112,7 +124,6 @@ test("scroll and zoom the timeline with the wheel", async ({
 test("play the composition and step by frames", async ({ page, editor }) => {
   // Open the synthetic project, where the video starts at 0.
   await page.goto(editor.url);
-  const timeline = page.getByTestId("editor-timeline");
   const time = page.getByTestId("timeline-time");
   const video = page.getByTestId("composition-canvas").locator("video");
   const readPlayhead = async () => parseFloat((await time.textContent())!);
@@ -121,9 +132,9 @@ test("play the composition and step by frames", async ({ page, editor }) => {
     `${(frame / canvas.fps).toFixed(3)} s`;
 
   // Play and confirm the playhead advances with the video playing.
-  await timeline.getByRole("button", { name: "Play", exact: true }).click();
+  await page.getByRole("button", { name: "Play", exact: true }).click();
   await expect(
-    timeline.getByRole("button", { name: "Pause", exact: true }),
+    page.getByRole("button", { name: "Pause", exact: true }),
   ).toBeVisible();
   await expect.poll(readPlayhead).toBeGreaterThan(0.5);
   expect(
@@ -134,7 +145,7 @@ test("play the composition and step by frames", async ({ page, editor }) => {
   // video shows.
   await page.keyboard.press("Space");
   await expect(
-    timeline.getByRole("button", { name: "Play", exact: true }),
+    page.getByRole("button", { name: "Play", exact: true }),
   ).toBeVisible();
   expect(
     await video.evaluate((element: HTMLVideoElement) => element.paused),
