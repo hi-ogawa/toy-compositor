@@ -1,10 +1,5 @@
 import { loadMediaDuration } from "../utils/media.ts";
-import {
-  trackPromise,
-  watchPromise,
-  type PromiseState,
-  type TrackedPromise,
-} from "../utils/promise-state.ts";
+import { watchPromise, type PromiseState } from "../utils/promise-state.ts";
 import { createStore } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
@@ -19,10 +14,10 @@ export type EditorSelection =
   | { type: "output" }
   | { type: "layer"; index: number };
 
-export type AudioSource =
-  | { status: "loading" }
-  | { status: "loaded"; view: AudioView }
-  | { status: "missing" };
+export interface DecodedAudio {
+  buffer: AudioBuffer;
+  view: AudioView;
+}
 
 export interface EditorState {
   /** Project file path relative to the projects root, which is also where saves go. */
@@ -33,7 +28,7 @@ export interface EditorState {
   playing: boolean;
   selection?: EditorSelection;
   sourceDurations: Record<string, PromiseState<number>>;
-  audioSources: Record<string, AudioSource>;
+  audioSources: Record<string, PromiseState<DecodedAudio>>;
 }
 
 const EMPTY_PROJECT: Project = {
@@ -55,10 +50,6 @@ export class EditorRuntime {
 
   readonly context = new AudioContext();
   readonly transport = new AudioContextTransport(this.context);
-  private readonly audioBuffers = new Map<
-    string,
-    TrackedPromise<AudioBuffer>
-  >();
   private readonly audioPlaybacks = new Map<string, AudioBufferPlayback>();
   private readonly videoPlaybacks = new Map<number, VideoPlayback>();
 
@@ -163,7 +154,7 @@ export class EditorRuntime {
   }
 
   private syncPlayback(): void {
-    const { project } = this.store.get();
+    const { project, audioSources } = this.store.get();
     for (const [index, playback] of this.videoPlaybacks) {
       const layer = project.layers[index];
       if (layer?.type === "video") {
@@ -191,39 +182,30 @@ export class EditorRuntime {
         this.audioPlaybacks.set(key, playback);
       }
       playback.setLayer({ layer });
-      const source = this.audioBuffers.get(layer.src);
-      if (source?.state.status === "fulfilled") {
-        playback.setBuffer({ buffer: source.state.value });
+      const source = audioSources[layer.src];
+      if (source?.status === "fulfilled") {
+        playback.setBuffer({ buffer: source.value.buffer });
       }
     }
   }
 
   /** Starts decoding a source, and syncs playback once its buffer arrives. */
   private loadAudio(src: string): void {
-    const decodeAudio = async () => {
+    const decodeAudio = async (): Promise<DecodedAudio> => {
       const data = await apiClient.loadAudioData({
         src,
         projectPath: this.store.get().file,
       });
-      return this.context.decodeAudioData(data);
+      const buffer = await this.context.decodeAudioData(data);
+      return { buffer, view: createAudioView(buffer) };
     };
-    this.setAudioSource({ src, source: { status: "loading" } });
-    this.audioBuffers.set(
-      src,
-      trackPromise({
-        promise: decodeAudio(),
-        onFulfilled: (buffer) => {
-          this.setAudioSource({
-            src,
-            source: { status: "loaded", view: createAudioView(buffer) },
-          });
-          this.reschedulePlayback(() => this.syncPlayback());
-        },
-        onRejected: () => {
-          this.setAudioSource({ src, source: { status: "missing" } });
-        },
-      }),
-    );
+    watchPromise(decodeAudio(), (source) => {
+      const { audioSources } = this.store.get();
+      this.store.update({ audioSources: { ...audioSources, [src]: source } });
+      if (source.status === "fulfilled") {
+        this.reschedulePlayback(() => this.syncPlayback());
+      }
+    });
   }
 
   /**
@@ -242,17 +224,6 @@ export class EditorRuntime {
         sourceDurations: { ...sourceDurations, [src]: duration },
       });
     });
-  }
-
-  private setAudioSource({
-    src,
-    source,
-  }: {
-    src: string;
-    source: AudioSource;
-  }): void {
-    const { audioSources } = this.store.get();
-    this.store.update({ audioSources: { ...audioSources, [src]: source } });
   }
 
   serializeProject(): Project {

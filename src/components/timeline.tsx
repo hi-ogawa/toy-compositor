@@ -18,7 +18,7 @@ import type { LayerEditType } from "../lib/layer-edit";
 import { getLayerRange, intersect, type Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
 import type {
-  AudioSource,
+  DecodedAudio,
   EditorRuntime,
   EditorSelection,
 } from "../lib/runtime";
@@ -47,7 +47,7 @@ export function Timeline({
   selection?: EditorSelection;
   playhead: number;
   playing: boolean;
-  audioSources: Record<string, AudioSource>;
+  audioSources: Record<string, PromiseState<DecodedAudio>>;
   sourceDurations: Record<string, PromiseState<number>>;
 }) {
   const selectOutput = () => runtime.select({ type: "output" });
@@ -310,7 +310,7 @@ function TimelineLayerLane({
   layer: Layer;
   index: number;
   range: Range;
-  audioSource?: AudioSource;
+  audioSource?: PromiseState<DecodedAudio>;
   sourceDuration?: PromiseState<number>;
   selected: boolean;
   onSelect: () => void;
@@ -366,9 +366,9 @@ function TimelineLayerLane({
                 : LAYER_CLIP_CLASSES[layer.type].border,
             )}
           >
-            {audioLayer && visible && audioSource?.status === "loaded" && (
+            {audioLayer && visible && audioSource?.status === "fulfilled" && (
               <AudioWaveformView
-                audioView={audioSource.view}
+                audioView={audioSource.value.view}
                 sourceStart={audioLayer.in + visible.start - audioLayer.start}
                 sourceEnd={audioLayer.in + visible.end - audioLayer.start}
                 pixelsPerSecond={timeline.pixelsPerSecond}
@@ -384,7 +384,7 @@ function TimelineLayerLane({
                   className="absolute left-1 top-1 size-3.5"
                 />
               )}
-            {(audioSource?.status === "loading" ||
+            {(audioSource?.status === "pending" ||
               sourceDuration?.status === "pending") && (
               <LoaderCircleIcon
                 role="img"
