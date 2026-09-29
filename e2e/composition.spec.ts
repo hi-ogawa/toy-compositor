@@ -1,9 +1,12 @@
 import { expect } from "@playwright/test";
+import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
 import { readJson } from "../src/utils/fs.ts";
 import {
   commitInspectorField,
   expectImageLoaded,
   clickTimelineButton,
+  getInspectorField,
+  seekTimelineByPixels,
   test,
 } from "./helper";
 
@@ -36,7 +39,7 @@ test("compose the output start, follow inspector edits, and save them", async ({
   // Offset the output start, video start, and trim, and confirm the video seeks
   // to in + time - start.
   await page
-    .getByRole("button", { name: "Render settings", exact: true })
+    .getByRole("button", { name: "Composition settings", exact: true })
     .click();
   await commitInspectorField(page, { name: "start", value: "1" });
   await clickTimelineButton(page, { name: "Render start" });
@@ -88,6 +91,53 @@ test("compose the output start, follow inspector edits, and save them", async ({
   await expect(video).toBeHidden();
   await expect(text).toBeHidden();
   await expect(save).toHaveAttribute("data-status", "saved");
+});
+
+test("edit the canvas in composition settings and save it", async ({
+  page,
+  editor,
+}) => {
+  // Open the synthetic project and open Composition settings from the header.
+  await page.goto(editor.url);
+  const canvas = page.getByTestId("composition-canvas");
+  await page
+    .getByRole("button", { name: "Composition settings", exact: true })
+    .click();
+  const readout = page.getByTestId("composition-readout");
+  await expect(readout).toHaveText("640 × 360 · 30 fps");
+
+  // Resize the canvas, lower the frame rate, and change the background, and
+  // confirm the preview and the Composition readout follow.
+  await commitInspectorField(page, { name: "width", value: "800" });
+  await commitInspectorField(page, { name: "fps", value: "10" });
+  await page
+    .getByTestId("inspector")
+    .getByLabel("background", { exact: true })
+    .fill("#336699");
+  await expect(readout).toHaveText("800 × 360 · 10 fps");
+  await expect(canvas).toHaveCSS("width", "800px");
+  await expect(canvas).toHaveCSS("background-color", "rgb(51, 102, 153)");
+
+  // Click the ruler at 1.12 s, step one frame, and edit the render end, and
+  // confirm each snaps to the new 10 fps grid.
+  const time = page.getByTestId("timeline-time");
+  await seekTimelineByPixels(page, {
+    pixels: 1.12 * DEFAULT_PIXELS_PER_SECOND,
+  });
+  await expect(time).toContainText("1.100 s");
+  await page.keyboard.press("ArrowRight");
+  await expect(time).toContainText("1.200 s");
+  await commitInspectorField(page, { name: "end", value: "1.12" });
+  await expect(getInspectorField(page, { name: "end" })).toHaveValue("1.1");
+
+  // Save and confirm the canvas and the render end reach the project file.
+  const save = page.getByTestId("editor-save-button");
+  await save.click();
+  await expect(save).toHaveAttribute("data-status", "saved");
+  expect(await readJson(editor.projectFile)).toMatchObject({
+    canvas: { width: 800, height: 360, fps: 10, background: "#336699" },
+    output: { start: 0, end: 1.1 },
+  });
 });
 
 test("compose a still project at its output time", async ({ page, editor }) => {

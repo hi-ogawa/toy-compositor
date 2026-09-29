@@ -66,9 +66,9 @@ export function Editor({ projectPath }: { projectPath: string }) {
       <EditorHeader
         file={state.file}
         saveStatus={project.saveStatus}
-        renderSettingsSelected={selection?.type === "output"}
+        compositionSettingsSelected={selection?.type === "output"}
         onSave={() => project.save()}
-        onRenderSettingsSelect={() => runtime.select({ type: "output" })}
+        onCompositionSettingsSelect={() => runtime.select({ type: "output" })}
       />
       <div className="flex min-h-0 flex-1">
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">

@@ -17,12 +17,12 @@ test("navigate the timeline without editing the project", async ({
   await page.goto(editor.url);
   const time = page.getByTestId("timeline-time");
 
-  // Click the render start marker and confirm it opens Render settings.
+  // Click the render start marker and confirm it opens Composition settings.
   await clickTimelineButton(page, { name: "Render start" });
   await expect(
     page
       .getByTestId("inspector")
-      .getByRole("heading", { name: "Render settings", exact: true }),
+      .getByRole("heading", { name: "Composition settings", exact: true }),
   ).toBeVisible();
   await expect(getInspectorField(page, { name: "start" })).toHaveValue("0");
 
