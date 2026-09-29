@@ -96,7 +96,7 @@ export function Timeline({
             ))}
           {timeline.isVisible(playhead) && (
             <div
-              className="pointer-events-none absolute inset-y-0 z-10 w-px bg-red-400"
+              className="pointer-events-none absolute inset-y-0 z-10 w-px bg-sky-400"
               data-testid="timeline-playhead"
               style={{
                 left: TIMELINE_LABEL_WIDTH + timeline.timeToX(playhead),
@@ -297,10 +297,10 @@ function TimelineLayerLane({
           data-testid={`timeline-layer-${index}`}
           className={cn(
             "absolute inset-y-1.5 overflow-hidden rounded border px-2 text-left text-xs",
-            layer.type === "audio"
-              ? "border-emerald-800 bg-emerald-950"
-              : "border-blue-800 bg-blue-950",
-            selected && "outline outline-1 outline-primary",
+            LAYER_CLIP_FILL_CLASSES[layer.type],
+            selected
+              ? "border-sky-300 ring-1 ring-inset ring-sky-300"
+              : LAYER_CLIP_BORDER_CLASSES[layer.type],
           )}
           style={region}
         >
@@ -313,6 +313,22 @@ function TimelineLayerLane({
     </TimelineRow>
   );
 }
+
+const LAYER_CLIP_FILL_CLASSES: Record<Layer["type"], string> = {
+  video: "bg-blue-400/20 text-blue-100",
+  audio: "bg-emerald-400/20 text-emerald-100",
+  image: "bg-violet-400/20 text-violet-100",
+  text: "bg-amber-400/20 text-amber-100",
+  color: "bg-rose-400/20 text-rose-100",
+};
+
+const LAYER_CLIP_BORDER_CLASSES: Record<Layer["type"], string> = {
+  video: "border-blue-400/60",
+  audio: "border-emerald-400/60",
+  image: "border-violet-400/60",
+  text: "border-amber-400/60",
+  color: "border-rose-400/60",
+};
 
 /** A label column beside a graph cell that shares the timeline's tick grid. */
 function TimelineRow({
@@ -336,17 +352,36 @@ function TimelineRow({
       </div>
       <div
         className="relative min-w-0 flex-1 overflow-hidden"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, var(--border) 1px, transparent 1px)",
-          backgroundSize: `${timeline.tickStep * timeline.pixelsPerSecond}px 100%`,
-          backgroundPositionX: `${timeline.timeToX(Math.ceil(timeline.visible.start / timeline.tickStep) * timeline.tickStep)}px`,
-        }}
+        style={getTimelineGridBackground(timeline)}
       >
         {children}
       </div>
     </div>
   );
+}
+
+/** Major lines at labelled ruler ticks over fainter subdivision lines, like toy-midi's bar and subdivision grid. */
+function getTimelineGridBackground(timeline: TimelineView) {
+  const layers = [
+    { step: timeline.tickStep, color: "rgb(82 82 82)" },
+    { step: timeline.subdivisionStep, color: "rgb(51 51 51)" },
+  ];
+  const offsetX = (step: number) =>
+    timeline.timeToX(Math.ceil(timeline.visible.start / step) * step);
+  return {
+    backgroundImage: layers
+      .map(
+        ({ color }) =>
+          `linear-gradient(to right, ${color} 1px, transparent 1px)`,
+      )
+      .join(", "),
+    backgroundSize: layers
+      .map(({ step }) => `${step * timeline.pixelsPerSecond}px 100%`)
+      .join(", "),
+    backgroundPosition: layers
+      .map(({ step }) => `${offsetX(step)}px 0`)
+      .join(", "),
+  };
 }
 
 function LocatorMarker({
