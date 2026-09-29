@@ -11,7 +11,7 @@
   },
   "layers": [
     {
-      "name": "video",
+      "name": "Test pattern",
       "type": "video",
       "src": "media/video.mp4",
       "start": 0,
@@ -26,7 +26,7 @@
       "muted": true
     },
     {
-      "name": "audio",
+      "name": "Tone 660 Hz",
       "type": "audio",
       "src": "media/audio.wav",
       "start": 0,
@@ -36,7 +36,7 @@
       "fadeOut": 0.5
     },
     {
-      "name": "image",
+      "name": "Label backdrop",
       "type": "image",
       "src": "media/image.png",
       "start": 0,
@@ -49,7 +49,7 @@
       }
     },
     {
-      "name": "label",
+      "name": "Title",
       "type": "text",
       "text": "Synthetic\nsample",
       "start": 0,
