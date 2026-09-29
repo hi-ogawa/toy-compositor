@@ -37,7 +37,9 @@ export class EditorRuntime {
 
   readonly context = new AudioContext();
   readonly transport = new AudioContextTransport(this.context);
-  /** Keyed by layer index and source, so a replaced source loads afresh. */
+  /** Decoded audio keyed by source, shared by every layer that uses it. */
+  private readonly audioBuffers = new Map<string, AudioBuffer>();
+  /** Keyed by layer index and source, so a replaced source gets a fresh playback. */
   private readonly audioPlaybacks = new Map<string, AudioBufferPlayback>();
   private readonly videoPlaybacks = new Map<number, VideoPlayback>();
 
@@ -130,6 +132,16 @@ export class EditorRuntime {
     this.store.update({ file, project, selection: undefined });
     this.syncPlayback();
     this.seek(getOutputRange(project).start);
+    // Audio loads in the background, and each layer joins playback when its
+    // source arrives, so opening a project never waits on a long source.
+    const sources = new Set(
+      project.layers.flatMap((layer) =>
+        layer.type === "video" || layer.type === "audio" ? [layer.src] : [],
+      ),
+    );
+    for (const src of sources) {
+      void this.loadAudio(src);
+    }
   }
 
   /** Brings playback in line with the project after it loads or changes. */
@@ -142,32 +154,36 @@ export class EditorRuntime {
       }
     }
 
-    // Audio layers, and video layers whose own audio is unmuted, are heard.
-    const audible = new Map<string, VideoLayer | AudioLayer>(
+    // Every video and audio layer gets a playback, and muting only decides
+    // whether it schedules sound, so unmuting needs no load.
+    const layers = new Map<string, VideoLayer | AudioLayer>(
       project.layers.flatMap((layer, index) =>
-        layer.type === "audio" || (layer.type === "video" && !layer.muted)
+        layer.type === "video" || layer.type === "audio"
           ? [[`${index}:${layer.src}`, layer] as const]
           : [],
       ),
     );
     for (const [key, playback] of this.audioPlaybacks) {
-      if (!audible.has(key)) {
+      if (!layers.has(key)) {
         playback.dispose();
         this.audioPlaybacks.delete(key);
       }
     }
-    for (const [key, layer] of audible) {
+    for (const [key, layer] of layers) {
       let playback = this.audioPlaybacks.get(key);
       if (!playback) {
         playback = new AudioBufferPlayback({ transport: this.transport });
         this.audioPlaybacks.set(key, playback);
-        void this.loadAudio({ key, src: layer.src });
       }
       playback.setLayer({ layer });
+      const buffer = this.audioBuffers.get(layer.src);
+      if (buffer) {
+        playback.setBuffer({ buffer });
+      }
     }
   }
 
-  private async loadAudio({ key, src }: { key: string; src: string }) {
+  private async loadAudio(src: string): Promise<void> {
     const url = apiClient.getMediaUrl({
       src,
       projectPath: this.store.get().file,
@@ -177,7 +193,8 @@ export class EditorRuntime {
       const buffer = await this.context.decodeAudioData(
         await response.arrayBuffer(),
       );
-      this.audioPlaybacks.get(key)?.setBuffer({ buffer });
+      this.audioBuffers.set(src, buffer);
+      this.syncPlayback();
     } catch {
       // A video file without an audio stream contributes nothing, as in the render.
     }

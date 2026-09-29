@@ -35,6 +35,9 @@ export class AudioBufferPlayback implements TransportParticipant {
   }
 
   setBuffer({ buffer }: { buffer: AudioBuffer }): void {
+    if (buffer === this.buffer) {
+      return;
+    }
     this.buffer = buffer;
     this.restart();
   }
