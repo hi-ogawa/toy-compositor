@@ -100,7 +100,8 @@ test("edit the canvas in composition settings and save it", async ({
   await page
     .getByRole("button", { name: "Composition settings", exact: true })
     .click();
-  await expect(page.getByText("640 × 360 · 30 fps")).toBeVisible();
+  const readout = page.getByTestId("composition-readout");
+  await expect(readout).toHaveText("640 × 360 · 30 fps");
 
   // Resize the canvas, lower the frame rate, and change the background, and
   // confirm the preview and the Composition readout follow.
@@ -110,7 +111,7 @@ test("edit the canvas in composition settings and save it", async ({
     .getByTestId("inspector")
     .getByLabel("background", { exact: true })
     .fill("#336699");
-  await expect(page.getByText("800 × 360 · 10 fps")).toBeVisible();
+  await expect(readout).toHaveText("800 × 360 · 10 fps");
   await expect(canvas).toHaveCSS("width", "800px");
   await expect(canvas).toHaveCSS("background-color", "rgb(51, 102, 153)");
 

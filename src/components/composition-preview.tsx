@@ -31,7 +31,10 @@ export function CompositionPreview({
     <>
       <div className="flex h-7 shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-3 text-xs">
         <h2 className="shrink-0 font-semibold">Composition</h2>
-        <span className="font-mono text-[10px] tabular-nums text-neutral-400">
+        <span
+          className="font-mono text-[10px] tabular-nums text-neutral-400"
+          data-testid="composition-readout"
+        >
           {canvas.width} × {canvas.height} · {canvas.fps} fps
         </span>
       </div>
