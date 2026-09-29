@@ -14,7 +14,7 @@ export function Inspector({
   if (!selection) {
     return (
       <>
-        <InspectorTitle title="Inspector" />
+        <InspectorTitle />
         <p className="p-3 text-xs text-neutral-500">
           Select render settings or a layer.
         </p>
@@ -307,18 +307,26 @@ function Group({
   );
 }
 
+/** Keeps the panel name fixed, with the selection after it like the Source band's file. */
 function InspectorTitle({
   title,
   subtitle,
 }: {
-  title: string;
+  title?: string;
   subtitle?: string;
 }) {
   return (
     <div className="flex h-7 shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-3 text-xs">
-      <h2 className="shrink-0 font-semibold">{title}</h2>
+      <h2 className="shrink-0 font-semibold">Inspector</h2>
+      {title && (
+        <h3 className="truncate text-neutral-300" title={title}>
+          {title}
+        </h3>
+      )}
       {subtitle && (
-        <span className="text-[10px] text-neutral-400">{subtitle}</span>
+        <span className="shrink-0 text-[10px] text-neutral-400">
+          {subtitle}
+        </span>
       )}
     </div>
   );
