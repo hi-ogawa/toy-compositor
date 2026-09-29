@@ -129,6 +129,7 @@ function TimelineRuler({
     <TimelineRow
       timeline={timeline}
       className="h-10"
+      subdivisions={false}
       label={
         <span className="px-3 text-xs font-semibold text-muted-foreground">
           Layers
@@ -202,6 +203,7 @@ function TimelineLocatorRow({
     <TimelineRow
       timeline={timeline}
       className="h-7"
+      subdivisions={false}
       label={
         <span className="px-3 text-xs font-semibold text-muted-foreground">
           Locators
@@ -274,6 +276,7 @@ function TimelineLayerLane({
     <TimelineRow
       timeline={timeline}
       className="h-12"
+      subdivisions
       label={
         <button
           type="button"
@@ -297,10 +300,10 @@ function TimelineLayerLane({
           data-testid={`timeline-layer-${index}`}
           className={cn(
             "absolute inset-y-1.5 overflow-hidden rounded border px-2 text-left text-xs",
-            LAYER_CLIP_FILL_CLASSES[layer.type],
+            LAYER_CLIP_CLASSES[layer.type].fill,
             selected
               ? "border-sky-300 ring-1 ring-inset ring-sky-300"
-              : LAYER_CLIP_BORDER_CLASSES[layer.type],
+              : LAYER_CLIP_CLASSES[layer.type].border,
           )}
           style={region}
         >
@@ -314,31 +317,38 @@ function TimelineLayerLane({
   );
 }
 
-const LAYER_CLIP_FILL_CLASSES: Record<Layer["type"], string> = {
-  video: "bg-blue-400/20 text-blue-100",
-  audio: "bg-emerald-400/20 text-emerald-100",
-  image: "bg-violet-400/20 text-violet-100",
-  text: "bg-amber-400/20 text-amber-100",
-  color: "bg-rose-400/20 text-rose-100",
-};
-
-const LAYER_CLIP_BORDER_CLASSES: Record<Layer["type"], string> = {
-  video: "border-blue-400/60",
-  audio: "border-emerald-400/60",
-  image: "border-violet-400/60",
-  text: "border-amber-400/60",
-  color: "border-rose-400/60",
+const LAYER_CLIP_CLASSES: Record<
+  Layer["type"],
+  { fill: string; border: string }
+> = {
+  video: { fill: "bg-blue-400/20 text-blue-100", border: "border-blue-400/60" },
+  audio: {
+    fill: "bg-emerald-400/20 text-emerald-100",
+    border: "border-emerald-400/60",
+  },
+  image: {
+    fill: "bg-violet-400/20 text-violet-100",
+    border: "border-violet-400/60",
+  },
+  text: {
+    fill: "bg-amber-400/20 text-amber-100",
+    border: "border-amber-400/60",
+  },
+  color: { fill: "bg-rose-400/20 text-rose-100", border: "border-rose-400/60" },
 };
 
 /** A label column beside a graph cell that shares the timeline's tick grid. */
 function TimelineRow({
   timeline,
   className,
+  subdivisions,
   label,
   children,
 }: {
   timeline: TimelineView;
   className: string;
+  /** Header rows show only the labelled ticks, so they stay quieter than lanes. */
+  subdivisions: boolean;
   label: ReactNode;
   children: ReactNode;
 }) {
@@ -352,7 +362,7 @@ function TimelineRow({
       </div>
       <div
         className="relative min-w-0 flex-1 overflow-hidden"
-        style={getTimelineGridBackground(timeline)}
+        style={getTimelineGridBackground(timeline, { subdivisions })}
       >
         {children}
       </div>
@@ -361,10 +371,15 @@ function TimelineRow({
 }
 
 /** Major lines at labelled ruler ticks over fainter subdivision lines, like toy-midi's bar and subdivision grid. */
-function getTimelineGridBackground(timeline: TimelineView) {
+function getTimelineGridBackground(
+  timeline: TimelineView,
+  { subdivisions }: { subdivisions: boolean },
+) {
   const layers = [
     { step: timeline.tickStep, color: "rgb(82 82 82)" },
-    { step: timeline.subdivisionStep, color: "rgb(51 51 51)" },
+    ...(subdivisions
+      ? [{ step: timeline.subdivisionStep, color: "rgb(51 51 51)" }]
+      : []),
   ];
   const offsetX = (step: number) =>
     timeline.timeToX(Math.ceil(timeline.visible.start / step) * step);
