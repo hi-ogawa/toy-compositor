@@ -65,7 +65,6 @@ export function Timeline({
           style={{ left: TIMELINE_LABEL_WIDTH }}
         />
         <div className="relative">
-          <TimelineRuler timeline={timeline} onSeek={seek} />
           <TimelineLocatorRow
             timeline={timeline}
             output={project.output}
@@ -77,6 +76,7 @@ export function Timeline({
             }}
             onSeek={seek}
           />
+          <TimelineRuler timeline={timeline} onSeek={seek} />
           {/* Top layer first, like tracks in a timeline. */}
           {project.layers
             .map((layer, index) => ({ layer, index }))
