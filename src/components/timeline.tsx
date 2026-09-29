@@ -14,11 +14,14 @@ import {
 import type { ReactNode } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { usePointerGesture } from "../hooks/use-pointer-gesture";
-import type { AudioView } from "../lib/audio-view";
 import type { LayerEditType } from "../lib/layer-edit";
 import { getLayerRange, intersect, type Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
-import type { EditorRuntime, EditorSelection } from "../lib/runtime";
+import type {
+  DecodedAudio,
+  EditorRuntime,
+  EditorSelection,
+} from "../lib/runtime";
 import type { PromiseState } from "../utils/promise-state";
 import { AudioWaveformView } from "./audio-waveform";
 import { Button } from "./ui/button";
@@ -44,10 +47,7 @@ export function Timeline({
   selection?: EditorSelection;
   playhead: number;
   playing: boolean;
-  audioSources: Record<
-    string,
-    PromiseState<{ buffer: AudioBuffer; view: AudioView }>
-  >;
+  audioSources: Record<string, PromiseState<DecodedAudio>>;
   sourceDurations: Record<string, PromiseState<number>>;
 }) {
   const selectOutput = () => runtime.select({ type: "output" });
@@ -310,7 +310,7 @@ function TimelineLayerLane({
   layer: Layer;
   index: number;
   range: Range;
-  audioSource?: PromiseState<{ buffer: AudioBuffer; view: AudioView }>;
+  audioSource?: PromiseState<DecodedAudio>;
   sourceDuration?: PromiseState<number>;
   selected: boolean;
   onSelect: () => void;
