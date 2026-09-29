@@ -40,6 +40,21 @@ test("navigate the timeline without editing the project", async ({
   });
   await expect(time).toContainText("1.133 s");
 
+  // Step one frame forward with ArrowRight and ten frames back with
+  // Shift+ArrowLeft, landing on frames 35 (1.167 s) and 25 (0.833 s).
+  await page.keyboard.press("ArrowRight");
+  await expect(time).toContainText("1.167 s");
+  await page.keyboard.press("Shift+ArrowLeft");
+  await expect(time).toContainText("0.833 s");
+
+  // Step back past the start and confirm the playhead stays at 0.
+  for (let i = 0; i < 3; i++) {
+    await page.keyboard.press("Shift+ArrowLeft");
+  }
+  await expect(time).toContainText("0.000 s");
+  await page.keyboard.press("ArrowLeft");
+  await expect(time).toContainText("0.000 s");
+
   // Confirm navigation did not mark the project as having unsaved changes.
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
     "data-status",

@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
+import { matchKeyboardEvent } from "../lib/keyboard";
 import { intersect, type Range } from "../lib/layout";
+import type { EditorRuntime } from "../lib/runtime";
 import {
   DEFAULT_PIXELS_PER_SECOND,
   MAX_PIXELS_PER_SECOND,
@@ -12,7 +14,7 @@ export const TIMELINE_LABEL_WIDTH = 144;
 export type TimelineView = ReturnType<typeof useTimeline>;
 
 /** A viewport over project time that every row maps through, scrolled and zoomed with the wheel. */
-export function useTimeline() {
+export function useTimeline(runtime: EditorRuntime) {
   const [viewportStart, setViewportStart] = useState(0);
   const [pixelsPerSecond, setPixelsPerSecond] = useState(
     DEFAULT_PIXELS_PER_SECOND,
@@ -28,6 +30,22 @@ export function useTimeline() {
     const timeAtAnchor = viewportStart + anchorX / pixelsPerSecond;
     setPixelsPerSecond(nextPixelsPerSecond);
     setViewportStart(Math.max(0, timeAtAnchor - anchorX / nextPixelsPerSecond));
+  }
+
+  /** Steps the playhead by one frame with the arrow keys, ten with Shift, repeating while held. */
+  function handleFrameStepShortcut(event: KeyboardEvent): boolean {
+    for (const [shortcut, frames] of [
+      ["ArrowLeft", -1],
+      ["ArrowRight", 1],
+      ["Shift+ArrowLeft", -10],
+      ["Shift+ArrowRight", 10],
+    ] as const) {
+      if (matchKeyboardEvent(event, shortcut)) {
+        runtime.seekFrames(frames);
+        return true;
+      }
+    }
+    return false;
   }
 
   const viewportRef = useCallback(
@@ -79,6 +97,7 @@ export function useTimeline() {
     tickStep: getRulerStep(pixelsPerSecond),
     visible,
     viewportRef,
+    handleFrameStepShortcut,
     timeToX,
     xToTime: (x: number) => viewportStart + x / pixelsPerSecond,
     isVisible: (time: number) => time >= visible.start && time <= visible.end,

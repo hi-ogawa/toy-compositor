@@ -3,24 +3,21 @@ import { getLayerRange, type Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
 import type { EditorRuntime, EditorSelection } from "../lib/runtime";
 import { cn } from "./ui/utils";
-import {
-  TIMELINE_LABEL_WIDTH,
-  type TimelineView,
-  useTimeline,
-} from "./use-timeline";
+import { TIMELINE_LABEL_WIDTH, type TimelineView } from "./use-timeline";
 
 export function Timeline({
+  timeline,
   runtime,
   project,
   selection,
   playhead,
 }: {
+  timeline: TimelineView;
   runtime: EditorRuntime;
   project: Project;
   selection?: EditorSelection;
   playhead: number;
 }) {
-  const timeline = useTimeline();
   const selectOutput = () => runtime.select({ type: "output" });
   const seek = (time: number) => runtime.seek(time);
   return (

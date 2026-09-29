@@ -40,6 +40,12 @@ export class EditorRuntime {
     this.store.update({ playhead });
   }
 
+  /** Steps the playhead by whole frames. */
+  seekFrames(frames: number): void {
+    const { project, playhead } = this.store.get();
+    this.seek(playhead + frames / project.canvas.fps);
+  }
+
   updateLayer({
     index,
     update,

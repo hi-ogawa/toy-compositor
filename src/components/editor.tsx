@@ -1,5 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { matchKeyboardEvent } from "../lib/keyboard";
+import { isShortcutTextInputTarget, matchKeyboardEvent } from "../lib/keyboard";
 import { EditorRuntime } from "../lib/runtime";
 import { CompositionPreview } from "./composition-preview";
 import { EditorHeader } from "./editor-header";
@@ -7,6 +7,7 @@ import { Inspector } from "./inspector";
 import { PreviewMonitors } from "./preview-monitors";
 import { Timeline } from "./timeline";
 import { useEditorProject } from "./use-editor-project";
+import { useTimeline } from "./use-timeline";
 import { useWindowEvent } from "./use-window-event";
 
 export function Editor({ projectPath }: { projectPath: string }) {
@@ -16,6 +17,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
     runtime.store.get,
   );
   const project = useEditorProject({ projectPath, runtime });
+  const timeline = useTimeline(runtime);
 
   useEffect(() => {
     document.title = state.file
@@ -29,6 +31,13 @@ export function Editor({ projectPath }: { projectPath: string }) {
       if (project.ready && project.saveStatus !== "saving") {
         project.save();
       }
+      return;
+    }
+    if (!project.ready || isShortcutTextInputTarget(event.target)) {
+      return;
+    }
+    if (timeline.handleFrameStepShortcut(event)) {
+      event.preventDefault();
     }
   });
 
@@ -65,6 +74,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
             }
           />
           <Timeline
+            timeline={timeline}
             runtime={runtime}
             project={state.project}
             selection={selection}
