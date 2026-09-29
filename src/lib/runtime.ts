@@ -4,6 +4,7 @@ import { apiClient, type ProjectFile } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
 import { getOutputRange } from "./layout.ts";
 import type { AudioLayer, Layer, Project, VideoLayer } from "./project.ts";
+import { snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
 import { VideoPlayback } from "./video-playback.ts";
 
@@ -19,6 +20,8 @@ export interface EditorState {
   playhead: number;
   playing: boolean;
   selection?: EditorSelection;
+  /** Each video and audio source's duration in source time, once its metadata loads. */
+  sourceDurations: Record<string, number>;
 }
 
 const EMPTY_PROJECT: Project = {
@@ -34,6 +37,7 @@ export class EditorRuntime {
     playhead: 0,
     playing: false,
     selection: undefined,
+    sourceDurations: {},
   }));
 
   readonly context = new AudioContext();
@@ -65,8 +69,7 @@ export class EditorRuntime {
 
   seek(time: number): void {
     const { project } = this.store.get();
-    const frame = Math.max(0, Math.round(time * project.canvas.fps));
-    this.transport.seek(Number((frame / project.canvas.fps).toFixed(3)));
+    this.transport.seek(Math.max(0, snapToFrame(time, project.canvas.fps)));
   }
 
   /** Steps the playhead by whole frames. */
@@ -200,12 +203,43 @@ export class EditorRuntime {
     );
   }
 
+  /**
+   * Reads a source's duration from a media element's metadata, because
+   * playback seeks media elements in the same source time that `in` and `out`
+   * are measured in.
+   */
+  private loadDuration(src: string): void {
+    const element = document.createElement("video");
+    element.preload = "metadata";
+    element.addEventListener(
+      "loadedmetadata",
+      () => {
+        const { sourceDurations } = this.store.get();
+        this.store.update({
+          sourceDurations: { ...sourceDurations, [src]: element.duration },
+        });
+        element.removeAttribute("src");
+        element.load();
+      },
+      { once: true },
+    );
+    element.src = apiClient.getMediaUrl({
+      src,
+      projectPath: this.store.get().file,
+    });
+  }
+
   serializeProject(): Project {
     return this.store.get().project;
   }
 
   deserializeProject({ file, project }: ProjectFile): void {
-    this.store.update({ file, project, selection: undefined });
+    this.store.update({
+      file,
+      project,
+      selection: undefined,
+      sourceDurations: {},
+    });
     this.syncPlayback();
     this.seek(getOutputRange(project).start);
     const sources = new Set(
@@ -215,6 +249,7 @@ export class EditorRuntime {
     );
     for (const src of sources) {
       this.loadAudio(src);
+      this.loadDuration(src);
     }
   }
 
