@@ -1,5 +1,7 @@
 import { expect } from "@playwright/test";
+import type { Project } from "../src/lib/project.ts";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
+import { readJson } from "../src/utils/fs.ts";
 import {
   getInspectorField,
   seekTimelineByPixels,
@@ -161,14 +163,17 @@ test("play the composition and step by frames", async ({ page, editor }) => {
   const timeline = page.getByTestId("editor-timeline");
   const time = page.getByTestId("timeline-time");
   const video = page.getByTestId("composition-canvas").locator("video");
-  const playhead = async () => parseFloat((await time.textContent())!);
+  const readPlayhead = async () => parseFloat((await time.textContent())!);
+  const { canvas } = await readJson<Project>(editor.projectFile);
+  const formatFrameTime = (frame: number) =>
+    `${(frame / canvas.fps).toFixed(3)} s`;
 
   // Play and confirm the playhead advances with the video playing.
   await timeline.getByRole("button", { name: "Play", exact: true }).click();
   await expect(
     timeline.getByRole("button", { name: "Pause", exact: true }),
   ).toBeVisible();
-  await expect.poll(playhead).toBeGreaterThan(0.5);
+  await expect.poll(readPlayhead).toBeGreaterThan(0.5);
   expect(
     await video.evaluate((element: HTMLVideoElement) => element.paused),
   ).toBe(false);
@@ -182,19 +187,19 @@ test("play the composition and step by frames", async ({ page, editor }) => {
   expect(
     await video.evaluate((element: HTMLVideoElement) => element.paused),
   ).toBe(true);
-  const paused = await playhead();
-  expect(Math.abs(paused * 30 - Math.round(paused * 30))).toBeLessThan(0.05);
+  const pausedFrame = Math.round((await readPlayhead()) * canvas.fps);
+  await expect(time).toContainText(formatFrameTime(pausedFrame));
   await expect
     .poll(() =>
       video.evaluate((element: HTMLVideoElement) => element.currentTime),
     )
-    .toBeCloseTo(paused, 2);
+    .toBeCloseTo(pausedFrame / canvas.fps, 2);
 
   // Step one frame forward, then ten back with Shift.
   await page.keyboard.press("ArrowRight");
-  await expect.poll(playhead).toBeCloseTo(paused + 1 / 30, 2);
+  await expect(time).toContainText(formatFrameTime(pausedFrame + 1));
   await page.keyboard.press("Shift+ArrowLeft");
-  await expect.poll(playhead).toBeCloseTo(paused - 9 / 30, 2);
+  await expect(time).toContainText(formatFrameTime(pausedFrame - 9));
 
   // Confirm playback did not mark the project as having unsaved changes.
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
