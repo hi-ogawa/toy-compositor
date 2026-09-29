@@ -56,38 +56,6 @@ export class EditorRuntime {
     });
   }
 
-  /**
-   * Makes a composition `<video>` follow the transport as the video layer at
-   * `index`, like toy-midi's `attachYouTubePlayer`. Returns its detacher.
-   */
-  attachVideo({
-    index,
-    element,
-  }: {
-    index: number;
-    element: HTMLVideoElement;
-  }): () => void {
-    const playback = new VideoPlayback({ transport: this.transport, element });
-    this.videoPlaybacks.set(index, playback);
-    this.syncPlayback();
-    return () => {
-      playback.dispose();
-      if (this.videoPlaybacks.get(index) === playback) {
-        this.videoPlaybacks.delete(index);
-      }
-    };
-  }
-
-  select(selection: EditorSelection | undefined): void {
-    this.store.update({ selection });
-  }
-
-  seek(time: number): void {
-    const { project } = this.store.get();
-    const frame = Math.max(0, Math.round(time * project.canvas.fps));
-    this.transport.seek(Number((frame / project.canvas.fps).toFixed(3)));
-  }
-
   async togglePlayback(): Promise<void> {
     if (this.store.get().playing) {
       this.transport.pause();
@@ -100,10 +68,20 @@ export class EditorRuntime {
     }
   }
 
+  seek(time: number): void {
+    const { project } = this.store.get();
+    const frame = Math.max(0, Math.round(time * project.canvas.fps));
+    this.transport.seek(Number((frame / project.canvas.fps).toFixed(3)));
+  }
+
   /** Steps the playhead by whole frames. */
   seekFrames(frames: number): void {
     const { project, playhead } = this.store.get();
     this.seek(playhead + frames / project.canvas.fps);
+  }
+
+  select(selection: EditorSelection | undefined): void {
+    this.store.update({ selection });
   }
 
   updateLayer({
@@ -130,24 +108,26 @@ export class EditorRuntime {
     this.store.update({ project: { ...project, output } });
   }
 
-  serializeProject(): Project {
-    return this.store.get().project;
-  }
-
-  deserializeProject({ file, project }: ProjectFile): void {
-    this.store.update({ file, project, selection: undefined });
+  /**
+   * Makes a composition `<video>` follow the transport as the video layer at
+   * `index`, like toy-midi's `attachYouTubePlayer`. Returns its detacher.
+   */
+  attachVideo({
+    index,
+    element,
+  }: {
+    index: number;
+    element: HTMLVideoElement;
+  }): () => void {
+    const playback = new VideoPlayback({ transport: this.transport, element });
+    this.videoPlaybacks.set(index, playback);
     this.syncPlayback();
-    this.seek(getOutputRange(project).start);
-    // Audio loads in the background, and each layer joins playback when its
-    // source arrives, so opening a project never waits on a long source.
-    const sources = new Set(
-      project.layers.flatMap((layer) =>
-        layer.type === "video" || layer.type === "audio" ? [layer.src] : [],
-      ),
-    );
-    for (const src of sources) {
-      this.loadAudio(src);
-    }
+    return () => {
+      playback.dispose();
+      if (this.videoPlaybacks.get(index) === playback) {
+        this.videoPlaybacks.delete(index);
+      }
+    };
   }
 
   /** Brings playback in line with the project after it loads or changes. */
@@ -215,6 +195,25 @@ export class EditorRuntime {
     }
   }
 
+  serializeProject(): Project {
+    return this.store.get().project;
+  }
+
+  deserializeProject({ file, project }: ProjectFile): void {
+    this.store.update({ file, project, selection: undefined });
+    this.syncPlayback();
+    this.seek(getOutputRange(project).start);
+    // Audio loads in the background, and each layer joins playback when its
+    // source arrives, so opening a project never waits on a long source.
+    const sources = new Set(
+      project.layers.flatMap((layer) =>
+        layer.type === "video" || layer.type === "audio" ? [layer.src] : [],
+      ),
+    );
+    for (const src of sources) {
+      this.loadAudio(src);
+    }
+  }
   subscribePersistableState(listener: () => void): () => void {
     return this.store.subscribeWithSelector({
       selector: (state) => state.project,
