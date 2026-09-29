@@ -13,6 +13,7 @@
 - This application is desktop-only. Do not propose, evaluate, implement, or mention mobile or responsive behavior
 - Commit messages: use Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`); add `!` for breaking changes
 - File names: kebab-case
+- Function names: start with a verb that says what the function does, such as `resolveFile`, `listProjects`, or `renderProject`, rather than a noun for what it returns, such as `layerRange`. React components, `use*` hooks, and Vite plugin factories keep their own conventions
 - Do not add compatibility paths or handling for edge cases that do not occur in practice
 - Organize code so each chunk can be validated by one body of expertise. A reader meets files and diffs linearly and loads one such body at a time. Ask which single specialist could review a chunk alone, split where the needed expertise changes even with one caller, and keep code together when it shares one domain regardless of length
 - When an existing test fails, first verify from first principles whether its expectation is correct. Do not compensate in the implementation merely to preserve an incorrect test.
