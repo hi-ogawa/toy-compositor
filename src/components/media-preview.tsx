@@ -1,7 +1,6 @@
 import { PanelLeftCloseIcon } from "lucide-react";
 import { useState } from "react";
 import type { Layer } from "../lib/project";
-import { PanelHeader } from "./panel-header";
 import { Button } from "./ui/button";
 
 export function MediaPreview({
@@ -15,10 +14,13 @@ export function MediaPreview({
 }) {
   const [failed, setFailed] = useState(false);
   const header = (
-    <PanelHeader
-      title="Source"
-      titleTooltip="Full source file, independent of project timing and layout."
-    >
+    <div className="flex h-7 shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-3 text-xs">
+      <h2
+        className="shrink-0 font-semibold"
+        title="Full source file, independent of project timing and layout."
+      >
+        Source
+      </h2>
       {layer && "src" in layer && (
         <span
           className="truncate font-mono text-[10px] text-neutral-400"
@@ -37,7 +39,7 @@ export function MediaPreview({
       >
         <PanelLeftCloseIcon className="size-3.5" />
       </Button>
-    </PanelHeader>
+    </div>
   );
   if (!layer || !("src" in layer)) {
     return (

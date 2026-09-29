@@ -1,6 +1,5 @@
 import type { Box, Crop, Layer, Project } from "../lib/project";
 import type { EditorRuntime, EditorSelection } from "../lib/runtime";
-import { PanelHeader } from "./panel-header";
 import { useDraftInput } from "./use-draft-input";
 
 export function Inspector({
@@ -15,7 +14,7 @@ export function Inspector({
   if (!selection) {
     return (
       <>
-        <PanelHeader title="Inspector" />
+        <InspectorTitle title="Inspector" />
         <p className="p-3 text-xs text-neutral-500">
           Select render settings or a layer.
         </p>
@@ -313,11 +312,14 @@ function InspectorTitle({
   subtitle,
 }: {
   title: string;
-  subtitle: string;
+  subtitle?: string;
 }) {
   return (
-    <PanelHeader title={title}>
-      <span className="text-[10px] text-neutral-400">{subtitle}</span>
-    </PanelHeader>
+    <div className="flex h-7 shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-3 text-xs">
+      <h2 className="shrink-0 font-semibold">{title}</h2>
+      {subtitle && (
+        <span className="text-[10px] text-neutral-400">{subtitle}</span>
+      )}
+    </div>
   );
 }

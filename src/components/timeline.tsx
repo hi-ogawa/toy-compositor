@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import { getLayerRange, type Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
 import type { EditorRuntime, EditorSelection } from "../lib/runtime";
-import { PanelHeader } from "./panel-header";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { TIMELINE_LABEL_WIDTH, type TimelineView } from "./use-timeline";
@@ -31,7 +30,8 @@ export function Timeline({
       data-testid="editor-timeline"
       aria-label="Timeline"
     >
-      <PanelHeader title="Timeline" sizeClassName="h-10 gap-3">
+      <div className="flex h-10 shrink-0 items-center gap-3 border-b border-neutral-700 bg-neutral-800 px-3 text-xs">
+        <h2 className="shrink-0 font-semibold">Timeline</h2>
         <Button
           aria-label={playing ? "Pause" : "Play"}
           title={playing ? "Pause (Space)" : "Play (Space)"}
@@ -56,7 +56,7 @@ export function Timeline({
         >
           {playhead.toFixed(3)} s
         </span>
-      </PanelHeader>
+      </div>
       <div className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {/* Measures the graph width and receives wheel scrolling and zoom. */}
         <div
