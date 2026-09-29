@@ -7,9 +7,10 @@ import {
   MAX_PIXELS_PER_SECOND,
   MIN_PIXELS_PER_SECOND,
   getRulerStep,
+  getRulerSubdivisionStep,
 } from "../lib/timeline";
 
-export const TIMELINE_LABEL_WIDTH = 144;
+export const TIMELINE_LABEL_WIDTH = 176;
 
 export type TimelineView = ReturnType<typeof useTimeline>;
 
@@ -92,9 +93,12 @@ export function useTimeline(runtime: EditorRuntime) {
     [pixelsPerSecond, viewportStart],
   );
 
+  const tickStep = getRulerStep(pixelsPerSecond);
+
   return {
     pixelsPerSecond,
-    tickStep: getRulerStep(pixelsPerSecond),
+    tickStep,
+    subdivisionStep: getRulerSubdivisionStep(tickStep),
     visible,
     viewportRef,
     handleFrameStepShortcut,

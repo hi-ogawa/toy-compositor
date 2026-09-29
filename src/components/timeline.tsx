@@ -1,4 +1,14 @@
-import { PauseIcon, PlayIcon } from "lucide-react";
+import {
+  AudioLinesIcon,
+  FilmIcon,
+  ImageIcon,
+  PauseIcon,
+  PlayIcon,
+  SquareIcon,
+  TypeIcon,
+  VolumeXIcon,
+  type LucideIcon,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { getLayerRange, type Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
@@ -96,7 +106,7 @@ export function Timeline({
             ))}
           {timeline.isVisible(playhead) && (
             <div
-              className="pointer-events-none absolute inset-y-0 z-10 w-px bg-red-400"
+              className="pointer-events-none absolute inset-y-0 z-10 w-px bg-sky-400"
               data-testid="timeline-playhead"
               style={{
                 left: TIMELINE_LABEL_WIDTH + timeline.timeToX(playhead),
@@ -129,6 +139,7 @@ function TimelineRuler({
     <TimelineRow
       timeline={timeline}
       className="h-10"
+      subdivisions={false}
       label={
         <span className="px-3 text-xs font-semibold text-muted-foreground">
           Layers
@@ -150,7 +161,7 @@ function TimelineRuler({
         {ticks.map((time) => (
           <span
             key={time}
-            className="absolute bottom-1.5 border-l border-border pl-1"
+            className="absolute bottom-1.5 pl-1"
             style={{ left: timeline.timeToX(time) }}
           >
             {Number(time.toFixed(3))}
@@ -202,6 +213,7 @@ function TimelineLocatorRow({
     <TimelineRow
       timeline={timeline}
       className="h-7"
+      subdivisions={false}
       label={
         <span className="px-3 text-xs font-semibold text-muted-foreground">
           Locators
@@ -274,17 +286,16 @@ function TimelineLayerLane({
     <TimelineRow
       timeline={timeline}
       className="h-12"
+      subdivisions
       label={
         <button
           type="button"
-          className={cn(
-            "flex h-full w-full items-center justify-between gap-2 px-3 text-left hover:bg-secondary",
-            selected && "bg-accent",
-          )}
+          title={name}
+          className="flex h-full w-full items-center justify-between gap-2 px-3 text-left hover:bg-neutral-800/60"
           onClick={onSelect}
         >
-          <span>{name}</span>
-          <span className="text-xs text-muted-foreground">{layer.type}</span>
+          <span className="truncate text-xs font-semibold">{name}</span>
+          <LayerTypeIcon type={layer.type} />
         </button>
       }
     >
@@ -296,33 +307,83 @@ function TimelineLayerLane({
           onClick={onSelect}
           data-testid={`timeline-layer-${index}`}
           className={cn(
-            "absolute inset-y-1.5 overflow-hidden rounded border px-2 text-left text-xs",
-            layer.type === "audio"
-              ? "border-emerald-800 bg-emerald-950"
-              : "border-blue-800 bg-blue-950",
-            selected && "outline outline-1 outline-primary",
+            "absolute inset-y-1 overflow-hidden rounded-sm border text-left text-[11px]",
+            LAYER_CLIP_CLASSES[layer.type].fill,
+            selected
+              ? "border-sky-300 ring-1 ring-inset ring-sky-300"
+              : LAYER_CLIP_CLASSES[layer.type].border,
           )}
           style={region}
         >
-          {name}
+          {/* The lane's header already names the layer, so the clip shows only state. */}
           {(layer.type === "video" || layer.type === "audio") &&
-            layer.muted &&
-            " · muted"}
+            layer.muted && (
+              <VolumeXIcon
+                role="img"
+                aria-label="muted"
+                className="absolute left-1 top-1 size-3.5"
+              />
+            )}
         </button>
       )}
     </TimelineRow>
   );
 }
 
+/** Marks the layer type by icon, keeping the header column for the name. */
+function LayerTypeIcon({ type }: { type: Layer["type"] }) {
+  const Icon = LAYER_TYPE_ICONS[type];
+  return (
+    <Icon
+      role="img"
+      aria-label={type}
+      className="size-3.5 shrink-0 text-neutral-400"
+    >
+      <title>{type}</title>
+    </Icon>
+  );
+}
+
+const LAYER_TYPE_ICONS: Record<Layer["type"], LucideIcon> = {
+  video: FilmIcon,
+  audio: AudioLinesIcon,
+  image: ImageIcon,
+  text: TypeIcon,
+  color: SquareIcon,
+};
+
+const LAYER_CLIP_CLASSES: Record<
+  Layer["type"],
+  { fill: string; border: string }
+> = {
+  video: { fill: "bg-blue-400/20 text-blue-100", border: "border-blue-400/60" },
+  audio: {
+    fill: "bg-emerald-400/20 text-emerald-100",
+    border: "border-emerald-400/60",
+  },
+  image: {
+    fill: "bg-violet-400/20 text-violet-100",
+    border: "border-violet-400/60",
+  },
+  text: {
+    fill: "bg-amber-400/20 text-amber-100",
+    border: "border-amber-400/60",
+  },
+  color: { fill: "bg-rose-400/20 text-rose-100", border: "border-rose-400/60" },
+};
+
 /** A label column beside a graph cell that shares the timeline's tick grid. */
 function TimelineRow({
   timeline,
   className,
+  subdivisions,
   label,
   children,
 }: {
   timeline: TimelineView;
   className: string;
+  /** Header rows show only the labelled ticks, so they stay quieter than lanes. */
+  subdivisions: boolean;
   label: ReactNode;
   children: ReactNode;
 }) {
@@ -336,17 +397,41 @@ function TimelineRow({
       </div>
       <div
         className="relative min-w-0 flex-1 overflow-hidden"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, var(--border) 1px, transparent 1px)",
-          backgroundSize: `${timeline.tickStep * timeline.pixelsPerSecond}px 100%`,
-          backgroundPositionX: `${timeline.timeToX(Math.ceil(timeline.visible.start / timeline.tickStep) * timeline.tickStep)}px`,
-        }}
+        style={getTimelineGridBackground(timeline, { subdivisions })}
       >
         {children}
       </div>
     </div>
   );
+}
+
+/** Major lines at labelled ruler ticks over fainter subdivision lines, like toy-midi's bar and subdivision grid. */
+function getTimelineGridBackground(
+  timeline: TimelineView,
+  { subdivisions }: { subdivisions: boolean },
+) {
+  const layers = [
+    { step: timeline.tickStep, color: "rgb(82 82 82)" },
+    ...(subdivisions
+      ? [{ step: timeline.subdivisionStep, color: "rgb(51 51 51)" }]
+      : []),
+  ];
+  const offsetX = (step: number) =>
+    timeline.timeToX(Math.ceil(timeline.visible.start / step) * step);
+  return {
+    backgroundImage: layers
+      .map(
+        ({ color }) =>
+          `linear-gradient(to right, ${color} 1px, transparent 1px)`,
+      )
+      .join(", "),
+    backgroundSize: layers
+      .map(({ step }) => `${step * timeline.pixelsPerSecond}px 100%`)
+      .join(", "),
+    backgroundPosition: layers
+      .map(({ step }) => `${offsetX(step)}px 0`)
+      .join(", "),
+  };
 }
 
 function LocatorMarker({
