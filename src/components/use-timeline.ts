@@ -10,7 +10,7 @@ import {
   getRulerSubdivisionStep,
 } from "../lib/timeline";
 
-export const TIMELINE_LABEL_WIDTH = 144;
+export const TIMELINE_LABEL_WIDTH = 176;
 
 export type TimelineView = ReturnType<typeof useTimeline>;
 
