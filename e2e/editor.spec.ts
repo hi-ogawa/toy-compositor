@@ -102,13 +102,13 @@ test("resize and close the source panel without changing the project", async ({
   await page.goto(editor.url);
   await clickTimelineButton(page, { name: "video video" });
   const source = page.locator("#source-monitor video");
-  await seekVideo(source, 1);
+  await seekVideo(source, { time: 1 });
 
   // Drag the split to resize the source panel.
   const split = page.getByTitle("Resize source panel");
   const sourcePanel = page.locator("#source-monitor");
   const initialWidth = (await sourcePanel.boundingBox())!.width;
-  await dragBy(page, split, 100);
+  await dragBy(page, split, { deltaX: 100 });
   const resizedWidth = (await sourcePanel.boundingBox())!.width;
   expect(resizedWidth).toBeGreaterThan(initialWidth);
 
