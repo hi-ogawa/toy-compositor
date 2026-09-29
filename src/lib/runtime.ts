@@ -163,21 +163,20 @@ export class EditorRuntime {
 
   /** Starts decoding a source, and syncs playback once its buffer arrives. */
   private loadAudio(src: string): void {
+    const decodeAudio = async () => {
+      const data = await apiClient.loadAudioData({
+        src,
+        projectPath: this.store.get().file,
+      });
+      return this.context.decodeAudioData(data);
+    };
     this.audioSources.set(
       src,
       trackPromise({
-        promise: this.decodeAudio(src),
+        promise: decodeAudio(),
         onFulfilled: () => this.syncPlayback(),
       }),
     );
-  }
-
-  private async decodeAudio(src: string): Promise<AudioBuffer> {
-    const data = await apiClient.loadAudioData({
-      src,
-      projectPath: this.store.get().file,
-    });
-    return this.context.decodeAudioData(data);
   }
 
   serializeProject(): Project {
