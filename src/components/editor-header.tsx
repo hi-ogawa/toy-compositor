@@ -3,6 +3,8 @@ import {
   ClapperboardIcon,
   LoaderCircleIcon,
   PanelLeftIcon,
+  PauseIcon,
+  PlayIcon,
   SaveCheckIcon,
   SaveIcon,
 } from "lucide-react";
@@ -13,24 +15,46 @@ import type { SaveStatus } from "./use-editor-project";
 export function EditorHeader({
   file,
   playhead,
+  playing,
   saveStatus,
   sourceOpen,
   renderSettingsSelected,
+  onPlayToggle,
   onSave,
   onSourceOpenChange,
   onRenderSettingsSelect,
 }: {
   file: string;
   playhead: number;
+  playing: boolean;
   saveStatus: SaveStatus;
   sourceOpen: boolean;
   renderSettingsSelected: boolean;
+  onPlayToggle: () => void;
   onSave: () => void;
   onSourceOpenChange: (open: boolean) => void;
   onRenderSettingsSelect: () => void;
 }) {
   return (
     <header className="flex h-[53px] shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-4 shadow-sm">
+      <Button
+        aria-label={playing ? "Pause" : "Play"}
+        title={playing ? "Pause (Space)" : "Play (Space)"}
+        aria-pressed={playing}
+        className={cn(
+          "size-9",
+          playing
+            ? "bg-primary text-primary-foreground hover:bg-primary/90"
+            : "text-neutral-300 hover:bg-neutral-700/50 hover:text-neutral-100",
+        )}
+        onClick={onPlayToggle}
+      >
+        {playing ? (
+          <PauseIcon className="size-5" />
+        ) : (
+          <PlayIcon className="size-5" />
+        )}
+      </Button>
       <span
         className="font-mono text-sm tabular-nums text-neutral-300"
         data-testid="editor-time"

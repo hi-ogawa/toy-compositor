@@ -39,6 +39,11 @@ export function Editor({ projectPath }: { projectPath: string }) {
     }
     if (timeline.handleFrameStepShortcut(event)) {
       event.preventDefault();
+      return;
+    }
+    if (matchKeyboardEvent(event, "Space") && !event.repeat) {
+      event.preventDefault();
+      void runtime.togglePlayback();
     }
   });
 
@@ -58,9 +63,11 @@ export function Editor({ projectPath }: { projectPath: string }) {
       <EditorHeader
         file={state.file}
         playhead={state.playhead}
+        playing={state.playing}
         saveStatus={project.saveStatus}
         sourceOpen={sourceOpen}
         renderSettingsSelected={selection?.type === "output"}
+        onPlayToggle={() => void runtime.togglePlayback()}
         onSave={() => project.save()}
         onSourceOpenChange={setSourceOpen}
         onRenderSettingsSelect={() => runtime.select({ type: "output" })}
@@ -76,6 +83,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
                 project={state.project}
                 selection={selection}
                 time={state.playhead}
+                runtime={runtime}
                 resolveMediaUrl={project.resolveMediaUrl}
               />
             }

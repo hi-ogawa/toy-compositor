@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { matchKeyboardEvent } from "../lib/keyboard";
+import { clamp } from "../utils/math";
 
 type UseDraftInputOptions = {
   value: number;
@@ -10,10 +11,6 @@ type UseDraftInputOptions = {
   step?: number;
   format?: (value: number) => string;
 };
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
 
 /**
  * Hook for numeric inputs that only commit on Enter or blur.

@@ -68,6 +68,21 @@ export const apiClient = {
       params: { project: projectPath, src },
     });
   },
+
+  /** Fetches a video or audio source's encoded bytes for decoding its audio. */
+  async loadAudioData({
+    src,
+    projectPath,
+  }: {
+    src: string;
+    projectPath: string;
+  }): Promise<ArrayBuffer> {
+    const res = await fetch(apiClient.getMediaUrl({ src, projectPath }));
+    if (!res.ok) {
+      throw new Error(`Failed to load audio data: ${await res.text()}`);
+    }
+    return res.arrayBuffer();
+  },
 };
 
 function getApiUrl({

@@ -1,5 +1,7 @@
 import { expect } from "@playwright/test";
+import type { Project } from "../src/lib/project.ts";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
+import { readJson } from "../src/utils/fs.ts";
 import {
   getInspectorField,
   seekTimelineByPixels,
@@ -105,4 +107,54 @@ test("scroll and zoom the timeline with the wheel", async ({
     pixels: zoomAnchorX + zoomedPixelsPerSecond,
   });
   await expect(time).toContainText("3.500 s");
+});
+
+test("play the composition and step by frames", async ({ page, editor }) => {
+  // Open the synthetic project, where the video starts at 0.
+  await page.goto(editor.url);
+  const time = page.getByTestId("editor-time");
+  const video = page.getByTestId("composition-canvas").locator("video");
+  const readPlayhead = async () => parseFloat((await time.textContent())!);
+  const { canvas } = await readJson<Project>(editor.projectFile);
+  const formatFrameTime = (frame: number) =>
+    `${(frame / canvas.fps).toFixed(3)} s`;
+
+  // Play and confirm the playhead advances with the video playing.
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Pause", exact: true }),
+  ).toBeVisible();
+  await expect.poll(readPlayhead).toBeGreaterThan(0.5);
+  expect(
+    await video.evaluate((element: HTMLVideoElement) => element.paused),
+  ).toBe(false);
+
+  // Pause with Space and confirm the playhead lands on a frame that the paused
+  // video shows.
+  await page.keyboard.press("Space");
+  await expect(
+    page.getByRole("button", { name: "Play", exact: true }),
+  ).toBeVisible();
+  expect(
+    await video.evaluate((element: HTMLVideoElement) => element.paused),
+  ).toBe(true);
+  const pausedFrame = Math.round((await readPlayhead()) * canvas.fps);
+  await expect(time).toContainText(formatFrameTime(pausedFrame));
+  await expect
+    .poll(() =>
+      video.evaluate((element: HTMLVideoElement) => element.currentTime),
+    )
+    .toBeCloseTo(pausedFrame / canvas.fps, 2);
+
+  // Step one frame forward, then ten back with Shift.
+  await page.keyboard.press("ArrowRight");
+  await expect(time).toContainText(formatFrameTime(pausedFrame + 1));
+  await page.keyboard.press("Shift+ArrowLeft");
+  await expect(time).toContainText(formatFrameTime(pausedFrame - 9));
+
+  // Confirm playback did not mark the project as having unsaved changes.
+  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
 });
