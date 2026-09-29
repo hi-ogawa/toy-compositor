@@ -20,6 +20,12 @@ export interface EditorState {
   selection?: EditorSelection;
 }
 
+/** A source's decoded audio, held by the runtime from the moment it starts loading. */
+type AudioSource =
+  | { status: "loading"; promise: Promise<void> }
+  | { status: "loaded"; buffer: AudioBuffer }
+  | { status: "missing" };
+
 const EMPTY_PROJECT: Project = {
   canvas: { width: 1920, height: 1080, fps: 30 },
   output: { type: "video", start: 0, end: 0 },
@@ -37,8 +43,8 @@ export class EditorRuntime {
 
   readonly context = new AudioContext();
   readonly transport = new AudioContextTransport(this.context);
-  /** Decoded audio keyed by source, shared by every layer that uses it. */
-  private readonly audioBuffers = new Map<string, AudioBuffer>();
+  /** Keyed by source path, shared by every layer that uses the source. */
+  private readonly audioSources = new Map<string, AudioSource>();
   /** Keyed by layer index and source, so a replaced source gets a fresh playback. */
   private readonly audioPlaybacks = new Map<string, AudioBufferPlayback>();
   private readonly videoPlaybacks = new Map<number, VideoPlayback>();
@@ -140,7 +146,10 @@ export class EditorRuntime {
       ),
     );
     for (const src of sources) {
-      void this.loadAudio(src);
+      this.audioSources.set(src, {
+        status: "loading",
+        promise: this.loadAudio(src),
+      });
     }
   }
 
@@ -176,9 +185,9 @@ export class EditorRuntime {
         this.audioPlaybacks.set(key, playback);
       }
       playback.setLayer({ layer });
-      const buffer = this.audioBuffers.get(layer.src);
-      if (buffer) {
-        playback.setBuffer({ buffer });
+      const source = this.audioSources.get(layer.src);
+      if (source?.status === "loaded") {
+        playback.setBuffer({ buffer: source.buffer });
       }
     }
   }
@@ -193,10 +202,11 @@ export class EditorRuntime {
       const buffer = await this.context.decodeAudioData(
         await response.arrayBuffer(),
       );
-      this.audioBuffers.set(src, buffer);
+      this.audioSources.set(src, { status: "loaded", buffer });
       this.syncPlayback();
     } catch {
       // A video file without an audio stream contributes nothing, as in the render.
+      this.audioSources.set(src, { status: "missing" });
     }
   }
 
