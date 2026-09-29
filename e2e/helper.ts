@@ -119,6 +119,24 @@ export async function commitInspectorField(
   );
 }
 
+/** Expect inspector fields to show the given values. */
+export async function expectInspectorFields(
+  page: Page,
+  fields: Record<string, string>,
+) {
+  await test.step(
+    `Expect ${Object.entries(fields)
+      .map(([name, value]) => `${name} ${value}`)
+      .join(", ")}`,
+    async () => {
+      for (const [name, value] of Object.entries(fields)) {
+        await expect(getInspectorField(page, { name })).toHaveValue(value);
+      }
+    },
+    { box: true },
+  );
+}
+
 /** Click the timeline ruler at an offset from its origin, which is project time 0. */
 export async function seekTimelineByPixels(
   page: Page,
