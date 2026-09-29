@@ -96,10 +96,7 @@ export class EditorRuntime {
     });
   }
 
-  /**
-   * Replaces the canvas. Stored times stay in seconds when fps changes, so
-   * only the frame grid that seeks and time fields snap to follows it.
-   */
+  /** Changing fps leaves stored times as they are, without snapping them to the new frames. */
   setCanvas(canvas: Project["canvas"]): void {
     const { project } = this.store.get();
     this.store.update({ project: { ...project, canvas } });
