@@ -1,3 +1,4 @@
+import { clamp } from "../utils/math.ts";
 import type { VideoLayer } from "./project.ts";
 import type { AudioContextTransport } from "./transport.ts";
 
@@ -66,7 +67,7 @@ export class VideoPlayback {
     const expectedTime = layer.in + position - layer.start;
     if (!isPlaying) {
       this.mode = "paused";
-      this.pause(Math.min(Math.max(expectedTime, layer.in), layer.out));
+      this.pause(clamp(expectedTime, layer.in, layer.out));
       return;
     }
 
@@ -114,9 +115,10 @@ export class VideoPlayback {
       Math.abs(drift) < RATE_DEADBAND_SECONDS
         ? 1
         : 1 +
-          Math.max(
+          clamp(
+            -drift / RATE_CATCH_UP_SECONDS,
             -MAX_RATE_CHANGE,
-            Math.min(MAX_RATE_CHANGE, -drift / RATE_CATCH_UP_SECONDS),
+            MAX_RATE_CHANGE,
           );
   }
 

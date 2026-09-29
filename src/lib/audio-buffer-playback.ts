@@ -1,3 +1,4 @@
+import { clamp } from "../utils/math.ts";
 import { getLayerRange } from "./layout.ts";
 import type { AudioLayer, VideoLayer } from "./project.ts";
 import type {
@@ -101,5 +102,5 @@ function getGainAt({
   const range = getLayerRange(layer);
   const fadeIn = layer.fadeIn ? (time - range.start) / layer.fadeIn : Infinity;
   const fadeOut = layer.fadeOut ? (range.end - time) / layer.fadeOut : Infinity;
-  return Math.max(0, Math.min(1, fadeIn, fadeOut));
+  return clamp(Math.min(fadeIn, fadeOut), 0, 1);
 }
