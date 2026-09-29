@@ -151,7 +151,7 @@ function TimelineRuler({
         {ticks.map((time) => (
           <span
             key={time}
-            className="absolute bottom-1.5 border-l border-border pl-1"
+            className="absolute bottom-1.5 pl-1"
             style={{ left: timeline.timeToX(time) }}
           >
             {Number(time.toFixed(3))}
@@ -280,13 +280,10 @@ function TimelineLayerLane({
       label={
         <button
           type="button"
-          className={cn(
-            "flex h-full w-full items-center justify-between gap-2 px-3 text-left hover:bg-secondary",
-            selected && "bg-accent",
-          )}
+          className="flex h-full w-full items-center justify-between gap-2 px-3 text-left"
           onClick={onSelect}
         >
-          <span>{name}</span>
+          <span className="truncate text-xs font-semibold">{name}</span>
           <span className="text-xs text-muted-foreground">{layer.type}</span>
         </button>
       }
@@ -299,7 +296,7 @@ function TimelineLayerLane({
           onClick={onSelect}
           data-testid={`timeline-layer-${index}`}
           className={cn(
-            "absolute inset-y-1.5 overflow-hidden rounded border px-2 text-left text-xs",
+            "absolute inset-y-1 overflow-hidden rounded-sm border text-left text-[11px]",
             LAYER_CLIP_CLASSES[layer.type].fill,
             selected
               ? "border-sky-300 ring-1 ring-inset ring-sky-300"
@@ -307,10 +304,12 @@ function TimelineLayerLane({
           )}
           style={region}
         >
-          {name}
-          {(layer.type === "video" || layer.type === "audio") &&
-            layer.muted &&
-            " · muted"}
+          <span className="absolute left-1 top-0.5 whitespace-nowrap">
+            {name}
+            {(layer.type === "video" || layer.type === "audio") &&
+              layer.muted &&
+              " · muted"}
+          </span>
         </button>
       )}
     </TimelineRow>
