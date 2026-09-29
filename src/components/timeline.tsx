@@ -1,30 +1,27 @@
 import type { ReactNode } from "react";
-import { layerRange, type Range } from "../lib/layout";
+import { getLayerRange, type Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
 import type { EditorRuntime, EditorSelection } from "../lib/runtime";
 import { cn } from "./ui/utils";
-import {
-  TIMELINE_LABEL_WIDTH,
-  type TimelineView,
-  useTimeline,
-} from "./use-timeline";
+import { TIMELINE_LABEL_WIDTH, type TimelineView } from "./use-timeline";
 
 export function Timeline({
+  timeline,
   runtime,
   project,
   selection,
   playhead,
   playing,
 }: {
+  timeline: TimelineView;
   runtime: EditorRuntime;
   project: Project;
   selection?: EditorSelection;
   playhead: number;
   playing: boolean;
 }) {
-  const timeline = useTimeline();
   const selectOutput = () => runtime.select({ type: "output" });
-  const seek = (time: number) => runtime.seek({ time });
+  const seek = (time: number) => runtime.seek(time);
   return (
     <section
       className="flex h-72 shrink-0 flex-col border-t border-border text-sm"
@@ -85,7 +82,7 @@ export function Timeline({
                 timeline={timeline}
                 layer={layer}
                 index={index}
-                range={layerRange(layer)}
+                range={getLayerRange(layer)}
                 selected={
                   selection?.type === "layer" && selection.index === index
                 }

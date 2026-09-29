@@ -18,7 +18,7 @@ export function Inspector({
       </p>
     );
   }
-  const time = timeField(project.canvas.fps);
+  const time = getTimeFieldOptions(project.canvas.fps);
   if (selection.type === "output") {
     const { output } = project;
     return (
@@ -228,7 +228,7 @@ const PIXEL_FIELD = { step: 1, round: Math.round };
  * the rest of the format. Arrow keys step by one frame, and times never go
  * below 0.
  */
-function timeField(fps: number) {
+function getTimeFieldOptions(fps: number) {
   return {
     step: 1 / fps,
     min: 0,

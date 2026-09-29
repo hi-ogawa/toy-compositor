@@ -1,6 +1,6 @@
 # Editor preview
 
-The editor composes the project in the DOM at one project time. Each visual layer is an absolutely positioned `<video>`, `<img>`, or div, placed in canvas pixels inside a canvas-sized div, and the whole canvas is CSS-scaled to fit the monitor. The preview shares layout math with the [compiler](compiler.md) (`fitBox` and `outputRange` in [src/lib/layout.ts](../src/lib/layout.ts)), but not its rendering, so the ffmpeg render stays the truth for exact frames and text.
+The editor composes the project in the DOM at one project time. Each visual layer is an absolutely positioned `<video>`, `<img>`, or div, placed in canvas pixels inside a canvas-sized div, and the whole canvas is CSS-scaled to fit the monitor. The preview shares layout math with the [compiler](compiler.md) (`fitBox` and `getOutputRange` in [src/lib/layout.ts](../src/lib/layout.ts)), but not its rendering, so the ffmpeg render stays the truth for exact frames and text.
 
 ## Components
 
@@ -31,7 +31,7 @@ Video and image layers go through the compiler's `fitBox`, which returns the vis
 
 ## Pick Layers and Frames by Time
 
-The preview time decides which layers show and which frame each video shows. A layer shows when the time falls in its half-open range from `layerRange` in [src/lib/layout.ts](../src/lib/layout.ts), which the compiler uses too. Video and audio layers span their trimmed source from `start`, and other layers span from `start` to `end`. A visible video seeks to `in + time − start`.
+The preview time decides which layers show and which frame each video shows. A layer shows when the time falls in its half-open range from `getLayerRange` in [src/lib/layout.ts](../src/lib/layout.ts), which the compiler uses too. Video and audio layers span their trimmed source from `start`, and other layers span from `start` to `end`. A visible video seeks to `in + time − start`.
 
 ![One project time picks which layers are visible and which source frame each video shows](images/time-mapping.svg)
 

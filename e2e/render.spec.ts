@@ -116,12 +116,9 @@ test("fade audio at the layer's own edges when the output cuts into them", async
   // and out over 0.5s across 0 to 3s, then cut the output into both fades.
   const directory = testInfo.outputPath("project");
   await cp("samples/synthetic", directory, { recursive: true });
-  await editJson<Project>({
-    file: `${directory}/project.json`,
-    edit: (project) => {
-      project.layers = project.layers.filter((layer) => layer.type === "audio");
-      project.output = { type: "video", start: 0.1, end: 2.8 };
-    },
+  await editJson<Project>(`${directory}/project.json`, (project) => {
+    project.layers = project.layers.filter((layer) => layer.type === "audio");
+    project.output = { type: "video", start: 0.1, end: 2.8 };
   });
   const output = testInfo.outputPath("cut.mp4");
   await execFileAsync(process.execPath, [
@@ -133,13 +130,15 @@ test("fade audio at the layer's own edges when the output cuts into them", async
 
   // Check that the cut edges keep the partial level of the layer's fades,
   // about half of full level, instead of fading from and to silence.
-  const full = await rmsLevel({ file: output, time: 1.3 });
-  expect(full - (await rmsLevel({ file: output, time: 0 }))).toBeLessThan(9);
-  expect(full - (await rmsLevel({ file: output, time: 2.68 }))).toBeLessThan(9);
+  const full = await measureRmsLevel(output, { time: 1.3 });
+  expect(full - (await measureRmsLevel(output, { time: 0 }))).toBeLessThan(9);
+  expect(full - (await measureRmsLevel(output, { time: 2.68 }))).toBeLessThan(
+    9,
+  );
 });
 
 /** RMS level in dB of a 20ms window of a file's audio at a time. */
-async function rmsLevel({ file, time }: { file: string; time: number }) {
+async function measureRmsLevel(file: string, { time }: { time: number }) {
   const { stdout } = await execFileAsync("ffmpeg", [
     "-v",
     "error",

@@ -1,7 +1,7 @@
 import { createStore } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
-import { outputRange } from "./layout.ts";
+import { getOutputRange } from "./layout.ts";
 import type { AudioLayer, Layer, Project, VideoLayer } from "./project.ts";
 import { AudioContextTransport } from "./transport.ts";
 import { VideoPlayback } from "./video-playback.ts";
@@ -78,28 +78,28 @@ export class EditorRuntime {
     this.store.update({ selection });
   }
 
-  seek({ time }: { time: number }): void {
+  seek(time: number): void {
     const { project } = this.store.get();
     const frame = Math.max(0, Math.round(time * project.canvas.fps));
     this.transport.seek(Number((frame / project.canvas.fps).toFixed(3)));
-  }
-
-  /** Steps the playhead by whole frames. */
-  seekFrames({ frames }: { frames: number }): void {
-    const { project, playhead } = this.store.get();
-    this.seek({ time: playhead + frames / project.canvas.fps });
   }
 
   async togglePlayback(): Promise<void> {
     if (this.store.get().playing) {
       this.transport.pause();
       // Land on a frame, so the paused preview matches a rendered frame.
-      this.seek({ time: this.store.get().playhead });
+      this.seek(this.store.get().playhead);
     } else {
       // Play is a user gesture, which lets the context start running.
       await this.context.resume();
       this.transport.play();
     }
+  }
+
+  /** Steps the playhead by whole frames. */
+  seekFrames(frames: number): void {
+    const { project, playhead } = this.store.get();
+    this.seek(playhead + frames / project.canvas.fps);
   }
 
   updateLayer({
@@ -131,7 +131,7 @@ export class EditorRuntime {
 
   deserializeProject({ file, project }: ProjectFile): void {
     this.store.update({ file, project, selection: undefined });
-    this.seek({ time: outputRange(project).start });
+    this.seek(getOutputRange(project).start);
   }
 
   /** Brings playback in line with the project after it loads or changes. */

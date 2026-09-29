@@ -1,4 +1,4 @@
-import { layerRange } from "./layout.ts";
+import { getLayerRange } from "./layout.ts";
 import type { AudioLayer, VideoLayer } from "./project.ts";
 import type {
   AudioContextTransport,
@@ -70,7 +70,7 @@ export class AudioBufferPlayback implements TransportParticipant {
     if (!layer || !buffer || layer.muted) {
       return;
     }
-    const range = layerRange(layer);
+    const range = getLayerRange(layer);
     const position = this.transport.getPositionAt(contextTime);
     const from = Math.max(position, range.start);
     if (from >= range.end) {
@@ -114,7 +114,7 @@ function gainAt({
   layer: VideoLayer | AudioLayer;
   time: number;
 }): number {
-  const range = layerRange(layer);
+  const range = getLayerRange(layer);
   const fadeIn = layer.fadeIn ? (time - range.start) / layer.fadeIn : Infinity;
   const fadeOut = layer.fadeOut ? (range.end - time) / layer.fadeOut : Infinity;
   return Math.max(0, Math.min(1, fadeIn, fadeOut));
