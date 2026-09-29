@@ -3,10 +3,20 @@ import { createStore } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
 import { createAudioView, type AudioView } from "./audio-view.ts";
-import { getContentRange, getOutputRange } from "./layout.ts";
+import {
+  createColorLayer,
+  createMediaLayer,
+  createTextLayer,
+} from "./layer-defaults.ts";
+import {
+  getContentRange,
+  getLayerRange,
+  getOutputRange,
+  type Range,
+} from "./layout.ts";
 import type { MediaInfo } from "./media.ts";
 import type { AudioLayer, Layer, Project, VideoLayer } from "./project.ts";
-import { snapToFrame } from "./timeline.ts";
+import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
 import { VideoPlayback } from "./video-playback.ts";
 
@@ -117,6 +127,32 @@ export class EditorRuntime {
     });
   }
 
+  /** Adds a layer for a file in `media/` on top of the stack, from the file's probed facts. */
+  async addMediaLayer(src: string): Promise<void> {
+    const info = await this.loadMediaInfo(src);
+    const { project, playhead } = this.store.get();
+    this.insertLayer(
+      createMediaLayer({
+        src,
+        info,
+        canvas: project.canvas,
+        start: snapToFrame(playhead, project.canvas.fps),
+        stillRange: this.getNewStillRange(),
+      }),
+    );
+  }
+
+  addTextLayer(): void {
+    const { canvas } = this.store.get().project;
+    this.insertLayer(
+      createTextLayer({ canvas, range: this.getNewStillRange() }),
+    );
+  }
+
+  addColorLayer(): void {
+    this.insertLayer(createColorLayer({ range: this.getNewStillRange() }));
+  }
+
   setCanvas(canvas: Project["canvas"]): void {
     const { project } = this.store.get();
     this.store.update({ project: { ...project, canvas } });
@@ -167,6 +203,55 @@ export class EditorRuntime {
         this.videoPlaybacks.delete(id);
       }
     };
+  }
+
+  /**
+   * Puts a new layer on top and selects it. The first video or audio layer of
+   * a project without an output range also sets the output to its own range,
+   * so a new project renders something right away.
+   */
+  private insertLayer(layer: Layer): void {
+    const id = crypto.randomUUID();
+    this.reschedulePlayback(() => {
+      const { project } = this.store.get();
+      const { output } = project;
+      const range = getLayerRange(layer);
+      this.store.update({
+        project: {
+          ...project,
+          layers: [...project.layers, { ...layer, id }],
+          output:
+            (layer.type === "video" || layer.type === "audio") &&
+            output.type === "video" &&
+            output.end <= output.start
+              ? { ...output, ...range, end: roundToMillisecond(range.end) }
+              : output,
+        },
+        selection: { type: "layer", id },
+      });
+      this.syncPlayback();
+    });
+    if (
+      (layer.type === "video" || layer.type === "audio") &&
+      !this.store.get().audioSources[layer.src]
+    ) {
+      this.loadAudio(layer.src);
+    }
+  }
+
+  /**
+   * An image, text, or color layer spans the output, which also covers
+   * variants inside it, such as the thumbnail. Without an output range yet, it
+   * lasts five seconds from the playhead.
+   */
+  private getNewStillRange(): Range {
+    const { project, playhead } = this.store.get();
+    const output = getOutputRange(project);
+    if (output.end > output.start) {
+      return { start: output.start, end: roundToMillisecond(output.end) };
+    }
+    const start = snapToFrame(playhead, project.canvas.fps);
+    return { start, end: start + 5 };
   }
 
   /**

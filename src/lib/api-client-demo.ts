@@ -1,5 +1,5 @@
 import type { apiClient as serverApiClient } from "./api-client.ts";
-import type { MediaInfo } from "./media.ts";
+import { getMediaType, type MediaFile, type MediaInfo } from "./media.ts";
 import type { Project } from "./project.ts";
 
 // The demo build uses this module in place of `api-client.ts`, so the editor
@@ -34,6 +34,17 @@ export const apiClient: typeof serverApiClient = {
   /** Every demo project sits beside the sample's `media/`, so `src` is the key. */
   getMediaUrl({ src }) {
     return mediaUrls.get(src) ?? src;
+  },
+
+  async listMediaFiles() {
+    return [...mediaUrls.keys()].flatMap((path): MediaFile[] => {
+      const type = getMediaType(path);
+      return type ? [{ path, type }] : [];
+    });
+  },
+
+  async openMediaFolder() {
+    throw new Error("The demo has no media folder to open.");
   },
 
   async loadMediaInfo({ src }) {

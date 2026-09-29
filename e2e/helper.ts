@@ -1,4 +1,4 @@
-import { cp } from "node:fs/promises";
+import { cp, rm } from "node:fs/promises";
 import path from "node:path";
 import {
   expect,
@@ -12,9 +12,11 @@ export const test = base.extend<{
 }>({
   editor: async ({}, use, testInfo) => {
     // Copy the synthetic sample into its own project directory under the
-    // server's projects root, so each test saves edits independently.
+    // server's projects root, so each test saves edits independently. Clear
+    // it first, so files a previous run added do not carry over.
     const projectDir = testInfo.testId;
     const projectDirPath = path.resolve(".local/e2e-projects", projectDir);
+    await rm(projectDirPath, { recursive: true, force: true });
     await cp("samples/synthetic", projectDirPath, { recursive: true });
     const url = `/?${new URLSearchParams({ project: `${projectDir}/project.json` })}`;
     await use({
