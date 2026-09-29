@@ -4,6 +4,7 @@ import { readJson } from "../src/utils/fs.ts";
 import {
   commitInspectorField,
   expectImageLoaded,
+  expectInspectorFields,
   clickTimelineButton,
   getInspectorField,
   seekTimelineByPixels,
@@ -162,4 +163,49 @@ test("compose a still project at its output time", async ({ page, editor }) => {
     "data-status",
     "saved",
   );
+});
+
+test("switch the output between video and still", async ({ page, editor }) => {
+  // Open the synthetic project, open Composition settings, and trim the render
+  // end so the video range no longer spans every layer.
+  await page.goto(editor.url);
+  await page
+    .getByRole("button", { name: "Composition settings", exact: true })
+    .click();
+  await commitInspectorField(page, { name: "end", value: "2" });
+
+  // Seek to 1.5 s, switch to a still, and confirm it takes the playhead's
+  // frame with a single render marker.
+  const outputType = page.getByRole("group", { name: "Output type" });
+  await seekTimelineByPixels(page, {
+    pixels: 1.5 * DEFAULT_PIXELS_PER_SECOND,
+  });
+  await expect(page.getByTestId("timeline-time")).toContainText("1.500 s");
+  await outputType.getByRole("button", { name: "still" }).click();
+  await expect(
+    outputType.getByRole("button", { name: "still" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expectInspectorFields(page, { time: "1.5" });
+  const timeline = page.getByTestId("editor-timeline");
+  await expect(
+    timeline.getByRole("button", { name: "Render frame", exact: true }),
+  ).toBeVisible();
+
+  // Switch back to a video and confirm it spans every layer rather than the
+  // earlier trimmed range.
+  await outputType.getByRole("button", { name: "video" }).click();
+  await expectInspectorFields(page, { start: "0", end: "3" });
+  await expect(
+    timeline.getByRole("button", { name: "Render end", exact: true }),
+  ).toBeVisible();
+
+  // Switch to a still again, save, and confirm the still output reaches the
+  // project file.
+  await outputType.getByRole("button", { name: "still" }).click();
+  const save = page.getByTestId("editor-save-button");
+  await save.click();
+  await expect(save).toHaveAttribute("data-status", "saved");
+  expect(await readJson(editor.projectFile)).toMatchObject({
+    output: { type: "still", time: 1.5 },
+  });
 });

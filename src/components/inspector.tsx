@@ -41,6 +41,7 @@ export function Inspector({
           time={time}
           onCanvasCommit={(canvas) => runtime.setCanvas(canvas)}
           onOutputCommit={(output) => runtime.setOutput(output)}
+          onOutputTypeChange={(type) => runtime.setOutputType(type)}
         />
       );
     }
@@ -72,12 +73,14 @@ function OutputInspector({
   time,
   onCanvasCommit,
   onOutputCommit,
+  onOutputTypeChange,
 }: {
   canvas: Canvas;
   output: Output;
   time: TimeFieldOptions;
   onCanvasCommit: (canvas: Canvas) => void;
   onOutputCommit: (output: Output) => void;
+  onOutputTypeChange: (type: Output["type"]) => void;
 }) {
   return (
     <div data-testid="inspector">
@@ -115,7 +118,24 @@ function OutputInspector({
             />
           </label>
         </Group>
-        <Group title="Range">
+        <Group title="Output">
+          <div
+            role="group"
+            aria-label="Output type"
+            className="col-span-2 grid grid-cols-2 gap-1"
+          >
+            {(["video", "still"] as const).map((type) => (
+              <button
+                key={type}
+                type="button"
+                aria-pressed={output.type === type}
+                onClick={() => onOutputTypeChange(type)}
+                className="h-8 rounded border border-neutral-600 bg-neutral-900 text-xs text-neutral-400 outline-none hover:bg-neutral-800 focus-visible:border-ring aria-pressed:bg-neutral-700 aria-pressed:text-neutral-100"
+              >
+                {type}
+              </button>
+            ))}
+          </div>
           {output.type === "video" ? (
             <>
               <NumberField

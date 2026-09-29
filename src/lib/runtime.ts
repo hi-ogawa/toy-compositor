@@ -4,7 +4,7 @@ import { createStore } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
 import { createAudioView, type AudioView } from "./audio-view.ts";
-import { getOutputRange } from "./layout.ts";
+import { getContentRange, getOutputRange } from "./layout.ts";
 import type { AudioLayer, Layer, Project, VideoLayer } from "./project.ts";
 import { snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
@@ -111,6 +111,22 @@ export class EditorRuntime {
   setOutput(output: Project["output"]): void {
     const { project } = this.store.get();
     this.store.update({ project: { ...project, output } });
+  }
+
+  /**
+   * Switches between video and still output. A still takes the playhead's
+   * frame, and a video spans every layer so its markers trim inward.
+   */
+  setOutputType(type: Project["output"]["type"]): void {
+    const { project, playhead } = this.store.get();
+    if (project.output.type === type) {
+      return;
+    }
+    this.setOutput(
+      type === "still"
+        ? { type, time: snapToFrame(playhead, project.canvas.fps) }
+        : { type, ...getContentRange(project) },
+    );
   }
 
   select(selection: EditorSelection | undefined): void {
