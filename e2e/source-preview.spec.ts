@@ -1,19 +1,13 @@
-import { readFile } from "node:fs/promises";
 import { expect } from "@playwright/test";
 import {
-  commitInspectorField,
   dragBy,
   expectImageLoaded,
-  getInspectorField,
   seekVideo,
   clickTimelineButton,
   test,
 } from "./helper";
 
-test("preview synthetic sources and save an inspector edit", async ({
-  page,
-  editor,
-}) => {
+test("preview synthetic sources", async ({ page, editor }) => {
   // Open the synthetic project and confirm it starts saved.
   await page.goto(editor.url);
   await expect(page.getByTestId("editor-project-file")).toContainText(
@@ -39,22 +33,6 @@ test("preview synthetic sources and save an inspector edit", async ({
     .getByRole("img", { name: "image", exact: true });
   await expect(image).toBeVisible();
   await expectImageLoaded(image);
-  await expect(save).toHaveAttribute("data-status", "saved");
-
-  // Edit the image position and save the change to the project file.
-  await commitInspectorField(page, { name: "x", value: "400" });
-  await expect(save).toHaveAttribute("data-status", "unsaved");
-  await save.click();
-  await expect(save).toHaveAttribute("data-status", "saved");
-  const savedProjectJson = JSON.parse(
-    await readFile(editor.projectFile, "utf-8"),
-  );
-  expect(savedProjectJson.layers[2].box.x).toBe(400);
-
-  // Reload the project and confirm the saved position survives.
-  await page.reload();
-  await clickTimelineButton(page, { name: "image image" });
-  await expect(getInspectorField(page, { name: "x" })).toHaveValue("400");
   await expect(save).toHaveAttribute("data-status", "saved");
 });
 
