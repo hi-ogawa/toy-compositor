@@ -41,20 +41,14 @@ The selected layer gets a read-only outline, drawn as a second div with the same
 
 ## Play Along the Transport
 
-The runtime owns playback, like toy-midi's recorder runtime. A transport on the `AudioContext` clock holds the playhead, audio is scheduled on that clock, and video follows it.
+The runtime owns playback, like toy-midi's recorder runtime. Audio on the `AudioContext` clock sets the time, and the playhead and video follow what is heard.
 
-```text
-EditorRuntime              runtime.ts                source loading, restarts around changes
-└─ AudioContextTransport   transport.ts              playhead, play, pause, seek
-   ├─ AudioBufferPlayback  audio-buffer-playback.ts  one per audio and video layer, scheduled on the clock
-   └─ VideoPlayback        video-playback.ts         one per composition <video>, follows the heard position
-```
+![Play schedules audio at one anchor, the playhead follows the heard sound, and video closes its drift by rate](images/playback-clock.svg)
 
-- **The playhead is what is heard.** It comes from `getOutputTimestamp`, because `currentTime` runs ahead of the speakers by the output latency, which Chromium on Linux reports as 0.
+- **The heard position comes from `getOutputTimestamp`,** because Chromium on Linux reports `outputLatency` as 0.
 - **Audio is scheduled, never steered.** A layer plays wherever its own range covers the playhead, so trimming decides what plays. Fades are gain ramps, and `muted` silences the layer.
-- **Playbacks start only at the play anchor.** An edit, or a buffer that arrives during playback, restarts the transport around the change, like toy-midi's `updateClips`.
+- **Playbacks start only at the anchor.** An edit, or a buffer that arrives during playback, restarts the transport around the change, like toy-midi's `updateClips`.
 - **Sources load in the background.** Loading a project decodes each source once, shared by its layers, so opening never waits on a long source.
-- **Video closes drift by rate, not by seeking.** Every 100 ms it nudges `playbackRate` by up to 10%, and it seeks only past a second of drift, because a seek on a long keyframe interval lands behind by its own duration.
 - **Pausing lands on the frame grid,** so a paused preview matches a rendered frame.
 
 ## Known gaps
