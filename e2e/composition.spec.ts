@@ -15,7 +15,10 @@ test("compose the output start, follow inspector edits, and save them", async ({
   await page.goto(editor.url);
   const canvas = page.getByTestId("composition-canvas");
   const video = canvas.locator("video");
-  const image = canvas.getByRole("img", { name: "image", exact: true });
+  const image = canvas.getByRole("img", {
+    name: "Label backdrop",
+    exact: true,
+  });
   await expect(video).toBeVisible();
   await expectImageLoaded(image);
   await expect(
@@ -23,7 +26,7 @@ test("compose the output start, follow inspector edits, and save them", async ({
   ).toBeVisible();
 
   // Crop the image sides and confirm it refits inside its box with an outline.
-  await clickTimelineButton(page, { name: "image image" });
+  await clickTimelineButton(page, { name: "Label backdrop image" });
   await expect(canvas.getByLabel("Selected layer outline")).toBeVisible();
   await commitInspectorField(page, { name: "left", value: "0.25" });
   await commitInspectorField(page, { name: "right", value: "0.25" });
@@ -38,7 +41,7 @@ test("compose the output start, follow inspector edits, and save them", async ({
   await commitInspectorField(page, { name: "start", value: "1" });
   await clickTimelineButton(page, { name: "Render start" });
   await expect(page.getByTestId("timeline-time")).toContainText("1.000 s");
-  await clickTimelineButton(page, { name: "video video" });
+  await clickTimelineButton(page, { name: "Test pattern video" });
   await commitInspectorField(page, { name: "start", value: "0.3" });
   await commitInspectorField(page, { name: "in", value: "0.2" });
   await expect
@@ -55,7 +58,7 @@ test("compose the output start, follow inspector edits, and save them", async ({
   // End the text at the playhead and confirm it hides, because its range
   // excludes its end.
   const text = page.getByTestId("composition-layer-3");
-  await clickTimelineButton(page, { name: "label text" });
+  await clickTimelineButton(page, { name: "Title text" });
   await commitInspectorField(page, { name: "end", value: "1" });
   await expect(text).toBeHidden();
 
