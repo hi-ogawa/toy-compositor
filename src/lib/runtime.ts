@@ -153,6 +153,24 @@ export class EditorRuntime {
     this.insertLayer(createColorLayer({ range: this.getNewStillRange() }));
   }
 
+  /** Removes a layer, clearing the selection if it was the selected one. */
+  removeLayer(id: string): void {
+    this.reschedulePlayback(() => {
+      const { project, selection } = this.store.get();
+      this.store.update({
+        project: {
+          ...project,
+          layers: project.layers.filter((layer) => layer.id !== id),
+        },
+        selection:
+          selection?.type === "layer" && selection.id === id
+            ? undefined
+            : selection,
+      });
+      this.syncPlayback();
+    });
+  }
+
   setCanvas(canvas: Project["canvas"]): void {
     const { project } = this.store.get();
     this.store.update({ project: { ...project, canvas } });

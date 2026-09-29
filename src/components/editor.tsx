@@ -55,6 +55,17 @@ export function Editor({ projectPath }: { projectPath: string }) {
     if (matchKeyboardEvent(event, "Space") && !event.repeat) {
       event.preventDefault();
       void runtime.togglePlayback();
+      return;
+    }
+    const layer = getSelectedLayer(runtime.store.get());
+    if (
+      layer &&
+      !layerInteraction.editing &&
+      (matchKeyboardEvent(event, "Delete") ||
+        matchKeyboardEvent(event, "Backspace"))
+    ) {
+      event.preventDefault();
+      runtime.removeLayer(layer.id);
     }
   });
 
