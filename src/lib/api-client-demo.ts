@@ -25,17 +25,17 @@ export const apiClient: typeof serverApiClient = {
     return { file: path, project: structuredClone(project) };
   },
 
-  /** Saves last until the page reloads. */
+  /** Saves last for the browser tab's session. */
   async saveProject({ path, project }) {
-    projects.set(path, structuredClone(project));
+    writeProject({ path, project });
   },
 
-  /** Creates last until the page reloads. */
+  /** Creates last for the browser tab's session. */
   async createProject({ path, project }) {
     if (projects.has(path)) {
       throw new Error(`Failed to create project: ${path} already exists`);
     }
-    projects.set(path, structuredClone(project));
+    writeProject({ path, project });
   },
 
   /** Every demo project sits beside the sample's `media/`, so `src` is the key. */
@@ -52,15 +52,33 @@ export const apiClient: typeof serverApiClient = {
   },
 };
 
-const projects = new Map(
-  Object.entries(
+// Saved and created projects are kept in session storage over the bundled
+// sample, because opening a project or going home reloads the page.
+const STORAGE_KEY = "toy-compositor-demo-projects";
+
+const writtenProjects: Record<string, Project> = JSON.parse(
+  sessionStorage.getItem(STORAGE_KEY) ?? "{}",
+);
+
+const projects = new Map([
+  ...Object.entries(
     import.meta.glob<Project>("./*.json", {
       base: "../../samples/synthetic",
       eager: true,
       import: "default",
     }),
-  ).map(([key, project]) => [key.replace("./", "synthetic/"), project]),
-);
+  ).map(
+    ([key, project]) => [key.replace("./", "synthetic/"), project] as const,
+  ),
+  ...Object.entries(writtenProjects),
+]);
+
+function writeProject({ path, project }: { path: string; project: Project }) {
+  const copy = structuredClone(project);
+  projects.set(path, copy);
+  writtenProjects[path] = copy;
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(writtenProjects));
+}
 
 // Media is inlined as data URLs, because static hosts such as Cloudflare may
 // answer range requests with the whole file, and a video cannot seek without them.
