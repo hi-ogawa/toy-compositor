@@ -62,12 +62,9 @@ export function Editor({ projectPath }: { projectPath: string }) {
     <div className="flex h-screen flex-col overflow-hidden bg-neutral-900 text-neutral-100">
       <EditorHeader
         file={state.file}
-        playhead={state.playhead}
-        playing={state.playing}
         saveStatus={project.saveStatus}
         sourceOpen={sourceOpen}
         renderSettingsSelected={selection?.type === "output"}
-        onPlayToggle={() => void runtime.togglePlayback()}
         onSave={() => project.save()}
         onSourceOpenChange={setSourceOpen}
         onRenderSettingsSelect={() => runtime.select({ type: "output" })}
@@ -94,6 +91,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
             project={state.project}
             selection={selection}
             playhead={state.playhead}
+            playing={state.playing}
           />
         </main>
         <aside

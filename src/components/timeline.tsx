@@ -1,7 +1,10 @@
+import { PauseIcon, PlayIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { getLayerRange, type Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
 import type { EditorRuntime, EditorSelection } from "../lib/runtime";
+import { PanelHeader } from "./panel-header";
+import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { TIMELINE_LABEL_WIDTH, type TimelineView } from "./use-timeline";
 
@@ -11,12 +14,14 @@ export function Timeline({
   project,
   selection,
   playhead,
+  playing,
 }: {
   timeline: TimelineView;
   runtime: EditorRuntime;
   project: Project;
   selection?: EditorSelection;
   playhead: number;
+  playing: boolean;
 }) {
   const selectOutput = () => runtime.select({ type: "output" });
   const seek = (time: number) => runtime.seek(time);
@@ -26,6 +31,32 @@ export function Timeline({
       data-testid="editor-timeline"
       aria-label="Timeline"
     >
+      <PanelHeader title="Timeline">
+        <Button
+          aria-label={playing ? "Pause" : "Play"}
+          title={playing ? "Pause (Space)" : "Play (Space)"}
+          aria-pressed={playing}
+          className={cn(
+            "size-5",
+            playing
+              ? "bg-primary text-primary-foreground hover:bg-primary/90"
+              : "hover:bg-neutral-700",
+          )}
+          onClick={() => void runtime.togglePlayback()}
+        >
+          {playing ? (
+            <PauseIcon className="size-3" />
+          ) : (
+            <PlayIcon className="size-3" />
+          )}
+        </Button>
+        <span
+          className="font-mono text-[10px] tabular-nums text-neutral-400"
+          data-testid="timeline-time"
+        >
+          {playhead.toFixed(3)} s
+        </span>
+      </PanelHeader>
       <div className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {/* Measures the graph width and receives wheel scrolling and zoom. */}
         <div

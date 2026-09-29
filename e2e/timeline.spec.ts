@@ -15,7 +15,7 @@ test("navigate the timeline without editing the project", async ({
 }) => {
   // Open the synthetic project.
   await page.goto(editor.url);
-  const time = page.getByTestId("editor-time");
+  const time = page.getByTestId("timeline-time");
 
   // Click the render start marker and confirm it opens Render settings.
   await clickTimelineButton(page, { name: "Render start" });
@@ -71,7 +71,7 @@ test("scroll and zoom the timeline with the wheel", async ({
   // Open the synthetic project and scroll left past the start, and confirm the
   // viewport stays at 0 so the ruler point 0.5 s in still seeks to 0.5 s.
   await page.goto(editor.url);
-  const time = page.getByTestId("editor-time");
+  const time = page.getByTestId("timeline-time");
   const ruler = page
     .getByTestId("editor-timeline")
     .getByRole("button", { name: "Timeline ruler", exact: true });
@@ -112,7 +112,7 @@ test("scroll and zoom the timeline with the wheel", async ({
 test("play the composition and step by frames", async ({ page, editor }) => {
   // Open the synthetic project, where the video starts at 0.
   await page.goto(editor.url);
-  const time = page.getByTestId("editor-time");
+  const time = page.getByTestId("timeline-time");
   const video = page.getByTestId("composition-canvas").locator("video");
   const readPlayhead = async () => parseFloat((await time.textContent())!);
   const { canvas } = await readJson<Project>(editor.projectFile);
