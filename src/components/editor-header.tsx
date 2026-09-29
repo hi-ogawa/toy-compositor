@@ -21,15 +21,15 @@ import type { SaveStatus } from "./use-editor-project";
 export function EditorHeader({
   file,
   saveStatus,
-  renderSettingsSelected,
+  compositionSettingsSelected,
   onSave,
-  onRenderSettingsSelect,
+  onCompositionSettingsSelect,
 }: {
   file: string;
   saveStatus: SaveStatus;
-  renderSettingsSelected: boolean;
+  compositionSettingsSelected: boolean;
   onSave: () => void;
-  onRenderSettingsSelect: () => void;
+  onCompositionSettingsSelect: () => void;
 }) {
   return (
     <header className="flex h-[53px] shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-4 shadow-sm">
@@ -42,11 +42,14 @@ export function EditorHeader({
       </span>
       <div className="flex-1" />
       <Button
-        aria-label="Render settings"
-        title="Render settings"
-        aria-pressed={renderSettingsSelected}
-        className={cn("size-9", getToggleClassName(renderSettingsSelected))}
-        onClick={onRenderSettingsSelect}
+        aria-label="Composition settings"
+        title="Composition settings"
+        aria-pressed={compositionSettingsSelected}
+        className={cn(
+          "size-9",
+          getToggleClassName(compositionSettingsSelected),
+        )}
+        onClick={onCompositionSettingsSelect}
       >
         <ClapperboardIcon className="size-5" />
       </Button>
