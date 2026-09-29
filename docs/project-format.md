@@ -18,6 +18,9 @@ A project is one JSON file that describes one deliverable: a canvas, what to ren
   "locators": [
     // optional labeled times, see below
   ],
+  "sources": {
+    // facts about each media file, keyed by src, see below
+  },
 }
 ```
 
@@ -129,6 +132,36 @@ Locators are labeled timeline times, like guides in Kdenlive. They do not affect
   { "label": "shorts-end", "time": 186.4 }
 ]
 ```
+
+## Sources
+
+`sources` holds what ffprobe reports about every media file the layers use, keyed by the layers' `src`. The project then describes its media completely, so the editor, the renderer, and scripts read the same facts instead of each probing files on its own. Every `src` a layer uses has an entry.
+
+```jsonc
+"sources": {
+  "media/camera.mp4": {
+    "start": 0,
+    "end": 189.499,
+    "video": { "width": 1920, "height": 1080, "startTime": 0, "frameRate": 29.97002997002997 },
+    "audio": true
+  },
+  "media/mix.wav": { "start": 0, "end": 185.3, "audio": true },
+  "media/mv-thumbnail.jpg": {
+    "start": 0,
+    "end": 0,
+    "video": { "width": 1280, "height": 720, "startTime": 0, "frameRate": 25 },
+    "audio": false
+  }
+}
+```
+
+- `start` and `end` bound the file's source times, the same presentation timestamps as `in` and `out`, so they include the container's start offset. A still image has no duration, so both are 0.
+- `video` is the video stream's size, its own start time, and its frame rate, which the compiler's frame timing counts from. Only files with a video stream have it, including images.
+- `audio` says whether the file has an audio stream, which decides whether a video layer contributes to the mix.
+
+An entry is exactly what probing the file yields, with nothing about when or how it was probed. A file can be checked later by probing it again and comparing, and a copied file still matches. Facts describe a file, not a layer, so layers that share a file share its entry. Each project file carries its own `sources`, so variants such as the thumbnail repeat the entries they share and stay self-contained.
+
+`toy-compositor probe <project.json...>` fills `sources` from the files the layers use, replacing what was there, for example after hand-editing layers or replacing a file.
 
 ## Box and crop
 

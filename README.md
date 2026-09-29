@@ -15,6 +15,7 @@ A small video compositor that composes finished media from a JSON project, with 
 pnpm add -g https://pkg.pr.new/hi-ogawa/toy-compositor@main
 toy-compositor serve [root]                    # default ~/Documents/toy-compositor
 toy-compositor render <project.json> <output>  # .mp4 or .png
+toy-compositor probe <project.json...>          # record media facts in sources
 ```
 
 Rendering needs `ffmpeg`, `ffprobe`, and ImageMagick (`magick`) on PATH.
