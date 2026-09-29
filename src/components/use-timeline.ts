@@ -4,7 +4,7 @@ import {
   DEFAULT_PIXELS_PER_SECOND,
   MAX_PIXELS_PER_SECOND,
   MIN_PIXELS_PER_SECOND,
-  rulerStep,
+  getRulerStep,
 } from "../lib/timeline";
 
 export const TIMELINE_LABEL_WIDTH = 144;
@@ -76,7 +76,7 @@ export function useTimeline() {
 
   return {
     pixelsPerSecond,
-    tickStep: rulerStep(pixelsPerSecond),
+    tickStep: getRulerStep(pixelsPerSecond),
     visible,
     viewportRef,
     timeToX,

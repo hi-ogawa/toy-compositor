@@ -35,7 +35,7 @@
 <text x="244" y="210" font-size="13" fill="#eef1ef" font-weight="700">PreviewLayer × N</text>
 <text x="360" y="210" font-size="12" fill="#c6cfca">box → CSS · outline</text>
 <rect x="244" y="220" width="266" height="28" rx="4" fill="#eef1ef"/>
-<text x="254" y="239" font-size="13">text → div + textStyle()</text>
+<text x="254" y="239" font-size="13">text → div + getTextStyle()</text>
 <rect x="244" y="254" width="266" height="28" rx="4" fill="#eef1ef"/>
 <text x="254" y="273" font-size="13">color → div background, opacity</text>
 <rect x="244" y="288" width="266" height="42" rx="4" fill="#dce8f5" stroke="#2f6fb0"/>

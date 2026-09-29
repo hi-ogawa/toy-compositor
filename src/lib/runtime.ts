@@ -1,6 +1,6 @@
 import { createStore } from "../utils/store.ts";
 import type { ProjectFile } from "./api-client.ts";
-import { outputRange } from "./layout.ts";
+import { getOutputRange } from "./layout.ts";
 import type { Layer, Project } from "./project.ts";
 
 export type EditorSelection =
@@ -71,7 +71,7 @@ export class EditorRuntime {
     this.store.update({
       file,
       project,
-      playhead: outputRange(project).start,
+      playhead: getOutputRange(project).start,
       selection: undefined,
     });
   }

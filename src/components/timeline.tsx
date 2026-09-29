@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { layerRange, type Range } from "../lib/layout";
+import { getLayerRange, type Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
 import type { EditorRuntime, EditorSelection } from "../lib/runtime";
 import { cn } from "./ui/utils";
@@ -75,7 +75,7 @@ export function Timeline({
                 timeline={timeline}
                 layer={layer}
                 index={index}
-                range={layerRange(layer)}
+                range={getLayerRange(layer)}
                 selected={
                   selection?.type === "layer" && selection.index === index
                 }

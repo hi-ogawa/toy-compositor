@@ -2,8 +2,8 @@ import path from "node:path";
 import {
   fitBox,
   intersect,
-  layerRange,
-  outputRange,
+  getLayerRange,
+  getOutputRange,
   type Range,
 } from "../layout.ts";
 import type {
@@ -35,7 +35,7 @@ export function compile({
   resolved: Resolved;
 }): string[] {
   const { canvas } = project;
-  const range = outputRange(project);
+  const range = getOutputRange(project);
   const duration = range.end - range.start;
   const scene: Scene = {
     canvas,
@@ -165,16 +165,16 @@ function compileVideo({
   media: Media;
   scene: Scene;
 }): LayerStreams {
-  const visible = intersect(layerRange(layer), scene.range);
+  const visible = intersect(getLayerRange(layer), scene.range);
   if (!visible) {
     return {};
   }
   const fit = fitBox({ source: media, crop: layer.crop, box: layer.box });
   return {
     video: {
-      input: seekInput({
+      input: buildSeekInput({
         file,
-        seek: frameShownAt({
+        seek: getFrameShownAt({
           media,
           time: layer.in + visible.start - layer.start,
         }),
@@ -183,7 +183,7 @@ function compileVideo({
       filters: [
         `fps=${scene.canvas.fps}`,
         `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
-        ...cropFilters(layer.crop),
+        ...buildCropFilters(layer.crop),
         `scale=${fit.width}:${fit.height}`,
       ],
       x: fit.x,
@@ -191,7 +191,7 @@ function compileVideo({
     },
     audio:
       scene.withAudio && !layer.muted && media.hasAudio
-        ? audioStream({ layer, file, visible, scene })
+        ? compileAudioStream({ layer, file, visible, scene })
         : undefined,
   };
 }
@@ -207,20 +207,20 @@ function compileImage({
   media: Media;
   scene: Scene;
 }): LayerStreams {
-  const visible = intersect(layerRange(layer), scene.range);
+  const visible = intersect(getLayerRange(layer), scene.range);
   if (!visible) {
     return {};
   }
   const fit = fitBox({ source: media, crop: layer.crop, box: layer.box });
   return {
     video: {
-      input: stillInput({
+      input: buildStillInput({
         file,
         fps: scene.canvas.fps,
         duration: visible.end - visible.start,
       }),
       filters: [
-        ...cropFilters(layer.crop),
+        ...buildCropFilters(layer.crop),
         `scale=${fit.width}:${fit.height}`,
         `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
       ],
@@ -239,13 +239,13 @@ function compileText({
   file: string;
   scene: Scene;
 }): LayerStreams {
-  const visible = intersect(layerRange(layer), scene.range);
+  const visible = intersect(getLayerRange(layer), scene.range);
   if (!visible) {
     return {};
   }
   return {
     video: {
-      input: stillInput({
+      input: buildStillInput({
         file,
         fps: scene.canvas.fps,
         duration: visible.end - visible.start,
@@ -265,7 +265,7 @@ function compileColor({
   layer: ColorLayer;
   scene: Scene;
 }): LayerStreams {
-  const visible = intersect(layerRange(layer), scene.range);
+  const visible = intersect(getLayerRange(layer), scene.range);
   if (!visible) {
     return {};
   }
@@ -298,11 +298,11 @@ function compileAudio({
   file: string;
   scene: Scene;
 }): LayerStreams {
-  const visible = intersect(layerRange(layer), scene.range);
+  const visible = intersect(getLayerRange(layer), scene.range);
   if (!visible || !scene.withAudio || layer.muted) {
     return {};
   }
-  return { audio: audioStream({ layer, file, visible, scene }) };
+  return { audio: compileAudioStream({ layer, file, visible, scene }) };
 }
 
 /**
@@ -310,7 +310,7 @@ function compileAudio({
  * it to its visible range and delay it into place, so the output range only
  * cuts a layer and never reshapes it.
  */
-function audioStream({
+function compileAudioStream({
   layer,
   file,
   visible,
@@ -327,7 +327,7 @@ function audioStream({
   const layerDuration = layer.out - layer.in;
   const delayMs = Math.round((visible.start - scene.range.start) * 1000);
   return {
-    input: seekInput({
+    input: buildSeekInput({
       file,
       seek: layer.in,
       duration: visible.end - layer.start,
@@ -402,13 +402,13 @@ function assembleGraph({
  * ffmpeg's accurate seek starts from the first frame at or after the seek time,
  * so seek to just before that frame. Assumes a constant frame rate source.
  */
-function frameShownAt({ media, time }: { media: Media; time: number }) {
+function getFrameShownAt({ media, time }: { media: Media; time: number }) {
   const { startTime, frameRate } = media;
   const index = Math.round((time - startTime) * frameRate);
   return Math.max(0, startTime + index / frameRate - 0.1 / frameRate);
 }
 
-function seekInput({
+function buildSeekInput({
   file,
   seek,
   duration,
@@ -420,7 +420,7 @@ function seekInput({
   return ["-ss", seek.toFixed(6), "-t", duration.toFixed(6), "-i", file];
 }
 
-function stillInput({
+function buildStillInput({
   file,
   fps,
   duration,
@@ -441,7 +441,7 @@ function stillInput({
   ];
 }
 
-function cropFilters(crop?: Crop) {
+function buildCropFilters(crop?: Crop) {
   if (!crop) {
     return [];
   }
