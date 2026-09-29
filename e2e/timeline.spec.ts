@@ -1,3 +1,5 @@
+import { rm } from "node:fs/promises";
+import path from "node:path";
 import { expect } from "@playwright/test";
 import type { Project } from "../src/lib/project.ts";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
@@ -278,4 +280,24 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
       { start: 0, end: 3 },
     ],
   });
+});
+
+test("lock a layer whose source is missing", async ({ page, editor }) => {
+  // Delete the video's source file, then open the project.
+  await rm(path.join(path.dirname(editor.projectFile), "media/video.mp4"));
+  await page.goto(editor.url);
+
+  // Confirm the video lane reports the source as unavailable and offers no
+  // trim handles, while the audio lane's source still loads.
+  const video = page.getByTestId("timeline-layer-0");
+  await expect(
+    video.getByRole("img", { name: "source unavailable" }),
+  ).toBeVisible();
+  await expect(page.getByTestId("timeline-layer-0-trim-end")).toHaveCount(0);
+  await expect(page.getByTestId("timeline-layer-1-trim-end")).toBeVisible();
+
+  // Drag the video region, and confirm it stays where it was.
+  await dragBy(page, video, { deltaX: DEFAULT_PIXELS_PER_SECOND });
+  await clickTimelineButton(page, { name: "Test pattern video" });
+  await expectInspectorFields(page, { start: "0", in: "0", out: "3" });
 });

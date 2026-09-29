@@ -1,3 +1,4 @@
+import type { MediaInfo } from "./media.ts";
 import type { Project } from "./project.ts";
 
 export type ProjectFile = { file: string; project: Project };
@@ -67,6 +68,26 @@ export const apiClient = {
       pathname: "/api/media",
       params: { project: projectPath, src },
     });
+  },
+
+  /** Probes a layer source on the server for its type, time range, and size. */
+  async loadMediaInfo({
+    src,
+    projectPath,
+  }: {
+    src: string;
+    projectPath: string;
+  }): Promise<MediaInfo> {
+    const res = await fetch(
+      getApiUrl({
+        pathname: "/api/media-info",
+        params: { project: projectPath, src },
+      }),
+    );
+    if (!res.ok) {
+      throw new Error(`Failed to load media info: ${await res.text()}`);
+    }
+    return res.json();
   },
 
   /** Fetches a video or audio source's encoded bytes for decoding its audio. */

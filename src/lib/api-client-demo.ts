@@ -1,4 +1,5 @@
 import type { apiClient as serverApiClient } from "./api-client.ts";
+import type { MediaInfo } from "./media.ts";
 import type { Project } from "./project.ts";
 
 // The demo build uses this module in place of `api-client.ts`, so the editor
@@ -35,6 +36,14 @@ export const apiClient: typeof serverApiClient = {
     return mediaUrls.get(src) ?? src;
   },
 
+  async loadMediaInfo({ src }) {
+    const info = mediaInfos[src];
+    if (!info) {
+      throw new Error(`Failed to load media info: ${src} is not in the demo`);
+    }
+    return info;
+  },
+
   async loadAudioData({ src, projectPath }) {
     const res = await fetch(apiClient.getMediaUrl({ src, projectPath }));
     if (!res.ok) {
@@ -66,3 +75,17 @@ const mediaUrls = new Map(
     }),
   ).map(([key, url]) => [key.replace("./", ""), url]),
 );
+
+// What the server's ffprobe reports for the committed synthetic media, because
+// the static demo has no server to probe it.
+const mediaInfos: Record<string, MediaInfo> = {
+  "media/video.mp4": {
+    type: "video",
+    start: 0,
+    end: 3,
+    width: 320,
+    height: 180,
+  },
+  "media/audio.wav": { type: "audio", start: 0, end: 3 },
+  "media/image.png": { type: "image", width: 160, height: 90 },
+};

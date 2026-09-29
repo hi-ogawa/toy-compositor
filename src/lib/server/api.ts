@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { readJson, writeJson } from "../../utils/fs.ts";
 import type { ProjectEntry } from "../api-client.ts";
+import { getMediaType, type MediaInfo } from "../media.ts";
+import { probeMedia } from "../probe.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 
 /**
@@ -13,6 +15,8 @@ import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
  * - `GET /api/project?path=` reads a project, and `PUT` saves it.
  * - `GET /api/media?project=&src=` serves a layer source resolved against the
  *   project's directory, as the renderer does, with range requests.
+ * - `GET /api/media-info?project=&src=` probes a layer source for the facts
+ *   that adding and editing its layer need.
  */
 export function createEditorHandler({ root }: { root: string }) {
   return async (request: Request): Promise<Response> => {
@@ -34,6 +38,9 @@ export function createEditorHandler({ root }: { root: string }) {
         case "GET /api/media":
         case "HEAD /api/media": {
           return await handleMedia({ root, url, request });
+        }
+        case "GET /api/media-info": {
+          return await handleMediaInfo({ root, url });
         }
         default: {
           return new Response(undefined, { status: 404 });
@@ -130,6 +137,36 @@ async function handleMedia({
     throw new HttpError({ status: 404, message: "Media not found" });
   }
   return await serveFile({ file, request });
+}
+
+/** Probe a layer source, as the renderer does, into the facts the editor uses. */
+async function handleMediaInfo({ root, url }: { root: string; url: URL }) {
+  const src = getParam(url, "src");
+  const file = resolveFile({
+    root,
+    paths: [path.dirname(getParam(url, "project")), src],
+  });
+  const type = getMediaType(src);
+  if (!type) {
+    throw new HttpError({ status: 400, message: `Not a media file: ${src}` });
+  }
+  if (!fs.existsSync(file)) {
+    throw new HttpError({ status: 404, message: "Media not found" });
+  }
+  const probed = await probeMedia(file);
+  const range = { start: probed.start, end: probed.start + probed.duration };
+  const info: MediaInfo =
+    type === "audio"
+      ? { type, ...range }
+      : type === "video"
+        ? {
+            type,
+            ...range,
+            width: probed.video!.width,
+            height: probed.video!.height,
+          }
+        : { type, width: probed.video!.width, height: probed.video!.height };
+  return Response.json(info);
 }
 
 /**

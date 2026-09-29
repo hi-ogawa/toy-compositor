@@ -1,5 +1,5 @@
 import { clamp } from "../utils/math.ts";
-import { getLayerRange } from "./layout.ts";
+import { getLayerRange, type Range } from "./layout.ts";
 import type { Layer } from "./project.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 
@@ -18,13 +18,16 @@ export function applyLayerEdit(
     type,
     delta,
     fps,
-    sourceDuration,
+    source,
   }: {
     type: LayerEditType;
     delta: number;
     fps: number;
-    /** Infinity for an image, text, or color layer, because a still covers any time. */
-    sourceDuration: number;
+    /**
+     * The source's time range, which `in` and `out` stay within. Unbounded for
+     * an image, text, or color layer, because a still covers any time.
+     */
+    source: Range;
   },
 ): Layer {
   const range = getLayerRange(layer);
@@ -46,7 +49,7 @@ export function applyLayerEdit(
         const start = roundToMillisecond(
           clamp(
             snap(range.start + delta),
-            Math.max(0, layer.start - layer.in),
+            Math.max(0, layer.start - layer.in + source.start),
             range.end - frame,
           ),
         );
@@ -68,7 +71,7 @@ export function applyLayerEdit(
         const end = clamp(
           snap(range.end + delta),
           range.start + frame,
-          layer.start - layer.in + sourceDuration,
+          layer.start - layer.in + source.end,
         );
         return {
           ...layer,

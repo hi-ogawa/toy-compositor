@@ -1,5 +1,5 @@
 import path from "node:path";
-import { execFileAsync } from "../../utils/exec.ts";
+import { probeMedia } from "../probe.ts";
 import type { Project } from "../project.ts";
 import { renderText } from "./text.ts";
 
@@ -39,10 +39,8 @@ export async function resolveProject({
       case "video":
       case "image": {
         if (!media.has(layer.src)) {
-          media.set(
-            layer.src,
-            await probeMedia(path.resolve(projectDir, layer.src)),
-          );
+          const probed = await probeMedia(path.resolve(projectDir, layer.src));
+          media.set(layer.src, { ...probed.video!, hasAudio: probed.hasAudio });
         }
         break;
       }
@@ -55,32 +53,4 @@ export async function resolveProject({
     }
   }
   return { media, texts };
-}
-
-async function probeMedia(file: string): Promise<Media> {
-  const { stdout } = await execFileAsync("ffprobe", [
-    "-v",
-    "error",
-    "-show_entries",
-    "stream=codec_type,width,height,start_time,r_frame_rate",
-    "-of",
-    "json",
-    file,
-  ]);
-  const streams: {
-    codec_type: string;
-    width: number;
-    height: number;
-    start_time?: string;
-    r_frame_rate: string;
-  }[] = JSON.parse(stdout).streams;
-  const video = streams.find((s) => s.codec_type === "video")!;
-  const [num, den] = video.r_frame_rate.split("/").map(Number);
-  return {
-    width: video.width,
-    height: video.height,
-    startTime: Number(video.start_time ?? 0),
-    frameRate: num / den,
-    hasAudio: streams.some((s) => s.codec_type === "audio"),
-  };
 }

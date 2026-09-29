@@ -119,7 +119,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
             playhead={state.playhead}
             playing={state.playing}
             audioSources={state.audioSources}
-            sourceDurations={state.sourceDurations}
+            mediaInfos={state.mediaInfos}
           />
         </main>
         <aside

@@ -16,6 +16,7 @@ import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { usePointerGesture } from "../hooks/use-pointer-gesture";
 import type { LayerEditType } from "../lib/layer-edit";
 import { getLayerRange, intersect, type Range } from "../lib/layout";
+import type { MediaInfo } from "../lib/media";
 import type { Layer, Locator, Project } from "../lib/project";
 import type {
   DecodedAudio,
@@ -39,7 +40,7 @@ export function Timeline({
   playhead,
   playing,
   audioSources,
-  sourceDurations,
+  mediaInfos,
 }: {
   timeline: TimelineView;
   layerInteraction: LayerInteraction;
@@ -49,7 +50,7 @@ export function Timeline({
   playhead: number;
   playing: boolean;
   audioSources: Record<string, PromiseState<DecodedAudio>>;
-  sourceDurations: Record<string, PromiseState<number>>;
+  mediaInfos: Record<string, PromiseState<MediaInfo>>;
 }) {
   const selectOutput = () => runtime.select({ type: "output" });
   const seek = (time: number) => runtime.seek(time);
@@ -123,9 +124,9 @@ export function Timeline({
                     ? audioSources[layer.src]
                     : undefined
                 }
-                sourceDuration={
+                mediaInfo={
                   layer.type === "video" || layer.type === "audio"
-                    ? sourceDurations[layer.src]
+                    ? mediaInfos[layer.src]
                     : undefined
                 }
                 selected={
@@ -302,7 +303,7 @@ function TimelineLayerLane({
   index,
   range,
   audioSource,
-  sourceDuration,
+  mediaInfo,
   selected,
   onSelect,
 }: {
@@ -313,7 +314,7 @@ function TimelineLayerLane({
   index: number;
   range: Range;
   audioSource?: PromiseState<DecodedAudio>;
-  sourceDuration?: PromiseState<number>;
+  mediaInfo?: PromiseState<MediaInfo>;
   selected: boolean;
   onSelect: () => void;
 }) {
@@ -388,14 +389,14 @@ function TimelineLayerLane({
                 />
               )}
             {(audioSource?.status === "pending" ||
-              sourceDuration?.status === "pending") && (
+              mediaInfo?.status === "pending") && (
               <LoaderCircleIcon
                 role="img"
                 aria-label="loading source"
                 className="absolute right-1 top-1 size-3.5 animate-spin text-muted-foreground"
               />
             )}
-            {sourceDuration?.status === "rejected" && (
+            {mediaInfo?.status === "rejected" && (
               <TriangleAlertIcon
                 role="img"
                 aria-label="source unavailable"

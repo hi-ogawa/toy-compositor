@@ -1,10 +1,10 @@
-import { loadMediaDuration } from "../utils/media.ts";
 import { watchPromise, type PromiseState } from "../utils/promise-state.ts";
 import { createStore } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
 import { createAudioView, type AudioView } from "./audio-view.ts";
 import { getContentRange, getOutputRange } from "./layout.ts";
+import type { MediaInfo } from "./media.ts";
 import type { AudioLayer, Layer, Project, VideoLayer } from "./project.ts";
 import { snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
@@ -36,7 +36,8 @@ export interface EditorState {
   playhead: number;
   playing: boolean;
   selection?: EditorSelection;
-  sourceDurations: Record<string, PromiseState<number>>;
+  /** Probed facts of each layer source, keyed by `src`. */
+  mediaInfos: Record<string, PromiseState<MediaInfo>>;
   audioSources: Record<string, PromiseState<DecodedAudio>>;
 }
 
@@ -62,7 +63,7 @@ export class EditorRuntime {
     playhead: 0,
     playing: false,
     selection: undefined,
-    sourceDurations: {},
+    mediaInfos: {},
     audioSources: {},
   }));
 
@@ -70,6 +71,7 @@ export class EditorRuntime {
   readonly transport = new AudioContextTransport(this.context);
   private readonly audioPlaybacks = new Map<string, AudioBufferPlayback>();
   private readonly videoPlaybacks = new Map<string, VideoPlayback>();
+  private readonly mediaInfoLoads = new Map<string, Promise<MediaInfo>>();
 
   constructor() {
     this.transport.store.subscribe(() => {
@@ -237,17 +239,25 @@ export class EditorRuntime {
     });
   }
 
-  private loadDuration(src: string): void {
-    const url = apiClient.getMediaUrl({
-      src,
-      projectPath: this.store.get().file,
-    });
-    watchPromise(loadMediaDuration(url), (duration) => {
-      const { sourceDurations } = this.store.get();
-      this.store.update({
-        sourceDurations: { ...sourceDurations, [src]: duration },
+  /**
+   * Probes a source once, sharing the result between the layers that use it.
+   * A failed probe is forgotten, so the next request retries it.
+   */
+  private loadMediaInfo(src: string): Promise<MediaInfo> {
+    let load = this.mediaInfoLoads.get(src);
+    if (!load) {
+      load = apiClient.loadMediaInfo({
+        src,
+        projectPath: this.store.get().file,
       });
-    });
+      this.mediaInfoLoads.set(src, load);
+      load.catch(() => this.mediaInfoLoads.delete(src));
+      watchPromise(load, (info) => {
+        const { mediaInfos } = this.store.get();
+        this.store.update({ mediaInfos: { ...mediaInfos, [src]: info } });
+      });
+    }
+    return load;
   }
 
   serializeProject(): Project {
@@ -269,18 +279,21 @@ export class EditorRuntime {
         })),
       },
       selection: undefined,
-      sourceDurations: {},
     });
     this.syncPlayback();
     this.seek(getOutputRange(project).start);
-    const sources = new Set(
+    for (const layer of project.layers) {
+      if ("src" in layer) {
+        void this.loadMediaInfo(layer.src);
+      }
+    }
+    const audioSources = new Set(
       project.layers.flatMap((layer) =>
         layer.type === "video" || layer.type === "audio" ? [layer.src] : [],
       ),
     );
-    for (const src of sources) {
+    for (const src of audioSources) {
       this.loadAudio(src);
-      this.loadDuration(src);
     }
   }
 

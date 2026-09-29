@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { applyLayerEdit, type LayerEditType } from "../lib/layer-edit";
+import type { Range } from "../lib/layout";
 import type { Layer } from "../lib/project";
 import type { EditorLayer, EditorRuntime, EditorState } from "../lib/runtime";
 
 type LayerEdit = {
   type: LayerEditType;
   id: string;
-  sourceDuration: number;
+  source: Range;
   layer: EditorLayer;
 };
 
@@ -25,13 +26,15 @@ export function useLayerInteraction({
   const [edit, setEdit] = useState<LayerEdit>();
   const { layers, canvas } = state.project;
 
-  /** A video or audio layer is editable once its source duration loads. */
-  function getSourceDuration(layer: Layer): number | undefined {
+  /** A video or audio layer is editable once its source's time range loads. */
+  function getSourceRange(layer: Layer): Range | undefined {
     if (layer.type !== "video" && layer.type !== "audio") {
-      return Infinity;
+      return { start: -Infinity, end: Infinity };
     }
-    const duration = state.sourceDurations[layer.src];
-    return duration?.status === "fulfilled" ? duration.value : undefined;
+    const info = state.mediaInfos[layer.src];
+    return info?.status === "fulfilled" && info.value.type !== "image"
+      ? { start: info.value.start, end: info.value.end }
+      : undefined;
   }
 
   function findLayer(id: string): EditorLayer {
@@ -40,12 +43,12 @@ export function useLayerInteraction({
 
   function startEdit({ type, id }: { type: LayerEditType; id: string }) {
     const layer = findLayer(id);
-    const sourceDuration = getSourceDuration(layer);
-    if (sourceDuration === undefined) {
+    const source = getSourceRange(layer);
+    if (!source) {
       return;
     }
     runtime.select({ type: "layer", id });
-    setEdit({ type, id, sourceDuration, layer });
+    setEdit({ type, id, source, layer });
   }
 
   function getEditedLayer(edit: LayerEdit, delta: number): EditorLayer {
@@ -53,7 +56,7 @@ export function useLayerInteraction({
       type: edit.type,
       delta,
       fps: canvas.fps,
-      sourceDuration: edit.sourceDuration,
+      source: edit.source,
     });
     return { ...layer, id: edit.id };
   }
@@ -78,7 +81,7 @@ export function useLayerInteraction({
       ? layers.map((layer) => (layer.id === edit.id ? edit.layer : layer))
       : layers,
     editing: edit !== undefined,
-    canEdit: (layer: Layer) => getSourceDuration(layer) !== undefined,
+    canEdit: (layer: Layer) => getSourceRange(layer) !== undefined,
     startEdit,
     updateEdit,
     finishEdit,
