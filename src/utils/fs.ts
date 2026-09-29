@@ -12,6 +12,10 @@ export async function readJson<T>(file: string): Promise<T> {
 }
 
 /** Write JSON with two-space indentation and a trailing newline. */
-export async function writeJson(file: string, json: unknown) {
-  await writeFile(file, JSON.stringify(json, null, 2) + "\n");
+export async function writeJson(
+  file: string,
+  json: unknown,
+  options?: { flag?: string },
+) {
+  await writeFile(file, JSON.stringify(json, null, 2) + "\n", options);
 }

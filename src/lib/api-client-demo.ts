@@ -30,6 +30,14 @@ export const apiClient: typeof serverApiClient = {
     projects.set(path, structuredClone(project));
   },
 
+  /** Creates last until the page reloads. */
+  async createProject({ path, project }) {
+    if (projects.has(path)) {
+      throw new Error(`Failed to create project: ${path} already exists`);
+    }
+    projects.set(path, structuredClone(project));
+  },
+
   /** Every demo project sits beside the sample's `media/`, so `src` is the key. */
   getMediaUrl({ src }) {
     return mediaUrls.get(src) ?? src;
