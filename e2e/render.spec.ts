@@ -1,6 +1,8 @@
-import { cp, readFile, writeFile } from "node:fs/promises";
+import { cp } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
+import type { Project } from "../src/lib/project.ts";
 import { execFileAsync } from "../src/utils/exec.ts";
+import { editJson } from "./helper";
 
 test("render the synthetic sample", async ({}, testInfo) => {
   // Render the synthetic sample project to an MP4.
@@ -114,19 +116,18 @@ test("fade audio at the layer's own edges when the output cuts into them", async
   // and out over 0.5s across 0 to 3s, then cut the output into both fades.
   const directory = testInfo.outputPath("project");
   await cp("samples/synthetic", directory, { recursive: true });
-  const project = JSON.parse(
-    await readFile(`${directory}/project.json`, "utf-8"),
-  );
-  project.layers = project.layers.filter(
-    (layer: { type: string }) => layer.type === "audio",
-  );
-  project.output = { type: "video", start: 0.1, end: 2.8 };
-  await writeFile(`${directory}/cut.json`, JSON.stringify(project));
+  await editJson<Project>({
+    file: `${directory}/project.json`,
+    edit: (project) => {
+      project.layers = project.layers.filter((layer) => layer.type === "audio");
+      project.output = { type: "video", start: 0.1, end: 2.8 };
+    },
+  });
   const output = testInfo.outputPath("cut.mp4");
   await execFileAsync(process.execPath, [
     "src/cli.ts",
     "render",
-    `${directory}/cut.json`,
+    `${directory}/project.json`,
     output,
   ]);
 
