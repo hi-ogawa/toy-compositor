@@ -208,11 +208,6 @@ export class EditorRuntime {
     });
   }
 
-  /**
-   * Loads a source's duration as media elements report it, because playback
-   * seeks media elements in the same source time that `in` and `out` are
-   * measured in.
-   */
   private loadDuration(src: string): void {
     const url = apiClient.getMediaUrl({
       src,
