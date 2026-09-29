@@ -135,8 +135,6 @@ export class EditorRuntime {
       }
     }
 
-    // Every video and audio layer gets a playback, and muting only decides
-    // whether it schedules sound, so unmuting needs no load.
     const layers = new Map<string, VideoLayer | AudioLayer>(
       project.layers.flatMap((layer, index) =>
         layer.type === "video" || layer.type === "audio"
@@ -157,8 +155,6 @@ export class EditorRuntime {
         this.audioPlaybacks.set(key, playback);
       }
       playback.setLayer({ layer });
-      // A rejected source, such as a video file without an audio stream,
-      // contributes nothing, as in the render.
       const source = this.audioSources.get(layer.src);
       if (source?.state.status === "fulfilled") {
         playback.setBuffer({ buffer: source.state.value });
