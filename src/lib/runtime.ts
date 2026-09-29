@@ -59,7 +59,6 @@ export class EditorRuntime {
       // Land on a frame, so the paused preview matches a rendered frame.
       this.seek(this.store.get().playhead);
     } else {
-      // Play is a user gesture, which lets the context start running.
       await this.context.resume();
       this.transport.play();
     }
