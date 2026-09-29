@@ -172,6 +172,29 @@ test("play the composition and step by frames", async ({ page, editor }) => {
   );
 });
 
+test("draw audio waveforms in lanes", async ({ page, editor }) => {
+  // Open the synthetic project and confirm the audio layer draws a waveform,
+  // and the muted video draws its own audio dimmed.
+  await page.goto(editor.url);
+  const videoWaveform = page
+    .getByTestId("timeline-layer-0")
+    .getByTestId("timeline-waveform");
+  const audioWaveform = page
+    .getByTestId("timeline-layer-1")
+    .getByTestId("timeline-waveform");
+  await expect(audioWaveform).toBeVisible();
+  await expect(audioWaveform).not.toHaveAttribute("data-dimmed");
+  await expect(videoWaveform).toHaveAttribute("data-dimmed", "true");
+
+  // Select the video and unmute it, and confirm its waveform is no longer dimmed.
+  await clickTimelineButton(page, { name: "Test pattern video" });
+  await page
+    .getByTestId("inspector")
+    .getByRole("checkbox", { name: "muted", exact: true })
+    .uncheck();
+  await expect(videoWaveform).not.toHaveAttribute("data-dimmed");
+});
+
 test("move and trim layers on the timeline", async ({ page, editor }) => {
   // Open the synthetic project, where every layer spans 0 to 3 s and the video
   // source is 3 s long.
@@ -247,27 +270,4 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
       { start: 0, end: 3 },
     ],
   });
-});
-
-test("draw audio waveforms in lanes", async ({ page, editor }) => {
-  // Open the synthetic project and confirm the audio layer draws a waveform,
-  // and the muted video draws its own audio dimmed.
-  await page.goto(editor.url);
-  const videoWaveform = page
-    .getByTestId("timeline-layer-0")
-    .getByTestId("timeline-waveform");
-  const audioWaveform = page
-    .getByTestId("timeline-layer-1")
-    .getByTestId("timeline-waveform");
-  await expect(audioWaveform).toBeVisible();
-  await expect(audioWaveform).not.toHaveAttribute("data-dimmed");
-  await expect(videoWaveform).toHaveAttribute("data-dimmed", "true");
-
-  // Select the video and unmute it, and confirm its waveform is no longer dimmed.
-  await clickTimelineButton(page, { name: "Test pattern video" });
-  await page
-    .getByTestId("inspector")
-    .getByRole("checkbox", { name: "muted", exact: true })
-    .uncheck();
-  await expect(videoWaveform).not.toHaveAttribute("data-dimmed");
 });
