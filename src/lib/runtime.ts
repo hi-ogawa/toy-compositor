@@ -173,12 +173,11 @@ export class EditorRuntime {
   }
 
   private async decodeAudio(src: string): Promise<AudioBuffer> {
-    const url = apiClient.getMediaUrl({
+    const data = await apiClient.loadAudioData({
       src,
       projectPath: this.store.get().file,
     });
-    const response = await fetch(url);
-    return this.context.decodeAudioData(await response.arrayBuffer());
+    return this.context.decodeAudioData(data);
   }
 
   serializeProject(): Project {
