@@ -26,7 +26,7 @@ export function Inspector({
       <>
         <InspectorTitle />
         <p className="p-3 text-xs text-neutral-500">
-          Select render settings or a layer.
+          Select composition settings or a layer.
         </p>
       </>
     );
@@ -36,9 +36,11 @@ export function Inspector({
     case "output": {
       return (
         <OutputInspector
+          canvas={project.canvas}
           output={project.output}
           time={time}
-          onCommit={(output) => runtime.setOutput(output)}
+          onCanvasCommit={(canvas) => runtime.setCanvas(canvas)}
+          onOutputCommit={(output) => runtime.setOutput(output)}
         />
       );
     }
@@ -55,25 +57,64 @@ export function Inspector({
   }
 }
 
+type Canvas = Project["canvas"];
+
 type Output = Project["output"];
 
 type TimeFieldOptions = ReturnType<typeof getTimeFieldOptions>;
 
 type LayerUpdate = (update: Partial<Layer>) => void;
 
+/** Composition settings: the canvas together with what to render from it. */
 function OutputInspector({
+  canvas,
   output,
   time,
-  onCommit,
+  onCanvasCommit,
+  onOutputCommit,
 }: {
+  canvas: Canvas;
   output: Output;
   time: TimeFieldOptions;
-  onCommit: (output: Output) => void;
+  onCanvasCommit: (canvas: Canvas) => void;
+  onOutputCommit: (output: Output) => void;
 }) {
   return (
     <div data-testid="inspector">
-      <InspectorTitle title="Render settings" subtitle={output.type} />
+      <InspectorTitle title="Composition settings" subtitle={output.type} />
       <div className="flex flex-col gap-4 p-3">
+        <Group title="Canvas">
+          {(["width", "height"] as const).map((key) => (
+            <NumberField
+              key={key}
+              label={key}
+              value={canvas[key]}
+              {...PIXEL_FIELD}
+              min={1}
+              onCommit={(value) => onCanvasCommit({ ...canvas, [key]: value })}
+            />
+          ))}
+          <NumberField
+            label="fps"
+            value={canvas.fps}
+            step={1}
+            min={1}
+            round={(value) => roundTo(value, 1e-3)}
+            onCommit={(fps) => onCanvasCommit({ ...canvas, fps })}
+          />
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] text-neutral-400">background</span>
+            <input
+              type="color"
+              aria-label="background"
+              className="h-8 w-full min-w-0 cursor-pointer rounded border border-neutral-600 bg-neutral-900 px-1 outline-none focus-visible:border-ring"
+              value={canvas.background ?? "#000000"}
+              onChange={(e) =>
+                onCanvasCommit({ ...canvas, background: e.target.value })
+              }
+            />
+          </label>
+        </Group>
         <Group title="Range">
           {output.type === "video" ? (
             <>
@@ -81,13 +122,13 @@ function OutputInspector({
                 label="start"
                 value={output.start}
                 {...time}
-                onCommit={(start) => onCommit({ ...output, start })}
+                onCommit={(start) => onOutputCommit({ ...output, start })}
               />
               <NumberField
                 label="end"
                 value={output.end}
                 {...time}
-                onCommit={(end) => onCommit({ ...output, end })}
+                onCommit={(end) => onOutputCommit({ ...output, end })}
               />
             </>
           ) : (
@@ -95,7 +136,7 @@ function OutputInspector({
               label="time"
               value={output.time}
               {...time}
-              onCommit={(time) => onCommit({ ...output, time })}
+              onCommit={(time) => onOutputCommit({ ...output, time })}
             />
           )}
         </Group>
