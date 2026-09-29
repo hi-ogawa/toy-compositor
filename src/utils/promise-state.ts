@@ -3,33 +3,20 @@ export type PromiseState<T> =
   | { status: "fulfilled"; value: T }
   | { status: "rejected"; error: unknown };
 
-/** A promise whose current state reads synchronously. */
-export interface TrackedPromise<T> {
-  state: PromiseState<T>;
-}
-
 /**
- * Mirrors a promise's settlement into a state that reads synchronously.
- * `onFulfilled` runs after the state is fulfilled, so it can read the value.
+ * Returns a promise's pending state, and hands its settled state to
+ * `onSettled`, so the caller can keep each state as immutable data.
  */
 export function trackPromise<T>({
   promise,
-  onFulfilled,
+  onSettled,
 }: {
   promise: Promise<T>;
-  onFulfilled: (value: T) => void;
-}): TrackedPromise<T> {
-  const tracked: TrackedPromise<T> = {
-    state: { status: "pending", promise },
-  };
+  onSettled: (state: Exclude<PromiseState<T>, { status: "pending" }>) => void;
+}): PromiseState<T> {
   void promise.then(
-    (value) => {
-      tracked.state = { status: "fulfilled", value };
-      onFulfilled(value);
-    },
-    (error: unknown) => {
-      tracked.state = { status: "rejected", error };
-    },
+    (value) => onSettled({ status: "fulfilled", value }),
+    (error: unknown) => onSettled({ status: "rejected", error }),
   );
-  return tracked;
+  return { status: "pending", promise };
 }

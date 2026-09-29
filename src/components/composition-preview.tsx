@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
+import type { EditorProject } from "../lib/editor-project";
 import { getLayerRange } from "../lib/layout";
 import type { Layer, Project, TextLayer } from "../lib/project";
 import type { EditorRuntime, EditorSelection } from "../lib/runtime";
@@ -12,7 +13,7 @@ export function CompositionPreview({
   runtime,
   resolveMediaUrl,
 }: {
-  project: Project;
+  project: EditorProject;
   selection?: EditorSelection;
   time: number;
   runtime: EditorRuntime;
@@ -49,20 +50,19 @@ export function CompositionPreview({
             }}
           >
             {/* Every layer stays mounted, so media is ready when playback reaches it. */}
-            {project.layers.map((layer, index) => {
+            {project.layers.map(({ id, layer }, index) => {
               if (layer.type === "audio") {
                 return undefined;
               }
               const range = getLayerRange(layer);
               return (
                 <PreviewLayer
-                  key={"src" in layer ? `${index}:${layer.src}` : index}
+                  key={id}
                   layer={layer}
                   visible={time >= range.start && time < range.end}
                   runtime={runtime}
-                  selected={
-                    selection?.type === "layer" && selection.index === index
-                  }
+                  selected={selection?.type === "layer" && selection.id === id}
+                  id={id}
                   index={index}
                   canvas={canvas}
                   resolveMediaUrl={resolveMediaUrl}
@@ -88,6 +88,7 @@ function PreviewLayer({
   visible,
   runtime,
   selected,
+  id,
   index,
   canvas,
   resolveMediaUrl,
@@ -96,6 +97,8 @@ function PreviewLayer({
   visible: boolean;
   runtime: EditorRuntime;
   selected: boolean;
+  id: string;
+  /** Position in the project, which only labels the element for tests. */
   index: number;
   canvas: Project["canvas"];
   resolveMediaUrl: (src: string) => string;
@@ -122,7 +125,7 @@ function PreviewLayer({
         <CompositionMedia
           layer={layer}
           runtime={runtime}
-          index={index}
+          id={id}
           resolveMediaUrl={resolveMediaUrl}
         />
       ) : layer.type === "text" ? (

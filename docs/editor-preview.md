@@ -4,7 +4,7 @@ The editor composes the project in the DOM at one project time. Each visual laye
 
 ## Components
 
-Each component answers one question about the preview, and the preview holds no project state of its own. Inspector edits go through the runtime into `state.project`, and the composition re-renders from it, so edits show up immediately without extra wiring.
+Each component answers one question about the preview, and the preview holds no project state of its own. Inspector edits go through the runtime into `state.project`, and the composition re-renders from it, so edits show up immediately without extra wiring. `state.project` is the file's project with each layer wrapped in runtime-only fields, a session id and its loaded audio, which [src/lib/editor-project.ts](../src/lib/editor-project.ts) adds on load and drops on save, like toy-midi's runtime and serialized state.
 
 ![The editor screen as nested component regions, each with the one question it answers](images/component-tree.svg)
 
@@ -55,7 +55,7 @@ EditorRuntime              runtime.ts                source loading, restarts ar
 - **The heard position comes from `getOutputTimestamp`,** because Chromium on Linux reports `outputLatency` as 0.
 - **Audio is scheduled, never steered.** A layer plays wherever its own range covers the playhead, so trimming decides what plays. Fades are gain ramps, and `muted` silences the layer.
 - **Playbacks start only at the anchor.** An edit, or a buffer that arrives during playback, restarts the transport around the change, like toy-midi's `updateClips`.
-- **Sources load in the background.** Loading a project decodes each source once, shared by its layers, so opening never waits on a long source.
+- **Sources load in the background.** Loading a project starts each layer's audio load, which decodes a source once for all the layers that use it, so opening never waits on a long source.
 - **Pausing lands on the frame grid,** so a paused preview matches a rendered frame.
 
 ## Known gaps
@@ -65,4 +65,3 @@ EditorRuntime              runtime.ts                source loading, restarts ar
 - The transport publishes the playhead through the editor store, so the editor re-renders on every animation frame while playing, like toy-midi's recorder.
 - A video starts 50 to 90 ms behind the sound right after Play and catches up within a few seconds, because the element takes that long to start.
 - Each video and audio source decodes whole into memory, about 60MB for a 3-minute stereo mix, and a video source is downloaded in full for its audio (#85).
-- Layers are keyed by index, which holds until layers can be added or reordered.

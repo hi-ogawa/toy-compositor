@@ -1,4 +1,5 @@
-import type { Box, Crop, Layer, Project } from "../lib/project";
+import type { EditorProject } from "../lib/editor-project";
+import type { Box, Crop, Layer } from "../lib/project";
 import type { EditorRuntime, EditorSelection } from "../lib/runtime";
 import { useDraftInput } from "./use-draft-input";
 
@@ -8,7 +9,7 @@ export function Inspector({
   selection,
 }: {
   runtime: EditorRuntime;
-  project: Project;
+  project: EditorProject;
   selection?: EditorSelection;
 }) {
   if (!selection) {
@@ -52,10 +53,10 @@ export function Inspector({
       </div>
     );
   }
-  const { index } = selection;
-  const layer = project.layers[index];
+  const { id } = selection;
+  const { layer } = project.layers.find((entry) => entry.id === id)!;
   const update = (update: Partial<Layer>) =>
-    runtime.updateLayer({ index, update });
+    runtime.updateLayer({ id, update });
   return (
     <div className="flex flex-col gap-4 p-3" data-testid="inspector">
       <InspectorTitle title={layer.name ?? layer.type} subtitle={layer.type} />

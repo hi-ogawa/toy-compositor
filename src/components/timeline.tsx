@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { EditorProject } from "../lib/editor-project";
 import { getLayerRange, type Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
 import type { EditorRuntime, EditorSelection } from "../lib/runtime";
@@ -15,7 +16,7 @@ export function Timeline({
 }: {
   timeline: TimelineView;
   runtime: EditorRuntime;
-  project: Project;
+  project: EditorProject;
   selection?: EditorSelection;
   playhead: number;
   playing: boolean;
@@ -74,19 +75,17 @@ export function Timeline({
           />
           {/* Top layer first, like tracks in a timeline. */}
           {project.layers
-            .map((layer, index) => ({ layer, index }))
+            .map((entry, index) => ({ ...entry, index }))
             .reverse()
-            .map(({ layer, index }) => (
+            .map(({ id, layer, index }) => (
               <TimelineLayerLane
-                key={index}
+                key={id}
                 timeline={timeline}
                 layer={layer}
                 index={index}
                 range={getLayerRange(layer)}
-                selected={
-                  selection?.type === "layer" && selection.index === index
-                }
-                onSelect={() => runtime.select({ type: "layer", index })}
+                selected={selection?.type === "layer" && selection.id === id}
+                onSelect={() => runtime.select({ type: "layer", id })}
               />
             ))}
           {timeline.isVisible(playhead) && (

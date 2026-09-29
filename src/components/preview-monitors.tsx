@@ -1,6 +1,6 @@
 import { useRef, useState, type ReactNode } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
-import type { Layer } from "../lib/project";
+import type { EditorLayer } from "../lib/editor-project";
 import { MediaPreview } from "./media-preview";
 
 export function PreviewMonitors({
@@ -8,7 +8,7 @@ export function PreviewMonitors({
   composition,
   resolveMediaUrl,
 }: {
-  layer?: Layer;
+  layer?: EditorLayer;
   composition: ReactNode;
   resolveMediaUrl: (src: string) => string;
 }) {
@@ -49,10 +49,8 @@ export function PreviewMonitors({
             style={{ width: `calc(${sourceShare}% - 8px)` }}
           >
             <MediaPreview
-              key={
-                layer && "src" in layer ? `${layer.type}:${layer.src}` : "none"
-              }
-              layer={layer}
+              key={layer?.id ?? "none"}
+              layer={layer?.layer}
               resolveMediaUrl={resolveMediaUrl}
             />
           </div>

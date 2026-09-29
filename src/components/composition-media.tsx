@@ -7,12 +7,12 @@ import type { EditorRuntime } from "../lib/runtime";
 export function CompositionMedia({
   layer,
   runtime,
-  index,
+  id,
   resolveMediaUrl,
 }: {
   layer: ImageLayer | VideoLayer;
   runtime: EditorRuntime;
-  index: number;
+  id: string;
   resolveMediaUrl: (src: string) => string;
 }) {
   const [source, setSource] = useState<{ width: number; height: number }>();
@@ -62,7 +62,7 @@ export function CompositionMedia({
           <CompositionVideo
             layer={layer}
             runtime={runtime}
-            index={index}
+            id={id}
             src={resolveMediaUrl(layer.src)}
             style={mediaStyle}
             onSize={setSource}
@@ -91,7 +91,7 @@ export function CompositionMedia({
 function CompositionVideo({
   layer,
   runtime,
-  index,
+  id,
   src,
   style,
   onSize,
@@ -99,7 +99,7 @@ function CompositionVideo({
 }: {
   layer: VideoLayer;
   runtime: EditorRuntime;
-  index: number;
+  id: string;
   src: string;
   style?: CSSProperties;
   onSize: (size: { width: number; height: number }) => void;
@@ -107,8 +107,8 @@ function CompositionVideo({
 }) {
   const playbackRef = useCallback(
     (element: HTMLVideoElement | null) =>
-      element ? runtime.attachVideo({ index, element }) : undefined,
-    [runtime, index],
+      element ? runtime.attachVideo({ id, element }) : undefined,
+    [runtime, id],
   );
   return (
     <video

@@ -33,7 +33,7 @@ export class AudioBufferPlayback implements TransportParticipant {
   }
 
   /** Takes effect at the next transport start, like toy-midi's `setSource`. */
-  setBuffer({ buffer }: { buffer: AudioBuffer }): void {
+  setBuffer({ buffer }: { buffer?: AudioBuffer }): void {
     this.buffer = buffer;
   }
 

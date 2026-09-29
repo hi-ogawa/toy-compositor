@@ -56,7 +56,9 @@ export function Editor({ projectPath }: { projectPath: string }) {
   const { selection } = state;
   const { layers } = state.project;
   const previewLayer =
-    selection?.type === "layer" ? layers[selection.index] : undefined;
+    selection?.type === "layer"
+      ? layers.find((entry) => entry.id === selection.id)
+      : undefined;
   return (
     <div className="flex h-screen flex-col">
       <EditorHeader
