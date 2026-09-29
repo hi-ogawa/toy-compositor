@@ -7,6 +7,7 @@ import { Inspector } from "./inspector";
 import { PreviewMonitors } from "./preview-monitors";
 import { Timeline } from "./timeline";
 import { useEditorProject } from "./use-editor-project";
+import { useTimeline } from "./use-timeline";
 import { useWindowEvent } from "./use-window-event";
 
 export function Editor({ projectPath }: { projectPath: string }) {
@@ -16,6 +17,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
     runtime.store.get,
   );
   const project = useEditorProject({ projectPath, runtime });
+  const timeline = useTimeline(runtime);
 
   useEffect(() => {
     document.title = state.file
@@ -34,18 +36,8 @@ export function Editor({ projectPath }: { projectPath: string }) {
     if (!project.ready || isShortcutTextInputTarget(event.target)) {
       return;
     }
-    // Arrow keys repeat while held, stepping frame by frame.
-    for (const [shortcut, frames] of [
-      ["ArrowLeft", -1],
-      ["ArrowRight", 1],
-      ["Shift+ArrowLeft", -10],
-      ["Shift+ArrowRight", 10],
-    ] as const) {
-      if (matchKeyboardEvent(event, shortcut)) {
-        event.preventDefault();
-        runtime.seekFrames(frames);
-        return;
-      }
+    if (timeline.handleFrameStepShortcut(event)) {
+      event.preventDefault();
     }
   });
 
@@ -82,6 +74,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
             }
           />
           <Timeline
+            timeline={timeline}
             runtime={runtime}
             project={state.project}
             selection={selection}
