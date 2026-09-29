@@ -7,14 +7,6 @@ import {
   test as base,
 } from "@playwright/test";
 
-/** The synthetic sample's `canvas.fps`, which every test project copies. */
-export const SYNTHETIC_FPS = 30;
-
-/** Formats a frame of the synthetic sample as the timeline shows its time. */
-export function formatFrameTime(frame: number): string {
-  return `${(frame / SYNTHETIC_FPS).toFixed(3)} s`;
-}
-
 export const test = base.extend<{
   editor: { projectDir: string; url: string; projectFile: string };
 }>({
