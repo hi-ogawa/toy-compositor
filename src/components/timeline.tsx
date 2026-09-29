@@ -31,13 +31,13 @@ export function Timeline({
       data-testid="editor-timeline"
       aria-label="Timeline"
     >
-      <PanelHeader title="Timeline">
+      <PanelHeader title="Timeline" className="h-10 gap-3">
         <Button
           aria-label={playing ? "Pause" : "Play"}
           title={playing ? "Pause (Space)" : "Play (Space)"}
           aria-pressed={playing}
           className={cn(
-            "size-5",
+            "size-7",
             playing
               ? "bg-primary text-primary-foreground hover:bg-primary/90"
               : "hover:bg-neutral-700",
@@ -45,13 +45,13 @@ export function Timeline({
           onClick={() => void runtime.togglePlayback()}
         >
           {playing ? (
-            <PauseIcon className="size-3" />
+            <PauseIcon className="size-4" />
           ) : (
-            <PlayIcon className="size-3" />
+            <PlayIcon className="size-4" />
           )}
         </Button>
         <span
-          className="font-mono text-[10px] tabular-nums text-neutral-400"
+          className="font-mono text-xs tabular-nums text-neutral-300"
           data-testid="timeline-time"
         >
           {playhead.toFixed(3)} s
@@ -126,7 +126,7 @@ function TimelineRuler({
     ticks.push(time);
   }
   return (
-    <TimelineRow timeline={timeline} label={<span>Time · seconds</span>}>
+    <TimelineRow timeline={timeline}>
       <button
         type="button"
         aria-label="Timeline ruler"
@@ -298,7 +298,7 @@ function TimelineRow({
   children,
 }: {
   timeline: TimelineView;
-  label: ReactNode;
+  label?: ReactNode;
   children: ReactNode;
 }) {
   return (
