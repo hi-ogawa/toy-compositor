@@ -2,7 +2,7 @@ import { cp } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import type { Project } from "../src/lib/project.ts";
 import { execFileAsync } from "../src/utils/exec.ts";
-import { editJson } from "../src/utils/json.ts";
+import { editJson } from "../src/utils/fs.ts";
 
 test("render the synthetic sample", async ({}, testInfo) => {
   // Render the synthetic sample project to an MP4.
