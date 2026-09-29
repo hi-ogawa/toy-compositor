@@ -27,6 +27,8 @@ All times are seconds. Timeline times (`start`, `end`, `output.*`) are positions
 
 A video or audio layer plays its source from `in` to `out`, starting at timeline position `start`, which is the usual clip model of video editors. The source's alignment against the timeline is therefore `start - in`, the timeline position of source time 0, and it is not stored on its own. Changing `start` moves the layer with its source. Changing `in` alone shifts the source against the timeline, so trimming a layer's start moves `start` and `in` by the same amount, which keeps the alignment.
 
+![An 8-second source played from in 2 to out 7 at start 3 puts source time 0 at timeline 1, and trimming the start 1 s later moves start and in together so source time 0 stays at 1](images/source-timing.svg)
+
 An image, text, or color layer is visible from timeline position `start` to `end`. Every layer sets its range, so a layer's timing never depends on the output. An overlay meant for the whole cover, such as the title, spans the main video's output range, which also covers variants whose output falls inside it, such as the thumbnail.
 
 ## Layers
