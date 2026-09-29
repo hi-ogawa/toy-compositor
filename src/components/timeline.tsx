@@ -27,7 +27,7 @@ export function Timeline({
   const seek = (time: number) => runtime.seek(time);
   return (
     <section
-      className="flex h-72 shrink-0 flex-col border-t border-neutral-700 text-sm"
+      className="flex h-80 shrink-0 flex-col border-t border-neutral-700 text-sm"
       data-testid="editor-timeline"
       aria-label="Timeline"
     >
@@ -260,7 +260,7 @@ function TimelineLayerLane({
   return (
     <TimelineRow
       timeline={timeline}
-      className="h-8"
+      className="h-12"
       label={
         <button
           type="button"
@@ -283,7 +283,7 @@ function TimelineLayerLane({
           onClick={onSelect}
           data-testid={`timeline-layer-${index}`}
           className={cn(
-            "absolute inset-y-1 overflow-hidden rounded border px-2 text-left text-xs",
+            "absolute inset-y-1.5 overflow-hidden rounded border px-2 text-left text-xs",
             layer.type === "audio"
               ? "border-emerald-800 bg-emerald-950"
               : "border-blue-800 bg-blue-950",
