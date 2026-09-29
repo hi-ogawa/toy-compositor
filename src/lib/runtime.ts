@@ -20,7 +20,6 @@ export interface EditorState {
   selection?: EditorSelection;
 }
 
-/** A source's decoded audio, held by the runtime from the moment it starts loading. */
 type AudioSource =
   | { status: "loading"; promise: Promise<void> }
   | { status: "loaded"; buffer: AudioBuffer }
@@ -203,8 +202,6 @@ export class EditorRuntime {
     this.store.update({ file, project, selection: undefined });
     this.syncPlayback();
     this.seek(getOutputRange(project).start);
-    // Audio loads in the background, and each layer joins playback when its
-    // source arrives, so opening a project never waits on a long source.
     const sources = new Set(
       project.layers.flatMap((layer) =>
         layer.type === "video" || layer.type === "audio" ? [layer.src] : [],
