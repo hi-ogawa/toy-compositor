@@ -6,11 +6,15 @@ import {
   PauseIcon,
   PlayIcon,
   SquareIcon,
+  TriangleAlertIcon,
   TypeIcon,
   VolumeXIcon,
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { usePointerDrag } from "../hooks/use-pointer-drag";
+import { usePointerGesture } from "../hooks/use-pointer-gesture";
+import type { LayerEditType } from "../lib/layer-edit";
 import { getLayerRange, intersect, type Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
 import type {
@@ -22,24 +26,29 @@ import type { PromiseState } from "../utils/promise-state";
 import { AudioWaveformView } from "./audio-waveform";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
+import type { LayerInteraction } from "./use-layer-interaction";
 import { TIMELINE_LABEL_WIDTH, type TimelineView } from "./use-timeline";
 
 export function Timeline({
   timeline,
+  layerInteraction,
   runtime,
   project,
   selection,
   playhead,
   playing,
   audioSources,
+  sourceDurations,
 }: {
   timeline: TimelineView;
+  layerInteraction: LayerInteraction;
   runtime: EditorRuntime;
   project: Project;
   selection?: EditorSelection;
   playhead: number;
   playing: boolean;
   audioSources: Record<string, PromiseState<DecodedAudio>>;
+  sourceDurations: Record<string, PromiseState<number>>;
 }) {
   const selectOutput = () => runtime.select({ type: "output" });
   const seek = (time: number) => runtime.seek(time);
@@ -97,19 +106,25 @@ export function Timeline({
           />
           <TimelineRuler timeline={timeline} onSeek={seek} />
           {/* Top layer first, like tracks in a timeline. */}
-          {project.layers
+          {layerInteraction.layers
             .map((layer, index) => ({ layer, index }))
             .reverse()
             .map(({ layer, index }) => (
               <TimelineLayerLane
                 key={index}
                 timeline={timeline}
+                layerInteraction={layerInteraction}
                 layer={layer}
                 index={index}
                 range={getLayerRange(layer)}
                 audioSource={
                   layer.type === "video" || layer.type === "audio"
                     ? audioSources[layer.src]
+                    : undefined
+                }
+                sourceDuration={
+                  layer.type === "video" || layer.type === "audio"
+                    ? sourceDurations[layer.src]
                     : undefined
                 }
                 selected={
@@ -281,23 +296,39 @@ function TimelineLocatorRow({
 
 function TimelineLayerLane({
   timeline,
+  layerInteraction,
   layer,
   index,
   range,
   audioSource,
+  sourceDuration,
   selected,
   onSelect,
 }: {
   timeline: TimelineView;
+  layerInteraction: LayerInteraction;
   layer: Layer;
   index: number;
   range: Range;
   audioSource?: PromiseState<DecodedAudio>;
+  sourceDuration?: PromiseState<number>;
   selected: boolean;
   onSelect: () => void;
 }) {
   const name = layer.name ?? layer.type;
   const region = timeline.rangeStyle(range);
+  const editable = layerInteraction.canEdit(index);
+  const pixelsToSeconds = (deltaX: number) => deltaX / timeline.pixelsPerSecond;
+  // A click without dragging selects through the button's own click.
+  const moveRef = usePointerGesture({
+    onStart: (event) => event.preventDefault(),
+    onDragStart: () => layerInteraction.startEdit({ type: "move", index }),
+    onDragMove: (_event, { deltaX }) =>
+      layerInteraction.updateEdit(pixelsToSeconds(deltaX)),
+    onDragEnd: (_event, { deltaX }) =>
+      layerInteraction.finishEdit(pixelsToSeconds(deltaX)),
+    onCancel: layerInteraction.cancelEdit,
+  });
   const visible = intersect(range, timeline.visible);
   const audioLayer =
     layer.type === "video" || layer.type === "audio" ? layer : undefined;
@@ -319,49 +350,120 @@ function TimelineLayerLane({
       }
     >
       {region && (
-        <button
-          type="button"
-          aria-label={`Select ${name} region`}
-          title={`${range.start.toFixed(3)}–${range.end.toFixed(3)} s`}
-          onClick={onSelect}
-          data-testid={`timeline-layer-${index}`}
-          className={cn(
-            "absolute inset-y-1 overflow-hidden rounded-sm border text-left text-[11px]",
-            LAYER_CLIP_CLASSES[layer.type].fill,
-            selected
-              ? "border-sky-300 ring-1 ring-inset ring-sky-300"
-              : LAYER_CLIP_CLASSES[layer.type].border,
-          )}
-          style={region}
-        >
-          {audioLayer && visible && audioSource?.status === "fulfilled" && (
-            <AudioWaveformView
-              audioView={audioSource.value.view}
-              sourceStart={audioLayer.in + visible.start - audioLayer.start}
-              sourceEnd={audioLayer.in + visible.end - audioLayer.start}
-              pixelsPerSecond={timeline.pixelsPerSecond}
-              dimmed={audioLayer.muted ?? false}
-            />
-          )}
-          {/* The lane's header already names the layer, so the clip shows only state. */}
-          {(layer.type === "video" || layer.type === "audio") &&
-            layer.muted && (
-              <VolumeXIcon
-                role="img"
-                aria-label="muted"
-                className="absolute left-1 top-1 size-3.5"
+        <div className="absolute inset-y-1" style={region}>
+          <button
+            ref={editable ? moveRef : undefined}
+            type="button"
+            aria-label={`Select ${name} region`}
+            title={`${range.start.toFixed(3)}–${range.end.toFixed(3)} s`}
+            onClick={onSelect}
+            data-testid={`timeline-layer-${index}`}
+            className={cn(
+              "absolute inset-0 cursor-pointer touch-none select-none overflow-hidden rounded-sm border text-left text-[11px]",
+              LAYER_CLIP_CLASSES[layer.type].fill,
+              selected
+                ? "border-sky-300 ring-1 ring-inset ring-sky-300"
+                : LAYER_CLIP_CLASSES[layer.type].border,
+            )}
+          >
+            {audioLayer && visible && audioSource?.status === "fulfilled" && (
+              <AudioWaveformView
+                audioView={audioSource.value.view}
+                sourceStart={audioLayer.in + visible.start - audioLayer.start}
+                sourceEnd={audioLayer.in + visible.end - audioLayer.start}
+                pixelsPerSecond={timeline.pixelsPerSecond}
+                dimmed={audioLayer.muted ?? false}
               />
             )}
-          {audioSource?.status === "pending" && (
-            <LoaderCircleIcon
-              role="img"
-              aria-label="loading audio"
-              className="absolute right-1 top-1 size-3.5 animate-spin text-muted-foreground"
+            {/* The lane's header already names the layer, so the clip shows only state. */}
+            {(layer.type === "video" || layer.type === "audio") &&
+              layer.muted && (
+                <VolumeXIcon
+                  role="img"
+                  aria-label="muted"
+                  className="absolute left-1 top-1 size-3.5"
+                />
+              )}
+            {(audioSource?.status === "pending" ||
+              sourceDuration?.status === "pending") && (
+              <LoaderCircleIcon
+                role="img"
+                aria-label="loading source"
+                className="absolute right-1 top-1 size-3.5 animate-spin text-muted-foreground"
+              />
+            )}
+            {sourceDuration?.status === "rejected" && (
+              <TriangleAlertIcon
+                role="img"
+                aria-label="source unavailable"
+                className="absolute right-1 top-1 size-3.5 text-amber-300"
+              >
+                <title>
+                  The source did not load, so the layer can't be moved or
+                  trimmed
+                </title>
+              </TriangleAlertIcon>
+            )}
+          </button>
+          {/* A region cut off by the viewport has no edge there to trim. */}
+          {editable && timeline.isVisible(range.start) && (
+            <LayerTrimHandle
+              type="trim-start"
+              index={index}
+              timeline={timeline}
+              layerInteraction={layerInteraction}
             />
           )}
-        </button>
+          {editable && timeline.isVisible(range.end) && (
+            <LayerTrimHandle
+              type="trim-end"
+              index={index}
+              timeline={timeline}
+              layerInteraction={layerInteraction}
+            />
+          )}
+        </div>
       )}
     </TimelineRow>
+  );
+}
+
+/** A grip on a region's edge, like toy-midi's clip trim handles. */
+function LayerTrimHandle({
+  type,
+  index,
+  timeline,
+  layerInteraction,
+}: {
+  type: Exclude<LayerEditType, "move">;
+  index: number;
+  timeline: TimelineView;
+  layerInteraction: LayerInteraction;
+}) {
+  const pixelsToSeconds = (deltaX: number) => deltaX / timeline.pixelsPerSecond;
+  const trimRef = usePointerDrag({
+    onStart: (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      layerInteraction.startEdit({ type, index });
+    },
+    onMove: (_event, { deltaX }) =>
+      layerInteraction.updateEdit(pixelsToSeconds(deltaX)),
+    onEnd: (_event, { deltaX }) =>
+      layerInteraction.finishEdit(pixelsToSeconds(deltaX)),
+    onCancel: layerInteraction.cancelEdit,
+  });
+  return (
+    <div
+      ref={trimRef}
+      data-testid={`timeline-layer-${index}-${type}`}
+      className={cn(
+        "absolute inset-y-0 z-20 w-1.5 cursor-ew-resize touch-none after:absolute after:inset-y-0 after:w-0.5 after:bg-transparent hover:after:bg-white/50",
+        type === "trim-start"
+          ? "-left-[3px] after:left-[3px]"
+          : "-right-[3px] after:right-[3px]",
+      )}
+    />
   );
 }
 

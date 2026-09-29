@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="340" viewBox="0 0 760 340" role="img" aria-labelledby="title desc">
+<title id="title">A video or audio layer places its source on the timeline at start minus in</title>
+<desc id="desc">On a timeline from 0 to 10 seconds, an 8-second source plays from in 2 to out 7 starting at start 3, so the layer spans 3 to 8 and source time 0 sits at timeline 1, which is start minus in. Trimming the start 1 second later gives start 4 and in 3. The layer then spans 4 to 8, and source time 0 still sits at timeline 1, so the source does not move.</desc>
+<rect width="760" height="340" fill="#fcfaf5"/>
+<g font-family="Arial,sans-serif" font-size="15" fill="#263632">
+<text x="30" y="34" font-size="20" font-weight="700">A layer plays its source from in to out, starting at start</text>
+<text x="30" y="56" font-size="13" fill="#52625d">Dashed: the whole source, labelled in source time. Solid: the layer on the timeline.</text>
+<path d="M160 244 V296" stroke="#a3b0a9" stroke-dasharray="3 3"/>
+<text x="100" y="98" font-size="13">start 3, in 2, out 7</text>
+<g font-size="12" fill="#52625d" text-anchor="middle">
+<text x="160" y="126">0</text><text x="280" y="126">in 2</text><text x="580" y="126">out 7</text><text x="640" y="126">8</text>
+</g>
+<rect x="160" y="132" width="480" height="18" rx="4" fill="none" stroke="#2f6fb0" stroke-dasharray="5 4"/>
+<rect x="280" y="132" width="300" height="18" rx="4" fill="#2f6fb0"/>
+<text x="100" y="192" font-size="13">trim the start 1 s later: start 4, in 3, out 7</text>
+<g font-size="12" fill="#52625d" text-anchor="middle">
+<text x="160" y="220">0</text><text x="340" y="220">in 3</text><text x="580" y="220">out 7</text><text x="640" y="220">8</text>
+</g>
+<rect x="160" y="226" width="480" height="18" rx="4" fill="none" stroke="#2f6fb0" stroke-dasharray="5 4"/>
+<rect x="340" y="226" width="240" height="18" rx="4" fill="#2f6fb0"/>
+<text x="166" y="284" font-size="12" fill="#52625d">source time 0 stays at start − in = 1</text>
+<path d="M100 300 H700" stroke="#a3b0a9"/>
+<g font-size="12" fill="#52625d" text-anchor="middle">
+<path d="M100 296 V304 M160 296 V304 M220 296 V304 M280 296 V304 M340 296 V304 M400 296 V304 M460 296 V304 M520 296 V304 M580 296 V304 M640 296 V304 M700 296 V304" stroke="#a3b0a9"/>
+<text x="100" y="320">0</text><text x="160" y="320">1</text><text x="220" y="320">2</text><text x="280" y="320">3</text><text x="340" y="320">4</text><text x="400" y="320">5</text><text x="460" y="320">6</text><text x="520" y="320">7</text><text x="580" y="320">8</text><text x="640" y="320">9</text><text x="700" y="320">10 s</text>
+</g>
+</g>
+</svg>

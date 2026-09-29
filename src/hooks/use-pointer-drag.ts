@@ -4,13 +4,27 @@ import {
   type PointerDragOptions,
 } from "../utils/pointer-drag";
 
-export function usePointerDrag<T>({ onStart, onMove }: PointerDragOptions<T>) {
-  const start = useEffectEvent(onStart);
-  const move = useEffectEvent(onMove);
+export function usePointerDrag<T>({
+  onStart,
+  onMove,
+  onEnd,
+  onCancel,
+}: PointerDragOptions<T>) {
+  const handlePointerStart = useEffectEvent(onStart);
+  const handlePointerMove = useEffectEvent(onMove);
+  const handlePointerEnd = useEffectEvent(onEnd ?? (() => {}));
+  const handlePointerCancel = useEffectEvent(onCancel ?? (() => {}));
+
   return useCallback((element: HTMLElement | null) => {
     if (!element) {
       return;
     }
-    return listenPointerDrag({ element, onStart: start, onMove: move });
+    return listenPointerDrag({
+      element,
+      onStart: handlePointerStart,
+      onMove: handlePointerMove,
+      onEnd: handlePointerEnd,
+      onCancel: handlePointerCancel,
+    });
   }, []);
 }

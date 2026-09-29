@@ -1,46 +1,81 @@
+export type PointerDrag<T> = {
+  data: T;
+  deltaX: number;
+  deltaY: number;
+};
+
 export type PointerDragOptions<T> = {
   onStart: (event: PointerEvent) => T;
-  onMove: (options: { event: PointerEvent; data: T; deltaX: number }) => void;
+  onMove: (event: PointerEvent, drag: PointerDrag<T>) => void;
+  onEnd?: (event: PointerEvent, drag: PointerDrag<T>) => void;
+  onCancel?: (event: PointerEvent, drag: PointerDrag<T>) => void;
 };
 
 export function listenPointerDrag<T>({
   element,
   onStart,
   onMove,
+  onEnd,
+  onCancel,
 }: PointerDragOptions<T> & { element: HTMLElement }) {
-  let drag: { pointerId: number; startX: number; data: T } | undefined;
-  const start = (event: PointerEvent) => {
-    if (event.button !== 0 || drag) {
+  type State = {
+    pointerId: number;
+    startX: number;
+    startY: number;
+    data: T;
+  };
+  let state: State | undefined;
+
+  const createDrag = (event: PointerEvent, state: State): PointerDrag<T> => ({
+    data: state.data,
+    deltaX: event.clientX - state.startX,
+    deltaY: event.clientY - state.startY,
+  });
+
+  const handlePointerDown = (event: PointerEvent) => {
+    if (event.button !== 0 || state) {
       return;
     }
-    event.preventDefault();
-    drag = {
+    state = {
       pointerId: event.pointerId,
       startX: event.clientX,
+      startY: event.clientY,
       data: onStart(event),
     };
     element.setPointerCapture(event.pointerId);
   };
-  const move = (event: PointerEvent) => {
-    if (drag?.pointerId === event.pointerId) {
-      onMove({ event, data: drag.data, deltaX: event.clientX - drag.startX });
+  const handlePointerMove = (event: PointerEvent) => {
+    if (!state || state.pointerId !== event.pointerId) {
+      return;
+    }
+    onMove(event, createDrag(event, state));
+  };
+  const handlePointerEnd = (event: PointerEvent) => {
+    // Only the pointer that started the drag may end it.
+    if (state?.pointerId === event.pointerId) {
+      const drag = createDrag(event, state);
+      state = undefined;
+      onEnd?.(event, drag);
     }
   };
-  const end = (event: PointerEvent) => {
-    if (drag?.pointerId === event.pointerId) {
-      drag = undefined;
+  const handlePointerCancel = (event: PointerEvent) => {
+    if (state?.pointerId === event.pointerId) {
+      const drag = createDrag(event, state);
+      state = undefined;
+      onCancel?.(event, drag);
     }
   };
-  element.addEventListener("pointerdown", start);
-  element.addEventListener("pointermove", move);
-  element.addEventListener("pointerup", end);
-  element.addEventListener("pointercancel", end);
-  element.addEventListener("lostpointercapture", end);
+
+  element.addEventListener("pointerdown", handlePointerDown);
+  element.addEventListener("pointermove", handlePointerMove);
+  element.addEventListener("pointerup", handlePointerEnd);
+  element.addEventListener("pointercancel", handlePointerCancel);
+  element.addEventListener("lostpointercapture", handlePointerCancel);
   return () => {
-    element.removeEventListener("pointerdown", start);
-    element.removeEventListener("pointermove", move);
-    element.removeEventListener("pointerup", end);
-    element.removeEventListener("pointercancel", end);
-    element.removeEventListener("lostpointercapture", end);
+    element.removeEventListener("pointerdown", handlePointerDown);
+    element.removeEventListener("pointermove", handlePointerMove);
+    element.removeEventListener("pointerup", handlePointerEnd);
+    element.removeEventListener("pointercancel", handlePointerCancel);
+    element.removeEventListener("lostpointercapture", handlePointerCancel);
   };
 }

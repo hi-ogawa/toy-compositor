@@ -3,6 +3,8 @@ import type { Project } from "../src/lib/project.ts";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
 import { readJson } from "../src/utils/fs.ts";
 import {
+  dragBy,
+  expectInspectorFields,
   getInspectorField,
   seekTimelineByPixels,
   clickTimelineButton,
@@ -192,4 +194,88 @@ test("draw audio waveforms in lanes", async ({ page, editor }) => {
     .getByRole("checkbox", { name: "muted", exact: true })
     .uncheck();
   await expect(videoWaveform).not.toHaveAttribute("data-dimmed");
+});
+
+test("move and trim layers on the timeline", async ({ page, editor }) => {
+  // Open the synthetic project, where every layer spans 0 to 3 s and the video
+  // source is 3 s long.
+  await page.goto(editor.url);
+  const secondsToPixels = (seconds: number) =>
+    seconds * DEFAULT_PIXELS_PER_SECOND;
+  const video = page.getByTestId("timeline-layer-0");
+  const videoTrimStart = page.getByTestId("timeline-layer-0-trim-start");
+  const videoTrimEnd = page.getByTestId("timeline-layer-0-trim-end");
+
+  // Drag the video region 1 s right, a little off the frame grid, and confirm
+  // it selects the layer and moves its start to the nearest frame.
+  await dragBy(page, video, { deltaX: secondsToPixels(1.01) });
+  await expectInspectorFields(page, { start: "1", in: "0", out: "3" });
+
+  // Trim the video's start 0.5 s later, and confirm `in` follows `start` so the
+  // source stays in place.
+  await dragBy(page, videoTrimStart, { deltaX: secondsToPixels(0.5) });
+  await expectInspectorFields(page, { start: "1.5", in: "0.5", out: "3" });
+
+  // Trim the start 1 s earlier, and confirm it stops where the source begins.
+  await dragBy(page, videoTrimStart, { deltaX: secondsToPixels(-1) });
+  await expectInspectorFields(page, { start: "1", in: "0", out: "3" });
+
+  // Trim the end 1 s earlier, then 2 s later, and confirm it stops where the
+  // source ends.
+  await dragBy(page, videoTrimEnd, { deltaX: secondsToPixels(-1) });
+  await expectInspectorFields(page, { start: "1", in: "0", out: "2" });
+  await dragBy(page, videoTrimEnd, { deltaX: secondsToPixels(2) });
+  await expectInspectorFields(page, { start: "1", in: "0", out: "3" });
+
+  // Drag the image region 0.5 s right, and confirm its end moves with it.
+  const image = page.getByTestId("timeline-layer-2");
+  await dragBy(page, image, { deltaX: secondsToPixels(0.5) });
+  await expectInspectorFields(page, { start: "0.5", end: "3.5" });
+
+  // Drag it 2 s left, and confirm it stops at the timeline start.
+  await dragBy(page, image, { deltaX: secondsToPixels(-2) });
+  await expectInspectorFields(page, { start: "0", end: "3" });
+
+  // Trim the image's end 1 s earlier, which changes only its end.
+  await dragBy(page, page.getByTestId("timeline-layer-2-trim-end"), {
+    deltaX: secondsToPixels(-1),
+  });
+  await expectInspectorFields(page, { start: "0", end: "2" });
+
+  // Hold a drag of the image 1 s right, and confirm the region previews the
+  // move while the inspector keeps the committed start.
+  const original = (await image.boundingBox())!;
+  const readImageX = async () => (await image.boundingBox())!.x;
+  const pointer = await dragBy(page, image, {
+    deltaX: secondsToPixels(1),
+    release: false,
+  });
+  await expect.poll(readImageX).toBeCloseTo(original.x + secondsToPixels(1), 0);
+  await expectInspectorFields(page, { start: "0", end: "2" });
+
+  // Press Escape, keep dragging, and release, and confirm the move stays
+  // cancelled.
+  await page.keyboard.press("Escape");
+  await expect.poll(readImageX).toBeCloseTo(original.x, 0);
+  await page.mouse.move(pointer.x + secondsToPixels(2), pointer.y, {
+    steps: 4,
+  });
+  await page.mouse.up();
+  await expect.poll(readImageX).toBeCloseTo(original.x, 0);
+  await expectInspectorFields(page, { start: "0", end: "2" });
+
+  // Save and confirm the edits reach the project file.
+  await page.getByTestId("editor-save-button").click();
+  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
+  expect(await readJson(editor.projectFile)).toMatchObject({
+    layers: [
+      { start: 1, in: 0, out: 3 },
+      { start: 0, in: 0, out: 3 },
+      { start: 0, end: 2 },
+      { start: 0, end: 3 },
+    ],
+  });
 });

@@ -1,3 +1,4 @@
+import { loadMediaDuration } from "../utils/media.ts";
 import { watchPromise, type PromiseState } from "../utils/promise-state.ts";
 import { createStore } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
@@ -5,6 +6,7 @@ import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
 import { createAudioView, type AudioView } from "./audio-view.ts";
 import { getOutputRange } from "./layout.ts";
 import type { AudioLayer, Layer, Project, VideoLayer } from "./project.ts";
+import { snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
 import { VideoPlayback } from "./video-playback.ts";
 
@@ -25,6 +27,7 @@ export interface EditorState {
   playhead: number;
   playing: boolean;
   selection?: EditorSelection;
+  sourceDurations: Record<string, PromiseState<number>>;
   audioSources: Record<string, PromiseState<DecodedAudio>>;
 }
 
@@ -41,6 +44,7 @@ export class EditorRuntime {
     playhead: 0,
     playing: false,
     selection: undefined,
+    sourceDurations: {},
     audioSources: {},
   }));
 
@@ -69,8 +73,7 @@ export class EditorRuntime {
 
   seek(time: number): void {
     const { project } = this.store.get();
-    const frame = Math.max(0, Math.round(time * project.canvas.fps));
-    this.transport.seek(Number((frame / project.canvas.fps).toFixed(3)));
+    this.transport.seek(Math.max(0, snapToFrame(time, project.canvas.fps)));
   }
 
   /** Steps the playhead by whole frames. */
@@ -205,12 +208,30 @@ export class EditorRuntime {
     });
   }
 
+  private loadDuration(src: string): void {
+    const url = apiClient.getMediaUrl({
+      src,
+      projectPath: this.store.get().file,
+    });
+    watchPromise(loadMediaDuration(url), (duration) => {
+      const { sourceDurations } = this.store.get();
+      this.store.update({
+        sourceDurations: { ...sourceDurations, [src]: duration },
+      });
+    });
+  }
+
   serializeProject(): Project {
     return this.store.get().project;
   }
 
   deserializeProject({ file, project }: ProjectFile): void {
-    this.store.update({ file, project, selection: undefined });
+    this.store.update({
+      file,
+      project,
+      selection: undefined,
+      sourceDurations: {},
+    });
     this.syncPlayback();
     this.seek(getOutputRange(project).start);
     const sources = new Set(
@@ -220,6 +241,7 @@ export class EditorRuntime {
     );
     for (const src of sources) {
       this.loadAudio(src);
+      this.loadDuration(src);
     }
   }
 
