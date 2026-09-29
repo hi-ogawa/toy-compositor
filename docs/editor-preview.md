@@ -56,5 +56,5 @@ Video elements follow the heard position and never drive it. A composition `<vid
 - Text is DOM text with `-webkit-text-stroke` and an estimated line height, while the compiler draws it with ImageMagick, so glyph placement differs slightly.
 - The transport publishes the playhead through the editor store, so the editor re-renders on every animation frame while playing, like toy-midi's recorder.
 - A video starts 50 to 90 ms behind the sound right after Play and catches up within a few seconds, because the element takes that long to start.
-- Each video and audio source is fetched whole from `/api/media` and decoded into memory, about 60MB for a 3-minute stereo mix, so a camera working file is downloaded in full just for its audio track until the server extracts audio (#54).
+- Each video and audio source is fetched whole from `/api/media` and decoded into memory, about 60MB for a 3-minute stereo mix, so a camera working file is downloaded in full just for its audio track until the server extracts audio (#85).
 - Layers are keyed by index, which holds until layers can be added or reordered.
