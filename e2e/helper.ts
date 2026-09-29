@@ -120,7 +120,10 @@ export async function commitInspectorField(
 }
 
 /** Click the timeline ruler at an offset from its origin, which is project time 0. */
-export async function seekTimelineByPixels(page: Page, pixels: number) {
+export async function seekTimelineByPixels(
+  page: Page,
+  { pixels }: { pixels: number },
+) {
   await test.step(
     `Seek timeline to ${pixels}px`,
     async () => {
