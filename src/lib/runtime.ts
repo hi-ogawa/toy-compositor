@@ -96,7 +96,6 @@ export class EditorRuntime {
     });
   }
 
-  /** Changing fps leaves stored times as they are, without snapping them to the new frames. */
   setCanvas(canvas: Project["canvas"]): void {
     const { project } = this.store.get();
     this.store.update({ project: { ...project, canvas } });
