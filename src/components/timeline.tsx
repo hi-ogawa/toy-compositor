@@ -11,13 +11,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import type { AudioView } from "../lib/audio-view";
 import { getLayerRange, intersect, type Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
-import type {
-  AudioSource,
-  EditorRuntime,
-  EditorSelection,
-} from "../lib/runtime";
+import type { EditorRuntime, EditorSelection } from "../lib/runtime";
+import type { PromiseState } from "../utils/promise-state";
 import { AudioWaveformView } from "./audio-waveform";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
@@ -38,7 +36,10 @@ export function Timeline({
   selection?: EditorSelection;
   playhead: number;
   playing: boolean;
-  audioSources: Record<string, AudioSource>;
+  audioSources: Record<
+    string,
+    PromiseState<{ buffer: AudioBuffer; view: AudioView }>
+  >;
 }) {
   const selectOutput = () => runtime.select({ type: "output" });
   const seek = (time: number) => runtime.seek(time);
@@ -291,7 +292,7 @@ function TimelineLayerLane({
   layer: Layer;
   index: number;
   range: Range;
-  audioSource?: AudioSource;
+  audioSource?: PromiseState<{ buffer: AudioBuffer; view: AudioView }>;
   selected: boolean;
   onSelect: () => void;
 }) {
@@ -333,9 +334,9 @@ function TimelineLayerLane({
           )}
           style={region}
         >
-          {audioLayer && visible && audioSource?.status === "loaded" && (
+          {audioLayer && visible && audioSource?.status === "fulfilled" && (
             <AudioWaveformView
-              audioView={audioSource.view}
+              audioView={audioSource.value.view}
               sourceStart={audioLayer.in + visible.start - audioLayer.start}
               sourceEnd={audioLayer.in + visible.end - audioLayer.start}
               pixelsPerSecond={timeline.pixelsPerSecond}
@@ -351,7 +352,7 @@ function TimelineLayerLane({
                 className="absolute left-1 top-1 size-3.5"
               />
             )}
-          {audioSource?.status === "loading" && (
+          {audioSource?.status === "pending" && (
             <LoaderCircleIcon
               role="img"
               aria-label="loading audio"
