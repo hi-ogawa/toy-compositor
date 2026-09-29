@@ -1,4 +1,4 @@
-import { trackPromise, type PromiseState } from "../utils/promise-state.ts";
+import { trackPromise, type TrackedPromise } from "../utils/promise-state.ts";
 import { createStore } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
@@ -40,7 +40,7 @@ export class EditorRuntime {
   readonly transport = new AudioContextTransport(this.context);
   private readonly audioSources = new Map<
     string,
-    { state: PromiseState<AudioBuffer> }
+    TrackedPromise<AudioBuffer>
   >();
   private readonly audioPlaybacks = new Map<string, AudioBufferPlayback>();
   private readonly videoPlaybacks = new Map<number, VideoPlayback>();
