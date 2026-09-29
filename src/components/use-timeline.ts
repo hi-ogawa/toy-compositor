@@ -1,64 +1,88 @@
-import { useCallback, useRef, useState } from "react";
-import { intersect, layerRange, outputRange, type Range } from "../lib/layout";
-import type { Project } from "../lib/project";
+import { useCallback, useState } from "react";
+import { intersect, type Range } from "../lib/layout";
+import {
+  DEFAULT_PIXELS_PER_SECOND,
+  MAX_PIXELS_PER_SECOND,
+  MIN_PIXELS_PER_SECOND,
+  rulerStep,
+} from "../lib/timeline";
 
 export const TIMELINE_LABEL_WIDTH = 144;
 
 export type TimelineView = ReturnType<typeof useTimeline>;
 
-/** Native scrolling and zoom share one time-to-pixel mapping across all rows. */
-export function useTimeline({ project }: { project: Project }) {
-  const ranges = [
-    outputRange(project),
-    ...project.layers.map((layer) => layerRange(layer)),
-  ];
-  const start = Math.floor(
-    Math.min(
-      0,
-      ...ranges.map((range) => range.start),
-      ...(project.locators ?? []).map((locator) => locator.time),
-    ),
+/** A viewport over project time that every row maps through, scrolled and zoomed with the wheel. */
+export function useTimeline() {
+  const [viewportStart, setViewportStart] = useState(0);
+  const [pixelsPerSecond, setPixelsPerSecond] = useState(
+    DEFAULT_PIXELS_PER_SECOND,
   );
-  const end =
-    Math.max(
-      start + 1,
-      ...ranges.map((range) => range.end),
-      ...(project.locators ?? []).map((locator) => locator.time),
-    ) + 1;
   const [viewportWidth, setViewportWidth] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
-  const [zoom, setZoom] = useState<number>();
-  const viewport = useRef<HTMLDivElement | null>(null);
-  const pixelsPerSecond =
-    zoom ?? Math.max(2, Math.min(400, viewportWidth / (end - start)));
-  const timeWidth = Math.max(viewportWidth, (end - start) * pixelsPerSecond);
-  const visibleStart = start + scrollLeft / pixelsPerSecond;
-  const visibleEnd = visibleStart + viewportWidth / pixelsPerSecond;
-  const viewportRef = useCallback((element: HTMLDivElement | null) => {
-    viewport.current = element;
-    if (!element) {
-      return;
-    }
-    const observer = new ResizeObserver(() =>
-      setViewportWidth(Math.max(0, element.clientWidth - TIMELINE_LABEL_WIDTH)),
-    );
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
-  const visible = { start: visibleStart, end: visibleEnd };
-  const timeToX = (time: number) => (time - start) * pixelsPerSecond;
+  const visible = {
+    start: viewportStart,
+    end: viewportStart + viewportWidth / pixelsPerSecond,
+  };
+  const timeToX = (time: number) => (time - viewportStart) * pixelsPerSecond;
+
+  function zoom(nextPixelsPerSecond: number, anchorX: number) {
+    const timeAtAnchor = viewportStart + anchorX / pixelsPerSecond;
+    setPixelsPerSecond(nextPixelsPerSecond);
+    setViewportStart(Math.max(0, timeAtAnchor - anchorX / nextPixelsPerSecond));
+  }
+
+  const viewportRef = useCallback(
+    (viewport: HTMLDivElement | null) => {
+      if (!viewport) {
+        return;
+      }
+      const observer = new ResizeObserver(([entry]) => {
+        setViewportWidth(entry.contentRect.width);
+      });
+      observer.observe(viewport);
+      const wheelTarget = viewport.parentElement;
+      const handleWheel = (event: WheelEvent) => {
+        const rect = viewport.getBoundingClientRect();
+        if (event.clientX < rect.left) {
+          return;
+        }
+        event.preventDefault();
+        if (!event.ctrlKey) {
+          const delta = event.deltaX || event.deltaY;
+          setViewportStart((value) =>
+            Math.max(0, value + delta / pixelsPerSecond),
+          );
+          return;
+        }
+        if (event.deltaY === 0) {
+          return;
+        }
+        const nextPixelsPerSecond = Math.max(
+          MIN_PIXELS_PER_SECOND,
+          Math.min(
+            MAX_PIXELS_PER_SECOND,
+            pixelsPerSecond * (event.deltaY > 0 ? 0.9 : 1.1),
+          ),
+        );
+        zoom(nextPixelsPerSecond, Math.max(0, event.clientX - rect.left));
+      };
+      wheelTarget?.addEventListener("wheel", handleWheel, { passive: false });
+      return () => {
+        observer.disconnect();
+        wheelTarget?.removeEventListener("wheel", handleWheel);
+      };
+    },
+    [pixelsPerSecond, viewportStart],
+  );
+
   return {
-    timeWidth,
     pixelsPerSecond,
     tickStep: rulerStep(pixelsPerSecond),
     visible,
     viewportRef,
-    onScroll: () => setScrollLeft(viewport.current!.scrollLeft),
-    setZoom,
     timeToX,
-    xToTime: (x: number) => start + x / pixelsPerSecond,
-    isVisible: (time: number) => time >= visibleStart && time <= visibleEnd,
-    /** Position a range within the graph, or nothing when it is scrolled out of view. */
+    xToTime: (x: number) => viewportStart + x / pixelsPerSecond,
+    isVisible: (time: number) => time >= visible.start && time <= visible.end,
+    /** Position a range within the graph, or nothing when it is outside the viewport. */
     rangeStyle: (range: Range) => {
       const clipped = intersect(range, visible);
       return (
@@ -69,13 +93,4 @@ export function useTimeline({ project }: { project: Project }) {
       );
     },
   };
-}
-
-/** Pick a 1-2-5 tick step that keeps labels at least 80px apart. */
-function rulerStep(pixelsPerSecond: number) {
-  const target = 80 / pixelsPerSecond;
-  const magnitude = 10 ** Math.floor(Math.log10(target));
-  return [1, 2, 5, 10]
-    .map((factor) => factor * magnitude)
-    .find((step) => step >= target)!;
 }

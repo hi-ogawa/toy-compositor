@@ -52,7 +52,6 @@ Video elements follow the heard position and never drive it. A composition `<vid
 - A paused video shows whatever frame the browser picks for `currentTime`, while the compiler snaps to the nearest source frame, so the preview may be one frame off.
 - Text is DOM text with `-webkit-text-stroke` and an estimated line height, while the compiler draws it with ImageMagick, so glyph placement differs slightly.
 - The transport publishes the playhead through the editor store, so the editor re-renders on every animation frame while playing, like toy-midi's recorder.
-- The compiler fades at the edges of a layer's part inside the output range, while the preview fades at the layer's own edges. They agree whenever a layer is trimmed within the output range.
 - A video starts 50 to 90 ms behind the sound right after Play and catches up within a few seconds, because the element takes that long to start.
 - Each audible layer decodes its whole source into memory, about 60MB for a 3-minute stereo mix.
 - Layers are keyed by index, which holds until layers can be added or reordered.

@@ -91,19 +91,19 @@ What each layer type turns into:
 | Color | A generated solid fill with opacity, over its box or the whole canvas      | None                        |
 | Audio | None                                                                       | Its audio, unless muted     |
 
-Sound is normalized to 48 kHz stereo, faded in and out when the layer asks for it, and delayed to its offset.
+Sound is normalized to 48 kHz stereo, faded in and out at the layer's own edges when the layer asks for it, trimmed to the visible part, and delayed to its offset. The output range only cuts a layer and never moves its fades, so a sound is read from the layer's start rather than the visible part's, because `afade` cannot start before its stream does.
 
 The ffmpeg building blocks behind the table:
 
-| Idea                                      | ffmpeg                                                                                                          |
-| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Read only the visible part of a source    | input options `-ss <source time> -t <duration>`                                                                 |
-| Repeat an image or text PNG               | input options `-loop 1 -framerate <fps> -t <duration>`                                                          |
-| Match the canvas frame rate               | `fps=<fps>`                                                                                                     |
-| Crop, then fit to the box                 | `crop=iw*<w>:ih*<h>:iw*<left>:ih*<top>`, `scale=<width>:<height>`                                               |
-| Generate a solid fill, as a source filter | `color=c=<color>@<opacity>:s=<width>x<height>:r=<fps>:d=<duration>`, `format=rgba`                              |
-| Place on the output timeline              | `setpts=PTS-STARTPTS+<offset>/TB`                                                                               |
-| Normalize, fade, and place sound          | `aformat=sample_rates=48000:channel_layouts=stereo`, `afade=t=in` and `afade=t=out`, `adelay=delays=<ms>:all=1` |
+| Idea                                      | ffmpeg                                                                                                                                                       |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Read only the visible part of a source    | input options `-ss <source time> -t <duration>`                                                                                                              |
+| Repeat an image or text PNG               | input options `-loop 1 -framerate <fps> -t <duration>`                                                                                                       |
+| Match the canvas frame rate               | `fps=<fps>`                                                                                                                                                  |
+| Crop, then fit to the box                 | `crop=iw*<w>:ih*<h>:iw*<left>:ih*<top>`, `scale=<width>:<height>`                                                                                            |
+| Generate a solid fill, as a source filter | `color=c=<color>@<opacity>:s=<width>x<height>:r=<fps>:d=<duration>`, `format=rgba`                                                                           |
+| Place on the output timeline              | `setpts=PTS-STARTPTS+<offset>/TB`                                                                                                                            |
+| Normalize, fade, cut, and place sound     | `aformat=sample_rates=48000:channel_layouts=stereo`, `afade=t=in` and `afade=t=out`, `atrim=start=<cut>`, `asetpts=PTS-STARTPTS`, `adelay=delays=<ms>:all=1` |
 
 ## Stack Pictures, Mix Sounds
 

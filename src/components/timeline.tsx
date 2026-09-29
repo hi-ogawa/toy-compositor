@@ -22,7 +22,7 @@ export function Timeline({
   playhead: number;
   playing: boolean;
 }) {
-  const timeline = useTimeline({ project });
+  const timeline = useTimeline();
   const selectOutput = () => runtime.select({ type: "output" });
   const seek = (time: number) => runtime.seek({ time });
   return (
@@ -54,35 +54,15 @@ export function Timeline({
         >
           {playhead.toFixed(3)} s · {project.canvas.fps} fps
         </span>
-        <label className="ml-auto flex items-center gap-2 text-xs">
-          Zoom
-          <input
-            type="range"
-            aria-label="Timeline zoom"
-            min={1}
-            max={9}
-            step={0.1}
-            value={Math.log2(timeline.pixelsPerSecond)}
-            onChange={(event) =>
-              timeline.setZoom(2 ** Number(event.target.value))
-            }
-            className="w-24"
-          />
-        </label>
       </div>
-      <div
-        ref={timeline.viewportRef}
-        onScroll={timeline.onScroll}
-        className="min-h-0 flex-1 overflow-auto"
-        data-testid="timeline-scroll"
-      >
+      <div className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+        {/* Measures the graph width and receives wheel scrolling and zoom. */}
         <div
-          className="relative"
-          style={{
-            width: TIMELINE_LABEL_WIDTH + timeline.timeWidth,
-            minHeight: "100%",
-          }}
-        >
+          ref={timeline.viewportRef}
+          className="pointer-events-none absolute inset-y-0 right-0"
+          style={{ left: TIMELINE_LABEL_WIDTH }}
+        />
+        <div className="relative">
           <TimelineRuler timeline={timeline} onSeek={seek} />
           <TimelineLocatorRow
             timeline={timeline}
@@ -309,7 +289,7 @@ function TimelineLayerLane({
   );
 }
 
-/** A sticky label column beside a graph cell that shares the timeline's tick grid. */
+/** A label column beside a graph cell that shares the timeline's tick grid. */
 function TimelineRow({
   timeline,
   label,
@@ -322,15 +302,14 @@ function TimelineRow({
   return (
     <div className="flex h-8 border-b border-border/50">
       <div
-        className="sticky left-0 z-20 flex shrink-0 items-center border-r bg-background"
+        className="flex shrink-0 items-center border-r"
         style={{ width: TIMELINE_LABEL_WIDTH }}
       >
         {label}
       </div>
       <div
-        className="relative shrink-0 overflow-hidden"
+        className="relative min-w-0 flex-1 overflow-hidden"
         style={{
-          width: timeline.timeWidth,
           backgroundImage:
             "linear-gradient(to right, var(--border) 1px, transparent 1px)",
           backgroundSize: `${timeline.tickStep * timeline.pixelsPerSecond}px 100%`,

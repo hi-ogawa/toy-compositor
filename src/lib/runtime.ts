@@ -80,11 +80,8 @@ export class EditorRuntime {
 
   seek({ time }: { time: number }): void {
     const { project } = this.store.get();
-    this.transport.seek(
-      Number(
-        (Math.round(time * project.canvas.fps) / project.canvas.fps).toFixed(3),
-      ),
-    );
+    const frame = Math.max(0, Math.round(time * project.canvas.fps));
+    this.transport.seek(Number((frame / project.canvas.fps).toFixed(3)));
   }
 
   /** Steps the playhead by whole frames. */
