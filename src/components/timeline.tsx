@@ -31,7 +31,7 @@ export function Timeline({
       data-testid="editor-timeline"
       aria-label="Timeline"
     >
-      <PanelHeader title="Timeline" className="h-10 gap-3">
+      <PanelHeader title="Timeline" sizeClassName="h-10 gap-3">
         <Button
           aria-label={playing ? "Pause" : "Play"}
           title={playing ? "Pause (Space)" : "Play (Space)"}
@@ -128,6 +128,7 @@ function TimelineRuler({
   return (
     <TimelineRow
       timeline={timeline}
+      className="h-10"
       label={
         <span className="px-3 text-xs font-semibold text-muted-foreground">
           Layers
@@ -149,7 +150,7 @@ function TimelineRuler({
         {ticks.map((time) => (
           <span
             key={time}
-            className="absolute top-1 border-l border-border pl-1"
+            className="absolute bottom-1.5 border-l border-border pl-1"
             style={{ left: timeline.timeToX(time) }}
           >
             {Number(time.toFixed(3))}
@@ -200,6 +201,7 @@ function TimelineLocatorRow({
   return (
     <TimelineRow
       timeline={timeline}
+      className="h-7"
       label={
         <span className="px-3 text-xs font-semibold text-muted-foreground">
           Locators
@@ -258,6 +260,7 @@ function TimelineLayerLane({
   return (
     <TimelineRow
       timeline={timeline}
+      className="h-8"
       label={
         <button
           type="button"
@@ -301,15 +304,17 @@ function TimelineLayerLane({
 /** A label column beside a graph cell that shares the timeline's tick grid. */
 function TimelineRow({
   timeline,
+  className,
   label,
   children,
 }: {
   timeline: TimelineView;
+  className: string;
   label: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <div className="flex h-8 border-b border-border/50">
+    <div className={cn("flex border-b border-border/50", className)}>
       <div
         className="flex shrink-0 items-center border-r"
         style={{ width: TIMELINE_LABEL_WIDTH }}
