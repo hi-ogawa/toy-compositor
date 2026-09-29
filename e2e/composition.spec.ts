@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { expect } from "@playwright/test";
 import {
   commitInspectorField,
@@ -6,7 +7,7 @@ import {
   test,
 } from "./helper";
 
-test("compose the output start and follow inspector edits", async ({
+test("compose the output start, follow inspector edits, and save them", async ({
   page,
   editor,
 }) => {
@@ -55,6 +56,35 @@ test("compose the output start and follow inspector edits", async ({
   await clickTimelineButton(page, { name: "label text" });
   await commitInspectorField(page, { name: "end", value: "1" });
   await expect(text).toHaveCount(0);
+
+  // Save the edits and confirm they reach the project file.
+  const save = page.getByTestId("editor-save-button");
+  await expect(save).toHaveAttribute("data-status", "unsaved");
+  await save.click();
+  await expect(save).toHaveAttribute("data-status", "saved");
+  expect(JSON.parse(await readFile(editor.projectFile, "utf-8"))).toMatchObject(
+    {
+      output: { start: 1 },
+      layers: [
+        { start: 2, in: 0.2 },
+        {},
+        { crop: { left: 0.25, right: 0.25 } },
+        { end: 1 },
+      ],
+    },
+  );
+
+  // Reload the project, return to the output start, and confirm the saved edits
+  // compose the same frame.
+  await page.reload();
+  await clickTimelineButton(page, { name: "Render start" });
+  await expect(page.getByTestId("composition-time")).toContainText("1.000 s");
+  await expectImageLoaded(image);
+  await expect(image.locator("..")).toHaveCSS("left", "460px");
+  await expect(image.locator("..")).toHaveCSS("width", "80px");
+  await expect(video).toHaveCount(0);
+  await expect(text).toHaveCount(0);
+  await expect(save).toHaveAttribute("data-status", "saved");
 });
 
 test("compose a still project at its output time", async ({ page, editor }) => {
