@@ -42,9 +42,7 @@ export class EditorRuntime {
 
   readonly context = new AudioContext();
   readonly transport = new AudioContextTransport(this.context);
-  /** Keyed by source path, shared by every layer that uses the source. */
   private readonly audioSources = new Map<string, AudioSource>();
-  /** Keyed by layer index and source, so a replaced source gets a fresh playback. */
   private readonly audioPlaybacks = new Map<string, AudioBufferPlayback>();
   private readonly videoPlaybacks = new Map<number, VideoPlayback>();
 
