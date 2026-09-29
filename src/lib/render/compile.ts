@@ -305,7 +305,11 @@ function compileAudio({
   return { audio: audioStream({ layer, file, visible, scene }) };
 }
 
-/** Trim, fade, and delay the audio of a video or audio layer to its visible range. */
+/**
+ * Fade the audio of a video or audio layer at the layer's own edges, then trim
+ * it to its visible range and delay it into place, so the output range only
+ * cuts a layer and never reshapes it.
+ */
 function audioStream({
   layer,
   file,
@@ -317,19 +321,25 @@ function audioStream({
   visible: Range;
   scene: Scene;
 }): AudioStream {
-  const duration = visible.end - visible.start;
+  // Decode from the layer's start, because afade cannot start before the
+  // stream does, and a fade-in can begin before the visible range.
+  const trimStart = visible.start - layer.start;
+  const layerDuration = layer.out - layer.in;
   const delayMs = Math.round((visible.start - scene.range.start) * 1000);
   return {
     input: seekInput({
       file,
-      seek: layer.in + visible.start - layer.start,
-      duration,
+      seek: layer.in,
+      duration: visible.end - layer.start,
     }),
     filters: [
       "aformat=sample_rates=48000:channel_layouts=stereo",
       ...(layer.fadeIn ? [`afade=t=in:st=0:d=${layer.fadeIn}`] : []),
       ...(layer.fadeOut
-        ? [`afade=t=out:st=${duration - layer.fadeOut}:d=${layer.fadeOut}`]
+        ? [`afade=t=out:st=${layerDuration - layer.fadeOut}:d=${layer.fadeOut}`]
+        : []),
+      ...(trimStart > 0
+        ? [`atrim=start=${trimStart}`, "asetpts=PTS-STARTPTS"]
         : []),
       `adelay=delays=${delayMs}:all=1`,
     ],

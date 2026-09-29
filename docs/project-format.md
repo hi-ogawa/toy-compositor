@@ -65,7 +65,7 @@ A video layer carries its file's audio, like a clip in Kdenlive, and the audio i
 }
 ```
 
-`fadeIn` and `fadeOut` are durations in seconds at the edges of the layer's visible range, which is the source range clipped to the output range. `muted` leaves the layer out of the mix.
+`fadeIn` and `fadeOut` are durations in seconds at the edges of the layer's own range, from `start` to `start + out - in`. The output range only cuts a layer, so an output that starts or ends inside a fade renders that part of the fade and does not fade again at its own edges. To fade at the output's edges, trim the layer to them, as the vertical short does with its mix. `muted` leaves the layer out of the mix.
 
 ### `image`
 
