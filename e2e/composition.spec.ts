@@ -32,10 +32,12 @@ test("compose the output start, follow inspector edits, and save them", async ({
 
   // Offset the output start, video start, and trim, and confirm the video seeks
   // to in + time - start.
-  await clickTimelineButton(page, { name: "Render settings" });
+  await page
+    .getByRole("button", { name: "Render settings", exact: true })
+    .click();
   await commitInspectorField(page, { name: "start", value: "1" });
   await clickTimelineButton(page, { name: "Render start" });
-  await expect(page.getByTestId("composition-time")).toContainText("1.000 s");
+  await expect(page.getByTestId("timeline-time")).toContainText("1.000 s");
   await clickTimelineButton(page, { name: "video video" });
   await commitInspectorField(page, { name: "start", value: "0.3" });
   await commitInspectorField(page, { name: "in", value: "0.2" });
@@ -76,7 +78,7 @@ test("compose the output start, follow inspector edits, and save them", async ({
   // compose the same frame.
   await page.reload();
   await clickTimelineButton(page, { name: "Render start" });
-  await expect(page.getByTestId("composition-time")).toContainText("1.000 s");
+  await expect(page.getByTestId("timeline-time")).toContainText("1.000 s");
   await expectImageLoaded(image);
   await expect(image.locator("..")).toHaveCSS("left", "460px");
   await expect(image.locator("..")).toHaveCSS("width", "80px");
@@ -96,7 +98,7 @@ test("compose a still project at its output time", async ({ page, editor }) => {
       video.evaluate((element: HTMLVideoElement) => element.currentTime),
     )
     .toBeCloseTo(1.5);
-  await expect(page.getByTestId("composition-time")).toContainText("1.500 s");
+  await expect(page.getByTestId("timeline-time")).toContainText("1.500 s");
   await expect(
     page.getByTestId("editor-timeline").getByRole("button", {
       name: "Render frame",

@@ -1,7 +1,9 @@
+import { PauseIcon, PlayIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { getLayerRange, type Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
 import type { EditorRuntime, EditorSelection } from "../lib/runtime";
+import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { TIMELINE_LABEL_WIDTH, type TimelineView } from "./use-timeline";
 
@@ -24,32 +26,35 @@ export function Timeline({
   const seek = (time: number) => runtime.seek(time);
   return (
     <section
-      className="flex h-72 shrink-0 flex-col border-t border-border text-sm"
+      className="flex h-80 shrink-0 flex-col border-t border-neutral-700 text-sm"
       data-testid="editor-timeline"
       aria-label="Timeline"
     >
-      <div className="flex items-center gap-3 border-b px-3 py-2">
-        <h2 className="font-medium">Timeline</h2>
-        <button
-          type="button"
-          className="w-14 rounded border px-2 py-1 text-xs hover:bg-secondary"
+      <div className="flex h-10 shrink-0 items-center gap-3 border-b border-neutral-700 bg-neutral-800 px-3 text-xs">
+        <h2 className="shrink-0 font-semibold">Timeline</h2>
+        <Button
+          aria-label={playing ? "Pause" : "Play"}
           title={playing ? "Pause (Space)" : "Play (Space)"}
+          aria-pressed={playing}
+          className={cn(
+            "size-7",
+            playing
+              ? "bg-primary text-primary-foreground hover:bg-primary/90"
+              : "hover:bg-neutral-700",
+          )}
           onClick={() => void runtime.togglePlayback()}
         >
-          {playing ? "Pause" : "Play"}
-        </button>
-        <button
-          type="button"
-          className="rounded border px-2 py-1 text-xs hover:bg-secondary"
-          onClick={selectOutput}
-        >
-          Render settings
-        </button>
+          {playing ? (
+            <PauseIcon className="size-4" />
+          ) : (
+            <PlayIcon className="size-4" />
+          )}
+        </Button>
         <span
-          className="text-xs tabular-nums text-muted-foreground"
+          className="font-mono text-xs tabular-nums text-neutral-300"
           data-testid="timeline-time"
         >
-          {playhead.toFixed(3)} s · {project.canvas.fps} fps
+          {playhead.toFixed(3)} s
         </span>
       </div>
       <div className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
@@ -60,7 +65,6 @@ export function Timeline({
           style={{ left: TIMELINE_LABEL_WIDTH }}
         />
         <div className="relative">
-          <TimelineRuler timeline={timeline} onSeek={seek} />
           <TimelineLocatorRow
             timeline={timeline}
             output={project.output}
@@ -72,6 +76,7 @@ export function Timeline({
             }}
             onSeek={seek}
           />
+          <TimelineRuler timeline={timeline} onSeek={seek} />
           {/* Top layer first, like tracks in a timeline. */}
           {project.layers
             .map((layer, index) => ({ layer, index }))
@@ -121,11 +126,19 @@ function TimelineRuler({
     ticks.push(time);
   }
   return (
-    <TimelineRow timeline={timeline} label={<span>Time · seconds</span>}>
+    <TimelineRow
+      timeline={timeline}
+      className="h-10"
+      label={
+        <span className="px-3 text-xs font-semibold text-muted-foreground">
+          Layers
+        </span>
+      }
+    >
       <button
         type="button"
         aria-label="Timeline ruler"
-        className="relative h-full w-full cursor-crosshair text-left text-xs tabular-nums text-muted-foreground"
+        className="relative h-full w-full cursor-crosshair text-left font-mono text-[10px] tabular-nums text-neutral-400"
         onClick={(event) =>
           onSeek(
             timeline.xToTime(
@@ -137,7 +150,7 @@ function TimelineRuler({
         {ticks.map((time) => (
           <span
             key={time}
-            className="absolute top-1 border-l border-border pl-1"
+            className="absolute bottom-1.5 border-l border-border pl-1"
             style={{ left: timeline.timeToX(time) }}
           >
             {Number(time.toFixed(3))}
@@ -188,12 +201,26 @@ function TimelineLocatorRow({
   return (
     <TimelineRow
       timeline={timeline}
+      className="h-7"
       label={
         <span className="px-3 text-xs font-semibold text-muted-foreground">
           Locators
         </span>
       }
     >
+      {/* Seeks from empty space, underneath the markers. */}
+      <button
+        type="button"
+        aria-label="Locator row"
+        className="absolute inset-0 cursor-crosshair"
+        onClick={(event) =>
+          onSeek(
+            timeline.xToTime(
+              event.clientX - event.currentTarget.getBoundingClientRect().left,
+            ),
+          )
+        }
+      />
       {renderMarkers
         .filter((marker) => timeline.isVisible(marker.time))
         .map((marker) => (
@@ -246,6 +273,7 @@ function TimelineLayerLane({
   return (
     <TimelineRow
       timeline={timeline}
+      className="h-12"
       label={
         <button
           type="button"
@@ -268,7 +296,7 @@ function TimelineLayerLane({
           onClick={onSelect}
           data-testid={`timeline-layer-${index}`}
           className={cn(
-            "absolute inset-y-1 overflow-hidden rounded border px-2 text-left text-xs",
+            "absolute inset-y-1.5 overflow-hidden rounded border px-2 text-left text-xs",
             layer.type === "audio"
               ? "border-emerald-800 bg-emerald-950"
               : "border-blue-800 bg-blue-950",
@@ -289,15 +317,17 @@ function TimelineLayerLane({
 /** A label column beside a graph cell that shares the timeline's tick grid. */
 function TimelineRow({
   timeline,
+  className,
   label,
   children,
 }: {
   timeline: TimelineView;
+  className: string;
   label: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <div className="flex h-8 border-b border-border/50">
+    <div className={cn("flex border-b border-border/50", className)}>
       <div
         className="flex shrink-0 items-center border-r"
         style={{ width: TIMELINE_LABEL_WIDTH }}
