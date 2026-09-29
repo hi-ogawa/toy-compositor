@@ -76,10 +76,6 @@ export class EditorRuntime {
     this.seek(playhead + frames / project.canvas.fps);
   }
 
-  select(selection: EditorSelection | undefined): void {
-    this.store.update({ selection });
-  }
-
   updateLayer({
     index,
     update,
@@ -102,6 +98,10 @@ export class EditorRuntime {
   setOutput(output: Project["output"]): void {
     const { project } = this.store.get();
     this.store.update({ project: { ...project, output } });
+  }
+
+  select(selection: EditorSelection | undefined): void {
+    this.store.update({ selection });
   }
 
   /**
