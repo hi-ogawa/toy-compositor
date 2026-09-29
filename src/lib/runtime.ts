@@ -1,3 +1,4 @@
+import { loadMediaDuration } from "../utils/media.ts";
 import { trackPromise, type TrackedPromise } from "../utils/promise-state.ts";
 import { createStore } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
@@ -222,29 +223,24 @@ export class EditorRuntime {
   }
 
   /**
-   * Reads a source's duration from a media element's metadata, because
-   * playback seeks media elements in the same source time that `in` and `out`
-   * are measured in.
+   * Stores a source's duration as media elements report it, because playback
+   * seeks media elements in the same source time that `in` and `out` are
+   * measured in. A source that fails to load keeps no duration.
    */
   private loadDuration(src: string): void {
-    const element = document.createElement("video");
-    element.preload = "metadata";
-    element.addEventListener(
-      "loadedmetadata",
-      () => {
-        const { sourceDurations } = this.store.get();
-        this.store.update({
-          sourceDurations: { ...sourceDurations, [src]: element.duration },
-        });
-        element.removeAttribute("src");
-        element.load();
-      },
-      { once: true },
-    );
-    element.src = apiClient.getMediaUrl({
+    const url = apiClient.getMediaUrl({
       src,
       projectPath: this.store.get().file,
     });
+    loadMediaDuration(url).then(
+      (duration) => {
+        const { sourceDurations } = this.store.get();
+        this.store.update({
+          sourceDurations: { ...sourceDurations, [src]: duration },
+        });
+      },
+      () => {},
+    );
   }
 
   private setAudioSource({
