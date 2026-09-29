@@ -46,10 +46,6 @@ export class EditorRuntime {
       const { position, isPlaying } = this.transport.store.get();
       this.store.update({ playhead: position, playing: isPlaying });
     });
-    this.store.subscribeWithSelector({
-      selector: (state) => state.project,
-      listener: () => this.syncPlayback(),
-    });
   }
 
   /**
@@ -118,6 +114,7 @@ export class EditorRuntime {
         ),
       },
     });
+    this.syncPlayback();
   }
 
   setOutput(output: Project["output"]): void {
@@ -131,6 +128,7 @@ export class EditorRuntime {
 
   deserializeProject({ file, project }: ProjectFile): void {
     this.store.update({ file, project, selection: undefined });
+    this.syncPlayback();
     this.seek(getOutputRange(project).start);
   }
 
