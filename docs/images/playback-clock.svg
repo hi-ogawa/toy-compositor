@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="520" viewBox="0 0 760 520" role="img" aria-labelledby="title desc">
+<title id="title">Playback starts at one anchor, the playhead follows what is heard, and video closes its drift by rate</title>
+<desc id="desc">Top: on the AudioContext clock, Play schedules every audio source at an anchor 30 ms ahead. The sound is heard one output latency later, and the published playhead holds at the anchor position until then. The video element starts 50 to 90 ms behind the sound. Bottom: over the following seconds the video's drift is checked every 100 ms and shrinks as playbackRate is nudged, until it falls under 20 ms and is left alone.</desc>
+<rect width="760" height="520" fill="#fcfaf5"/>
+<g font-family="Arial,sans-serif" font-size="15" fill="#263632">
+<text x="30" y="34" font-size="20" font-weight="700">Audio sets the clock, and video follows what is heard</text>
+<text x="30" y="56" font-size="13" fill="#52625d">Example output latency 40 ms and video start 70 ms. Times vary by device and file.</text>
+
+<text x="30" y="84" font-size="14" font-weight="700">Pressing Play</text>
+<path d="M150.0 94 V222" stroke="#a3b0a9"/>
+<text x="154.0" y="104" font-size="12" fill="#52625d">Play</text>
+<path d="M234.0 94 V222" stroke="#b0502f" stroke-width="2" stroke-dasharray="5 4"/>
+<text x="238.0" y="104" font-size="12" fill="#b0502f">anchor = currentTime + 30 ms</text>
+
+<text x="30" y="131" font-size="13">audio sources</text>
+<rect x="234.0" y="118" width="476.0" height="18" rx="4" fill="#2f6fb0"/>
+<text x="458.0" y="131" font-size="12" fill="#fcfaf5">all scheduled to start at the anchor</text>
+
+<text x="30" y="167" font-size="13">heard playhead</text>
+<path d="M234.0 163 H346.0" stroke="#2f6fb0" stroke-width="2" stroke-dasharray="4 3"/>
+<rect x="346.0" y="154" width="364.0" height="18" rx="4" fill="#dce8f5" stroke="#2f6fb0"/>
+<text x="362.79999999999995" y="167" font-size="12">published from getOutputTimestamp</text>
+<text x="236.0" y="186" font-size="11" fill="#52625d">output latency</text>
+
+<text x="30" y="209" font-size="13">video element</text>
+<path d="M346.0 205 H542.0" stroke="#b0502f" stroke-width="2"/>
+<path d="M346.0 199 V211 M542.0 199 V211" stroke="#b0502f" stroke-width="2"/>
+<text x="362.79999999999995" y="222" font-size="11" fill="#b0502f">starts 50–90 ms behind</text>
+<rect x="542.0" y="196" width="168.0" height="18" rx="4" fill="#eef1ef" stroke="#52625d"/>
+
+<path d="M150.0 240 H710.0" stroke="#a3b0a9"/>
+<g font-size="12" fill="#52625d" text-anchor="middle">
+<path d="M150.0 236 V244 M290.0 236 V244 M430.0 236 V244 M570.0 236 V244 M710.0 236 V244" stroke="#a3b0a9"/>
+<text x="150.0" y="260">0</text><text x="290.0" y="260">50</text><text x="430.0" y="260">100</text><text x="570.0" y="260">150</text><text x="710.0" y="260" text-anchor="end">200 ms context time</text>
+</g>
+
+<text x="30" y="298" font-size="14" font-weight="700">While playing</text>
+<text x="30" y="380" font-size="13">video drift</text>
+<text x="30" y="396" font-size="12" fill="#52625d">behind the</text>
+<text x="30" y="410" font-size="12" fill="#52625d">heard playhead</text>
+<rect x="150" y="420.0" width="558" height="32.0" fill="#eef1ef"/>
+<text x="156" y="434.0" font-size="12" fill="#52625d">under 20 ms is left alone</text>
+<path d="M150.0 340.0 H168.6 V345.6 H187.2 V350.9 H205.8 V356.0 H224.4 V360.8 H243.0 V365.3 H261.6 V369.7 H280.2 V373.8 H298.8 V377.7 H317.4 V381.4 H336.0 V384.9 H354.6 V388.3 H373.2 V391.5 H391.8 V394.5 H410.4 V397.4 H429.0 V400.1 H447.6 V402.7 H466.2 V405.2 H484.8 V407.5 H503.4 V409.7 H522.0 V411.8 H540.6 V413.9 H559.2 V415.8 H577.8 V417.6 H596.4 V419.3 H615.0 V420.9 H633.6 V420.9 H652.2 V420.9 H670.8 V420.9 H689.4 V420.9 H708.0 V420.9" fill="none" stroke="#b0502f" stroke-width="2"/>
+<text x="196.5" y="330.4" font-size="12" fill="#b0502f">checked every 100 ms: playbackRate = 1 + drift / 2 s, capped at 10%</text>
+<path d="M615.0 414.0 V452" stroke="#b0502f" stroke-dasharray="3 3"/>
+<text x="619.0" y="397.6" font-size="12" fill="#b0502f">rate back to 1</text>
+<path d="M150 324.0 V452 H708" fill="none" stroke="#a3b0a9"/>
+<g font-size="12" fill="#52625d" text-anchor="end">
+<text x="144" y="344.0">70 ms</text><text x="144" y="456">0</text>
+</g>
+<g font-size="12" fill="#52625d" text-anchor="middle">
+<path d="M150 452 V460 M336 452 V460 M522 452 V460 M708 452 V460" stroke="#a3b0a9"/>
+<text x="150" y="476">0</text><text x="336" y="476">1</text><text x="522" y="476">2</text><text x="708" y="476" text-anchor="end">3 s since Play</text>
+</g>
+<text x="30" y="508" font-size="13" fill="#52625d">A drift past 1 s, such as after a stall, seeks instead. A seek on a long keyframe interval lands behind by its own duration.</text>
+</g>
+</svg>

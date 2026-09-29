@@ -1,3 +1,4 @@
+import { trackPromise, type TrackedPromise } from "../utils/promise-state.ts";
 import { createStore } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
@@ -50,9 +51,8 @@ export class EditorRuntime {
   /** Each source decodes once, shared by its layers' playback and waveforms. */
   private readonly audioBuffers = new Map<
     string,
-    Promise<AudioBuffer | undefined>
+    TrackedPromise<AudioBuffer>
   >();
-  /** Keyed by layer index and source, so a replaced source restarts playback. */
   private readonly audioPlaybacks = new Map<string, AudioBufferPlayback>();
   private readonly videoPlaybacks = new Map<number, VideoPlayback>();
 
@@ -61,10 +61,59 @@ export class EditorRuntime {
       const { position, isPlaying } = this.transport.store.get();
       this.store.update({ playhead: position, playing: isPlaying });
     });
-    this.store.subscribeWithSelector({
-      selector: (state) => state.project,
-      listener: () => this.syncPlayback(),
+  }
+
+  async togglePlayback(): Promise<void> {
+    if (this.store.get().playing) {
+      this.transport.pause();
+      // Land on a frame, so the paused preview matches a rendered frame.
+      this.seek(this.store.get().playhead);
+    } else {
+      await this.context.resume();
+      this.transport.play();
+    }
+  }
+
+  seek(time: number): void {
+    const { project } = this.store.get();
+    const frame = Math.max(0, Math.round(time * project.canvas.fps));
+    this.transport.seek(Number((frame / project.canvas.fps).toFixed(3)));
+  }
+
+  /** Steps the playhead by whole frames. */
+  seekFrames(frames: number): void {
+    const { project, playhead } = this.store.get();
+    this.seek(playhead + frames / project.canvas.fps);
+  }
+
+  updateLayer({
+    index,
+    update,
+  }: {
+    index: number;
+    update: Partial<Layer>;
+  }): void {
+    this.reschedulePlayback(() => {
+      const { project } = this.store.get();
+      this.store.update({
+        project: {
+          ...project,
+          layers: project.layers.map((layer, i) =>
+            i === index ? ({ ...layer, ...update } as Layer) : layer,
+          ),
+        },
+      });
+      this.syncPlayback();
     });
+  }
+
+  setOutput(output: Project["output"]): void {
+    const { project } = this.store.get();
+    this.store.update({ project: { ...project, output } });
+  }
+
+  select(selection: EditorSelection | undefined): void {
+    this.store.update({ selection });
   }
 
   /**
@@ -89,67 +138,20 @@ export class EditorRuntime {
     };
   }
 
-  select(selection: EditorSelection | undefined): void {
-    this.store.update({ selection });
-  }
-
-  seek(time: number): void {
-    const { project } = this.store.get();
-    const frame = Math.max(0, Math.round(time * project.canvas.fps));
-    this.transport.seek(Number((frame / project.canvas.fps).toFixed(3)));
-  }
-
-  async togglePlayback(): Promise<void> {
-    if (this.store.get().playing) {
-      this.transport.pause();
-      // Land on a frame, so the paused preview matches a rendered frame.
-      this.seek(this.store.get().playhead);
-    } else {
-      // Play is a user gesture, which lets the context start running.
-      await this.context.resume();
+  /**
+   * Applies a change that playback must reschedule for, restarting the
+   * transport around it like toy-midi's `updateClips`, because participants
+   * only ever start at the transport's playback anchor.
+   */
+  private reschedulePlayback(change: () => void): void {
+    const wasPlaying = this.transport.store.get().isPlaying;
+    this.transport.pause();
+    change();
+    if (wasPlaying) {
       this.transport.play();
     }
   }
 
-  /** Steps the playhead by whole frames. */
-  seekFrames(frames: number): void {
-    const { project, playhead } = this.store.get();
-    this.seek(playhead + frames / project.canvas.fps);
-  }
-
-  updateLayer({
-    index,
-    update,
-  }: {
-    index: number;
-    update: Partial<Layer>;
-  }): void {
-    const { project } = this.store.get();
-    this.store.update({
-      project: {
-        ...project,
-        layers: project.layers.map((layer, i) =>
-          i === index ? ({ ...layer, ...update } as Layer) : layer,
-        ),
-      },
-    });
-  }
-
-  setOutput(output: Project["output"]): void {
-    const { project } = this.store.get();
-    this.store.update({ project: { ...project, output } });
-  }
-
-  serializeProject(): Project {
-    return this.store.get().project;
-  }
-
-  deserializeProject({ file, project }: ProjectFile): void {
-    this.store.update({ file, project, selection: undefined });
-    this.seek(getOutputRange(project).start);
-  }
-
-  /** Brings playback in line with the project after it loads or changes. */
   private syncPlayback(): void {
     const { project } = this.store.get();
     for (const [index, playback] of this.videoPlaybacks) {
@@ -159,9 +161,6 @@ export class EditorRuntime {
       }
     }
 
-    // Every video and audio layer gets a playback, and muting only decides
-    // whether it schedules sound, so the muted camera still loads its audio
-    // for the waveform and unmuting needs no load.
     const layers = new Map<string, VideoLayer | AudioLayer>(
       project.layers.flatMap((layer, index) =>
         layer.type === "video" || layer.type === "audio"
@@ -180,47 +179,41 @@ export class EditorRuntime {
       if (!playback) {
         playback = new AudioBufferPlayback({ transport: this.transport });
         this.audioPlaybacks.set(key, playback);
-        void this.loadAudio(layer.src).then((buffer) => {
-          if (buffer) {
-            this.audioPlaybacks.get(key)?.setBuffer({ buffer });
-          }
-        });
       }
       playback.setLayer({ layer });
+      const source = this.audioBuffers.get(layer.src);
+      if (source?.state.status === "fulfilled") {
+        playback.setBuffer({ buffer: source.state.value });
+      }
     }
   }
 
-  /** Fetches and decodes a source's audio once, however many layers use it. */
-  private loadAudio(src: string): Promise<AudioBuffer | undefined> {
-    let buffer = this.audioBuffers.get(src);
-    if (!buffer) {
-      buffer = this.decodeAudio(src);
-      this.audioBuffers.set(src, buffer);
-    }
-    return buffer;
-  }
-
-  private async decodeAudio(src: string): Promise<AudioBuffer | undefined> {
-    this.setAudioSource({ src, source: { status: "loading" } });
-    const url = apiClient.getMediaUrl({
-      src,
-      projectPath: this.store.get().file,
-    });
-    try {
-      const response = await fetch(url);
-      const buffer = await this.context.decodeAudioData(
-        await response.arrayBuffer(),
-      );
-      this.setAudioSource({
+  /** Starts decoding a source, and syncs playback once its buffer arrives. */
+  private loadAudio(src: string): void {
+    const decodeAudio = async () => {
+      const data = await apiClient.loadAudioData({
         src,
-        source: { status: "loaded", view: createAudioView(buffer) },
+        projectPath: this.store.get().file,
       });
-      return buffer;
-    } catch {
-      // A video file without an audio stream contributes nothing, as in the render.
-      this.setAudioSource({ src, source: { status: "missing" } });
-      return undefined;
-    }
+      return this.context.decodeAudioData(data);
+    };
+    this.setAudioSource({ src, source: { status: "loading" } });
+    this.audioBuffers.set(
+      src,
+      trackPromise({
+        promise: decodeAudio(),
+        onFulfilled: (buffer) => {
+          this.setAudioSource({
+            src,
+            source: { status: "loaded", view: createAudioView(buffer) },
+          });
+          this.reschedulePlayback(() => this.syncPlayback());
+        },
+        onRejected: () => {
+          this.setAudioSource({ src, source: { status: "missing" } });
+        },
+      }),
+    );
   }
 
   private setAudioSource({
@@ -232,6 +225,24 @@ export class EditorRuntime {
   }): void {
     const { audioSources } = this.store.get();
     this.store.update({ audioSources: { ...audioSources, [src]: source } });
+  }
+
+  serializeProject(): Project {
+    return this.store.get().project;
+  }
+
+  deserializeProject({ file, project }: ProjectFile): void {
+    this.store.update({ file, project, selection: undefined });
+    this.syncPlayback();
+    this.seek(getOutputRange(project).start);
+    const sources = new Set(
+      project.layers.flatMap((layer) =>
+        layer.type === "video" || layer.type === "audio" ? [layer.src] : [],
+      ),
+    );
+    for (const src of sources) {
+      this.loadAudio(src);
+    }
   }
 
   subscribePersistableState(listener: () => void): () => void {

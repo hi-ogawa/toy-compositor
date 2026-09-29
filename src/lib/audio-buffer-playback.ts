@@ -1,12 +1,10 @@
+import { clamp } from "../utils/math.ts";
 import { getLayerRange } from "./layout.ts";
 import type { AudioLayer, VideoLayer } from "./project.ts";
 import type {
   AudioContextTransport,
   TransportParticipant,
 } from "./transport.ts";
-
-/** Gives a restarted source time to schedule ahead of the rendering clock. */
-const RESTART_LEAD_SECONDS = 0.03;
 
 /**
  * Plays one layer's decoded audio on the transport's clock, like toy-midi's
@@ -29,49 +27,24 @@ export class AudioBufferPlayback implements TransportParticipant {
     this.unregister = transport.register(this);
   }
 
+  /** Takes effect at the next transport start, like toy-midi's `setSource`. */
   setLayer({ layer }: { layer: VideoLayer | AudioLayer }): void {
     this.layer = layer;
-    this.restart();
   }
 
+  /** Takes effect at the next transport start, like toy-midi's `setSource`. */
   setBuffer({ buffer }: { buffer: AudioBuffer }): void {
     this.buffer = buffer;
-    this.restart();
   }
 
+  /** Schedules the rest of the layer from the transport's playback anchor. */
   start(): void {
-    this.schedule(this.transport.playbackAnchor!.contextTime);
-  }
-
-  stop(): void {
-    this.source?.stop();
-    this.source?.disconnect();
-    this.source = undefined;
-    this.gain.gain.cancelScheduledValues(0);
-  }
-
-  dispose(): void {
-    this.unregister();
-    this.gain.disconnect();
-  }
-
-  /** Applies a changed layer or buffer mid-playback, such as a nudged offset. */
-  private restart(): void {
-    if (!this.transport.store.get().isPlaying) {
-      return;
-    }
-    this.stop();
-    this.schedule(this.transport.context.currentTime + RESTART_LEAD_SECONDS);
-  }
-
-  /** Schedules the rest of the layer from the project position at `contextTime`. */
-  private schedule(contextTime: number): void {
     const { layer, buffer } = this;
     if (!layer || !buffer || layer.muted) {
       return;
     }
+    const { contextTime, position } = this.transport.playbackAnchor!;
     const range = getLayerRange(layer);
-    const position = this.transport.getPositionAt(contextTime);
     const from = Math.max(position, range.start);
     if (from >= range.end) {
       return;
@@ -89,7 +62,7 @@ export class AudioBufferPlayback implements TransportParticipant {
     this.source = source;
 
     const gain = this.gain.gain;
-    gain.setValueAtTime(gainAt({ layer, time: from }), toContextTime(from));
+    gain.setValueAtTime(getGainAt({ layer, time: from }), toContextTime(from));
     if (layer.fadeIn && from < range.start + layer.fadeIn) {
       gain.linearRampToValueAtTime(
         1,
@@ -99,15 +72,27 @@ export class AudioBufferPlayback implements TransportParticipant {
     if (layer.fadeOut) {
       const fadeStart = Math.max(from, range.end - layer.fadeOut);
       gain.setValueAtTime(
-        gainAt({ layer, time: fadeStart }),
+        getGainAt({ layer, time: fadeStart }),
         toContextTime(fadeStart),
       );
       gain.linearRampToValueAtTime(0, toContextTime(range.end));
     }
   }
+
+  stop(): void {
+    this.source?.stop();
+    this.source?.disconnect();
+    this.source = undefined;
+    this.gain.gain.cancelScheduledValues(0);
+  }
+
+  dispose(): void {
+    this.unregister();
+    this.gain.disconnect();
+  }
 }
 
-function gainAt({
+function getGainAt({
   layer,
   time,
 }: {
@@ -117,5 +102,5 @@ function gainAt({
   const range = getLayerRange(layer);
   const fadeIn = layer.fadeIn ? (time - range.start) / layer.fadeIn : Infinity;
   const fadeOut = layer.fadeOut ? (range.end - time) / layer.fadeOut : Infinity;
-  return Math.max(0, Math.min(1, fadeIn, fadeOut));
+  return clamp(Math.min(fadeIn, fadeOut), 0, 1);
 }

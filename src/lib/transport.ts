@@ -1,4 +1,5 @@
 import { createStore } from "../utils/store.ts";
+import { startAnimationFrameLoop } from "../utils/timing.ts";
 
 /** Gives every participant time to schedule against the same future audio frame. */
 const PLAYBACK_LEAD_SECONDS = 0.03;
@@ -37,7 +38,7 @@ export class AudioContextTransport {
    */
   playbackAnchor?: PlaybackAnchor;
   private readonly participants = new Set<TransportParticipant>();
-  private frame?: number;
+  private disposeTicking?: () => void;
 
   readonly context: AudioContext;
 
@@ -67,7 +68,7 @@ export class AudioContextTransport {
     for (const participant of this.participants) {
       participant.start();
     }
-    this.tick();
+    this.startTicking();
   }
 
   pause(): void {
@@ -79,7 +80,7 @@ export class AudioContextTransport {
     }
     const position = this.getPlaybackPosition();
     this.playbackAnchor = undefined;
-    cancelAnimationFrame(this.frame!);
+    this.stopTicking();
     this.store.update({ isPlaying: false, position });
   }
 
@@ -100,10 +101,16 @@ export class AudioContextTransport {
   }
 
   /** Publishes the heard position on animation frames while playing. */
-  private tick = (): void => {
-    this.store.update({ position: this.getPlaybackPosition() });
-    this.frame = requestAnimationFrame(this.tick);
-  };
+  private startTicking(): void {
+    this.disposeTicking = startAnimationFrameLoop(() => {
+      this.store.update({ position: this.getPlaybackPosition() });
+    });
+  }
+
+  private stopTicking(): void {
+    this.disposeTicking?.();
+    this.disposeTicking = undefined;
+  }
 
   /**
    * The position reaching the speakers now. `currentTime` is where the context

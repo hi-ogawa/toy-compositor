@@ -1,8 +1,12 @@
+import { clamp } from "../utils/math.ts";
+import { throttle } from "../utils/timing.ts";
 import type { VideoLayer } from "./project.ts";
 import type { AudioContextTransport } from "./transport.ts";
 
 type PlaybackMode = "paused" | "before" | "playing" | "after";
 
+/** Drift moves slowly, so checking it more often only chases timing noise. */
+const DRIFT_CHECK_INTERVAL_SECONDS = 0.1;
 /** Drift that a seek fixes faster than a rate change, such as after a stall. */
 const SEEK_DRIFT_SECONDS = 1;
 /** Drift within a frame or so is left alone, so the rate stays at 1 when in sync. */
@@ -25,6 +29,10 @@ export class VideoPlayback {
   private layer?: VideoLayer;
   private mode?: PlaybackMode;
   private readonly unsubscribe: () => void;
+  private readonly correctDriftThrottled = throttle(
+    (expectedTime: number) => this.correctDrift(expectedTime),
+    DRIFT_CHECK_INTERVAL_SECONDS * 1_000,
+  );
 
   constructor({
     transport,
@@ -43,6 +51,8 @@ export class VideoPlayback {
 
   setLayer({ layer }: { layer: VideoLayer }): void {
     this.layer = layer;
+    // A moved layer re-enters its mode instead of being corrected as drift.
+    this.mode = undefined;
     this.sync();
   }
 
@@ -66,7 +76,7 @@ export class VideoPlayback {
     const expectedTime = layer.in + position - layer.start;
     if (!isPlaying) {
       this.mode = "paused";
-      this.pause(Math.min(Math.max(expectedTime, layer.in), layer.out));
+      this.pause(clamp(expectedTime, layer.in, layer.out));
       return;
     }
 
@@ -78,7 +88,7 @@ export class VideoPlayback {
           : "playing";
     if (mode === this.mode) {
       if (mode === "playing") {
-        this.correctDrift(expectedTime);
+        this.correctDriftThrottled.run(expectedTime);
       }
       return;
     }
@@ -114,13 +124,15 @@ export class VideoPlayback {
       Math.abs(drift) < RATE_DEADBAND_SECONDS
         ? 1
         : 1 +
-          Math.max(
+          clamp(
+            -drift / RATE_CATCH_UP_SECONDS,
             -MAX_RATE_CHANGE,
-            Math.min(MAX_RATE_CHANGE, -drift / RATE_CATCH_UP_SECONDS),
+            MAX_RATE_CHANGE,
           );
   }
 
   private play(time: number): void {
+    this.correctDriftThrottled.reset();
     // A paused element already shows the playhead's frame, and seeking it
     // again would stall playback on the decode.
     if (Math.abs(this.element.currentTime - time) > RATE_DEADBAND_SECONDS) {
@@ -132,6 +144,7 @@ export class VideoPlayback {
   }
 
   private pause(time: number): void {
+    this.correctDriftThrottled.reset();
     this.element.pause();
     this.element.playbackRate = 1;
     if (this.element.currentTime !== time) {
