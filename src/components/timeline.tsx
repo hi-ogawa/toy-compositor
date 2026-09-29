@@ -19,6 +19,7 @@ import { getLayerRange, intersect, type Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
 import type {
   DecodedAudio,
+  EditorLayer,
   EditorRuntime,
   EditorSelection,
 } from "../lib/runtime";
@@ -111,7 +112,7 @@ export function Timeline({
             .reverse()
             .map(({ layer, index }) => (
               <TimelineLayerLane
-                key={index}
+                key={layer.id}
                 timeline={timeline}
                 layerInteraction={layerInteraction}
                 layer={layer}
@@ -128,9 +129,9 @@ export function Timeline({
                     : undefined
                 }
                 selected={
-                  selection?.type === "layer" && selection.index === index
+                  selection?.type === "layer" && selection.id === layer.id
                 }
-                onSelect={() => runtime.select({ type: "layer", index })}
+                onSelect={() => runtime.select({ type: "layer", id: layer.id })}
               />
             ))}
           {timeline.isVisible(playhead) && (
@@ -307,7 +308,8 @@ function TimelineLayerLane({
 }: {
   timeline: TimelineView;
   layerInteraction: LayerInteraction;
-  layer: Layer;
+  layer: EditorLayer;
+  /** Stack position, which names the lane's test ids. */
   index: number;
   range: Range;
   audioSource?: PromiseState<DecodedAudio>;
@@ -317,12 +319,13 @@ function TimelineLayerLane({
 }) {
   const name = layer.name ?? layer.type;
   const region = timeline.rangeStyle(range);
-  const editable = layerInteraction.canEdit(index);
+  const editable = layerInteraction.canEdit(layer);
   const pixelsToSeconds = (deltaX: number) => deltaX / timeline.pixelsPerSecond;
   // A click without dragging selects through the button's own click.
   const moveRef = usePointerGesture({
     onStart: (event) => event.preventDefault(),
-    onDragStart: () => layerInteraction.startEdit({ type: "move", index }),
+    onDragStart: () =>
+      layerInteraction.startEdit({ type: "move", id: layer.id }),
     onDragMove: (_event, { deltaX }) =>
       layerInteraction.updateEdit(pixelsToSeconds(deltaX)),
     onDragEnd: (_event, { deltaX }) =>
@@ -409,6 +412,7 @@ function TimelineLayerLane({
           {editable && timeline.isVisible(range.start) && (
             <LayerTrimHandle
               type="trim-start"
+              id={layer.id}
               index={index}
               timeline={timeline}
               layerInteraction={layerInteraction}
@@ -417,6 +421,7 @@ function TimelineLayerLane({
           {editable && timeline.isVisible(range.end) && (
             <LayerTrimHandle
               type="trim-end"
+              id={layer.id}
               index={index}
               timeline={timeline}
               layerInteraction={layerInteraction}
@@ -431,11 +436,13 @@ function TimelineLayerLane({
 /** A grip on a region's edge, like toy-midi's clip trim handles. */
 function LayerTrimHandle({
   type,
+  id,
   index,
   timeline,
   layerInteraction,
 }: {
   type: Exclude<LayerEditType, "move">;
+  id: string;
   index: number;
   timeline: TimelineView;
   layerInteraction: LayerInteraction;
@@ -445,7 +452,7 @@ function LayerTrimHandle({
     onStart: (event) => {
       event.preventDefault();
       event.stopPropagation();
-      layerInteraction.startEdit({ type, index });
+      layerInteraction.startEdit({ type, id });
     },
     onMove: (_event, { deltaX }) =>
       layerInteraction.updateEdit(pixelsToSeconds(deltaX)),

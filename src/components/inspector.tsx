@@ -9,7 +9,12 @@ import type {
   TextLayer,
   VideoLayer,
 } from "../lib/project";
-import type { EditorRuntime, EditorSelection } from "../lib/runtime";
+import {
+  getSelectedLayer,
+  type EditorProject,
+  type EditorRuntime,
+  type EditorSelection,
+} from "../lib/runtime";
 import { useDraftInput } from "./use-draft-input";
 
 export function Inspector({
@@ -18,7 +23,7 @@ export function Inspector({
   selection,
 }: {
   runtime: EditorRuntime;
-  project: Project;
+  project: EditorProject;
   selection?: EditorSelection;
 }) {
   if (!selection) {
@@ -46,12 +51,12 @@ export function Inspector({
       );
     }
     case "layer": {
-      const { index } = selection;
+      const layer = getSelectedLayer({ project, selection })!;
       return (
         <LayerInspector
-          layer={project.layers[index]}
+          layer={layer}
           time={time}
-          onUpdate={(update) => runtime.updateLayer({ index, update })}
+          onUpdate={(update) => runtime.updateLayer({ id: layer.id, update })}
         />
       );
     }

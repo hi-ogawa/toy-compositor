@@ -12,7 +12,16 @@ import { VideoPlayback } from "./video-playback.ts";
 
 export type EditorSelection =
   | { type: "output" }
-  | { type: "layer"; index: number };
+  | { type: "layer"; id: string };
+
+/**
+ * A project layer with the editor's identity for it, like toy-midi's runtime
+ * clips. The id is assigned on load and dropped on save, so it survives edits,
+ * additions, and removals without ever reaching the file.
+ */
+export type EditorLayer = Layer & { id: string };
+
+export type EditorProject = Omit<Project, "layers"> & { layers: EditorLayer[] };
 
 export interface DecodedAudio {
   buffer: AudioBuffer;
@@ -22,7 +31,7 @@ export interface DecodedAudio {
 export interface EditorState {
   /** Project file path relative to the projects root, which is also where saves go. */
   file: string;
-  project: Project;
+  project: EditorProject;
   /** Follows the transport, on the frame grid whenever playback is stopped. */
   playhead: number;
   playing: boolean;
@@ -31,7 +40,16 @@ export interface EditorState {
   audioSources: Record<string, PromiseState<DecodedAudio>>;
 }
 
-const EMPTY_PROJECT: Project = {
+export function getSelectedLayer({
+  project,
+  selection,
+}: Pick<EditorState, "project" | "selection">): EditorLayer | undefined {
+  return selection?.type === "layer"
+    ? project.layers.find((layer) => layer.id === selection.id)
+    : undefined;
+}
+
+const EMPTY_PROJECT: EditorProject = {
   canvas: { width: 1920, height: 1080, fps: 30 },
   output: { type: "video", start: 0, end: 0 },
   layers: [],
@@ -51,7 +69,7 @@ export class EditorRuntime {
   readonly context = new AudioContext();
   readonly transport = new AudioContextTransport(this.context);
   private readonly audioPlaybacks = new Map<string, AudioBufferPlayback>();
-  private readonly videoPlaybacks = new Map<number, VideoPlayback>();
+  private readonly videoPlaybacks = new Map<string, VideoPlayback>();
 
   constructor() {
     this.transport.store.subscribe(() => {
@@ -82,20 +100,14 @@ export class EditorRuntime {
     this.seek(playhead + frames / project.canvas.fps);
   }
 
-  updateLayer({
-    index,
-    update,
-  }: {
-    index: number;
-    update: Partial<Layer>;
-  }): void {
+  updateLayer({ id, update }: { id: string; update: Partial<Layer> }): void {
     this.reschedulePlayback(() => {
       const { project } = this.store.get();
       this.store.update({
         project: {
           ...project,
-          layers: project.layers.map((layer, i) =>
-            i === index ? ({ ...layer, ...update } as Layer) : layer,
+          layers: project.layers.map((layer) =>
+            layer.id === id ? ({ ...layer, ...update } as EditorLayer) : layer,
           ),
         },
       });
@@ -134,23 +146,23 @@ export class EditorRuntime {
   }
 
   /**
-   * Makes a composition `<video>` follow the transport as the video layer at
-   * `index`, like toy-midi's `attachYouTubePlayer`. Returns its detacher.
+   * Makes a composition `<video>` follow the transport as the video layer
+   * `id`, like toy-midi's `attachYouTubePlayer`. Returns its detacher.
    */
   attachVideo({
-    index,
+    id,
     element,
   }: {
-    index: number;
+    id: string;
     element: HTMLVideoElement;
   }): () => void {
     const playback = new VideoPlayback({ transport: this.transport, element });
-    this.videoPlaybacks.set(index, playback);
+    this.videoPlaybacks.set(id, playback);
     this.syncPlayback();
     return () => {
       playback.dispose();
-      if (this.videoPlaybacks.get(index) === playback) {
-        this.videoPlaybacks.delete(index);
+      if (this.videoPlaybacks.get(id) === playback) {
+        this.videoPlaybacks.delete(id);
       }
     };
   }
@@ -171,31 +183,32 @@ export class EditorRuntime {
 
   private syncPlayback(): void {
     const { project, audioSources } = this.store.get();
-    for (const [index, playback] of this.videoPlaybacks) {
-      const layer = project.layers[index];
+    const layers = new Map(project.layers.map((layer) => [layer.id, layer]));
+    for (const [id, playback] of this.videoPlaybacks) {
+      const layer = layers.get(id);
       if (layer?.type === "video") {
         playback.setLayer({ layer });
       }
     }
 
-    const layers = new Map<string, VideoLayer | AudioLayer>(
-      project.layers.flatMap((layer, index) =>
+    const audioLayers = new Map<string, VideoLayer | AudioLayer>(
+      project.layers.flatMap((layer) =>
         layer.type === "video" || layer.type === "audio"
-          ? [[`${index}:${layer.src}`, layer] as const]
+          ? [[layer.id, layer] as const]
           : [],
       ),
     );
-    for (const [key, playback] of this.audioPlaybacks) {
-      if (!layers.has(key)) {
+    for (const [id, playback] of this.audioPlaybacks) {
+      if (!audioLayers.has(id)) {
         playback.dispose();
-        this.audioPlaybacks.delete(key);
+        this.audioPlaybacks.delete(id);
       }
     }
-    for (const [key, layer] of layers) {
-      let playback = this.audioPlaybacks.get(key);
+    for (const [id, layer] of audioLayers) {
+      let playback = this.audioPlaybacks.get(id);
       if (!playback) {
         playback = new AudioBufferPlayback({ transport: this.transport });
-        this.audioPlaybacks.set(key, playback);
+        this.audioPlaybacks.set(id, playback);
       }
       playback.setLayer({ layer });
       const source = audioSources[layer.src];
@@ -238,13 +251,23 @@ export class EditorRuntime {
   }
 
   serializeProject(): Project {
-    return this.store.get().project;
+    const { project } = this.store.get();
+    return {
+      ...project,
+      layers: project.layers.map(({ id: _id, ...layer }) => layer as Layer),
+    };
   }
 
   deserializeProject({ file, project }: ProjectFile): void {
     this.store.update({
       file,
-      project,
+      project: {
+        ...project,
+        layers: project.layers.map((layer) => ({
+          ...layer,
+          id: crypto.randomUUID(),
+        })),
+      },
       selection: undefined,
       sourceDurations: {},
     });

@@ -1,7 +1,7 @@
 import { MonitorPlayIcon } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { isShortcutTextInputTarget, matchKeyboardEvent } from "../lib/keyboard";
-import { EditorRuntime } from "../lib/runtime";
+import { EditorRuntime, getSelectedLayer } from "../lib/runtime";
 import { CollapsibleSplit } from "./collapsible-split";
 import { CompositionPreview } from "./composition-preview";
 import { EditorHeader } from "./editor-header";
@@ -65,9 +65,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
   }
 
   const { selection } = state;
-  const { layers } = state.project;
-  const previewLayer =
-    selection?.type === "layer" ? layers[selection.index] : undefined;
+  const previewLayer = getSelectedLayer(state);
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-neutral-900 text-neutral-100">
       <EditorHeader
