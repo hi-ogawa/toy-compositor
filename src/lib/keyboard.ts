@@ -26,3 +26,13 @@ export function matchKeyboardEvent(
     tokens.includes("Shift") === event.shiftKey
   );
 }
+
+/** Whether the event target consumes keys itself, so editor shortcuts leave them alone. */
+export function isShortcutTextInputTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    (target instanceof HTMLElement && target.isContentEditable)
+  );
+}

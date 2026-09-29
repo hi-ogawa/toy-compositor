@@ -1,5 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { matchKeyboardEvent } from "../lib/keyboard";
+import { isShortcutTextInputTarget, matchKeyboardEvent } from "../lib/keyboard";
 import { EditorRuntime } from "../lib/runtime";
 import { CompositionPreview } from "./composition-preview";
 import { EditorHeader } from "./editor-header";
@@ -28,6 +28,23 @@ export function Editor({ projectPath }: { projectPath: string }) {
       event.preventDefault();
       if (project.ready && project.saveStatus !== "saving") {
         project.save();
+      }
+      return;
+    }
+    if (!project.ready || isShortcutTextInputTarget(event.target)) {
+      return;
+    }
+    // Arrow keys repeat while held, stepping frame by frame.
+    for (const [shortcut, frames] of [
+      ["ArrowLeft", -1],
+      ["ArrowRight", 1],
+      ["Shift+ArrowLeft", -10],
+      ["Shift+ArrowRight", 10],
+    ] as const) {
+      if (matchKeyboardEvent(event, shortcut)) {
+        event.preventDefault();
+        runtime.seekFrames({ frames });
+        return;
       }
     }
   });
