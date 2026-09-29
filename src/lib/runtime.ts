@@ -35,9 +35,8 @@ export class EditorRuntime {
 
   seek({ time }: { time: number }): void {
     const { project } = this.store.get();
-    const playhead = Number(
-      (Math.round(time * project.canvas.fps) / project.canvas.fps).toFixed(3),
-    );
+    const frame = Math.max(0, Math.round(time * project.canvas.fps));
+    const playhead = Number((frame / project.canvas.fps).toFixed(3));
     this.store.update({ playhead });
   }
 
