@@ -1,9 +1,11 @@
 import { expect } from "@playwright/test";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
 import {
+  formatFrameTime,
   getInspectorField,
   seekTimelineByPixels,
   clickTimelineButton,
+  SYNTHETIC_FPS,
   test,
 } from "./helper";
 
@@ -134,19 +136,19 @@ test("play the composition and step by frames", async ({ page, editor }) => {
   expect(
     await video.evaluate((element: HTMLVideoElement) => element.paused),
   ).toBe(true);
-  const paused = await readPlayhead();
-  expect(Math.abs(paused * 30 - Math.round(paused * 30))).toBeLessThan(0.05);
+  const pausedFrame = Math.round((await readPlayhead()) * SYNTHETIC_FPS);
+  await expect(time).toContainText(formatFrameTime(pausedFrame));
   await expect
     .poll(() =>
       video.evaluate((element: HTMLVideoElement) => element.currentTime),
     )
-    .toBeCloseTo(paused, 2);
+    .toBeCloseTo(pausedFrame / SYNTHETIC_FPS, 2);
 
   // Step one frame forward, then ten back with Shift.
   await page.keyboard.press("ArrowRight");
-  await expect.poll(readPlayhead).toBeCloseTo(paused + 1 / 30, 2);
+  await expect(time).toContainText(formatFrameTime(pausedFrame + 1));
   await page.keyboard.press("Shift+ArrowLeft");
-  await expect.poll(readPlayhead).toBeCloseTo(paused - 9 / 30, 2);
+  await expect(time).toContainText(formatFrameTime(pausedFrame - 9));
 
   // Confirm playback did not mark the project as having unsaved changes.
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
