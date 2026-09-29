@@ -24,7 +24,7 @@ export async function renderText({
     "-gravity",
     gravity,
     "-font",
-    magickFont(layer.font),
+    getMagickFont(layer.font),
     "-pointsize",
     String(layer.font.size),
     "-interline-spacing",
@@ -66,7 +66,7 @@ export async function renderText({
 }
 
 /** "Noto Sans CJK KR" at weight 700 -> "Noto-Sans-CJK-KR-Bold" */
-function magickFont(font: TextLayer["font"]) {
+function getMagickFont(font: TextLayer["font"]) {
   const suffix: Record<number, string> = {
     300: "-Light",
     400: "",
