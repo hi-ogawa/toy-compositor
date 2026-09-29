@@ -11,6 +11,9 @@ export function getOutputRange(project: Project): Range {
 
 /** Timeline span covering every layer, from the earliest start to the latest end. */
 export function getContentRange(project: Project): Range {
+  if (project.layers.length === 0) {
+    return { start: 0, end: 0 };
+  }
   const ranges = project.layers.map(getLayerRange);
   return {
     start: Math.min(...ranges.map((range) => range.start)),
