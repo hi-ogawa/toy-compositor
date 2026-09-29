@@ -22,7 +22,7 @@ export function Timeline({
 }) {
   const timeline = useTimeline();
   const selectOutput = () => runtime.select({ type: "output" });
-  const seek = (time: number) => runtime.seek({ time });
+  const seek = (time: number) => runtime.seek(time);
   return (
     <section
       className="flex h-72 shrink-0 flex-col border-t border-border text-sm"

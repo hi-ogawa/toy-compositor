@@ -35,7 +35,9 @@ test("navigate the timeline without editing the project", async ({
     .toBeCloseTo(1.5);
 
   // Click the ruler at 1.12 s and confirm the playhead snaps to frame 34 (1.133 s).
-  await seekTimelineByPixels(page, 1.12 * DEFAULT_PIXELS_PER_SECOND);
+  await seekTimelineByPixels(page, {
+    pixels: 1.12 * DEFAULT_PIXELS_PER_SECOND,
+  });
   await expect(time).toContainText("1.133 s");
 
   // Confirm navigation did not mark the project as having unsaved changes.
@@ -61,7 +63,7 @@ test("scroll and zoom the timeline with the wheel", async ({
   const pointerX = 0.5 * DEFAULT_PIXELS_PER_SECOND;
   await page.mouse.move(box.x + pointerX, y);
   await page.mouse.wheel(0, -500);
-  await seekTimelineByPixels(page, pointerX);
+  await seekTimelineByPixels(page, { pixels: pointerX });
   await expect(time).toContainText("0.500 s");
 
   // Scroll right by 1 s at the default zoom, and confirm the same ruler point
@@ -69,7 +71,7 @@ test("scroll and zoom the timeline with the wheel", async ({
   const scrollX = 1 * DEFAULT_PIXELS_PER_SECOND;
   await page.mouse.wheel(0, scrollX);
   await expect(ruler.locator("span").first()).toHaveText("1");
-  await seekTimelineByPixels(page, pointerX);
+  await seekTimelineByPixels(page, { pixels: pointerX });
   await expect(time).toContainText("1.500 s");
 
   // Zoom in by 10% with Ctrl+wheel 1.5 s into the viewport, which is 2.5 s.
@@ -82,8 +84,10 @@ test("scroll and zoom the timeline with the wheel", async ({
   await page.mouse.wheel(0, -100);
   await page.keyboard.up("Control");
   await expect(ruler.locator("span").first()).toHaveText("2");
-  await seekTimelineByPixels(page, zoomAnchorX);
+  await seekTimelineByPixels(page, { pixels: zoomAnchorX });
   await expect(time).toContainText("2.500 s");
-  await seekTimelineByPixels(page, zoomAnchorX + zoomedPixelsPerSecond);
+  await seekTimelineByPixels(page, {
+    pixels: zoomAnchorX + zoomedPixelsPerSecond,
+  });
   await expect(time).toContainText("3.500 s");
 });

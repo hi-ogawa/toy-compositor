@@ -35,13 +35,7 @@ export async function expectImageLoaded(image: Locator) {
 }
 
 /** Seek a video after its media is ready and wait for the requested time. */
-export async function seekVideo({
-  video,
-  time,
-}: {
-  video: Locator;
-  time: number;
-}) {
+export async function seekVideo(video: Locator, { time }: { time: number }) {
   await test.step(
     `Seek video to ${time}s`,
     async () => {
@@ -64,15 +58,11 @@ export async function seekVideo({
 }
 
 /** Drag a locator horizontally from its center. */
-export async function dragBy({
-  page,
-  locator,
-  deltaX,
-}: {
-  page: Page;
-  locator: Locator;
-  deltaX: number;
-}) {
+export async function dragBy(
+  page: Page,
+  locator: Locator,
+  { deltaX }: { deltaX: number },
+) {
   await test.step(
     `Drag by ${deltaX}px`,
     async () => {
@@ -130,7 +120,10 @@ export async function commitInspectorField(
 }
 
 /** Click the timeline ruler at an offset from its origin, which is project time 0. */
-export async function seekTimelineByPixels(page: Page, pixels: number) {
+export async function seekTimelineByPixels(
+  page: Page,
+  { pixels }: { pixels: number },
+) {
   await test.step(
     `Seek timeline to ${pixels}px`,
     async () => {

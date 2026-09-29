@@ -174,8 +174,7 @@ function compileVideo({
     video: {
       input: buildSeekInput({
         file,
-        seek: getFrameShownAt({
-          media,
+        seek: getFrameShownAt(media, {
           time: layer.in + visible.start - layer.start,
         }),
         duration: visible.end - visible.start,
@@ -402,7 +401,7 @@ function assembleGraph({
  * ffmpeg's accurate seek starts from the first frame at or after the seek time,
  * so seek to just before that frame. Assumes a constant frame rate source.
  */
-function getFrameShownAt({ media, time }: { media: Media; time: number }) {
+function getFrameShownAt(media: Media, { time }: { time: number }) {
   const { startTime, frameRate } = media;
   const index = Math.round((time - startTime) * frameRate);
   return Math.max(0, startTime + index / frameRate - 0.1 / frameRate);
