@@ -1,13 +1,17 @@
+import { PanelLeftCloseIcon } from "lucide-react";
 import { useState } from "react";
 import type { Layer } from "../lib/project";
 import { PanelHeader } from "./panel-header";
+import { Button } from "./ui/button";
 
 export function MediaPreview({
   layer,
   resolveMediaUrl,
+  onCollapse,
 }: {
   layer?: Layer;
   resolveMediaUrl: (src: string) => string;
+  onCollapse: () => void;
 }) {
   const [failed, setFailed] = useState(false);
   const header = (
@@ -23,6 +27,16 @@ export function MediaPreview({
           {layer.src}
         </span>
       )}
+      <Button
+        aria-label="Collapse source panel"
+        title="Collapse source panel"
+        aria-expanded={true}
+        aria-controls="source-monitor"
+        className="ml-auto size-5 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-100"
+        onClick={onCollapse}
+      >
+        <PanelLeftCloseIcon className="size-3.5" />
+      </Button>
     </PanelHeader>
   );
   if (!layer || !("src" in layer)) {

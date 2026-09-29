@@ -36,7 +36,7 @@ test("preview synthetic sources", async ({ page, editor }) => {
   await expect(save).toHaveAttribute("data-status", "saved");
 });
 
-test("resize and close the source panel without changing the project", async ({
+test("resize and collapse the source panel without changing the project", async ({
   page,
   editor,
 }) => {
@@ -54,20 +54,15 @@ test("resize and close the source panel without changing the project", async ({
   const resizedWidth = (await sourcePanel.boundingBox())!.width;
   expect(resizedWidth).toBeGreaterThan(initialWidth);
 
-  // Close and reopen Source while preserving the split and save status.
-  const toggle = page.getByRole("button", {
-    name: "Close source panel",
-    exact: true,
-  });
-  const before = await toggle.boundingBox();
-  await toggle.click();
+  // Collapse Source to its edge strip, then expand it while preserving the
+  // split and save status.
+  await page
+    .getByRole("button", { name: "Collapse source panel", exact: true })
+    .click();
   await expect(source).toHaveCount(0);
-  const show = page.getByRole("button", {
-    name: "Open source panel",
-    exact: true,
-  });
-  expect((await show.boundingBox())!.x).toBe(before!.x);
-  await show.click();
+  await page
+    .getByRole("button", { name: "Expand source panel", exact: true })
+    .click();
   expect((await sourcePanel.boundingBox())!.width).toBe(resizedWidth);
   await expect(source).toBeVisible();
   await expect

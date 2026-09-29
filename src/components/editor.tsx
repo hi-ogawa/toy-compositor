@@ -18,7 +18,6 @@ export function Editor({ projectPath }: { projectPath: string }) {
   );
   const project = useEditorProject({ projectPath, runtime });
   const timeline = useTimeline(runtime);
-  const [sourceOpen, setSourceOpen] = useState(true);
 
   useEffect(() => {
     document.title = state.file
@@ -63,16 +62,13 @@ export function Editor({ projectPath }: { projectPath: string }) {
       <EditorHeader
         file={state.file}
         saveStatus={project.saveStatus}
-        sourceOpen={sourceOpen}
         renderSettingsSelected={selection?.type === "output"}
         onSave={() => project.save()}
-        onSourceOpenChange={setSourceOpen}
         onRenderSettingsSelect={() => runtime.select({ type: "output" })}
       />
       <div className="flex min-h-0 flex-1">
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">
           <PreviewMonitors
-            sourceOpen={sourceOpen}
             layer={previewLayer}
             resolveMediaUrl={project.resolveMediaUrl}
             composition={

@@ -2,7 +2,6 @@ import {
   CircleAlertIcon,
   ClapperboardIcon,
   LoaderCircleIcon,
-  PanelLeftIcon,
   SaveCheckIcon,
   SaveIcon,
 } from "lucide-react";
@@ -13,18 +12,14 @@ import type { SaveStatus } from "./use-editor-project";
 export function EditorHeader({
   file,
   saveStatus,
-  sourceOpen,
   renderSettingsSelected,
   onSave,
-  onSourceOpenChange,
   onRenderSettingsSelect,
 }: {
   file: string;
   saveStatus: SaveStatus;
-  sourceOpen: boolean;
   renderSettingsSelected: boolean;
   onSave: () => void;
-  onSourceOpenChange: (open: boolean) => void;
   onRenderSettingsSelect: () => void;
 }) {
   return (
@@ -37,16 +32,6 @@ export function EditorHeader({
         {file}
       </span>
       <div className="flex-1" />
-      <Button
-        aria-label={sourceOpen ? "Close source panel" : "Open source panel"}
-        title={sourceOpen ? "Close source panel" : "Open source panel"}
-        aria-controls="source-monitor"
-        aria-expanded={sourceOpen}
-        className={cn("size-9", getToggleClassName(sourceOpen))}
-        onClick={() => onSourceOpenChange(!sourceOpen)}
-      >
-        <PanelLeftIcon className="size-5" />
-      </Button>
       <Button
         aria-label="Render settings"
         title="Render settings"
