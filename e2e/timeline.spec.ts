@@ -120,7 +120,7 @@ test("play the composition and step by frames", async ({ page, editor }) => {
   await expect(
     timeline.getByRole("button", { name: "Pause", exact: true }),
   ).toBeVisible();
-  await expect.poll(playhead).toBeGreaterThan(0.5);
+  await expect.poll(readPlayhead).toBeGreaterThan(0.5);
   expect(
     await video.evaluate((element: HTMLVideoElement) => element.paused),
   ).toBe(false);
@@ -144,9 +144,9 @@ test("play the composition and step by frames", async ({ page, editor }) => {
 
   // Step one frame forward, then ten back with Shift.
   await page.keyboard.press("ArrowRight");
-  await expect.poll(playhead).toBeCloseTo(paused + 1 / 30, 2);
+  await expect.poll(readPlayhead).toBeCloseTo(paused + 1 / 30, 2);
   await page.keyboard.press("Shift+ArrowLeft");
-  await expect.poll(playhead).toBeCloseTo(paused - 9 / 30, 2);
+  await expect.poll(readPlayhead).toBeCloseTo(paused - 9 / 30, 2);
 
   // Confirm playback did not mark the project as having unsaved changes.
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
