@@ -18,12 +18,13 @@ export function applyLayerEdit(
     type,
     delta,
     fps,
-    sourceDuration = Infinity,
+    sourceDuration,
   }: {
     type: LayerEditType;
     delta: number;
     fps: number;
-    sourceDuration?: number;
+    /** Infinity for an image, text, or color layer, because a still covers any time. */
+    sourceDuration: number;
   },
 ): Layer {
   const range = getLayerRange(layer);

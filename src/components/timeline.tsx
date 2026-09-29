@@ -6,6 +6,7 @@ import {
   PauseIcon,
   PlayIcon,
   SquareIcon,
+  TriangleAlertIcon,
   TypeIcon,
   VolumeXIcon,
   type LucideIcon,
@@ -20,6 +21,7 @@ import type {
   AudioSource,
   EditorRuntime,
   EditorSelection,
+  SourceDuration,
 } from "../lib/runtime";
 import { AudioWaveformView } from "./audio-waveform";
 import { Button } from "./ui/button";
@@ -36,6 +38,7 @@ export function Timeline({
   playhead,
   playing,
   audioSources,
+  sourceDurations,
 }: {
   timeline: TimelineView;
   layerInteraction: LayerInteraction;
@@ -45,6 +48,7 @@ export function Timeline({
   playhead: number;
   playing: boolean;
   audioSources: Record<string, AudioSource>;
+  sourceDurations: Record<string, SourceDuration>;
 }) {
   const selectOutput = () => runtime.select({ type: "output" });
   const seek = (time: number) => runtime.seek(time);
@@ -116,6 +120,11 @@ export function Timeline({
                 audioSource={
                   layer.type === "video" || layer.type === "audio"
                     ? audioSources[layer.src]
+                    : undefined
+                }
+                sourceDuration={
+                  layer.type === "video" || layer.type === "audio"
+                    ? sourceDurations[layer.src]
                     : undefined
                 }
                 selected={
@@ -292,6 +301,7 @@ function TimelineLayerLane({
   index,
   range,
   audioSource,
+  sourceDuration,
   selected,
   onSelect,
 }: {
@@ -301,11 +311,13 @@ function TimelineLayerLane({
   index: number;
   range: Range;
   audioSource?: AudioSource;
+  sourceDuration?: SourceDuration;
   selected: boolean;
   onSelect: () => void;
 }) {
   const name = layer.name ?? layer.type;
   const region = timeline.rangeStyle(range);
+  const editable = layerInteraction.canEdit(index);
   const toSeconds = (deltaX: number) => deltaX / timeline.pixelsPerSecond;
   // A click without dragging selects through the button's own click.
   const moveRef = usePointerGesture({
@@ -340,7 +352,7 @@ function TimelineLayerLane({
       {region && (
         <div className="absolute inset-y-1" style={region}>
           <button
-            ref={moveRef}
+            ref={editable ? moveRef : undefined}
             type="button"
             aria-label={`Select ${name} region`}
             title={`${range.start.toFixed(3)}–${range.end.toFixed(3)} s`}
@@ -372,16 +384,29 @@ function TimelineLayerLane({
                   className="absolute left-1 top-1 size-3.5"
                 />
               )}
-            {audioSource?.status === "loading" && (
+            {(audioSource?.status === "loading" ||
+              sourceDuration?.status === "loading") && (
               <LoaderCircleIcon
                 role="img"
-                aria-label="loading audio"
+                aria-label="loading source"
                 className="absolute right-1 top-1 size-3.5 animate-spin text-muted-foreground"
               />
             )}
+            {sourceDuration?.status === "missing" && (
+              <TriangleAlertIcon
+                role="img"
+                aria-label="source unavailable"
+                className="absolute right-1 top-1 size-3.5 text-amber-300"
+              >
+                <title>
+                  The source did not load, so the layer can't be moved or
+                  trimmed
+                </title>
+              </TriangleAlertIcon>
+            )}
           </button>
           {/* A region cut off by the viewport has no edge there to trim. */}
-          {timeline.isVisible(range.start) && (
+          {editable && timeline.isVisible(range.start) && (
             <LayerTrimHandle
               type="trim-start"
               index={index}
@@ -389,7 +414,7 @@ function TimelineLayerLane({
               layerInteraction={layerInteraction}
             />
           )}
-          {timeline.isVisible(range.end) && (
+          {editable && timeline.isVisible(range.end) && (
             <LayerTrimHandle
               type="trim-end"
               index={index}

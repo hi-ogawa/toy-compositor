@@ -19,6 +19,11 @@ export type AudioSource =
   | { status: "loaded"; view: AudioView }
   | { status: "missing" };
 
+export type SourceDuration =
+  | { status: "loading" }
+  | { status: "loaded"; duration: number }
+  | { status: "missing" };
+
 export interface EditorState {
   /** Project file path relative to the projects root, which is also where saves go. */
   file: string;
@@ -27,8 +32,7 @@ export interface EditorState {
   playhead: number;
   playing: boolean;
   selection?: EditorSelection;
-  /** Each video and audio source's duration in source time, once its metadata loads. */
-  sourceDurations: Record<string, number>;
+  sourceDurations: Record<string, SourceDuration>;
   audioSources: Record<string, AudioSource>;
 }
 
@@ -223,24 +227,37 @@ export class EditorRuntime {
   }
 
   /**
-   * Stores a source's duration as media elements report it, because playback
+   * Loads a source's duration as media elements report it, because playback
    * seeks media elements in the same source time that `in` and `out` are
-   * measured in. A source that fails to load keeps no duration.
+   * measured in.
    */
   private loadDuration(src: string): void {
     const url = apiClient.getMediaUrl({
       src,
       projectPath: this.store.get().file,
     });
+    this.setSourceDuration({ src, duration: { status: "loading" } });
     loadMediaDuration(url).then(
-      (duration) => {
-        const { sourceDurations } = this.store.get();
-        this.store.update({
-          sourceDurations: { ...sourceDurations, [src]: duration },
-        });
-      },
-      () => {},
+      (duration) =>
+        this.setSourceDuration({
+          src,
+          duration: { status: "loaded", duration },
+        }),
+      () => this.setSourceDuration({ src, duration: { status: "missing" } }),
     );
+  }
+
+  private setSourceDuration({
+    src,
+    duration,
+  }: {
+    src: string;
+    duration: SourceDuration;
+  }): void {
+    const { sourceDurations } = this.store.get();
+    this.store.update({
+      sourceDurations: { ...sourceDurations, [src]: duration },
+    });
   }
 
   private setAudioSource({

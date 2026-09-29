@@ -3,7 +3,12 @@ import { applyLayerEdit, type LayerEditType } from "../lib/layer-edit";
 import type { Layer } from "../lib/project";
 import type { EditorRuntime, EditorState } from "../lib/runtime";
 
-type LayerEdit = { type: LayerEditType; index: number; layer: Layer };
+type LayerEdit = {
+  type: LayerEditType;
+  index: number;
+  sourceDuration: number;
+  layer: Layer;
+};
 
 /**
  * Moves and trims the selected layer on the timeline, like toy-midi's
@@ -20,37 +25,38 @@ export function useLayerInteraction({
   const [edit, setEdit] = useState<LayerEdit>();
   const { layers, canvas } = state.project;
 
-  function getEditedLayer({
-    type,
-    index,
-    delta,
-  }: {
-    type: LayerEditType;
-    index: number;
-    delta: number;
-  }): Layer {
-    const layer = layers[index];
-    return applyLayerEdit(layer, {
-      type,
-      delta,
-      fps: canvas.fps,
-      sourceDuration:
-        layer.type === "video" || layer.type === "audio"
-          ? state.sourceDurations[layer.src]
-          : undefined,
-    });
+  /** A video or audio layer is editable once its source duration loads. */
+  function getSourceDuration(layer: Layer): number | undefined {
+    if (layer.type !== "video" && layer.type !== "audio") {
+      return Infinity;
+    }
+    const duration = state.sourceDurations[layer.src];
+    return duration?.status === "loaded" ? duration.duration : undefined;
   }
 
   function startEdit({ type, index }: { type: LayerEditType; index: number }) {
+    const sourceDuration = getSourceDuration(layers[index]);
+    if (sourceDuration === undefined) {
+      return;
+    }
     runtime.select({ type: "layer", index });
-    setEdit({ type, index, layer: layers[index] });
+    setEdit({ type, index, sourceDuration, layer: layers[index] });
+  }
+
+  function getEditedLayer(edit: LayerEdit, delta: number): Layer {
+    return applyLayerEdit(layers[edit.index], {
+      type: edit.type,
+      delta,
+      fps: canvas.fps,
+      sourceDuration: edit.sourceDuration,
+    });
   }
 
   function updateEdit(delta: number) {
     if (!edit) {
       return;
     }
-    setEdit({ ...edit, layer: getEditedLayer({ ...edit, delta }) });
+    setEdit({ ...edit, layer: getEditedLayer(edit, delta) });
   }
 
   function finishEdit(delta: number) {
@@ -58,7 +64,7 @@ export function useLayerInteraction({
       return;
     }
     setEdit(undefined);
-    const layer = getEditedLayer({ ...edit, delta });
+    const layer = getEditedLayer(edit, delta);
     // A drag that snaps back to where it started leaves the project unchanged.
     if (JSON.stringify(layer) !== JSON.stringify(layers[edit.index])) {
       runtime.updateLayer({ index: edit.index, update: layer });
@@ -68,6 +74,7 @@ export function useLayerInteraction({
   return {
     layers: edit ? layers.with(edit.index, edit.layer) : layers,
     editing: edit !== undefined,
+    canEdit: (index: number) => getSourceDuration(layers[index]) !== undefined,
     startEdit,
     updateEdit,
     finishEdit,
