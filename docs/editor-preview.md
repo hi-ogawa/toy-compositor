@@ -16,6 +16,7 @@ Editor                     editor.tsx               runtime store, selection, pl
 │     └─ PreviewLayer × N                           box to CSS, per-type rendering, outline
 │        └─ CompositionMedia  composition-media.tsx natural size, fit and crop, video
 ├─ Timeline                timeline.tsx             selection, seeking the playhead
+│  └─ AudioWaveformView    audio-waveform.tsx       a lane's audio peaks at the timeline scale
 └─ Inspector               inspector.tsx            project edits
 ```
 
@@ -55,7 +56,7 @@ EditorRuntime              runtime.ts                source loading, restarts ar
 - **The heard position comes from `getOutputTimestamp`,** because Chromium on Linux reports `outputLatency` as 0.
 - **Audio is scheduled, never steered.** A layer plays wherever its own range covers the playhead, so trimming decides what plays. Fades are gain ramps, and `muted` silences the layer.
 - **Playbacks start only at the anchor.** An edit, or a buffer that arrives during playback, restarts the transport around the change, like toy-midi's `updateClips`.
-- **Sources load in the background.** Loading a project decodes each source once, shared by its layers, so opening never waits on a long source.
+- **Sources load in the background.** Loading a project decodes each source once, shared by its layers' playback and lane waveforms, so opening never waits on a long source.
 - **Pausing lands on the frame grid,** so a paused preview matches a rendered frame.
 
 ## Known gaps
