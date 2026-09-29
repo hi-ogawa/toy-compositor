@@ -214,6 +214,7 @@ export class EditorRuntime {
       this.loadAudio(src);
     }
   }
+
   subscribePersistableState(listener: () => void): () => void {
     return this.store.subscribeWithSelector({
       selector: (state) => state.project,
