@@ -12,6 +12,11 @@ export type EditorSelection =
   | { type: "output" }
   | { type: "layer"; index: number };
 
+export interface DecodedAudio {
+  buffer: AudioBuffer;
+  view: AudioView;
+}
+
 export interface EditorState {
   /** Project file path relative to the projects root, which is also where saves go. */
   file: string;
@@ -20,10 +25,7 @@ export interface EditorState {
   playhead: number;
   playing: boolean;
   selection?: EditorSelection;
-  audioSources: Record<
-    string,
-    PromiseState<{ buffer: AudioBuffer; view: AudioView }>
-  >;
+  audioSources: Record<string, PromiseState<DecodedAudio>>;
 }
 
 const EMPTY_PROJECT: Project = {
@@ -186,7 +188,7 @@ export class EditorRuntime {
 
   /** Starts decoding a source, and syncs playback once its buffer arrives. */
   private loadAudio(src: string): void {
-    const decodeAudio = async () => {
+    const decodeAudio = async (): Promise<DecodedAudio> => {
       const data = await apiClient.loadAudioData({
         src,
         projectPath: this.store.get().file,

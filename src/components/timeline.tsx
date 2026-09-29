@@ -11,10 +11,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import type { AudioView } from "../lib/audio-view";
 import { getLayerRange, intersect, type Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
-import type { EditorRuntime, EditorSelection } from "../lib/runtime";
+import type {
+  DecodedAudio,
+  EditorRuntime,
+  EditorSelection,
+} from "../lib/runtime";
 import type { PromiseState } from "../utils/promise-state";
 import { AudioWaveformView } from "./audio-waveform";
 import { Button } from "./ui/button";
@@ -36,10 +39,7 @@ export function Timeline({
   selection?: EditorSelection;
   playhead: number;
   playing: boolean;
-  audioSources: Record<
-    string,
-    PromiseState<{ buffer: AudioBuffer; view: AudioView }>
-  >;
+  audioSources: Record<string, PromiseState<DecodedAudio>>;
 }) {
   const selectOutput = () => runtime.select({ type: "output" });
   const seek = (time: number) => runtime.seek(time);
@@ -292,7 +292,7 @@ function TimelineLayerLane({
   layer: Layer;
   index: number;
   range: Range;
-  audioSource?: PromiseState<{ buffer: AudioBuffer; view: AudioView }>;
+  audioSource?: PromiseState<DecodedAudio>;
   selected: boolean;
   onSelect: () => void;
 }) {
