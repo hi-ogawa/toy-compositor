@@ -55,6 +55,7 @@ export class EditorRuntime {
 
   readonly context = new AudioContext();
   readonly transport = new AudioContextTransport(this.context);
+  private readonly durations = new Map<string, TrackedPromise<number>>();
   private readonly audioBuffers = new Map<
     string,
     TrackedPromise<AudioBuffer>
@@ -237,13 +238,20 @@ export class EditorRuntime {
       projectPath: this.store.get().file,
     });
     this.setSourceDuration({ src, duration: { status: "loading" } });
-    loadMediaDuration(url).then(
-      (duration) =>
-        this.setSourceDuration({
-          src,
-          duration: { status: "loaded", duration },
-        }),
-      () => this.setSourceDuration({ src, duration: { status: "missing" } }),
+    this.durations.set(
+      src,
+      trackPromise({
+        promise: loadMediaDuration(url),
+        onFulfilled: (duration) => {
+          this.setSourceDuration({
+            src,
+            duration: { status: "loaded", duration },
+          });
+        },
+        onRejected: () => {
+          this.setSourceDuration({ src, duration: { status: "missing" } });
+        },
+      }),
     );
   }
 
