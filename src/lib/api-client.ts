@@ -13,8 +13,11 @@ const rpcClient = createRpcProxy<EditorHandlers>(async (method, params) => {
   return res.json();
 });
 
-/** Client for the raw media route, which media elements point at directly. */
-const mediaClient = {
+/**
+ * Client for the raw routes, which media elements and the tab's live stream
+ * point at directly.
+ */
+const rawClient = {
   /**
    * The server resolves a layer source against the project's directory, as the
    * renderer does, so `src` is a file path everywhere.
@@ -37,16 +40,13 @@ const mediaClient = {
     src: string;
     projectPath: string;
   }): Promise<ArrayBuffer> {
-    const res = await fetch(mediaClient.getMediaUrl({ src, projectPath }));
+    const res = await fetch(rawClient.getMediaUrl({ src, projectPath }));
     if (!res.ok) {
       throw new Error(`Failed to load audio data: ${await res.text()}`);
     }
     return res.arrayBuffer();
   },
-};
 
-/** Client for the raw live route, a stream that lasts as long as the tab. */
-const liveClient = {
   /**
    * Keeps an event stream open for the tab's lifetime, so a server started
    * with `serve --open` exits after the last tab closes.
@@ -58,11 +58,10 @@ const liveClient = {
 
 /**
  * Client for the editor server's RPC methods at `/api/rpc/<method>`, plus the
- * raw media and live routes. The RPC proxy is the prototype, so any method
- * not on `mediaClient` or `liveClient` becomes an RPC call.
+ * raw routes. The RPC proxy is the prototype, so any method not on
+ * `rawClient` becomes an RPC call.
  */
 export const apiClient = Object.assign(
   Object.create(rpcClient) as typeof rpcClient,
-  mediaClient,
-  liveClient,
+  rawClient,
 );
