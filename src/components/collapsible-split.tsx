@@ -25,11 +25,11 @@ export function CollapsibleSplit({
   const resize = (share: number) =>
     setSideShare(Math.max(20, Math.min(60, share)));
   const dividerRef = usePointerDrag({
-    onStart: () => ({
-      share: sideShare,
-      width: containerRef.current!.clientWidth,
-    }),
-    onMove: ({ data, deltaX }) =>
+    onStart: (event) => {
+      event.preventDefault();
+      return { share: sideShare, width: containerRef.current!.clientWidth };
+    },
+    onMove: (_event, { data, deltaX }) =>
       resize(data.share + (deltaX / data.width) * 100),
   });
   return (

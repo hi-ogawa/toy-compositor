@@ -13,14 +13,17 @@ import type {
   ImageLayer,
   Layer,
   Project,
+  MediaInfo,
+  VideoInfo,
   TextLayer,
   VideoLayer,
 } from "../project.ts";
-import type { Media, Resolved } from "./resolve.ts";
+import type { Resolved } from "./resolve.ts";
 
 /**
- * Compile a project and its resolved media into the ffmpeg inputs, filter graph,
- * and output options, without any I/O. The caller adds the output file.
+ * Compile a project, with the media info it carries and its resolved text
+ * images, into the ffmpeg inputs, filter graph, and output options, without
+ * any I/O. The caller adds the output file.
  * Each layer compiles on its own into the streams it contributes, and then one
  * graph overlays the visual streams on a solid canvas in layer order and mixes
  * the audio streams.
@@ -43,7 +46,14 @@ export function compile({
     withAudio: project.output.type === "video",
   };
   const layers = project.layers.map((layer, i) =>
-    compileLayer({ layer, index: i, projectDir, resolved, scene }),
+    compileLayer({
+      layer,
+      index: i,
+      projectDir,
+      mediaInfoMap: project.media,
+      resolved,
+      scene,
+    }),
   );
   const graph = assembleGraph({ canvas, duration, layers });
 
@@ -107,17 +117,19 @@ type AudioStream = {
   filters: string[];
 };
 
-/** Look up the files and media facts a layer needs, and compile it by type. */
+/** Look up the files and media info a layer needs, and compile it by type. */
 function compileLayer({
   layer,
   index,
   projectDir,
+  mediaInfoMap,
   resolved,
   scene,
 }: {
   layer: Layer;
   index: number;
   projectDir: string;
+  mediaInfoMap: Project["media"];
   resolved: Resolved;
   scene: Scene;
 }): LayerStreams {
@@ -126,7 +138,7 @@ function compileLayer({
       return compileVideo({
         layer,
         file: path.resolve(projectDir, layer.src),
-        media: resolved.media.get(layer.src)!,
+        mediaInfo: mediaInfoMap[layer.src],
         scene,
       });
     }
@@ -134,7 +146,7 @@ function compileLayer({
       return compileImage({
         layer,
         file: path.resolve(projectDir, layer.src),
-        media: resolved.media.get(layer.src)!,
+        mediaInfo: mediaInfoMap[layer.src],
         scene,
       });
     }
@@ -157,24 +169,25 @@ function compileLayer({
 function compileVideo({
   layer,
   file,
-  media,
+  mediaInfo,
   scene,
 }: {
   layer: VideoLayer;
   file: string;
-  media: Media;
+  mediaInfo: MediaInfo;
   scene: Scene;
 }): LayerStreams {
   const visible = intersect(getLayerRange(layer), scene.range);
   if (!visible) {
     return {};
   }
-  const fit = fitBox({ source: media, crop: layer.crop, box: layer.box });
+  const video = mediaInfo.video!;
+  const fit = fitBox({ source: video, crop: layer.crop, box: layer.box });
   return {
     video: {
       input: buildSeekInput({
         file,
-        seek: getFrameShownAt(media, {
+        seek: getFrameShownAt(video, {
           time: layer.in + visible.start - layer.start,
         }),
         duration: visible.end - visible.start,
@@ -189,7 +202,7 @@ function compileVideo({
       y: fit.y,
     },
     audio:
-      scene.withAudio && !layer.muted && media.hasAudio
+      scene.withAudio && !layer.muted && mediaInfo.audio
         ? compileAudioStream({ layer, file, visible, scene })
         : undefined,
   };
@@ -198,19 +211,23 @@ function compileVideo({
 function compileImage({
   layer,
   file,
-  media,
+  mediaInfo,
   scene,
 }: {
   layer: ImageLayer;
   file: string;
-  media: Media;
+  mediaInfo: MediaInfo;
   scene: Scene;
 }): LayerStreams {
   const visible = intersect(getLayerRange(layer), scene.range);
   if (!visible) {
     return {};
   }
-  const fit = fitBox({ source: media, crop: layer.crop, box: layer.box });
+  const fit = fitBox({
+    source: mediaInfo.video!,
+    crop: layer.crop,
+    box: layer.box,
+  });
   return {
     video: {
       input: buildStillInput({
@@ -401,8 +418,8 @@ function assembleGraph({
  * ffmpeg's accurate seek starts from the first frame at or after the seek time,
  * so seek to just before that frame. Assumes a constant frame rate source.
  */
-function getFrameShownAt(media: Media, { time }: { time: number }) {
-  const { startTime, frameRate } = media;
+function getFrameShownAt(video: VideoInfo, { time }: { time: number }) {
+  const { startTime, frameRate } = video;
   const index = Math.round((time - startTime) * frameRate);
   return Math.max(0, startTime + index / frameRate - 0.1 / frameRate);
 }

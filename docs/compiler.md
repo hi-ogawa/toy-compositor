@@ -19,13 +19,13 @@ pnpm render <project.json> <output> --dry-run   # print the command only
 - Variable frame rate phone footage is normalized to constant frame rate working files at ingest, which matches the existing manual pre-transcode. The working files also use a one-second keyframe interval so the editor can seek quickly ([working media](working-media.md)).
 - Encoding settings are explicit in the compiler output, which avoids Kdenlive's file-size inflation.
 
-## Gather Facts, Compile, Run
+## Draw Text, Compile, Run
 
-A render has three steps. First, it gathers what the project file cannot say about its media. Each video and image source is probed once for its size, frame timing, and whether it has audio, and each text layer is drawn to a transparent PNG with ImageMagick. Then the project and those facts are compiled into ffmpeg arguments. Finally, ffmpeg runs.
+A render has three steps. First, it draws each text layer to a transparent PNG with ImageMagick. Then the project, which carries its media info ([project-format.md](project-format.md#media)), and the text images are compiled into ffmpeg arguments. Finally, ffmpeg runs.
 
-![The project file flows through resolving media, compiling, and running ffmpeg, and only the first and last steps touch files or processes](images/render-pipeline.svg)
+![The project file flows through drawing text, compiling, and running ffmpeg, and only the first and last steps touch files or processes](images/render-pipeline.svg)
 
-Compiling reads no files and starts no processes, so it is plain data in and arguments out. All the I/O sits at the two ends. `--dry-run` stops before running ffmpeg, but it still probes the sources and writes the text PNGs, because the printed command refers to them.
+Compiling reads no files and starts no processes, so it is plain data in and arguments out. All the I/O sits at the two ends. `--dry-run` stops before running ffmpeg, but it still writes the text PNGs, because the printed command refers to them.
 
 ## Read an ffmpeg Command
 

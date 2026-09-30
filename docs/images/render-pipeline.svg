@@ -1,19 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="270" viewBox="0 0 760 270" role="img" aria-labelledby="title desc">
-<title id="title">One render gathers media facts, compiles, then runs ffmpeg</title>
-<desc id="desc">The project file flows into a resolve step that probes each source and draws each text layer to a PNG. The project and those facts flow into a compile step that turns each layer into streams and joins the streams into one filter graph. The resulting arguments run ffmpeg, which writes a video or an image. Only resolve and run touch files or processes.</desc>
+<title id="title">One render draws text, compiles, then runs ffmpeg</title>
+<desc id="desc">The project file, which carries its media info, flows into a resolve step that draws each text layer to a PNG. The project and those PNGs flow into a compile step that turns each layer into streams and joins the streams into one filter graph. The resulting arguments run ffmpeg, which writes a video or an image. Only resolve and run touch files or processes.</desc>
 <defs>
 <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7d8a84"/></marker>
 </defs>
 <rect width="760" height="270" fill="#fcfaf5"/>
 <g font-family="Arial,sans-serif" font-size="15" fill="#263632">
-<text x="30" y="34" font-size="20" font-weight="700">One render: gather facts, compile, run</text>
+<text x="30" y="34" font-size="20" font-weight="700">One render: draw text, compile, run</text>
 <rect x="30" y="120" width="120" height="64" rx="8" fill="#ffffff" stroke="#a3b0a9"/>
 <text x="90" y="147" text-anchor="middle">Project file</text>
-<text x="90" y="167" text-anchor="middle" font-size="13" fill="#52625d">layers, output</text>
+<text x="90" y="167" text-anchor="middle" font-size="13" fill="#52625d">layers, media</text>
 <rect x="190" y="96" width="170" height="112" rx="8" fill="#f0ebf8" stroke="#6b4fa0"/>
-<text x="275" y="124" text-anchor="middle" font-weight="700">Resolve media</text>
-<text x="275" y="154" text-anchor="middle" font-size="13">probe each source once</text>
-<text x="275" y="174" text-anchor="middle" font-size="13">draw each text to a PNG</text>
+<text x="275" y="124" text-anchor="middle" font-weight="700">Resolve text</text>
+<text x="275" y="164" text-anchor="middle" font-size="13">draw each text to a PNG</text>
 <rect x="400" y="96" width="170" height="112" rx="8" fill="#ffffff" stroke="#2f6fb0" stroke-width="1.5"/>
 <text x="485" y="124" text-anchor="middle" font-weight="700">Compile</text>
 <text x="485" y="154" text-anchor="middle" font-size="13">each layer → streams</text>
@@ -25,8 +24,8 @@
 <path d="M360 152 H398" fill="none" stroke="#7d8a84" stroke-width="1.5" marker-end="url(#arrow)"/>
 <path d="M570 152 H608" fill="none" stroke="#7d8a84" stroke-width="1.5" marker-end="url(#arrow)"/>
 <path d="M90 120 V70 H485 V94" fill="none" stroke="#7d8a84" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
-<text x="287" y="63" text-anchor="middle" font-size="13" fill="#52625d">layers and output settings</text>
-<text x="379" y="232" text-anchor="middle" font-size="13" fill="#52625d">sizes, frame timing, audio, PNG paths</text>
+<text x="287" y="63" text-anchor="middle" font-size="13" fill="#52625d">layers, output, and media facts</text>
+<text x="379" y="232" text-anchor="middle" font-size="13" fill="#52625d">text PNG paths</text>
 <path d="M379 218 V160" fill="none" stroke="#c6cfca" stroke-dasharray="3 3"/>
 <rect x="30" y="246" width="12" height="12" rx="2" fill="#f0ebf8" stroke="#6b4fa0"/>
 <text x="50" y="257" font-size="13" fill="#52625d">touches files or processes</text>

@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { once } from "node:events";
 import fs from "node:fs";
 import path from "node:path";
-import type { Project } from "../project.ts";
+import { validateMedia, type Project } from "../project.ts";
 import { compile } from "./compile.ts";
 import { resolveProject } from "./resolve.ts";
 
@@ -17,11 +17,11 @@ export async function renderProject({
   dryRun?: boolean;
 }) {
   const project: Project = JSON.parse(fs.readFileSync(projectFile, "utf-8"));
+  validateMedia(project);
   const projectDir = path.dirname(path.resolve(projectFile));
   const outPath = path.resolve(outFile);
   const resolved = await resolveProject({
     project,
-    projectDir,
     textDir: path.join(path.dirname(outPath), ".text", path.basename(outPath)),
   });
   const args = [

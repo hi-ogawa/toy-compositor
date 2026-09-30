@@ -10,6 +10,7 @@ import { MediaPreview } from "./media-preview";
 import { Timeline } from "./timeline";
 import { Button } from "./ui/button";
 import { useEditorProject } from "./use-editor-project";
+import { useLayerInteraction } from "./use-layer-interaction";
 import { useTimeline } from "./use-timeline";
 import { useWindowEvent } from "./use-window-event";
 
@@ -21,6 +22,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
   );
   const project = useEditorProject({ projectPath, runtime });
   const timeline = useTimeline(runtime);
+  const layerInteraction = useLayerInteraction({ runtime, state });
   const [sourceOpen, setSourceOpen] = useState(true);
 
   useEffect(() => {
@@ -38,6 +40,11 @@ export function Editor({ projectPath }: { projectPath: string }) {
       return;
     }
     if (!project.ready || isShortcutTextInputTarget(event.target)) {
+      return;
+    }
+    if (layerInteraction.editing && matchKeyboardEvent(event, "Escape")) {
+      event.preventDefault();
+      layerInteraction.cancelEdit();
       return;
     }
     if (timeline.handleFrameStepShortcut(event)) {
@@ -109,6 +116,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
           />
           <Timeline
             timeline={timeline}
+            layerInteraction={layerInteraction}
             runtime={runtime}
             project={state.project}
             selection={selection}

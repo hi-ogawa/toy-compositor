@@ -1,4 +1,5 @@
 import type { PromiseState } from "../utils/promise-state.ts";
+import type { AudioView } from "./audio-view.ts";
 import type { Layer, Project } from "./project.ts";
 
 /**
@@ -11,8 +12,13 @@ export type EditorLayer = {
   id: string;
   layer: Layer;
   /** The decoded audio of a video or audio layer's source. */
-  audio?: PromiseState<AudioBuffer>;
+  audio?: PromiseState<DecodedAudio>;
 };
+
+export interface DecodedAudio {
+  buffer: AudioBuffer;
+  view: AudioView;
+}
 
 export type EditorProject = Omit<Project, "layers"> & {
   layers: EditorLayer[];

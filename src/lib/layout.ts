@@ -2,11 +2,25 @@ import type { Box, Crop, Layer, Project } from "./project.ts";
 
 export type Range = { start: number; end: number };
 
-export function getOutputRange(project: Project): Range {
+export function getOutputRange(
+  project: Pick<Project, "output" | "canvas">,
+): Range {
   const { output, canvas } = project;
   return output.type === "video"
     ? output
     : { start: output.time, end: output.time + 1 / canvas.fps };
+}
+
+/** Timeline span covering every layer, from the earliest start to the latest end. */
+export function getContentRange(project: Project): Range {
+  if (project.layers.length === 0) {
+    return { start: 0, end: 0 };
+  }
+  const ranges = project.layers.map(getLayerRange);
+  return {
+    start: Math.min(...ranges.map((range) => range.start)),
+    end: Math.max(...ranges.map((range) => range.end)),
+  };
 }
 
 /** Timeline span of a layer, from its source range for video and audio. */

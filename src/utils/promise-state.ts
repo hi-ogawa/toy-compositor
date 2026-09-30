@@ -3,20 +3,14 @@ export type PromiseState<T> =
   | { status: "fulfilled"; value: T }
   | { status: "rejected"; error: unknown };
 
-/**
- * Returns a promise's pending state, and hands its settled state to
- * `onSettled`, so the caller can keep each state as immutable data.
- */
-export function trackPromise<T>({
-  promise,
-  onSettled,
-}: {
-  promise: Promise<T>;
-  onSettled: (state: Exclude<PromiseState<T>, { status: "pending" }>) => void;
-}): PromiseState<T> {
-  void promise.then(
-    (value) => onSettled({ status: "fulfilled", value }),
-    (error: unknown) => onSettled({ status: "rejected", error }),
+/** Reports a promise's state as it changes, so a store can hold it as plain data. */
+export function watchPromise<T>(
+  promise: Promise<T>,
+  onChange: (state: PromiseState<T>) => void,
+): void {
+  onChange({ status: "pending", promise });
+  promise.then(
+    (value) => onChange({ status: "fulfilled", value }),
+    (error: unknown) => onChange({ status: "rejected", error }),
   );
-  return { status: "pending", promise };
 }
