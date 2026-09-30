@@ -161,7 +161,7 @@ Locators are labeled timeline times, like guides in Kdenlive. They do not affect
 
 An entry depends only on the file's contents, so a copied file has the same entry. Facts describe a file, not a layer, so layers that share a file share its entry. Each project file carries its own `media`, so variants such as the thumbnail repeat the entries they share and stay self-contained.
 
-`toy-compositor update-media <project.json...>` fills `media` from the files the layers use, replacing what was there, for example after hand-editing layers or replacing a file.
+`toy-compositor update-media <project.json...>` fills `media` from the files the layers use, replacing what was there, for example after hand-editing layers or replacing a file. When the editor adds a layer for a file without an entry, it probes the file and records one.
 
 ## Box and crop
 
