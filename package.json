@@ -6,8 +6,7 @@
   },
   "files": [
     "dist",
-    "docs/project-format.md",
-    "docs/images/source-timing.svg",
+    "docs",
     "samples/synthetic"
   ],
   "type": "module",
