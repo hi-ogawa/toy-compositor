@@ -21,10 +21,6 @@ import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
 import { VideoPlayback } from "./video-playback.ts";
 
-export type EditorSelection =
-  | { type: "output" }
-  | { type: "layer"; id: string };
-
 /** A project layer with an id that is stable for the session but never saved. */
 export type EditorLayer = Layer & { id: string };
 
@@ -49,7 +45,6 @@ export interface EditorState {
   /** Follows the transport, on the frame grid whenever playback is stopped. */
   playhead: number;
   playing: boolean;
-  selection?: EditorSelection;
   audioSources: Record<string, PromiseState<DecodedAudio>>;
 }
 
@@ -67,7 +62,6 @@ export class EditorRuntime {
     project: EMPTY_PROJECT,
     playhead: 0,
     playing: false,
-    selection: undefined,
     audioSources: {},
   }));
 
@@ -121,7 +115,7 @@ export class EditorRuntime {
   }
 
   /** Probes and records the file's media info first if the project has none. */
-  async addMediaLayer({ src, type }: MediaFile): Promise<void> {
+  async addMediaLayer({ src, type }: MediaFile): Promise<string> {
     const { file } = this.store.get();
     let mediaInfo = this.store.get().project.media[src];
     if (!mediaInfo) {
@@ -132,7 +126,7 @@ export class EditorRuntime {
       });
     }
     const { project, playhead } = this.store.get();
-    this.insertLayer(
+    return this.insertLayer(
       createMediaLayer({
         src,
         type,
@@ -144,29 +138,27 @@ export class EditorRuntime {
     );
   }
 
-  addTextLayer(): void {
+  addTextLayer(): string {
     const { canvas } = this.store.get().project;
-    this.insertLayer(
+    return this.insertLayer(
       createTextLayer({ canvas, range: this.getNewStillRange() }),
     );
   }
 
-  addColorLayer(): void {
-    this.insertLayer(createColorLayer({ range: this.getNewStillRange() }));
+  addColorLayer(): string {
+    return this.insertLayer(
+      createColorLayer({ range: this.getNewStillRange() }),
+    );
   }
 
   removeLayer(id: string): void {
     this.reschedulePlayback(() => {
-      const { project, selection } = this.store.get();
+      const { project } = this.store.get();
       this.store.update({
         project: {
           ...project,
           layers: project.layers.filter((layer) => layer.id !== id),
         },
-        selection:
-          selection?.type === "layer" && selection.id === id
-            ? undefined
-            : selection,
       });
       this.syncPlayback();
     });
@@ -239,10 +231,6 @@ export class EditorRuntime {
     });
   }
 
-  select(selection: EditorSelection | undefined): void {
-    this.store.update({ selection });
-  }
-
   /**
    * Makes a composition `<video>` follow the transport as the video layer
    * `id`, like toy-midi's `attachYouTubePlayer`. Returns its detacher.
@@ -265,19 +253,19 @@ export class EditorRuntime {
     };
   }
 
-  private insertLayer(layer: Layer): void {
+  private insertLayer(layer: Layer): string {
     const id = crypto.randomUUID();
     this.reschedulePlayback(() => {
       const { project } = this.store.get();
       this.store.update({
         project: { ...project, layers: [...project.layers, { ...layer, id }] },
-        selection: { type: "layer", id },
       });
       this.syncPlayback();
     });
     if (layer.type === "video" || layer.type === "audio") {
       this.loadAudio(layer.src);
     }
+    return id;
   }
 
   private getNewStillRange(): TimeRange {
@@ -364,7 +352,6 @@ export class EditorRuntime {
     this.store.update({
       file,
       project: deserializeEditorProject(project),
-      selection: undefined,
     });
     this.syncPlayback();
     this.seek(getOutputRange(project).start);

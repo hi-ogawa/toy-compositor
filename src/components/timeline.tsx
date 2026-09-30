@@ -21,7 +21,6 @@ import type {
   DecodedAudio,
   EditorRuntime,
   EditorLayer,
-  EditorSelection,
   EditorProject,
 } from "../lib/runtime";
 import type { PromiseState } from "../utils/promise-state";
@@ -29,7 +28,10 @@ import { AudioWaveformView } from "./audio-waveform";
 import { LayerTypeIcon } from "./layer-type-icon";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
-import type { LayerInteraction } from "./use-layer-interaction";
+import type {
+  EditorSelection,
+  LayerInteraction,
+} from "./use-layer-interaction";
 import type { LocatorInteraction } from "./use-locator-interaction";
 import { TIMELINE_LABEL_WIDTH, type TimelineView } from "./use-timeline";
 
@@ -43,6 +45,7 @@ export function Timeline({
   playhead,
   playing,
   audioSources,
+  onClearSelection,
 }: {
   timeline: TimelineView;
   layerInteraction: LayerInteraction;
@@ -53,6 +56,7 @@ export function Timeline({
   playhead: number;
   playing: boolean;
   audioSources: Record<string, PromiseState<DecodedAudio>>;
+  onClearSelection: () => void;
 }) {
   const seek = (time: number) => runtime.seek(time);
   return (
@@ -101,7 +105,8 @@ export function Timeline({
             output={project.output}
             locatorInteraction={locatorInteraction}
             renderSelected={selection?.type === "output"}
-            onRenderSelect={() => runtime.select({ type: "output" })}
+            onRenderSelect={() => layerInteraction.select({ type: "output" })}
+            onClearSelection={onClearSelection}
             onSeek={seek}
           />
           <TimelineRuler timeline={timeline} onSeek={seek} />
@@ -125,7 +130,9 @@ export function Timeline({
                 selected={
                   selection?.type === "layer" && selection.id === layer.id
                 }
-                onSelect={() => runtime.select({ type: "layer", id: layer.id })}
+                onSelect={() =>
+                  layerInteraction.select({ type: "layer", id: layer.id })
+                }
               />
             ))}
           {timeline.isVisible(playhead) && (
@@ -203,6 +210,7 @@ function TimelineLocatorRow({
   locatorInteraction,
   renderSelected,
   onRenderSelect,
+  onClearSelection,
   onSeek,
 }: {
   timeline: TimelineView;
@@ -210,6 +218,7 @@ function TimelineLocatorRow({
   locatorInteraction: LocatorInteraction;
   renderSelected: boolean;
   onRenderSelect: () => void;
+  onClearSelection: () => void;
   onSeek: (time: number) => void;
 }) {
   const renderMarkers =
@@ -264,7 +273,7 @@ function TimelineLocatorRow({
         aria-label="Locator row"
         className="absolute inset-0 cursor-crosshair"
         onClick={(event) => {
-          locatorInteraction.select(undefined);
+          onClearSelection();
           onSeek(
             timeline.xToTime(
               event.clientX - event.currentTarget.getBoundingClientRect().left,
