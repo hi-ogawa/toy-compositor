@@ -4,7 +4,7 @@
 
 A project folder holds its project files at the top level and their media under `media/`. Each project file describes one deliverable, such as a video or its thumbnail, and its layers refer to media by paths relative to the folder, such as `media/clip.mp4`. The editor's library lists the files in `media/`.
 
-The editor's start page lists the folders you add with `toy-compositor add`, `toy-compositor serve <folder>`, or the start page itself. It keeps that list in `projects.json` under the user config directory, `~/.config/toy-compositor/` on Linux. The editor only serves files inside the added folders, so a layer whose media sits outside its folder does not load in the editor.
+The editor's start page lists the folders you add with `toy-compositor add`, `toy-compositor serve <folder>`, or the start page itself. It keeps that list in `projects.json` under the user config directory, and `toy-compositor --help` prints its path. The editor only serves files inside the added folders, so a layer whose media sits outside its folder does not load in the editor.
 
 `toy-compositor --help` prints the paths of this doc and of the bundled synthetic sample, a project folder with a video project, `project.json`, and its still thumbnail, `thumbnail.json`.
 

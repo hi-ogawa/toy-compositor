@@ -33,7 +33,8 @@ Usage:
 
 Getting started: ${path.join(packageDir, "docs/getting-started.md")}
 Project format:  ${path.join(packageDir, "docs/project-format.md")}
-Sample project:  ${path.join(packageDir, "samples/synthetic")}`;
+Sample project:  ${path.join(packageDir, "samples/synthetic")}
+Folder list:     ${path.join(getConfigDir(), "projects.json")}`;
 
 async function main() {
   const { positionals, values } = parseArgs({
