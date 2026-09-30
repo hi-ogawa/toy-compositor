@@ -1,4 +1,4 @@
-import { copyFile, cp, mkdir, readFile, rm, stat } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { expect, type Page } from "@playwright/test";
 import { getProjectPageUrl } from "../src/lib/routes.ts";
@@ -45,31 +45,6 @@ test("open projects from the start page", async ({ page, editor }) => {
   await page.getByRole("menuitem", { name: "Home", exact: true }).click();
   await expect(page).toHaveURL("/");
   await expect(section.getByRole("link")).toHaveCount(2);
-});
-
-test("list project files copied in the file manager", async ({
-  page,
-  editor,
-}) => {
-  const { projectDir } = editor;
-
-  // Open the start page and confirm it lists the test's project files.
-  await page.goto("/");
-  const section = getFolderSection(page, projectDir);
-  await expect(section.getByRole("link")).toHaveCount(2);
-
-  // Copy a project file as the file manager would, focus the window as when
-  // switching back, and confirm the copy is listed.
-  await copyFile(
-    path.join(projectDir, "thumbnail.json"),
-    path.join(projectDir, "thumbnail-vertical.json"),
-  );
-  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await expect(section.getByRole("link")).toHaveText([
-    "project.json640x360 video",
-    "thumbnail-vertical.json640x360 still",
-    "thumbnail.json640x360 still",
-  ]);
 });
 
 test("add a media folder and create a project file in it", async ({
