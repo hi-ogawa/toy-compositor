@@ -116,11 +116,7 @@ export class EditorRuntime {
     });
   }
 
-  /**
-   * Adds a layer for a file in `media/` on top of the stack. The file's entry
-   * in the project's `media` is probed and recorded first if the project has
-   * none yet, and the layer's defaults come from it.
-   */
+  /** Probes and records the file's media info first if the project has none. */
   async addMediaLayer({ src, type }: MediaFile): Promise<void> {
     const { file } = this.store.get();
     let mediaInfo = this.store.get().project.media[src];
@@ -155,7 +151,6 @@ export class EditorRuntime {
     this.insertLayer(createColorLayer({ range: this.getNewStillRange() }));
   }
 
-  /** Removes a layer, clearing the selection if it was the selected one. */
   removeLayer(id: string): void {
     this.reschedulePlayback(() => {
       const { project, selection } = this.store.get();
@@ -225,11 +220,7 @@ export class EditorRuntime {
     };
   }
 
-  /**
-   * Puts a new layer on top and selects it. The first video or audio layer of
-   * a project without an output range also sets the output to its own range,
-   * so a new project renders something right away.
-   */
+  /** The first video or audio layer also sets an empty output to its range. */
   private insertLayer(layer: Layer): void {
     const id = crypto.randomUUID();
     this.reschedulePlayback(() => {
@@ -256,11 +247,7 @@ export class EditorRuntime {
     }
   }
 
-  /**
-   * An image, text, or color layer spans the output, which also covers
-   * variants inside it, such as the thumbnail. Without an output range yet, it
-   * lasts five seconds from the playhead.
-   */
+  /** Spans the output, or five seconds from the playhead without one. */
   private getNewStillRange(): TimeRange {
     const { project, playhead } = this.store.get();
     const output = getOutputRange(project);

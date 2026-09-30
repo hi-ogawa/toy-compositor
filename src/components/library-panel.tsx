@@ -93,7 +93,6 @@ export function LibraryPanel({
   );
 }
 
-/** A row that adds its layer from the `+` button or a double-click, while a single click only highlights it. */
 function LibraryItem({
   type,
   label,

@@ -91,7 +91,6 @@ export const apiClient = {
     });
   },
 
-  /** Lists the media files in the project's `media/` folder. */
   async listMediaFiles({
     projectPath,
   }: {
@@ -109,7 +108,6 @@ export const apiClient = {
     return (await res.json()).files;
   },
 
-  /** Opens the project's `media/` folder in the server desktop's file manager. */
   async openMediaFolder({
     projectPath,
   }: {
@@ -127,7 +125,6 @@ export const apiClient = {
     }
   },
 
-  /** Probes a media file on the server into the entry that the project's `media` keeps for it. */
   async loadMediaInfo({
     src,
     projectPath,

@@ -147,7 +147,6 @@ export function Editor({ projectPath }: { projectPath: string }) {
   );
 }
 
-/** The Library tab to add layers from, and the Source tab for the selected layer's file. */
 function LibrarySourceTabs({
   layer,
   runtime,
