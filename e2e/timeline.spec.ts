@@ -64,7 +64,7 @@ test("navigate the timeline without editing the project", async ({
   // it seeks like the ruler.
   await seekTimelineByPixels(page, {
     pixels: 5 * DEFAULT_PIXELS_PER_SECOND,
-    row: "Locator row",
+    name: "Locator row",
   });
   await expect(time).toContainText("5.000 s");
 
@@ -128,7 +128,7 @@ test("clear the selection with Escape or the locator row", async ({
   await expect(thumbnail).toHaveAttribute("aria-pressed", "true");
   await seekTimelineByPixels(page, {
     pixels: 5 * DEFAULT_PIXELS_PER_SECOND,
-    row: "Locator row",
+    name: "Locator row",
   });
   await expect(time).toContainText("5.000 s");
   await expect(thumbnail).toHaveAttribute("aria-pressed", "false");

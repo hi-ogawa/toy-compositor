@@ -171,15 +171,15 @@ export async function seekTimelineByPixels(
   page: Page,
   {
     pixels,
-    row = "Timeline ruler",
-  }: { pixels: number; row?: "Timeline ruler" | "Locator row" },
+    name = "Timeline ruler",
+  }: { pixels: number; name?: "Timeline ruler" | "Locator row" },
 ) {
   await test.step(
-    `Seek timeline to ${pixels}px from ${row}`,
+    `Seek timeline to ${pixels}px from ${name}`,
     async () => {
       const target = page
         .getByTestId("editor-timeline")
-        .getByRole("button", { name: row, exact: true });
+        .getByRole("button", { name, exact: true });
       const box = (await target.boundingBox())!;
       await page.mouse.click(box.x + pixels, box.y + box.height / 2);
     },
