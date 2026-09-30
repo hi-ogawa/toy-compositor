@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
-import { useState } from "react";
 import { apiClient } from "../lib/api-client";
 import type { MediaFile } from "../lib/media-file";
 import type { Layer } from "../lib/project";
@@ -22,7 +21,6 @@ export function LibraryPanel({
   runtime: EditorRuntime;
   projectPath: string;
 }) {
-  const [highlighted, setHighlighted] = useState<string>();
   const filesQuery = useQuery({
     queryKey: ["media-files", projectPath],
     queryFn: () => apiClient.listMediaFiles({ projectPath }),
@@ -63,8 +61,6 @@ export function LibraryPanel({
               type={file.type}
               label={file.src.replace(/^media\//, "")}
               mono
-              highlighted={highlighted === file.src}
-              onHighlight={() => setHighlighted(file.src)}
               onAdd={() => addMediaMutation.mutate(file)}
             />
           ))}
@@ -77,15 +73,11 @@ export function LibraryPanel({
         <LibraryItem
           type="text"
           label="Text"
-          highlighted={highlighted === "text"}
-          onHighlight={() => setHighlighted("text")}
           onAdd={() => runtime.addTextLayer()}
         />
         <LibraryItem
           type="color"
           label="Color"
-          highlighted={highlighted === "color"}
-          onHighlight={() => setHighlighted("color")}
           onAdd={() => runtime.addColorLayer()}
         />
       </ul>
@@ -97,26 +89,15 @@ function LibraryItem({
   type,
   label,
   mono = false,
-  highlighted,
-  onHighlight,
   onAdd,
 }: {
   type: Layer["type"];
   label: string;
   mono?: boolean;
-  highlighted: boolean;
-  onHighlight: () => void;
   onAdd: () => void;
 }) {
   return (
-    <li
-      className={cn(
-        "flex h-7 cursor-default select-none items-center gap-2 pl-3 pr-1.5",
-        highlighted ? "bg-sky-400/15" : "hover:bg-neutral-700/40",
-      )}
-      onClick={onHighlight}
-      onDoubleClick={onAdd}
-    >
+    <li className="flex h-7 cursor-default select-none items-center gap-2 pl-3 pr-1.5 hover:bg-neutral-700/40">
       <LayerTypeIcon type={type} />
       <span className={cn("truncate", mono && "font-mono")} title={label}>
         {label}
@@ -125,11 +106,7 @@ function LibraryItem({
         aria-label={`Add ${label}`}
         title="Add as layer"
         className="ml-auto size-5 shrink-0 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-100"
-        onClick={(event) => {
-          event.stopPropagation();
-          onAdd();
-        }}
-        onDoubleClick={(event) => event.stopPropagation()}
+        onClick={onAdd}
       >
         <PlusIcon className="size-3.5" />
       </Button>

@@ -44,8 +44,10 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     height: "360",
   });
 
-  // Double-click the image row, and confirm the image spans the output.
-  await files.getByText("image.png", { exact: true }).dblclick();
+  // Add the image, and confirm it spans the output.
+  await page
+    .getByRole("button", { name: "Add image.png", exact: true })
+    .click();
   await expectInspectorFields(page, { start: "0", end: "3" });
 
   // Add the built-in text and color layers.
