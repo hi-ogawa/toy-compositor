@@ -10,6 +10,10 @@ import { execFileAsync } from "../../utils/exec.ts";
 export type DialogTool = "zenity" | "osascript";
 
 export function getDialogTool(): DialogTool | undefined {
+  // e2e cannot operate a native dialog, so it runs the server without one.
+  if (process.env.TOY_COMPOSITOR_NO_FOLDER_DIALOG) {
+    return;
+  }
   switch (process.platform) {
     case "linux": {
       // zenity is often not installed, so look for it on PATH.

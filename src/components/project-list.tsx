@@ -47,7 +47,9 @@ export function ProjectList() {
                   <AddFolderDialogButtons dialog={query.data.folderDialog} />
                 )}
               </div>
-              {query.data?.editable && <AddFolderPathForm />}
+              {query.data?.editable && !query.data.folderDialog && (
+                <AddFolderPathForm />
+              )}
             </div>
             <section
               aria-label="Projects"
@@ -125,7 +127,7 @@ function AddFolderDialogButtons({
   );
 }
 
-/** Register a typed folder or project file path, which works without a native dialog. */
+/** Register a typed folder or project file path, for servers without a native dialog. */
 function AddFolderPathForm() {
   const queryClient = useQueryClient();
   const [path, setPath] = useState("");

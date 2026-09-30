@@ -28,7 +28,10 @@ export default defineConfig({
       server === "dev"
         ? `pnpm dev --port ${port} --strictPort`
         : `pnpm build && node dist/server/cli.js serve --port ${port}`,
-    env: { TOY_COMPOSITOR_CONFIG_DIR: configDir },
+    env: {
+      TOY_COMPOSITOR_CONFIG_DIR: configDir,
+      TOY_COMPOSITOR_NO_FOLDER_DIALOG: "1",
+    },
     url: `http://localhost:${port}`,
     reuseExistingServer: false,
     // pnpm forwards SIGTERM to Vite, but SIGKILL leaves it running, so never
