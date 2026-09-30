@@ -59,6 +59,7 @@ export function Inspector({
       return (
         <LayerInspector
           layer={layer}
+          canvas={project.canvas}
           time={time}
           onUpdate={(update) => runtime.updateLayer({ id, update })}
         />
@@ -172,10 +173,12 @@ function OutputInspector({
 
 function LayerInspector({
   layer,
+  canvas,
   time,
   onUpdate,
 }: {
   layer: Layer;
+  canvas: Canvas;
   time: TimeFieldOptions;
   onUpdate: LayerUpdate;
 }) {
@@ -183,7 +186,18 @@ function LayerInspector({
     <div data-testid="inspector">
       <InspectorTitle title={layer.name ?? layer.type} subtitle={layer.type} />
       <div className="flex flex-col gap-4 p-3">
-        <LayerFields layer={layer} time={time} onUpdate={onUpdate} />
+        {/* An empty name removes it, so the layer reads as its type again. */}
+        <TextField
+          label="name"
+          value={layer.name ?? ""}
+          onCommit={(name) => onUpdate({ name: name || undefined })}
+        />
+        <LayerFields
+          layer={layer}
+          canvas={canvas}
+          time={time}
+          onUpdate={onUpdate}
+        />
       </div>
     </div>
   );
@@ -192,10 +206,12 @@ function LayerInspector({
 /** Lists each layer type's groups in display order. */
 function LayerFields({
   layer,
+  canvas,
   time,
   onUpdate,
 }: {
   layer: Layer;
+  canvas: Canvas;
   time: TimeFieldOptions;
   onUpdate: LayerUpdate;
 }) {
@@ -259,6 +275,11 @@ function LayerFields({
         <>
           <RangeTimingFields layer={layer} time={time} onUpdate={onUpdate} />
           <Group title="Fill">
+            <ColorField
+              label="color"
+              value={layer.color}
+              onCommit={(color) => onUpdate({ color })}
+            />
             <NumberField
               label="opacity"
               value={layer.opacity ?? 1}
@@ -271,9 +292,11 @@ function LayerFields({
               }
             />
           </Group>
-          {layer.box && (
-            <BoxFields box={layer.box} onCommit={(box) => onUpdate({ box })} />
-          )}
+          <ColorBoxFields
+            box={layer.box}
+            canvas={canvas}
+            onCommit={(box) => onUpdate({ box })}
+          />
         </>
       );
     }
@@ -499,12 +522,15 @@ function TextFields({
 function BoxFields({
   box,
   onCommit,
+  children,
 }: {
   box: Box;
   onCommit: (box: Box) => void;
+  children?: React.ReactNode;
 }) {
   return (
     <Group title="Box">
+      {children}
       {(["x", "y", "width", "height"] as const).map((key) => (
         <NumberField
           key={key}
@@ -515,6 +541,42 @@ function BoxFields({
         />
       ))}
     </Group>
+  );
+}
+
+/** A color layer fills the canvas until it is given a box. */
+function ColorBoxFields({
+  box,
+  canvas,
+  onCommit,
+}: {
+  box?: Box;
+  canvas: Canvas;
+  onCommit: (box: Box | undefined) => void;
+}) {
+  const toggle = (
+    <label className="col-span-2 flex items-center gap-2 text-xs">
+      <input
+        type="checkbox"
+        checked={!!box}
+        onChange={(e) =>
+          onCommit(
+            e.target.checked
+              ? { x: 0, y: 0, width: canvas.width, height: canvas.height }
+              : undefined,
+          )
+        }
+      />
+      box
+    </label>
+  );
+  if (!box) {
+    return <Group title="Box">{toggle}</Group>;
+  }
+  return (
+    <BoxFields box={box} onCommit={onCommit}>
+      {toggle}
+    </BoxFields>
   );
 }
 
