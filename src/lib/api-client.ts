@@ -1,5 +1,6 @@
-import type { MediaFile } from "./media-file.ts";
-import type { MediaInfo, Output, Project } from "./project.ts";
+import type { Output, Project } from "./project.ts";
+import { createRpcProxy } from "./rpc.ts";
+import type { EditorHandlers } from "./server/api.ts";
 
 export type ProjectFile = { file: string; project: Project };
 
@@ -13,159 +14,46 @@ export type ProjectEntry = {
 
 export type ProjectList = { root: string; projects: ProjectEntry[] };
 
-/** Client for the editor server's `/api/` routes. */
-export const apiClient = {
-  async listProjects(): Promise<ProjectList> {
-    const res = await fetch("/api/projects");
-    if (!res.ok) {
-      throw new Error(`Failed to list projects: ${await res.text()}`);
-    }
-    return res.json();
-  },
-
-  async loadProject({ path }: { path: string }): Promise<ProjectFile> {
-    const res = await fetch(
-      getApiUrl({ pathname: "/api/project", params: { path } }),
-    );
-    if (!res.ok) {
-      throw new Error(`Failed to load project: ${await res.text()}`);
-    }
-    return { file: path, project: await res.json() };
-  },
-
-  async saveProject({
-    path,
-    project,
-  }: {
-    path: string;
-    project: Project;
-  }): Promise<void> {
-    const res = await fetch(
-      getApiUrl({ pathname: "/api/project", params: { path } }),
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(project),
-      },
-    );
-    if (!res.ok) {
-      throw new Error(`Failed to save project: ${await res.text()}`);
-    }
-  },
-
-  /** Creates a project file, failing if it already exists. */
-  async createProject({
-    path,
-    project,
-  }: {
-    path: string;
-    project: Project;
-  }): Promise<void> {
-    const res = await fetch(
-      getApiUrl({ pathname: "/api/project", params: { path } }),
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(project),
-      },
-    );
-    if (!res.ok) {
-      throw new Error(`Failed to create project: ${await res.text()}`);
-    }
-  },
-
-  /**
-   * The server resolves a layer source against the project's directory, as the
-   * renderer does, so `src` is a file path everywhere.
-   */
-  getMediaUrl({
-    src,
-    projectPath,
-  }: {
-    src: string;
-    projectPath: string;
-  }): string {
-    return getApiUrl({
-      pathname: "/api/media",
-      params: { project: projectPath, src },
+/** Client for the editor server's RPC methods at `/api/rpc/<method>`. */
+export const apiClient = createRpcProxy<EditorHandlers>(
+  async (method, params) => {
+    const res = await fetch(`/api/rpc/${method}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params ?? {}),
     });
-  },
-
-  async listMediaFiles({
-    projectPath,
-  }: {
-    projectPath: string;
-  }): Promise<MediaFile[]> {
-    const res = await fetch(
-      getApiUrl({
-        pathname: "/api/media-files",
-        params: { project: projectPath },
-      }),
-    );
     if (!res.ok) {
-      throw new Error(`Failed to list media files: ${await res.text()}`);
-    }
-    return (await res.json()).files;
-  },
-
-  async openMediaFolder({
-    projectPath,
-  }: {
-    projectPath: string;
-  }): Promise<void> {
-    const res = await fetch(
-      getApiUrl({
-        pathname: "/api/open-media-folder",
-        params: { project: projectPath },
-      }),
-      { method: "POST" },
-    );
-    if (!res.ok) {
-      throw new Error(`Failed to open the media folder: ${await res.text()}`);
-    }
-  },
-
-  async loadMediaInfo({
-    src,
-    projectPath,
-  }: {
-    src: string;
-    projectPath: string;
-  }): Promise<MediaInfo> {
-    const res = await fetch(
-      getApiUrl({
-        pathname: "/api/media-info",
-        params: { project: projectPath, src },
-      }),
-    );
-    if (!res.ok) {
-      throw new Error(`Failed to load media info: ${await res.text()}`);
+      throw new Error(await res.text());
     }
     return res.json();
   },
+);
 
-  /** Fetches a video or audio source's encoded bytes for decoding its audio. */
-  async loadAudioData({
-    src,
-    projectPath,
-  }: {
-    src: string;
-    projectPath: string;
-  }): Promise<ArrayBuffer> {
-    const res = await fetch(apiClient.getMediaUrl({ src, projectPath }));
-    if (!res.ok) {
-      throw new Error(`Failed to load audio data: ${await res.text()}`);
-    }
-    return res.arrayBuffer();
-  },
-};
-
-function getApiUrl({
-  pathname,
-  params,
+/**
+ * The server resolves a layer source against the project's directory, as the
+ * renderer does, so `src` is a file path everywhere.
+ */
+export function getMediaUrl({
+  src,
+  projectPath,
 }: {
-  pathname: string;
-  params: Record<string, string>;
+  src: string;
+  projectPath: string;
 }): string {
-  return `${pathname}?${new URLSearchParams(params)}`;
+  return `/api/media?${new URLSearchParams({ project: projectPath, src })}`;
+}
+
+/** Fetches a video or audio source's encoded bytes for decoding its audio. */
+export async function loadAudioData({
+  src,
+  projectPath,
+}: {
+  src: string;
+  projectPath: string;
+}): Promise<ArrayBuffer> {
+  const res = await fetch(getMediaUrl({ src, projectPath }));
+  if (!res.ok) {
+    throw new Error(`Failed to load audio data: ${await res.text()}`);
+  }
+  return res.arrayBuffer();
 }

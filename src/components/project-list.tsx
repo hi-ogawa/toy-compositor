@@ -91,7 +91,8 @@ function NewProjectMenu() {
     onSuccess: (_, { path }) => {
       window.location.href = getProjectPageUrl({ path });
     },
-    onError: (error) => window.alert(error.message),
+    onError: (error) =>
+      window.alert(`Failed to create project: ${error.message}`),
   });
   return (
     <DropdownMenu>

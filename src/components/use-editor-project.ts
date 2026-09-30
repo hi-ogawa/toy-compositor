@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { apiClient } from "../lib/api-client";
+import { apiClient, getMediaUrl } from "../lib/api-client";
 import { validateMedia } from "../lib/project";
 import type { EditorRuntime } from "../lib/runtime";
 import { useWindowEvent } from "./use-window-event";
@@ -75,7 +75,6 @@ export function useEditorProject({
     ready: projectQuery.isSuccess,
     save: saveMutation.mutate,
     saveStatus,
-    resolveMediaUrl: (src: string) =>
-      apiClient.getMediaUrl({ src, projectPath }),
+    resolveMediaUrl: (src: string) => getMediaUrl({ src, projectPath }),
   };
 }
