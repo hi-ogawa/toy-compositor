@@ -171,6 +171,8 @@ An entry depends only on the file's contents, so a copied file has the same entr
 
 ## Hold
 
+The prototype does not implement this yet, so the compiler ignores `hold`.
+
 A video layer can keep showing its first frame before `start` and its last frame after its source range ends, so a clip without lead-in or tail, such as the toy-midi score video, still covers the whole output.
 
 ```jsonc
@@ -185,4 +187,4 @@ A video layer can keep showing its first frame before `start` and its last frame
 }
 ```
 
-`before` and `after` are durations in seconds, and they compile to `tpad` with `clone` mode. The prototype does not implement this yet.
+`before` and `after` are durations in seconds, and they will compile to `tpad` with `clone` mode.

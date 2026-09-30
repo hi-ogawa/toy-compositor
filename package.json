@@ -5,7 +5,10 @@
     "toy-compositor": "./dist/server/cli.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "docs/project-format.md",
+    "docs/images/source-timing.svg",
+    "samples/synthetic"
   ],
   "type": "module",
   "scripts": {

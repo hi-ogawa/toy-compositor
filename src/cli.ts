@@ -10,6 +10,8 @@ import { openWithDefaultApp } from "./lib/server/open-default.ts";
 import { createProjectRegistry, getConfigDir } from "./lib/server/registry.ts";
 import { checkEditorServer, serveEditor } from "./lib/server/serve.ts";
 
+const packageDir = getPackageDir();
+
 const HELP = `\
 Usage:
   toy-compositor serve [directory] [--port <port>] [--open]
@@ -23,7 +25,22 @@ Usage:
   toy-compositor render <project.json> <output> [--dry-run]
       Render a project to a video or still with ffmpeg
   toy-compositor update-media <project.json...>
-      Record media info for the files that layers use in each project`;
+      Record media info for the files that layers use in each project
+
+Getting started:
+  1. Put media files in a folder's media/ directory.
+  2. Write a project JSON in the folder with src paths such as media/clip.mp4,
+     starting from a copy of the sample project and following the format doc.
+  3. Run update-media on it. The editor and renderer reject a project until it
+     has media info, and it needs a rerun whenever media changes.
+  4. Render a still, like the sample's thumbnail.json, to a .png to check the
+     layout, then render the video to an .mp4.
+  5. Run serve or add on the folder to adjust the layout in the editor.
+
+Rendering needs ffmpeg, ffprobe, and ImageMagick (magick) on PATH.
+
+Format doc: ${path.join(packageDir, "docs/project-format.md")}
+Sample:     ${path.join(packageDir, "samples/synthetic")}`;
 
 async function main() {
   const { positionals, values } = parseArgs({
@@ -136,6 +153,16 @@ async function runServe({
     console.log("Closing after the last editor tab closed");
     await server.close(true);
   }
+}
+
+// The CLI runs from src/ in development and from dist/server/ when built,
+// and the package's docs and samples sit next to either under package.json.
+function getPackageDir() {
+  let dir = import.meta.dirname;
+  while (!fs.existsSync(path.join(dir, "package.json"))) {
+    dir = path.dirname(dir);
+  }
+  return dir;
 }
 
 // The build places the client next to the bundled CLI.
