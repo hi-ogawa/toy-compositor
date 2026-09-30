@@ -1,4 +1,5 @@
 import type {
+  Canvas,
   AudioLayer,
   Box,
   ColorLayer,
@@ -62,8 +63,6 @@ export function Inspector({
     }
   }
 }
-
-type Canvas = Project["canvas"];
 
 type Output = Project["output"];
 

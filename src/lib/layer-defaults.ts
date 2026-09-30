@@ -1,14 +1,12 @@
 import { fitBox, type Range } from "./layout.ts";
 import type { MediaType } from "./media-file.ts";
 import type {
+  Canvas,
   ColorLayer,
   Layer,
   MediaInfo,
-  Project,
   TextLayer,
 } from "./project.ts";
-
-type Canvas = Project["canvas"];
 
 /**
  * A layer for a media file, named after the file. A video or audio layer plays
