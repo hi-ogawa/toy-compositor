@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { matchKeyboardEvent } from "../lib/keyboard";
 import type {
   Canvas,
   AudioLayer,
@@ -11,6 +13,7 @@ import type {
   VideoLayer,
 } from "../lib/project";
 import type { EditorRuntime, EditorProject } from "../lib/runtime";
+import { cn } from "./ui/utils";
 import { useDraftInput } from "./use-draft-input";
 import type { EditorSelection } from "./use-layer-interaction";
 
@@ -53,6 +56,7 @@ export function Inspector({
       return (
         <LayerInspector
           layer={layer}
+          canvas={project.canvas}
           time={time}
           onUpdate={(update) => runtime.updateLayer({ id, update })}
         />
@@ -166,10 +170,12 @@ function OutputInspector({
 
 function LayerInspector({
   layer,
+  canvas,
   time,
   onUpdate,
 }: {
   layer: Layer;
+  canvas: Canvas;
   time: TimeFieldOptions;
   onUpdate: LayerUpdate;
 }) {
@@ -177,7 +183,18 @@ function LayerInspector({
     <div data-testid="inspector">
       <InspectorTitle title={layer.name ?? layer.type} subtitle={layer.type} />
       <div className="flex flex-col gap-4 p-3">
-        <LayerFields layer={layer} time={time} onUpdate={onUpdate} />
+        {/* An empty name removes it, so the layer reads as its type again. */}
+        <TextField
+          label="name"
+          value={layer.name ?? ""}
+          onCommit={(name) => onUpdate({ name: name || undefined })}
+        />
+        <LayerFields
+          layer={layer}
+          canvas={canvas}
+          time={time}
+          onUpdate={onUpdate}
+        />
       </div>
     </div>
   );
@@ -186,10 +203,12 @@ function LayerInspector({
 /** Lists each layer type's groups in display order. */
 function LayerFields({
   layer,
+  canvas,
   time,
   onUpdate,
 }: {
   layer: Layer;
+  canvas: Canvas;
   time: TimeFieldOptions;
   onUpdate: LayerUpdate;
 }) {
@@ -231,6 +250,7 @@ function LayerFields({
       return (
         <>
           <RangeTimingFields layer={layer} time={time} onUpdate={onUpdate} />
+          <TextFields layer={layer} onUpdate={onUpdate} />
           <Group title="Box">
             {(["x", "y", "width"] as const).map((key) => (
               <NumberField
@@ -252,6 +272,11 @@ function LayerFields({
         <>
           <RangeTimingFields layer={layer} time={time} onUpdate={onUpdate} />
           <Group title="Fill">
+            <ColorField
+              label="color"
+              value={layer.color}
+              onCommit={(color) => onUpdate({ color })}
+            />
             <NumberField
               label="opacity"
               value={layer.opacity ?? 1}
@@ -264,9 +289,11 @@ function LayerFields({
               }
             />
           </Group>
-          {layer.box && (
-            <BoxFields box={layer.box} onCommit={(box) => onUpdate({ box })} />
-          )}
+          <ColorBoxFields
+            box={layer.box}
+            canvas={canvas}
+            onCommit={(box) => onUpdate({ box })}
+          />
         </>
       );
     }
@@ -370,15 +397,137 @@ function AudioFields({
   );
 }
 
+function TextFields({
+  layer,
+  onUpdate,
+}: {
+  layer: TextLayer;
+  onUpdate: LayerUpdate;
+}) {
+  const { font, outline } = layer;
+  const align = layer.align ?? "left";
+  return (
+    <>
+      <Group title="Text">
+        <TextField
+          label="text"
+          value={layer.text}
+          multiline
+          onCommit={(text) => onUpdate({ text })}
+        />
+        <div
+          role="group"
+          aria-label="Text align"
+          className="col-span-2 grid grid-cols-3 gap-1"
+        >
+          {(["left", "center", "right"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={align === value}
+              onClick={() =>
+                onUpdate({ align: value === "left" ? undefined : value })
+              }
+              className="h-8 rounded border border-neutral-600 bg-neutral-900 text-xs text-neutral-400 outline-none hover:bg-neutral-800 focus-visible:border-ring aria-pressed:bg-neutral-700 aria-pressed:text-neutral-100"
+            >
+              {value}
+            </button>
+          ))}
+        </div>
+        <ColorField
+          label="color"
+          value={layer.color}
+          onCommit={(color) => onUpdate({ color })}
+        />
+      </Group>
+      <Group title="Font">
+        <TextField
+          label="family"
+          value={font.family}
+          onCommit={(family) => onUpdate({ font: { ...font, family } })}
+        />
+        <NumberField
+          label="size"
+          value={font.size}
+          {...PIXEL_FIELD}
+          min={1}
+          onCommit={(size) => onUpdate({ font: { ...font, size } })}
+        />
+        <label className="flex flex-col gap-1">
+          <span className="text-[10px] text-neutral-400">weight</span>
+          {/* The renderer maps only these weights to font faces. */}
+          <select
+            aria-label="weight"
+            className="h-8 w-full min-w-0 rounded border border-neutral-600 bg-neutral-900 px-1 text-sm outline-none focus-visible:border-ring"
+            value={font.weight ?? 400}
+            onChange={(e) => {
+              const weight = Number(e.target.value);
+              onUpdate({
+                font: { ...font, weight: weight === 400 ? undefined : weight },
+              });
+            }}
+          >
+            {[300, 400, 500, 700, 900].map((weight) => (
+              <option key={weight} value={weight}>
+                {weight}
+              </option>
+            ))}
+          </select>
+        </label>
+        <NumberField
+          label="line spacing"
+          value={font.lineSpacing ?? 0}
+          {...PIXEL_FIELD}
+          onCommit={(lineSpacing) =>
+            onUpdate({
+              font: { ...font, lineSpacing: lineSpacing || undefined },
+            })
+          }
+        />
+      </Group>
+      <Group title="Outline">
+        <NumberField
+          label="outline width"
+          value={outline?.width ?? 0}
+          step={1}
+          min={0}
+          round={(value) => roundTo(value, 0.1)}
+          onCommit={(width) =>
+            onUpdate({
+              outline: width
+                ? { color: outline?.color ?? "#000000", width }
+                : undefined,
+            })
+          }
+        />
+        {/* A color without a width would draw nothing, so it waits for a width. */}
+        <ColorField
+          label="outline color"
+          value={outline?.color ?? "#000000"}
+          disabled={!outline}
+          onCommit={(color) => {
+            if (outline) {
+              onUpdate({ outline: { ...outline, color } });
+            }
+          }}
+        />
+      </Group>
+    </>
+  );
+}
+
 function BoxFields({
   box,
   onCommit,
+  children,
 }: {
   box: Box;
   onCommit: (box: Box) => void;
+  children?: React.ReactNode;
 }) {
   return (
     <Group title="Box">
+      {children}
       {(["x", "y", "width", "height"] as const).map((key) => (
         <NumberField
           key={key}
@@ -389,6 +538,42 @@ function BoxFields({
         />
       ))}
     </Group>
+  );
+}
+
+/** A color layer fills the canvas until it is given a box. */
+function ColorBoxFields({
+  box,
+  canvas,
+  onCommit,
+}: {
+  box?: Box;
+  canvas: Canvas;
+  onCommit: (box: Box | undefined) => void;
+}) {
+  const toggle = (
+    <label className="col-span-2 flex items-center gap-2 text-xs">
+      <input
+        type="checkbox"
+        checked={!!box}
+        onChange={(e) =>
+          onCommit(
+            e.target.checked
+              ? { x: 0, y: 0, width: canvas.width, height: canvas.height }
+              : undefined,
+          )
+        }
+      />
+      box
+    </label>
+  );
+  if (!box) {
+    return <Group title="Box">{toggle}</Group>;
+  }
+  return (
+    <BoxFields box={box} onCommit={onCommit}>
+      {toggle}
+    </BoxFields>
   );
 }
 
@@ -473,6 +658,94 @@ function NumberField({
         aria-label={label}
         className="h-8 w-full min-w-0 rounded border border-neutral-600 bg-neutral-900 px-2 font-mono text-sm tabular-nums outline-none focus-visible:border-ring"
         {...input.props}
+      />
+    </label>
+  );
+}
+
+/**
+ * Commits on blur or Enter like NumberField. A multiline field keeps Enter for
+ * line breaks, so it commits only on blur.
+ */
+function TextField({
+  label,
+  value,
+  multiline,
+  onCommit,
+}: {
+  label: string;
+  value: string;
+  multiline?: boolean;
+  onCommit: (value: string) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  const props = {
+    "aria-label": label,
+    value: draft,
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setDraft(e.target.value),
+    onKeyDown: (
+      e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+    ) => {
+      if (matchKeyboardEvent(e, "Escape")) {
+        setDraft(value);
+        e.currentTarget.blur();
+      } else if (!multiline && matchKeyboardEvent(e, "Enter")) {
+        e.currentTarget.blur();
+      }
+    },
+    onBlur: () => {
+      if (draft !== value) {
+        onCommit(draft);
+      }
+    },
+  };
+  return (
+    <label className={cn("flex flex-col gap-1", multiline && "col-span-2")}>
+      <span className="text-[10px] text-neutral-400">{label}</span>
+      {multiline ? (
+        <textarea
+          rows={3}
+          className="w-full min-w-0 resize-y rounded border border-neutral-600 bg-neutral-900 px-2 py-1 text-sm outline-none focus-visible:border-ring"
+          {...props}
+        />
+      ) : (
+        <input
+          type="text"
+          className="h-8 w-full min-w-0 rounded border border-neutral-600 bg-neutral-900 px-2 text-sm outline-none focus-visible:border-ring"
+          {...props}
+        />
+      )}
+    </label>
+  );
+}
+
+function ColorField({
+  label,
+  value,
+  disabled,
+  onCommit,
+}: {
+  label: string;
+  value: string;
+  disabled?: boolean;
+  onCommit: (value: string) => void;
+}) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-[10px] text-neutral-400">{label}</span>
+      <input
+        type="color"
+        aria-label={label}
+        disabled={disabled}
+        className="h-8 w-full min-w-0 cursor-pointer rounded border border-neutral-600 bg-neutral-900 px-1 outline-none focus-visible:border-ring disabled:cursor-default disabled:opacity-50"
+        value={value}
+        onChange={(e) => onCommit(e.target.value)}
       />
     </label>
   );
