@@ -13,7 +13,13 @@ A small video compositor that composes finished media from a JSON project, with 
 
 ```sh
 pnpm add -g https://pkg.pr.new/hi-ogawa/toy-compositor@main
-toy-compositor --help
+toy-compositor --help                          # getting started, and the bundled format doc and sample
+toy-compositor serve [directory]               # open the editor, adding directory first
+toy-compositor serve --open                    # open it in the browser, exiting after the last tab
+toy-compositor install-desktop                 # add an app launcher entry that runs serve --open (Linux)
+toy-compositor add <path>                      # add a project folder, or a project file's folder
+toy-compositor render <project.json> <output>  # .mp4 or .png
+toy-compositor update-media <project.json...>  # record the media info layers use
 ```
 
 ## Development
