@@ -551,7 +551,6 @@ function getTimelineGridBackground(
   };
 }
 
-/** A locator or render marker, dragged with frame snapping like toy-midi's locator marker. */
 function LocatorMarker({
   label,
   time,

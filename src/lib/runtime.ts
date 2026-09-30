@@ -198,7 +198,6 @@ export class EditorRuntime {
     );
   }
 
-  /** Appends a numbered locator, like toy-midi's `addLocator`, and returns its id. */
   addLocator(time: number): string {
     const { project } = this.store.get();
     const { locators } = project;

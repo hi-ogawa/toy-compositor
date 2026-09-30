@@ -8,9 +8,8 @@ import { clamp } from "../utils/math";
 export type RenderMarkerType = "start" | "end" | "time";
 
 /**
- * Adds, moves, renames, and deletes locators, and moves the render markers,
- * like toy-midi's `useRecorderLocatorInteraction`. Moves apply as they drag,
- * because neither locators nor the output reschedule playback.
+ * Moves apply to the project as they drag, without a draft like layer edits
+ * keep, because neither locators nor the output reschedule playback.
  */
 export function useLocatorInteraction({
   runtime,
@@ -23,8 +22,8 @@ export function useLocatorInteraction({
   const { project, playhead } = state;
   const { fps } = project.canvas;
 
-  // Selecting a layer or the output clears the locator selection, like
-  // toy-midi's clearing across selection domains.
+  // Layer and output selection live in the runtime, so a selection there
+  // takes over from the locator selection kept here.
   if (state.selection && selectedId !== undefined) {
     setSelectedId(undefined);
   }
@@ -64,7 +63,6 @@ export function useLocatorInteraction({
     return true;
   }
 
-  /** Keeps render start at least one frame before render end, and the reverse. */
   function moveRenderMarker(type: RenderMarkerType, time: number) {
     runtime.setOutput(getMovedOutput(project.output, { type, time, fps }));
   }
