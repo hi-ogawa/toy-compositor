@@ -2,7 +2,11 @@ import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
 import { getLayerRange } from "../lib/layout";
 import type { Canvas, Layer, Project, TextLayer } from "../lib/project";
-import type { EditorRuntime, EditorSelection } from "../lib/runtime";
+import type {
+  EditorRuntime,
+  EditorSelection,
+  EditorProject,
+} from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
 
 export function CompositionPreview({
@@ -12,7 +16,7 @@ export function CompositionPreview({
   runtime,
   resolveMediaUrl,
 }: {
-  project: Project;
+  project: EditorProject;
   selection?: EditorSelection;
   time: number;
   runtime: EditorRuntime;
@@ -70,13 +74,14 @@ export function CompositionPreview({
                 const range = getLayerRange(layer);
                 return (
                   <PreviewLayer
-                    key={"src" in layer ? `${index}:${layer.src}` : index}
+                    key={layer.id}
                     layer={layer}
                     visible={time >= range.start && time < range.end}
                     runtime={runtime}
                     selected={
-                      selection?.type === "layer" && selection.index === index
+                      selection?.type === "layer" && selection.id === layer.id
                     }
+                    id={layer.id}
                     index={index}
                     canvas={canvas}
                     mediaInfoMap={project.media}
@@ -97,6 +102,7 @@ function PreviewLayer({
   visible,
   runtime,
   selected,
+  id,
   index,
   canvas,
   mediaInfoMap,
@@ -106,6 +112,8 @@ function PreviewLayer({
   visible: boolean;
   runtime: EditorRuntime;
   selected: boolean;
+  id: string;
+  /** Position in the project, for test ids. */
   index: number;
   canvas: Canvas;
   mediaInfoMap: Project["media"];
@@ -134,7 +142,7 @@ function PreviewLayer({
           layer={layer}
           mediaInfo={mediaInfoMap[layer.src]}
           runtime={runtime}
-          index={index}
+          id={id}
           resolveMediaUrl={resolveMediaUrl}
         />
       ) : layer.type === "text" ? (

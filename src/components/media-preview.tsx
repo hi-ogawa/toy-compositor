@@ -1,6 +1,7 @@
 import { PanelLeftCloseIcon } from "lucide-react";
 import { useState } from "react";
 import type { Layer } from "../lib/project";
+import type { EditorLayer } from "../lib/runtime";
 import { Button } from "./ui/button";
 
 export function MediaPreview({
@@ -8,7 +9,7 @@ export function MediaPreview({
   resolveMediaUrl,
   onCollapse,
 }: {
-  layer?: Layer;
+  layer?: EditorLayer;
   resolveMediaUrl: (src: string) => string;
   onCollapse: () => void;
 }) {
@@ -42,9 +43,9 @@ export function MediaPreview({
         </Button>
       </div>
       {source ? (
-        // Remounts per source so a load failure does not carry over.
+        // Remounts per layer so a load failure does not carry over.
         <SourceMedia
-          key={`${source.type}:${source.src}`}
+          key={source.id}
           layer={source}
           resolveMediaUrl={resolveMediaUrl}
         />

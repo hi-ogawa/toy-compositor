@@ -66,4 +66,3 @@ EditorRuntime              runtime.ts                source loading, restarts ar
 - The transport publishes the playhead through the editor store, so the editor re-renders on every animation frame while playing, like toy-midi's recorder.
 - A video starts 50 to 90 ms behind the sound right after Play and catches up within a few seconds, because the element takes that long to start.
 - Each video and audio source decodes whole into memory, about 60MB for a 3-minute stereo mix, and a video source is downloaded in full for its audio (#85).
-- Layers are keyed by index, which holds until layers can be added or reordered.
