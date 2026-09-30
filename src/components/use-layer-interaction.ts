@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import { applyLayerEdit, type LayerEditType } from "../lib/layer-edit";
 import type { Layer } from "../lib/project";
@@ -35,17 +35,6 @@ export function useLayerInteraction({
   const [selection, setSelection] = useState<EditorSelection>();
   const { layers, canvas, media: mediaInfoMap } = state.project;
   const getLayer = (id: string) => layers.find((layer) => layer.id === id)!;
-
-  // Drop a layer selection whose layer is gone, such as after loading a
-  // project, like toy-midi's clip interaction.
-  useEffect(() => {
-    setSelection((current) =>
-      current?.type === "layer" &&
-      !layers.some((layer) => layer.id === current.id)
-        ? undefined
-        : current,
-    );
-  }, [layers]);
 
   function select(selection: EditorSelection) {
     onSelect();

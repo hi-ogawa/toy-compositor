@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import type { Output } from "../lib/project";
 import type { EditorRuntime, EditorState } from "../lib/runtime";
@@ -24,15 +24,6 @@ export function useLocatorInteraction({
   const [selectedId, setSelectedId] = useState<string>();
   const { project, playhead } = state;
   const { fps } = project.canvas;
-
-  // Drop a selected locator that is gone, such as after loading a project.
-  useEffect(() => {
-    setSelectedId((current) =>
-      project.locators.some((locator) => locator.id === current)
-        ? current
-        : undefined,
-    );
-  }, [project.locators]);
 
   function select(id: string | undefined) {
     if (id !== undefined) {
