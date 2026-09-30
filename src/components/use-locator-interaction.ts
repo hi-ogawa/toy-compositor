@@ -19,7 +19,7 @@ export function useLocatorInteraction({
   state: EditorState;
 }) {
   const [selectedId, setSelectedId] = useState<string>();
-  const { project, playhead } = state;
+  const { project } = state;
   const { fps } = project.canvas;
 
   // Layer and output selection live in the runtime, so a selection there
@@ -36,7 +36,7 @@ export function useLocatorInteraction({
   }
 
   function add() {
-    select(runtime.addLocator(snapToFrame(playhead, fps)));
+    select(runtime.addLocator());
   }
 
   function move(id: string, time: number) {
