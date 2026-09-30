@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { installDesktopEntry } from "./lib/desktop-entry.ts";
 import { updateProjectMedia } from "./lib/media-info.ts";
@@ -9,8 +10,6 @@ import { createLiveConnections } from "./lib/server/live.ts";
 import { openWithDefaultApp } from "./lib/server/open-default.ts";
 import { createProjectRegistry, getConfigDir } from "./lib/server/registry.ts";
 import { checkEditorServer, serveEditor } from "./lib/server/serve.ts";
-
-const packageDir = getPackageDir();
 
 const HELP = `\
 Usage:
@@ -39,8 +38,8 @@ Getting started:
 
 Rendering needs ffmpeg, ffprobe, and ImageMagick (magick) on PATH.
 
-Format doc: ${path.join(packageDir, "docs/project-format.md")}
-Sample:     ${path.join(packageDir, "samples/synthetic")}`;
+Format doc: ${fileURLToPath(import.meta.resolve("#project-format"))}
+Sample:     ${path.dirname(fileURLToPath(import.meta.resolve("#sample-project")))}`;
 
 async function main() {
   const { positionals, values } = parseArgs({
@@ -153,16 +152,6 @@ async function runServe({
     console.log("Closing after the last editor tab closed");
     await server.close(true);
   }
-}
-
-// The CLI runs from src/ in development and from dist/server/ when built,
-// and the package's docs and samples sit next to either under package.json.
-function getPackageDir() {
-  let dir = import.meta.dirname;
-  while (!fs.existsSync(path.join(dir, "package.json"))) {
-    dir = path.dirname(dir);
-  }
-  return dir;
 }
 
 // The build places the client next to the bundled CLI.
