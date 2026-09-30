@@ -6,6 +6,7 @@ import type { NodeHttp1Handler } from "srvx";
 import { toNodeHandler } from "srvx/node";
 import { defineConfig, type Plugin } from "vite";
 import { createEditorHandler } from "./src/lib/server/api.ts";
+import { createLiveConnections } from "./src/lib/server/live.ts";
 import {
   createProjectRegistry,
   getConfigDir,
@@ -53,7 +54,8 @@ function editorApi(): Plugin {
         }
       }
       const handler = toNodeHandler(
-        createEditorHandler({ registry }),
+        // Tabs connect to the dev server too, which never exits on its own.
+        createEditorHandler({ registry, live: createLiveConnections() }),
       ) as NodeHttp1Handler;
       server.middlewares.use(async (req, res, next) => {
         const url = new URL(req.url ?? "/", "http://localhost");

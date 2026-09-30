@@ -5,25 +5,28 @@ import { getMediaType, type MediaFile } from "../media-file.ts";
 import { probeMediaInfo } from "../media-info.ts";
 import type { MediaInfo, Output, Project } from "../project.ts";
 import { getDialogTool, pickProjectPath } from "./dialog.ts";
-import { openInFileManager } from "./file-manager.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
+import type { LiveConnections } from "./live.ts";
+import { openWithDefaultApp } from "./open-default.ts";
 import type { ProjectRegistry } from "./registry.ts";
 
 /**
- * Editor API over the registered project folders. A project folder holds its
- * project files at the top level and media next to them, and only files inside
- * a registered folder are served or saved. Project files are named by
- * absolute path, so a file path is never encoded as a URL path.
  *
  * - `POST /api/rpc/<method>` calls one of `createEditorHandlers`' methods with
  *   the JSON body as its params, and answers with its JSON result.
  * - `GET /api/media?project=&src=` serves a layer source resolved against the
  *   project folder, as the renderer does, with range requests.
+ * - `GET /api/live` holds an event stream open for as long as the tab that
+ *   requested it is open.
+ * - `GET /api/server` answers `{ "name": "toy-compositor" }`, so the CLI can
+ *   tell an editor server apart from another process on its port.
  */
 export function createEditorHandler({
   registry,
+  live,
 }: {
   registry: ProjectRegistry;
+  live: LiveConnections;
 }) {
   const handlers = createEditorHandlers({ registry });
   return async (request: Request): Promise<Response> => {
@@ -38,6 +41,12 @@ export function createEditorHandler({
         case "HEAD /api/media": {
           return await handleMedia({ registry, url, request });
         }
+        case "GET /api/live": {
+          return live.handleRequest();
+        }
+        case "GET /api/server": {
+          return Response.json({ name: SERVER_NAME });
+        }
         default: {
           return new Response(undefined, { status: 404 });
         }
@@ -47,6 +56,8 @@ export function createEditorHandler({
     }
   };
 }
+
+export const SERVER_NAME = "toy-compositor";
 
 export type EditorHandlers = ReturnType<typeof createEditorHandlers>;
 
@@ -154,7 +165,7 @@ export function createEditorHandlers({
     }: {
       directory: string;
     }): Promise<void> {
-      await openInFileManager(await registry.resolveFolder(directory));
+      await openWithDefaultApp(await registry.resolveFolder(directory));
     },
 
     async loadProject({
@@ -246,7 +257,7 @@ export function createEditorHandlers({
     }): Promise<void> {
       const dir = await resolveMediaFolder({ registry, projectPath });
       await fs.promises.mkdir(dir, { recursive: true });
-      await openInFileManager(dir);
+      await openWithDefaultApp(dir);
     },
   };
 }
