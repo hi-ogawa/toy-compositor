@@ -2,15 +2,9 @@ import { watchPromise, type PromiseState } from "../utils/promise-state.ts";
 import { createStore, shallowEqual } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
-import { createAudioView } from "./audio-view.ts";
-import {
-  deserializeEditorProject,
-  serializeEditorProject,
-  type DecodedAudio,
-  type EditorLayer,
-  type EditorProject,
-} from "./editor-project.ts";
+import { createAudioView, type AudioView } from "./audio-view.ts";
 import { getContentRange, getOutputRange } from "./layout.ts";
+import { deserializeEditorState, serializeEditorState } from "./persistence.ts";
 import type { Layer, Project } from "./project.ts";
 import { snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
@@ -20,36 +14,52 @@ export type EditorSelection =
   | { type: "output" }
   | { type: "layer"; id: string };
 
+/** A project layer with an id that is stable for the session but never saved. */
+export type EditorLayer = Layer & { id: string };
+
+export interface DecodedAudio {
+  buffer: AudioBuffer;
+  view: AudioView;
+}
+
 export interface EditorState {
   /** Project file path relative to the projects root, which is also where saves go. */
   file: string;
-  project: EditorProject;
+  canvas: Project["canvas"];
+  output: Project["output"];
+  layers: EditorLayer[];
+  locators: Project["locators"];
+  media: Project["media"];
   /** Follows the transport, on the frame grid whenever playback is stopped. */
   playhead: number;
   playing: boolean;
   selection?: EditorSelection;
+  /** Keyed by source, because a decode belongs to the file, not a layer. */
+  audioSources: Record<string, PromiseState<DecodedAudio>>;
 }
 
-const EMPTY_PROJECT: EditorProject = {
-  canvas: { width: 1920, height: 1080, fps: 30 },
-  output: { type: "video", start: 0, end: 0 },
-  layers: [],
-  media: {},
-};
+/** What the project file holds, like toy-midi's `PersistableRecorderRuntimeState`. */
+export type PersistableEditorState = Pick<
+  EditorState,
+  "canvas" | "output" | "layers" | "locators" | "media"
+>;
 
 export class EditorRuntime {
   readonly store = createStore<EditorState>(() => ({
     file: "",
-    project: EMPTY_PROJECT,
+    canvas: { width: 1920, height: 1080, fps: 30 },
+    output: { type: "video", start: 0, end: 0 },
+    layers: [],
+    locators: undefined,
+    media: {},
     playhead: 0,
     playing: false,
     selection: undefined,
+    audioSources: {},
   }));
 
   readonly context = new AudioContext();
   readonly transport = new AudioContextTransport(this.context);
-  /** Shares one decode between the layers that use a source. */
-  private readonly audioLoads = new Map<string, Promise<DecodedAudio>>();
   /** Keyed by layer id. */
   private readonly audioPlaybacks = new Map<string, AudioBufferPlayback>();
   /** Keyed by layer id. */
@@ -74,41 +84,34 @@ export class EditorRuntime {
   }
 
   seek(time: number): void {
-    const { project } = this.store.get();
-    this.transport.seek(Math.max(0, snapToFrame(time, project.canvas.fps)));
+    const { canvas } = this.store.get();
+    this.transport.seek(Math.max(0, snapToFrame(time, canvas.fps)));
   }
 
   /** Steps the playhead by whole frames. */
   seekFrames(frames: number): void {
-    const { project, playhead } = this.store.get();
-    this.seek(playhead + frames / project.canvas.fps);
+    const { canvas, playhead } = this.store.get();
+    this.seek(playhead + frames / canvas.fps);
   }
 
   updateLayer({ id, update }: { id: string; update: Partial<Layer> }): void {
     this.reschedulePlayback(() => {
-      const entry = this.getLayer(id);
-      const layer = { ...entry.layer, ...update } as Layer;
-      this.updateEditorLayer({ id, update: { layer } });
-      // A replaced source loads afresh, instead of keeping the old audio.
-      if (
-        (layer.type === "video" || layer.type === "audio") &&
-        "src" in entry.layer &&
-        layer.src !== entry.layer.src
-      ) {
-        this.loadLayerAudio({ id, src: layer.src });
-      }
+      const { layers } = this.store.get();
+      this.store.update({
+        layers: layers.map((layer) =>
+          layer.id === id ? ({ ...layer, ...update } as EditorLayer) : layer,
+        ),
+      });
       this.syncPlayback();
     });
   }
 
   setCanvas(canvas: Project["canvas"]): void {
-    const { project } = this.store.get();
-    this.store.update({ project: { ...project, canvas } });
+    this.store.update({ canvas });
   }
 
   setOutput(output: Project["output"]): void {
-    const { project } = this.store.get();
-    this.store.update({ project: { ...project, output } });
+    this.store.update({ output });
   }
 
   /**
@@ -116,14 +119,14 @@ export class EditorRuntime {
    * frame, and a video spans every layer so its markers trim inward.
    */
   setOutputType(type: Project["output"]["type"]): void {
-    const { project, playhead } = this.store.get();
-    if (project.output.type === type) {
+    const { output, canvas, layers, playhead } = this.store.get();
+    if (output.type === type) {
       return;
     }
     this.setOutput(
       type === "still"
-        ? { type, time: snapToFrame(playhead, project.canvas.fps) }
-        : { type, ...getContentRange(this.serializeProject()) },
+        ? { type, time: snapToFrame(playhead, canvas.fps) }
+        : { type, ...getContentRange({ layers }) },
     );
   }
 
@@ -168,9 +171,9 @@ export class EditorRuntime {
   }
 
   private syncPlayback(): void {
-    const { layers } = this.store.get().project;
+    const { layers, audioSources } = this.store.get();
     for (const [id, playback] of this.videoPlaybacks) {
-      const layer = this.findLayer(id)?.layer;
+      const layer = layers.find((layer) => layer.id === id);
       if (layer?.type === "video") {
         playback.setLayer({ layer });
       }
@@ -179,21 +182,23 @@ export class EditorRuntime {
     // Every video and audio layer gets a playback, and muting only decides
     // whether it schedules sound, so unmuting needs no load.
     const heard = new Set<string>();
-    for (const { id, layer, audio } of layers) {
+    for (const layer of layers) {
       if (layer.type !== "video" && layer.type !== "audio") {
         continue;
       }
-      heard.add(id);
-      let playback = this.audioPlaybacks.get(id);
+      heard.add(layer.id);
+      let playback = this.audioPlaybacks.get(layer.id);
       if (!playback) {
         playback = new AudioBufferPlayback({ transport: this.transport });
-        this.audioPlaybacks.set(id, playback);
+        this.audioPlaybacks.set(layer.id, playback);
       }
       playback.setLayer({ layer });
       // A rejected source, such as a video file without an audio stream,
       // contributes nothing, as in the render.
+      const source = audioSources[layer.src];
       playback.setBuffer({
-        buffer: audio?.status === "fulfilled" ? audio.value.buffer : undefined,
+        buffer:
+          source?.status === "fulfilled" ? source.value.buffer : undefined,
       });
     }
     for (const [id, playback] of this.audioPlaybacks) {
@@ -204,104 +209,57 @@ export class EditorRuntime {
     }
   }
 
-  /** Starts loading a layer's audio, which joins playback when it arrives. */
-  private loadLayerAudio({ id, src }: { id: string; src: string }): void {
-    let pending: PromiseState<DecodedAudio> | undefined;
-    watchPromise(this.loadAudio(src), (audio) => {
-      if (audio.status === "pending") {
-        pending = audio;
-        this.updateEditorLayer({ id, update: { audio } });
-        return;
-      }
-      // Skip a load that a later source change replaced.
-      if (this.findLayer(id)?.audio !== pending) {
-        return;
-      }
-      if (audio.status === "rejected") {
-        this.updateEditorLayer({ id, update: { audio } });
-        return;
-      }
-      this.reschedulePlayback(() => {
-        this.updateEditorLayer({ id, update: { audio } });
-        this.syncPlayback();
+  /** Starts decoding a source, and syncs playback once its buffer arrives. */
+  private loadAudio(src: string): void {
+    const decodeAudio = async (): Promise<DecodedAudio> => {
+      const data = await apiClient.loadAudioData({
+        src,
+        projectPath: this.store.get().file,
       });
-    });
-  }
-
-  /** Decodes a source once, however many layers use it. */
-  private loadAudio(src: string): Promise<DecodedAudio> {
-    let promise = this.audioLoads.get(src);
-    if (!promise) {
-      const decodeAudio = async (): Promise<DecodedAudio> => {
-        const data = await apiClient.loadAudioData({
-          src,
-          projectPath: this.store.get().file,
-        });
-        const buffer = await this.context.decodeAudioData(data);
-        return { buffer, view: createAudioView(buffer) };
-      };
-      promise = decodeAudio();
-      this.audioLoads.set(src, promise);
-    }
-    return promise;
-  }
-
-  private findLayer(id: string): EditorLayer | undefined {
-    return this.store.get().project.layers.find((entry) => entry.id === id);
-  }
-
-  private getLayer(id: string): EditorLayer {
-    const entry = this.findLayer(id);
-    if (!entry) {
-      throw new Error(`Layer ${id} is missing.`);
-    }
-    return entry;
-  }
-
-  private updateEditorLayer({
-    id,
-    update,
-  }: {
-    id: string;
-    update: Partial<Omit<EditorLayer, "id">>;
-  }): void {
-    const { project } = this.store.get();
-    this.store.update({
-      project: {
-        ...project,
-        layers: project.layers.map((entry) =>
-          entry.id === id ? { ...entry, ...update } : entry,
-        ),
-      },
+      const buffer = await this.context.decodeAudioData(data);
+      return { buffer, view: createAudioView(buffer) };
+    };
+    watchPromise(decodeAudio(), (source) => {
+      const { audioSources } = this.store.get();
+      this.store.update({ audioSources: { ...audioSources, [src]: source } });
+      if (source.status === "fulfilled") {
+        this.reschedulePlayback(() => this.syncPlayback());
+      }
     });
   }
 
   serializeProject(): Project {
-    return serializeEditorProject(this.store.get().project);
+    return serializeEditorState(this.store.get());
   }
 
   deserializeProject({ file, project }: ProjectFile): void {
-    const editorProject = deserializeEditorProject(project);
-    this.store.update({ file, project: editorProject, selection: undefined });
-    for (const { id, layer } of editorProject.layers) {
-      if (layer.type === "video" || layer.type === "audio") {
-        this.loadLayerAudio({ id, src: layer.src });
-      }
-    }
+    this.store.update({
+      file,
+      ...deserializeEditorState(project),
+      selection: undefined,
+    });
     this.syncPlayback();
     this.seek(getOutputRange(project).start);
+    const sources = new Set(
+      project.layers.flatMap((layer) =>
+        layer.type === "video" || layer.type === "audio" ? [layer.src] : [],
+      ),
+    );
+    for (const src of sources) {
+      this.loadAudio(src);
+    }
   }
 
-  /**
-   * Notifies on changes to what the project file holds, so loading a layer's
-   * audio does not count as an unsaved change.
-   */
   subscribePersistableState(listener: () => void): () => void {
     return this.store.subscribeWithSelector({
-      selector: ({ project: { layers, ...fields } }) => [
-        ...Object.values(fields),
-        ...layers.map(({ layer }) => layer),
-      ],
+      selector: (state) =>
+        ({
+          canvas: state.canvas,
+          output: state.output,
+          layers: state.layers,
+          locators: state.locators,
+          media: state.media,
+        }) satisfies PersistableEditorState,
       equals: shallowEqual,
       listener,
     });

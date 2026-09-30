@@ -12,7 +12,7 @@ export function getOutputRange(
 }
 
 /** Timeline span covering every layer, from the earliest start to the latest end. */
-export function getContentRange(project: Project): Range {
+export function getContentRange(project: Pick<Project, "layers">): Range {
   if (project.layers.length === 0) {
     return { start: 0, end: 0 };
   }

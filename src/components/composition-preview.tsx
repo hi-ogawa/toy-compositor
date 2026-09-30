@@ -1,9 +1,12 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
-import type { EditorProject } from "../lib/editor-project";
 import { getLayerRange } from "../lib/layout";
 import type { Layer, Project, TextLayer } from "../lib/project";
-import type { EditorRuntime, EditorSelection } from "../lib/runtime";
+import type {
+  EditorRuntime,
+  EditorSelection,
+  PersistableEditorState,
+} from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
 
 export function CompositionPreview({
@@ -13,7 +16,7 @@ export function CompositionPreview({
   runtime,
   resolveMediaUrl,
 }: {
-  project: EditorProject;
+  project: PersistableEditorState;
   selection?: EditorSelection;
   time: number;
   runtime: EditorRuntime;
@@ -64,21 +67,21 @@ export function CompositionPreview({
               }}
             >
               {/* Every layer stays mounted, so media is ready when playback reaches it. */}
-              {project.layers.map(({ id, layer }, index) => {
+              {project.layers.map((layer, index) => {
                 if (layer.type === "audio") {
                   return undefined;
                 }
                 const range = getLayerRange(layer);
                 return (
                   <PreviewLayer
-                    key={id}
+                    key={layer.id}
                     layer={layer}
                     visible={time >= range.start && time < range.end}
                     runtime={runtime}
                     selected={
-                      selection?.type === "layer" && selection.id === id
+                      selection?.type === "layer" && selection.id === layer.id
                     }
-                    id={id}
+                    id={layer.id}
                     index={index}
                     canvas={canvas}
                     mediaInfoMap={project.media}

@@ -22,16 +22,16 @@ export function useLayerInteraction({
   state: EditorState;
 }) {
   const [edit, setEdit] = useState<LayerEdit>();
-  const { layers, canvas, media: mediaInfoMap } = state.project;
-  const getLayer = (id: string) => layers.find((entry) => entry.id === id)!;
+  const { layers, canvas, media: mediaInfoMap } = state;
+  const getLayer = (id: string) => layers.find((layer) => layer.id === id)!;
 
   function startEdit({ type, id }: { type: LayerEditType; id: string }) {
     runtime.select({ type: "layer", id });
-    setEdit({ type, id, layer: getLayer(id).layer });
+    setEdit({ type, id, layer: getLayer(id) });
   }
 
   function getEditedLayer(edit: LayerEdit, delta: number): Layer {
-    return applyLayerEdit(getLayer(edit.id).layer, {
+    return applyLayerEdit(getLayer(edit.id), {
       type: edit.type,
       delta,
       fps: canvas.fps,
@@ -59,8 +59,8 @@ export function useLayerInteraction({
 
   return {
     layers: edit
-      ? layers.map((entry) =>
-          entry.id === edit.id ? { ...entry, layer: edit.layer } : entry,
+      ? layers.map((layer) =>
+          layer.id === edit.id ? { ...edit.layer, id: edit.id } : layer,
         )
       : layers,
     editing: edit !== undefined,

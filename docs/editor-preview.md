@@ -4,7 +4,7 @@ The editor composes the project in the DOM at one project time. Each visual laye
 
 ## Components
 
-Each component answers one question about the preview, and the preview holds no project state of its own. Inspector edits go through the runtime into `state.project`, and the composition re-renders from it, so edits show up immediately without extra wiring. `state.project` is the file's project with each layer wrapped in runtime-only fields, a session id and its loaded audio, which [src/lib/editor-project.ts](../src/lib/editor-project.ts) adds on load and drops on save, like toy-midi's runtime and serialized state.
+Each component answers one question about the preview, and the preview holds no project state of its own. Inspector edits go through the runtime into the editor state, and the composition re-renders from it, so edits show up immediately without extra wiring. The state keeps the project's fields at its top level, with each layer carrying a session id, and [src/lib/persistence.ts](../src/lib/persistence.ts) assigns the ids on load and drops them on save, like toy-midi's runtime and serialized state.
 
 ![The editor screen as nested component regions, each with the one question it answers](images/component-tree.svg)
 
@@ -56,7 +56,7 @@ EditorRuntime              runtime.ts                source loading, restarts ar
 - **The heard position comes from `getOutputTimestamp`,** because Chromium on Linux reports `outputLatency` as 0.
 - **Audio is scheduled, never steered.** A layer plays wherever its own range covers the playhead, so trimming decides what plays. Fades are gain ramps, and `muted` silences the layer.
 - **Playbacks start only at the anchor.** An edit, or a buffer that arrives during playback, restarts the transport around the change, like toy-midi's `updateClips`.
-- **Sources load in the background.** Loading a project starts each layer's audio load, which decodes a source once for all the layers that use it and feeds the layer's playback and lane waveform, so opening never waits on a long source.
+- **Sources load in the background.** Loading a project decodes each source once, shared by its layers' playback and lane waveforms, so opening never waits on a long source.
 - **Pausing lands on the frame grid,** so a paused preview matches a rendered frame.
 
 ## Known gaps

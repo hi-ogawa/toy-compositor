@@ -1,4 +1,3 @@
-import type { EditorProject } from "../lib/editor-project";
 import type {
   AudioLayer,
   Box,
@@ -10,7 +9,11 @@ import type {
   TextLayer,
   VideoLayer,
 } from "../lib/project";
-import type { EditorRuntime, EditorSelection } from "../lib/runtime";
+import type {
+  EditorRuntime,
+  EditorSelection,
+  PersistableEditorState,
+} from "../lib/runtime";
 import { useDraftInput } from "./use-draft-input";
 
 export function Inspector({
@@ -19,7 +22,7 @@ export function Inspector({
   selection,
 }: {
   runtime: EditorRuntime;
-  project: EditorProject;
+  project: PersistableEditorState;
   selection?: EditorSelection;
 }) {
   if (!selection) {
@@ -48,7 +51,7 @@ export function Inspector({
     }
     case "layer": {
       const { id } = selection;
-      const { layer } = project.layers.find((entry) => entry.id === id)!;
+      const layer = project.layers.find((layer) => layer.id === id)!;
       return (
         <LayerInspector
           layer={layer}

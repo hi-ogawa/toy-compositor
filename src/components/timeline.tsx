@@ -13,11 +13,16 @@ import {
 import type { ReactNode } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { usePointerGesture } from "../hooks/use-pointer-gesture";
-import type { DecodedAudio, EditorProject } from "../lib/editor-project";
 import type { LayerEditType } from "../lib/layer-edit";
 import { getLayerRange, intersect, type Range } from "../lib/layout";
 import type { Layer, Locator, Project } from "../lib/project";
-import type { EditorRuntime, EditorSelection } from "../lib/runtime";
+import type {
+  DecodedAudio,
+  EditorRuntime,
+  EditorLayer,
+  EditorSelection,
+  PersistableEditorState,
+} from "../lib/runtime";
 import type { PromiseState } from "../utils/promise-state";
 import { AudioWaveformView } from "./audio-waveform";
 import { Button } from "./ui/button";
@@ -33,14 +38,16 @@ export function Timeline({
   selection,
   playhead,
   playing,
+  audioSources,
 }: {
   timeline: TimelineView;
   layerInteraction: LayerInteraction;
   runtime: EditorRuntime;
-  project: EditorProject;
+  project: PersistableEditorState;
   selection?: EditorSelection;
   playhead: number;
   playing: boolean;
+  audioSources: Record<string, PromiseState<DecodedAudio>>;
 }) {
   const selectOutput = () => runtime.select({ type: "output" });
   const seek = (time: number) => runtime.seek(time);
@@ -99,20 +106,25 @@ export function Timeline({
           <TimelineRuler timeline={timeline} onSeek={seek} />
           {/* Top layer first, like tracks in a timeline. */}
           {layerInteraction.layers
-            .map((entry, index) => ({ ...entry, index }))
+            .map((layer, index) => ({ layer, index }))
             .reverse()
-            .map(({ id, layer, audio, index }) => (
+            .map(({ layer, index }) => (
               <TimelineLayerLane
-                key={id}
+                key={layer.id}
                 timeline={timeline}
                 layerInteraction={layerInteraction}
                 layer={layer}
                 index={index}
                 range={getLayerRange(layer)}
-                id={id}
-                audio={audio}
-                selected={selection?.type === "layer" && selection.id === id}
-                onSelect={() => runtime.select({ type: "layer", id })}
+                audioSource={
+                  layer.type === "video" || layer.type === "audio"
+                    ? audioSources[layer.src]
+                    : undefined
+                }
+                selected={
+                  selection?.type === "layer" && selection.id === layer.id
+                }
+                onSelect={() => runtime.select({ type: "layer", id: layer.id })}
               />
             ))}
           {timeline.isVisible(playhead) && (
@@ -282,19 +294,17 @@ function TimelineLayerLane({
   layer,
   index,
   range,
-  id,
-  audio,
+  audioSource,
   selected,
   onSelect,
 }: {
   timeline: TimelineView;
   layerInteraction: LayerInteraction;
-  layer: Layer;
+  layer: EditorLayer;
   /** Position in the project, which only labels the element for tests. */
   index: number;
   range: Range;
-  id: string;
-  audio?: PromiseState<DecodedAudio>;
+  audioSource?: PromiseState<DecodedAudio>;
   selected: boolean;
   onSelect: () => void;
 }) {
@@ -304,7 +314,8 @@ function TimelineLayerLane({
   // A click without dragging selects through the button's own click.
   const moveRef = usePointerGesture({
     onStart: (event) => event.preventDefault(),
-    onDragStart: () => layerInteraction.startEdit({ type: "move", id }),
+    onDragStart: () =>
+      layerInteraction.startEdit({ type: "move", id: layer.id }),
     onDragMove: (_event, { deltaX }) =>
       layerInteraction.updateEdit(pixelsToSeconds(deltaX)),
     onDragEnd: (_event, { deltaX }) =>
@@ -348,9 +359,9 @@ function TimelineLayerLane({
                 : LAYER_CLIP_CLASSES[layer.type].border,
             )}
           >
-            {audioLayer && visible && audio?.status === "fulfilled" && (
+            {audioLayer && visible && audioSource?.status === "fulfilled" && (
               <AudioWaveformView
-                audioView={audio.value.view}
+                audioView={audioSource.value.view}
                 sourceStart={audioLayer.in + visible.start - audioLayer.start}
                 sourceEnd={audioLayer.in + visible.end - audioLayer.start}
                 pixelsPerSecond={timeline.pixelsPerSecond}
@@ -366,7 +377,7 @@ function TimelineLayerLane({
                   className="absolute left-1 top-1 size-3.5"
                 />
               )}
-            {audio?.status === "pending" && (
+            {audioSource?.status === "pending" && (
               <LoaderCircleIcon
                 role="img"
                 aria-label="loading source"
@@ -378,7 +389,7 @@ function TimelineLayerLane({
           {timeline.isVisible(range.start) && (
             <LayerTrimHandle
               type="trim-start"
-              id={id}
+              id={layer.id}
               index={index}
               timeline={timeline}
               layerInteraction={layerInteraction}
@@ -387,7 +398,7 @@ function TimelineLayerLane({
           {timeline.isVisible(range.end) && (
             <LayerTrimHandle
               type="trim-end"
-              id={id}
+              id={layer.id}
               index={index}
               timeline={timeline}
               layerInteraction={layerInteraction}
