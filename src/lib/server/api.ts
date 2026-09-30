@@ -1,5 +1,3 @@
-import { spawn } from "node:child_process";
-import { once } from "node:events";
 import fs from "node:fs";
 import path from "node:path";
 import { readJson, writeJson } from "../../utils/fs.ts";
@@ -7,6 +5,7 @@ import { getMediaType, type MediaFile } from "../media-file.ts";
 import { probeMediaInfo } from "../media-info.ts";
 import type { MediaInfo, Output, Project } from "../project.ts";
 import { getDialogTool, pickProjectPath } from "./dialog.ts";
+import { openInFileManager } from "./file-manager.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 import type { ProjectRegistry } from "./registry.ts";
 
@@ -149,6 +148,15 @@ export function createEditorHandlers({
       await registry.removeFolder(directory);
     },
 
+    /** Open a registered project folder in the desktop's file manager. */
+    async openProjectFolder({
+      directory,
+    }: {
+      directory: string;
+    }): Promise<void> {
+      await openInFileManager(await registry.resolveFolder(directory));
+    },
+
     async loadProject({
       path: projectPath,
     }: {
@@ -238,11 +246,7 @@ export function createEditorHandlers({
     }): Promise<void> {
       const dir = await resolveMediaFolder({ registry, projectPath });
       await fs.promises.mkdir(dir, { recursive: true });
-      const opener = process.platform === "darwin" ? "open" : "xdg-open";
-      const child = spawn(opener, [dir], { detached: true, stdio: "ignore" });
-      // Rejects when the opener is missing.
-      await once(child, "spawn");
-      child.unref();
+      await openInFileManager(dir);
     },
   };
 }

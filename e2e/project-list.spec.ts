@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, rm, stat } from "node:fs/promises";
+import { copyFile, cp, mkdir, readFile, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { expect, type Page } from "@playwright/test";
 import {
@@ -45,6 +45,48 @@ test("open projects from the start page", async ({ page, editor }) => {
   await page.getByRole("menuitem", { name: "Home", exact: true }).click();
   await expect(page).toHaveURL("/");
   await expect(section.getByRole("link")).toHaveCount(2);
+});
+
+test("open a project folder and list files copied in it", async ({
+  page,
+  request,
+  editor,
+}) => {
+  const { projectDir } = editor;
+
+  // Ask the server to open a folder outside the registry, and confirm it is refused.
+  const res = await request.post("/api/rpc/openProjectFolder", {
+    data: { directory: path.dirname(projectDir) },
+  });
+  expect(res.status()).toBe(403);
+
+  // Stand in for the server's opener, because e2e cannot see a file manager,
+  // and record the folder each call asks to open.
+  const opened: unknown[] = [];
+  await page.route("/api/rpc/openProjectFolder", async (route) => {
+    opened.push(route.request().postDataJSON());
+    await route.fulfill({ json: null });
+  });
+
+  // Open the test's project folder from its section on the start page.
+  await page.goto("/");
+  const section = getFolderSection(page, projectDir);
+  await expect(section.getByRole("link")).toHaveCount(2);
+  await section.getByRole("button", { name: "Open folder" }).click();
+  await expect.poll(() => opened).toEqual([{ directory: projectDir }]);
+
+  // Copy a project file as the file manager would, focus the window as when
+  // switching back, and confirm the copy is listed.
+  await copyFile(
+    path.join(projectDir, "thumbnail.json"),
+    path.join(projectDir, "thumbnail-vertical.json"),
+  );
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(section.getByRole("link")).toHaveText([
+    "project.json640x360 video",
+    "thumbnail-vertical.json640x360 still",
+    "thumbnail.json640x360 still",
+  ]);
 });
 
 test("add a media folder and create a project file in it", async ({
