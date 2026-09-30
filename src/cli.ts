@@ -28,22 +28,12 @@ Usage:
   toy-compositor render <project.json> <output> [--dry-run]
       Render a project to a video or still with ffmpeg
   toy-compositor update-media <project.json...>
-      Record media info for the files that layers use in each project
+      Record media info for the files that layers use in each project,
+      which the editor and renderer need before they accept it
 
-Getting started:
-  1. Put media files in a folder's media/ directory.
-  2. Write a project JSON in the folder with src paths such as media/clip.mp4,
-     starting from a copy of the sample project and following the format doc.
-  3. Run update-media on it. The editor and renderer reject a project until it
-     has media info, and it needs a rerun whenever media changes.
-  4. Render a still, like the sample's thumbnail.json, to a .png to check the
-     layout, then render the video to an .mp4.
-  5. Run serve or add on the folder to adjust the layout in the editor.
-
-Rendering needs ffmpeg, ffprobe, and ImageMagick (magick) on PATH.
-
-Format doc: ${path.join(packageDir, "docs/project-format.md")}
-Sample:     ${path.join(packageDir, "samples/synthetic")}`;
+Getting started: ${path.join(packageDir, "docs/getting-started.md")}
+Project format:  ${path.join(packageDir, "docs/project-format.md")}
+Sample project:  ${path.join(packageDir, "samples/synthetic")}`;
 
 async function main() {
   const { positionals, values } = parseArgs({
