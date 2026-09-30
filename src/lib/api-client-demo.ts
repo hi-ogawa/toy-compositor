@@ -36,6 +36,10 @@ export const apiClient: typeof serverApiClient = {
     throw new Error("The demo cannot remove project folders.");
   },
 
+  async openProjectFolder() {
+    throw new Error("The demo has no project folder to open.");
+  },
+
   async loadProject({ path }) {
     const project = projects.get(path);
     if (!project) {

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FolderPlusIcon, PlusIcon, XIcon } from "lucide-react";
+import { FolderOpenIcon, FolderPlusIcon, PlusIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { apiClient } from "../lib/api-client";
 import {
@@ -16,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { useWindowEvent } from "./use-window-event";
 
 const PROJECT_LIST_QUERY_KEY = ["project-list"];
 
@@ -26,6 +27,9 @@ export function ProjectList() {
     retry: false,
     queryFn: () => apiClient.listProjects(),
   });
+  // Switching back from the file manager focuses the window without changing
+  // page visibility, so refetch on focus to pick up copied project files.
+  useWindowEvent("focus", () => void query.refetch());
   return (
     <div className="fixed inset-0 overflow-hidden bg-neutral-900">
       {/* Gradient glow */}
@@ -180,6 +184,10 @@ function FolderSection({
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: PROJECT_LIST_QUERY_KEY }),
   });
+  const openMutation = useMutation({
+    mutationFn: () =>
+      apiClient.openProjectFolder({ directory: folder.directory }),
+  });
   const name = folder.directory.split(/[\\/]/).at(-1)!;
   return (
     <li>
@@ -198,7 +206,17 @@ function FolderSection({
         {folder.missing ? (
           <span className="text-xs text-orange-300">Missing</span>
         ) : (
-          <NewProjectFileMenu directory={folder.directory} />
+          <>
+            <Button
+              title="Open the folder in the file manager"
+              className="gap-1 px-2.5 py-1 text-xs text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100"
+              onClick={() => openMutation.mutate()}
+            >
+              <FolderOpenIcon className="size-3.5" />
+              Open folder
+            </Button>
+            <NewProjectFileMenu directory={folder.directory} />
+          </>
         )}
         {removable && (
           <Button
