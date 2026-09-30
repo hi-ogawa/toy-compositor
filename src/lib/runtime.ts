@@ -36,7 +36,7 @@ export interface DecodedAudio {
 }
 
 export interface EditorState {
-  /** Project file path relative to the projects root, which is also where saves go. */
+  /** Absolute project file path, which is also where saves go. */
   file: string;
   project: EditorProject;
   /** Follows the transport, on the frame grid whenever playback is stopped. */

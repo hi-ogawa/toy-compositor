@@ -6,16 +6,34 @@ import type { MediaInfo, Project } from "./project.ts";
 // runs as a static site over the bundled synthetic sample.
 
 export const apiClient: typeof serverApiClient = {
+  /** Lists the bundled sample as one folder, and adding folders is disabled. */
   async listProjects() {
     return {
-      root: "demo",
-      projects: [...projects].map(([path, project]) => ({
-        path,
-        width: project.canvas.width,
-        height: project.canvas.height,
-        output: project.output.type,
-      })),
+      folders: [
+        {
+          directory: DEMO_DIRECTORY,
+          files: [...projects].map(([path, project]) => ({
+            path,
+            width: project.canvas.width,
+            height: project.canvas.height,
+            output: project.output.type,
+          })),
+        },
+      ],
+      editable: false,
     };
+  },
+
+  async addProjectFolder() {
+    throw new Error("The demo cannot add project folders.");
+  },
+
+  async pickProjectFolder() {
+    throw new Error("The demo cannot add project folders.");
+  },
+
+  async removeProjectFolder() {
+    throw new Error("The demo cannot remove project folders.");
   },
 
   async loadProject({ path }) {
@@ -72,6 +90,9 @@ export const apiClient: typeof serverApiClient = {
   },
 };
 
+// The one project folder, which holds the bundled sample's project files.
+const DEMO_DIRECTORY = "synthetic";
+
 // Saved and created projects are kept in session storage over the bundled
 // sample, because opening a project or going home reloads the page.
 const STORAGE_KEY = "toy-compositor-demo-projects";
@@ -86,7 +107,10 @@ const sampleProjects = Object.entries(
     eager: true,
     import: "default",
   }),
-).map(([key, project]) => [key.replace("./", "synthetic/"), project] as const);
+).map(
+  ([key, project]) =>
+    [key.replace("./", `${DEMO_DIRECTORY}/`), project] as const,
+);
 
 const projects = new Map([
   ...sampleProjects,

@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
@@ -5,6 +6,10 @@ import type { NodeHttp1Handler } from "srvx";
 import { toNodeHandler } from "srvx/node";
 import { defineConfig, type Plugin } from "vite";
 import { createEditorHandler } from "./src/lib/server/api.ts";
+import {
+  createProjectRegistry,
+  getConfigDir,
+} from "./src/lib/server/registry.ts";
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), editorApi()],
@@ -24,21 +29,31 @@ export default defineConfig({
 });
 
 /**
- * Serve the editor API over the projects root during development only. It
- * defaults to `.local/projects/`, where `pnpm setup-sample` puts samples, and
- * `TOY_COMPOSITOR_ROOT` overrides it, for example for e2e tests.
+ * Serve the editor API during development only. It keeps its registry in
+ * `.local/config/` unless `TOY_COMPOSITOR_CONFIG_DIR` is set, for example by
+ * e2e tests, and registers each folder in `.local/projects/`, where
+ * `pnpm setup-sample` puts samples, at startup.
  */
 function editorApi(): Plugin {
   return {
     name: "editor-api",
-    configureServer(server) {
+    async configureServer(server) {
+      const registry = createProjectRegistry({
+        configDir: process.env.TOY_COMPOSITOR_CONFIG_DIR
+          ? getConfigDir()
+          : path.join(server.config.root, ".local/config"),
+      });
+      const projectsDir = path.join(server.config.root, ".local/projects");
+      const entries = await fs.promises
+        .readdir(projectsDir, { withFileTypes: true })
+        .catch(() => []);
+      for (const entry of entries) {
+        if (entry.isDirectory() && !entry.name.startsWith(".")) {
+          await registry.addFolder(path.join(projectsDir, entry.name));
+        }
+      }
       const handler = toNodeHandler(
-        createEditorHandler({
-          root: path.resolve(
-            process.env.TOY_COMPOSITOR_ROOT ??
-              path.join(server.config.root, ".local/projects"),
-          ),
-        }),
+        createEditorHandler({ registry }),
       ) as NodeHttp1Handler;
       server.middlewares.use(async (req, res, next) => {
         const url = new URL(req.url ?? "/", "http://localhost");
