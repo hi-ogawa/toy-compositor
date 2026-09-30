@@ -38,9 +38,10 @@ export function LibraryPanel({
   return (
     <div className="min-h-0 flex-1 overflow-y-auto py-1 text-xs">
       <div className="flex items-baseline px-3 pb-0.5 pt-2 text-[10px] text-neutral-500">
-        <h3 className="font-mono">media/</h3>
+        <h3 className="font-medium uppercase tracking-wide">Media</h3>
         <button
           type="button"
+          title="Open the project's media/ folder"
           className="ml-auto text-[11px] text-neutral-400 underline underline-offset-2 hover:text-neutral-100"
           onClick={() => openFolderMutation.mutate()}
         >
