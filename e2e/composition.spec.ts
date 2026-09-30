@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import type { Project } from "../src/lib/project.ts";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
 import { readJson } from "../src/utils/fs.ts";
 import {
@@ -92,6 +93,156 @@ test("compose the output start, follow inspector edits, and save them", async ({
   await expect(video).toBeHidden();
   await expect(text).toBeHidden();
   await expect(save).toHaveAttribute("data-status", "saved");
+});
+
+test("edit a text layer's content and styling and save them", async ({
+  page,
+  editor,
+}) => {
+  // Open the synthetic project and select the title text.
+  await page.goto(editor.url);
+  const canvas = page.getByTestId("composition-canvas");
+  await clickTimelineButton(page, { name: "Title text" });
+  const inspector = page.getByTestId("inspector");
+
+  // Rewrite the text over three lines and confirm the preview follows on blur.
+  const textField = getInspectorField(page, { name: "text" });
+  await expect(textField).toHaveValue("Synthetic\nsample");
+  await textField.fill("Edited\nthree\nlines");
+  await textField.blur();
+  // The selection outline repeats the text invisibly to size itself.
+  const text = canvas
+    .getByText("Edited\nthree\nlines", { exact: true })
+    .first();
+  await expect(text).toBeVisible();
+
+  // Align right, restyle the font and color, and confirm the preview follows.
+  await inspector
+    .getByRole("group", { name: "Text align" })
+    .getByRole("button", { name: "right" })
+    .click();
+  await commitInspectorField(page, { name: "family", value: "DejaVu Serif" });
+  await commitInspectorField(page, { name: "size", value: "32" });
+  await commitInspectorField(page, { name: "line spacing", value: "4" });
+  await inspector
+    .getByRole("combobox", { name: "weight", exact: true })
+    .selectOption("700");
+  await inspector.getByLabel("color", { exact: true }).fill("#ffcc00");
+  await expect(text).toHaveCSS("text-align", "right");
+  await expect(text).toHaveCSS("font-family", '"DejaVu Serif"');
+  await expect(text).toHaveCSS("font-size", "32px");
+  await expect(text).toHaveCSS("line-height", `${32 * 1.2 + 4}px`);
+  await expect(text).toHaveCSS("font-weight", "700");
+  await expect(text).toHaveCSS("color", "rgb(255, 204, 0)");
+
+  // Recolor the outline, then clear its width and confirm the outline is removed.
+  await inspector.getByLabel("outline color", { exact: true }).fill("#ff0000");
+  await expect(text).toHaveCSS("-webkit-text-stroke-color", "rgb(255, 0, 0)");
+  await commitInspectorField(page, { name: "outline width", value: "0" });
+  await expect(text).toHaveCSS("-webkit-text-stroke-width", "0px");
+  await expect(
+    inspector.getByLabel("outline color", { exact: true }),
+  ).toBeDisabled();
+
+  // Save and confirm the edits reach the project file without an outline.
+  const save = page.getByTestId("editor-save-button");
+  await save.click();
+  await expect(save).toHaveAttribute("data-status", "saved");
+  const project = await readJson<Project>(editor.projectFile);
+  expect(project).toMatchObject({
+    layers: [
+      {},
+      {},
+      {},
+      {
+        text: "Edited\nthree\nlines",
+        align: "right",
+        font: { family: "DejaVu Serif", size: 32, weight: 700, lineSpacing: 4 },
+        color: "#ffcc00",
+      },
+    ],
+  });
+  expect(project.layers[3]).not.toHaveProperty("outline");
+});
+
+test("edit layer names and a color layer's fill and box, and save them", async ({
+  page,
+  editor,
+}) => {
+  // Add a color layer from the Library tab, which starts unnamed, selected, and
+  // filling the canvas.
+  await page.goto(editor.url);
+  await page.getByRole("button", { name: "Add Color", exact: true }).click();
+  const fill = page.getByTestId("composition-layer-4").locator("div").first();
+  await expect(fill).toHaveCSS("width", "640px");
+
+  // Name the color layer and confirm its lane and the inspector title follow.
+  const name = page
+    .getByTestId("inspector")
+    .getByLabel("name", { exact: true });
+  await expect(name).toHaveValue("");
+  await name.fill("Scrim");
+  await name.press("Enter");
+  await expect(
+    page.getByTestId("inspector").getByRole("heading", { name: "Scrim" }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByTestId("editor-timeline")
+      .getByRole("button", { name: "Scrim color", exact: true }),
+  ).toBeVisible();
+
+  // Change the fill color and confirm the preview paints it.
+  await page
+    .getByTestId("inspector")
+    .getByLabel("color", { exact: true })
+    .fill("#ff0000");
+  await expect(fill).toHaveCSS("background-color", "rgb(255, 0, 0)");
+
+  // Turn the box on, confirm it starts from the full canvas, and narrow it.
+  const box = page
+    .getByTestId("inspector")
+    .getByRole("checkbox", { name: "box" });
+  await box.check();
+  await expectInspectorFields(page, {
+    x: "0",
+    y: "0",
+    width: "640",
+    height: "360",
+  });
+  await commitInspectorField(page, { name: "width", value: "320" });
+  await expect(fill).toHaveCSS("width", "320px");
+
+  // Turn the box off and confirm the layer fills the canvas again without box
+  // fields, then turn it back on and narrow it for saving.
+  await box.uncheck();
+  await expect(fill).toHaveCSS("width", "640px");
+  await expect(getInspectorField(page, { name: "width" })).toBeHidden();
+  await box.check();
+  await commitInspectorField(page, { name: "width", value: "320" });
+
+  // Clear the text layer's name and confirm its lane falls back to the type.
+  await clickTimelineButton(page, { name: "Title text" });
+  await name.fill("");
+  await name.press("Enter");
+  await clickTimelineButton(page, { name: "text text" });
+
+  // Save and confirm the name, color, and box reach the project file, and the
+  // cleared name is removed.
+  const save = page.getByTestId("editor-save-button");
+  await save.click();
+  await expect(save).toHaveAttribute("data-status", "saved");
+  const project = await readJson<Project>(editor.projectFile);
+  expect(project.layers[4]).toEqual({
+    name: "Scrim",
+    type: "color",
+    color: "#ff0000",
+    opacity: 0.5,
+    start: 0,
+    end: 3,
+    box: { x: 0, y: 0, width: 320, height: 360 },
+  });
+  expect(project.layers[3]).not.toHaveProperty("name");
 });
 
 test("edit the canvas in composition settings and save it", async ({
