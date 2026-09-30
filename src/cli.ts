@@ -38,38 +38,11 @@ async function main() {
   const [command, ...args] = positionals;
   switch (command) {
     case "serve": {
-      const clientDir = getClientDir();
-      const registry = createProjectRegistry({ configDir: getConfigDir() });
-      if (args[0]) {
-        console.log(`Added ${await registry.addFolder(args[0])}`);
-      }
-      const port = Number(values.port);
-      const url = `http://localhost:${port}/`;
-      const live = createLiveConnections();
-      let server: Awaited<ReturnType<typeof serveEditor>>;
-      try {
-        server = await serveEditor({ registry, live, port, clientDir });
-      } catch (error) {
-        // The server reads the registry on every request, so a tab on the
-        // running one also lists a folder added above.
-        if (
-          values.open &&
-          (error as NodeJS.ErrnoException).code === "EADDRINUSE" &&
-          (await checkEditorServer(port))
-        ) {
-          await openWithDefaultApp(url);
-          console.log(`Opened the editor already running at ${url}`);
-          return;
-        }
-        throw error;
-      }
-      console.log(`Editor: ${url}`);
-      if (values.open) {
-        await openWithDefaultApp(url);
-        await live.waitForLastClose({ graceMs: 3000 });
-        console.log("Closing after the last editor tab closed");
-        await server.close(true);
-      }
+      await runServe({
+        directory: args[0],
+        port: Number(values.port),
+        open: values.open,
+      });
       break;
     }
     case "install-desktop": {
@@ -116,6 +89,52 @@ async function main() {
       console.log(HELP);
       process.exitCode = values.help ? 0 : 1;
     }
+  }
+}
+
+/**
+ * Serve the editor, and with `open`, open it in the browser, reusing an editor
+ * server already on the port, and close after the last editor tab closes.
+ */
+async function runServe({
+  directory,
+  port,
+  open,
+}: {
+  directory?: string;
+  port: number;
+  open?: boolean;
+}) {
+  const clientDir = getClientDir();
+  const registry = createProjectRegistry({ configDir: getConfigDir() });
+  if (directory) {
+    console.log(`Added ${await registry.addFolder(directory)}`);
+  }
+  const url = `http://localhost:${port}/`;
+  const live = createLiveConnections();
+  let server: Awaited<ReturnType<typeof serveEditor>>;
+  try {
+    server = await serveEditor({ registry, live, port, clientDir });
+  } catch (error) {
+    // The server reads the registry on every request, so a tab on the
+    // running one also lists a folder added above.
+    if (
+      open &&
+      (error as NodeJS.ErrnoException).code === "EADDRINUSE" &&
+      (await checkEditorServer(port))
+    ) {
+      await openWithDefaultApp(url);
+      console.log(`Opened the editor already running at ${url}`);
+      return;
+    }
+    throw error;
+  }
+  console.log(`Editor: ${url}`);
+  if (open) {
+    await openWithDefaultApp(url);
+    await live.waitForLastClose({ graceMs: 3000 });
+    console.log("Closing after the last editor tab closed");
+    await server.close(true);
   }
 }
 
