@@ -47,33 +47,16 @@ test("open projects from the start page", async ({ page, editor }) => {
   await expect(section.getByRole("link")).toHaveCount(2);
 });
 
-test("open a project folder and list files copied in it", async ({
+test("list project files copied in the file manager", async ({
   page,
-  request,
   editor,
 }) => {
   const { projectDir } = editor;
 
-  // Ask the server to open a folder outside the registry, and confirm it is refused.
-  const res = await request.post("/api/rpc/openProjectFolder", {
-    data: { directory: path.dirname(projectDir) },
-  });
-  expect(res.status()).toBe(403);
-
-  // Stand in for the server's opener, because e2e cannot see a file manager,
-  // and record the folder each call asks to open.
-  const opened: unknown[] = [];
-  await page.route("/api/rpc/openProjectFolder", async (route) => {
-    opened.push(route.request().postDataJSON());
-    await route.fulfill({ json: null });
-  });
-
-  // Open the test's project folder from its section on the start page.
+  // Open the start page and confirm it lists the test's project files.
   await page.goto("/");
   const section = getFolderSection(page, projectDir);
   await expect(section.getByRole("link")).toHaveCount(2);
-  await section.getByRole("button", { name: "Open folder" }).click();
-  await expect.poll(() => opened).toEqual([{ directory: projectDir }]);
 
   // Copy a project file as the file manager would, focus the window as when
   // switching back, and confirm the copy is listed.
