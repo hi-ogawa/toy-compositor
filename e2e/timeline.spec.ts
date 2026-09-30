@@ -79,6 +79,82 @@ test("navigate the timeline without editing the project", async ({
   );
 });
 
+test("clear the selection with Escape or by seeking", async ({
+  page,
+  editor,
+}) => {
+  // Open the synthetic project.
+  await page.goto(editor.url);
+  const time = page.getByTestId("timeline-time");
+  const emptyInspector = page
+    .getByRole("complementary", { name: "Inspector" })
+    .getByText("Select composition settings or a layer.");
+  const video = page.getByTestId("timeline-layer-0");
+  const thumbnail = page
+    .getByTestId("editor-timeline")
+    .getByRole("button", { name: "thumbnail", exact: true });
+
+  // Select the video layer, press Escape, and confirm the inspector empties
+  // and Delete no longer removes the layer.
+  await video.click();
+  await expectInspectorFields(page, { start: "0" });
+  await page.keyboard.press("Escape");
+  await expect(emptyInspector).toBeVisible();
+  await page.keyboard.press("Delete");
+  await expect(video).toBeVisible();
+
+  // Hold a drag of the video region, and confirm the first Escape only cancels
+  // the drag, and the next one clears the selection.
+  await dragBy(page, video, {
+    deltaX: DEFAULT_PIXELS_PER_SECOND,
+    release: false,
+  });
+  await page.keyboard.press("Escape");
+  await page.mouse.up();
+  await expectInspectorFields(page, { start: "0" });
+  await page.keyboard.press("Escape");
+  await expect(emptyInspector).toBeVisible();
+
+  // Click the render end marker, which selects the output, then click the
+  // ruler at 1 s, and confirm it clears the selection and seeks.
+  await clickTimelineButton(page, { name: "Render end" });
+  await expect(time).toContainText("3.000 s");
+  await expect(emptyInspector).toBeHidden();
+  await seekTimelineByPixels(page, { pixels: DEFAULT_PIXELS_PER_SECOND });
+  await expect(time).toContainText("1.000 s");
+  await expect(emptyInspector).toBeVisible();
+
+  // Select the thumbnail locator, then click empty space in the locator row at
+  // 5 s, and confirm it deselects the locator and seeks.
+  await thumbnail.click();
+  await expect(thumbnail).toHaveAttribute("aria-pressed", "true");
+  const locatorRow = page
+    .getByTestId("editor-timeline")
+    .getByRole("button", { name: "Locator row", exact: true });
+  const locatorRowBox = (await locatorRow.boundingBox())!;
+  await page.mouse.click(
+    locatorRowBox.x + 5 * DEFAULT_PIXELS_PER_SECOND,
+    locatorRowBox.y + locatorRowBox.height / 2,
+  );
+  await expect(time).toContainText("5.000 s");
+  await expect(thumbnail).toHaveAttribute("aria-pressed", "false");
+
+  // Select the locator again, press Escape, and confirm it deselects and
+  // Delete no longer removes it.
+  await thumbnail.click();
+  await expect(thumbnail).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("Escape");
+  await expect(thumbnail).toHaveAttribute("aria-pressed", "false");
+  await page.keyboard.press("Delete");
+  await expect(thumbnail).toBeVisible();
+
+  // Confirm clearing the selection left the project unchanged.
+  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
+});
+
 test("scroll and zoom the timeline with the wheel", async ({
   page,
   editor,
@@ -363,9 +439,13 @@ test("drag render markers on the timeline", async ({ page, editor }) => {
   });
   await expectInspectorFields(page, { start: "0", end: "0.033" });
 
-  // Switch to a still at 1 s, and drag its render frame 0.51 s right onto the
+  // Seek to 1 s, which deselects the output, reopen Composition settings, and
+  // switch to a still there, then drag its render frame 0.51 s right onto the
   // nearest frame.
   await seekTimelineByPixels(page, { pixels: secondsToPixels(1) });
+  await page
+    .getByRole("button", { name: "Composition settings", exact: true })
+    .click();
   await page
     .getByTestId("inspector")
     .getByRole("button", { name: "still", exact: true })

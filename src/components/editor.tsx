@@ -29,6 +29,17 @@ export function Editor({ projectPath }: { projectPath: string }) {
   const locatorInteraction = useLocatorInteraction({ runtime, state });
   const [sideOpen, setSideOpen] = useState(true);
 
+  // Clears the layer or output selection and the locator selection together,
+  // like toy-midi's `clearSelection` across its selection domains.
+  function clearSelection(): boolean {
+    const hadSelection =
+      state.selection !== undefined ||
+      locatorInteraction.selectedIndex !== undefined;
+    runtime.select(undefined);
+    locatorInteraction.select(undefined);
+    return hadSelection;
+  }
+
   useEffect(() => {
     document.title = state.file
       ? `${state.file} - Toy Compositor`
@@ -49,6 +60,10 @@ export function Editor({ projectPath }: { projectPath: string }) {
     if (layerInteraction.editing && matchKeyboardEvent(event, "Escape")) {
       event.preventDefault();
       layerInteraction.cancelEdit();
+      return;
+    }
+    if (matchKeyboardEvent(event, "Escape") && clearSelection()) {
+      event.preventDefault();
       return;
     }
     if (timeline.handleFrameStepShortcut(event)) {
@@ -141,6 +156,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
             playhead={state.playhead}
             playing={state.playing}
             audioSources={state.audioSources}
+            onClearSelection={clearSelection}
           />
         </main>
         <aside
