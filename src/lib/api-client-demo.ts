@@ -21,7 +21,7 @@ export const apiClient: typeof serverApiClient = {
   async loadProject({ path }) {
     const project = projects.get(path);
     if (!project) {
-      throw new Error(`Failed to load project: ${path} is not in the demo`);
+      throw new Error(`${path} is not in the demo`);
     }
     return { file: path, project: structuredClone(project) };
   },
@@ -34,7 +34,7 @@ export const apiClient: typeof serverApiClient = {
   /** Creates last for the browser tab's session. */
   async createProject({ path, project }) {
     if (projects.has(path)) {
-      throw new Error(`Failed to create project: ${path} already exists`);
+      throw new Error(`${path} already exists`);
     }
     writeProject({ path, project });
   },
@@ -58,7 +58,7 @@ export const apiClient: typeof serverApiClient = {
   async loadMediaInfo({ src }) {
     const mediaInfo = sampleMediaInfoMap[src];
     if (!mediaInfo) {
-      throw new Error(`Failed to load media info: ${src} is not in the demo`);
+      throw new Error(`${src} is not in the demo`);
     }
     return mediaInfo;
   },

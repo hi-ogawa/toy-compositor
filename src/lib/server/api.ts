@@ -3,62 +3,34 @@ import { once } from "node:events";
 import fs from "node:fs";
 import path from "node:path";
 import { readJson, writeJson } from "../../utils/fs.ts";
-import type { ProjectEntry } from "../api-client.ts";
 import { getMediaType, type MediaFile } from "../media-file.ts";
 import { probeMediaInfo } from "../media-info.ts";
+import type { MediaInfo, Output, Project } from "../project.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 
 /**
  * Editor API over a projects root laid out as `<root>/<project-dir>/<name>.json`
  * with media next to each project. Files are named by paths relative to
- * `root` in query parameters, so a file path is never encoded as a URL path.
+ * `root`, so a file path is never encoded as a URL path.
  *
- * - `GET /api/projects` lists the projects.
- * - `GET /api/project?path=` reads a project, `PUT` saves it, and `POST`
- *   creates a new one.
+ * - `POST /api/rpc/<method>` calls one of `createEditorHandlers`' methods with
+ *   the JSON body as its params, and answers with its JSON result.
  * - `GET /api/media?project=&src=` serves a layer source resolved against the
  *   project's directory, as the renderer does, with range requests.
- * - `GET /api/media-info?project=&src=` probes a layer source into its media
- *   info, the entry that the project's `media` keeps for it.
- * - `GET /api/media-files?project=` lists the media files in the project's
- *   `media/` folder, and `POST /api/open-media-folder?project=` opens that
- *   folder in the desktop's file manager, creating it first if needed.
  */
 export function createEditorHandler({ root }: { root: string }) {
+  const handlers = createEditorHandlers({ root });
   return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url);
+      const method = url.pathname.match(/^\/api\/rpc\/(\w+)$/)?.[1];
+      if (method) {
+        return await handleRpc({ handlers, method, request });
+      }
       switch (`${request.method} ${url.pathname}`) {
-        case "GET /api/projects": {
-          return Response.json({
-            root,
-            projects: await listProjects({ root }),
-          });
-        }
-        case "GET /api/project": {
-          return await handleGetProject({ root, url });
-        }
-        case "PUT /api/project": {
-          return await handlePutProject({ root, url, request });
-        }
-        case "POST /api/project": {
-          return await handleCreateProject({ root, url, request });
-        }
         case "GET /api/media":
         case "HEAD /api/media": {
           return await handleMedia({ root, url, request });
-        }
-        case "GET /api/media-info": {
-          return Response.json(
-            await probeMediaInfo(resolveMediaFile({ root, url })),
-          );
-        }
-        case "GET /api/media-files": {
-          return Response.json({ files: await listMediaFiles({ root, url }) });
-        }
-        case "POST /api/open-media-folder": {
-          await openMediaFolder({ root, url });
-          return Response.json({});
         }
         default: {
           return new Response(undefined, { status: 404 });
@@ -67,6 +39,174 @@ export function createEditorHandler({ root }: { root: string }) {
     } catch (error) {
       return toErrorResponse(error);
     }
+  };
+}
+
+export type EditorHandlers = ReturnType<typeof createEditorHandlers>;
+
+export type ProjectFile = { file: string; project: Project };
+
+/** A project file found under the projects root, as `<project-dir>/<name>.json`. */
+export type ProjectEntry = {
+  path: string;
+  width: number;
+  height: number;
+  output: Output["type"];
+};
+
+export type ProjectList = { root: string; projects: ProjectEntry[] };
+
+async function handleRpc({
+  handlers,
+  method,
+  request,
+}: {
+  handlers: EditorHandlers;
+  method: string;
+  request: Request;
+}) {
+  if (request.method !== "POST") {
+    throw new HttpError({ status: 405, message: "RPC methods take POST" });
+  }
+  // A JSON content type makes a browser preflight a cross-origin request,
+  // which this server never approves, so a page on another site cannot call
+  // a method with a plain form POST.
+  const contentType = request.headers.get("content-type")?.split(";")[0];
+  if (contentType?.trim() !== "application/json") {
+    throw new HttpError({
+      status: 415,
+      message: "RPC params must be application/json",
+    });
+  }
+  if (!Object.hasOwn(handlers, method)) {
+    throw new HttpError({ status: 404, message: `Unknown method ${method}` });
+  }
+  const result = await handlers[method as keyof EditorHandlers](
+    await request.json(),
+  );
+  return Response.json(result ?? null);
+}
+
+/** The editor's RPC methods, each taking one params object. */
+export function createEditorHandlers({ root }: { root: string }) {
+  return {
+    async listProjects(): Promise<ProjectList> {
+      return { root, projects: await listProjects({ root }) };
+    },
+
+    async loadProject({
+      path: projectPath,
+    }: {
+      path: string;
+    }): Promise<ProjectFile> {
+      const file = resolveFile({ root, paths: [projectPath] });
+      if (!fs.existsSync(file)) {
+        throw new HttpError({ status: 404, message: "Project not found" });
+      }
+      return { file: projectPath, project: await readJson<Project>(file) };
+    },
+
+    async saveProject({
+      path: projectPath,
+      project,
+    }: {
+      path: string;
+      project: Project;
+    }): Promise<void> {
+      const file = resolveFile({ root, paths: [projectPath] });
+      if (path.extname(file) !== ".json") {
+        throw new HttpError({
+          status: 403,
+          message: "Only .json files can be saved",
+        });
+      }
+      await writeJson(file, project);
+    },
+
+    /**
+     * Create `<project-dir>/<name>.json`, and the project directory if needed.
+     * The directory may already exist, such as when media was put there first,
+     * but an existing project file is never overwritten.
+     */
+    async createProject({
+      path: projectPath,
+      project,
+    }: {
+      path: string;
+      project: Project;
+    }): Promise<void> {
+      const segments = projectPath.split("/");
+      if (
+        segments.length !== 2 ||
+        segments.some((s) => !s) ||
+        path.extname(projectPath) !== ".json"
+      ) {
+        throw new HttpError({
+          status: 400,
+          message: "Project path must be <project-dir>/<name>.json",
+        });
+      }
+      const file = resolveFile({ root, paths: [projectPath] });
+      await fs.promises.mkdir(path.dirname(file), { recursive: true });
+      try {
+        await writeJson(file, project, { flag: "wx" });
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+          throw new HttpError({
+            status: 409,
+            message: `${projectPath} already exists`,
+          });
+        }
+        throw error;
+      }
+    },
+
+    /** Probe a layer source into its media info, the entry that the project's `media` keeps for it. */
+    async loadMediaInfo({
+      src,
+      projectPath,
+    }: {
+      src: string;
+      projectPath: string;
+    }): Promise<MediaInfo> {
+      return await probeMediaInfo(resolveMediaFile({ root, projectPath, src }));
+    },
+
+    /** List the media files in the project's `media/` folder. */
+    async listMediaFiles({
+      projectPath,
+    }: {
+      projectPath: string;
+    }): Promise<MediaFile[]> {
+      const dir = resolveMediaFolder({ root, projectPath });
+      if (!fs.existsSync(dir)) {
+        return [];
+      }
+      const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+      const files: MediaFile[] = [];
+      for (const entry of entries) {
+        const type = getMediaType(entry.name);
+        if (entry.isFile() && !entry.name.startsWith(".") && type) {
+          files.push({ src: `media/${entry.name}`, type });
+        }
+      }
+      return files.sort((a, b) => a.src.localeCompare(b.src));
+    },
+
+    /** Open the project's `media/` folder in the desktop's file manager, creating it first if needed. */
+    async openMediaFolder({
+      projectPath,
+    }: {
+      projectPath: string;
+    }): Promise<void> {
+      const dir = resolveMediaFolder({ root, projectPath });
+      await fs.promises.mkdir(dir, { recursive: true });
+      const opener = process.platform === "darwin" ? "open" : "xdg-open";
+      const child = spawn(opener, [dir], { detached: true, stdio: "ignore" });
+      // Rejects when the opener is missing.
+      await once(child, "spawn");
+      child.unref();
+    },
   };
 }
 
@@ -108,78 +248,6 @@ async function readProject(file: string) {
   } catch {}
 }
 
-async function handleGetProject({ root, url }: { root: string; url: URL }) {
-  const file = resolveFile({ root, paths: [getParam(url, "path")] });
-  if (!fs.existsSync(file)) {
-    throw new HttpError({ status: 404, message: "Project not found" });
-  }
-  return new Response(await fs.promises.readFile(file), {
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-async function handlePutProject({
-  root,
-  url,
-  request,
-}: {
-  root: string;
-  url: URL;
-  request: Request;
-}) {
-  const file = resolveFile({ root, paths: [getParam(url, "path")] });
-  if (path.extname(file) !== ".json") {
-    throw new HttpError({
-      status: 403,
-      message: "Only .json files can be saved",
-    });
-  }
-  await writeJson(file, await request.json());
-  return Response.json({});
-}
-
-/**
- * Create `<project-dir>/<name>.json`, and the project directory if needed. The
- * directory may already exist, such as when media was put there first, but an
- * existing project file is never overwritten.
- */
-async function handleCreateProject({
-  root,
-  url,
-  request,
-}: {
-  root: string;
-  url: URL;
-  request: Request;
-}) {
-  const projectPath = getParam(url, "path");
-  const segments = projectPath.split("/");
-  if (
-    segments.length !== 2 ||
-    segments.some((s) => !s) ||
-    path.extname(projectPath) !== ".json"
-  ) {
-    throw new HttpError({
-      status: 400,
-      message: "Project path must be <project-dir>/<name>.json",
-    });
-  }
-  const file = resolveFile({ root, paths: [projectPath] });
-  await fs.promises.mkdir(path.dirname(file), { recursive: true });
-  try {
-    await writeJson(file, await request.json(), { flag: "wx" });
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "EEXIST") {
-      throw new HttpError({
-        status: 409,
-        message: `${projectPath} already exists`,
-      });
-    }
-    throw error;
-  }
-  return Response.json({});
-}
-
 /** Serve a layer source resolved against the project's directory, as the renderer does. */
 async function handleMedia({
   root,
@@ -190,51 +258,39 @@ async function handleMedia({
   url: URL;
   request: Request;
 }) {
-  return await serveFile({ file: resolveMediaFile({ root, url }), request });
+  const file = resolveMediaFile({
+    root,
+    projectPath: getParam(url, "project"),
+    src: getParam(url, "src"),
+  });
+  return await serveFile({ file, request });
 }
 
-/** Resolve `?src=` against the directory of the `?project=` file, as the renderer does. */
-function resolveMediaFile({ root, url }: { root: string; url: URL }) {
-  const project = getParam(url, "project");
-  const src = getParam(url, "src");
-  const file = resolveFile({ root, paths: [path.dirname(project), src] });
+/** Resolve `src` against the project's directory, as the renderer does. */
+function resolveMediaFile({
+  root,
+  projectPath,
+  src,
+}: {
+  root: string;
+  projectPath: string;
+  src: string;
+}) {
+  const file = resolveFile({ root, paths: [path.dirname(projectPath), src] });
   if (!fs.existsSync(file)) {
     throw new HttpError({ status: 404, message: "Media not found" });
   }
   return file;
 }
 
-async function listMediaFiles({ root, url }: { root: string; url: URL }) {
-  const dir = resolveMediaFolder({ root, url });
-  if (!fs.existsSync(dir)) {
-    return [];
-  }
-  const entries = await fs.promises.readdir(dir, { withFileTypes: true });
-  const files: MediaFile[] = [];
-  for (const entry of entries) {
-    const type = getMediaType(entry.name);
-    if (entry.isFile() && !entry.name.startsWith(".") && type) {
-      files.push({ src: `media/${entry.name}`, type });
-    }
-  }
-  return files.sort((a, b) => a.src.localeCompare(b.src));
-}
-
-async function openMediaFolder({ root, url }: { root: string; url: URL }) {
-  const dir = resolveMediaFolder({ root, url });
-  await fs.promises.mkdir(dir, { recursive: true });
-  const opener = process.platform === "darwin" ? "open" : "xdg-open";
-  const child = spawn(opener, [dir], { detached: true, stdio: "ignore" });
-  // Rejects when the opener is missing.
-  await once(child, "spawn");
-  child.unref();
-}
-
-function resolveMediaFolder({ root, url }: { root: string; url: URL }) {
-  return resolveFile({
-    root,
-    paths: [path.dirname(getParam(url, "project")), "media"],
-  });
+function resolveMediaFolder({
+  root,
+  projectPath,
+}: {
+  root: string;
+  projectPath: string;
+}) {
+  return resolveFile({ root, paths: [path.dirname(projectPath), "media"] });
 }
 
 /**

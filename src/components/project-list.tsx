@@ -1,12 +1,13 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
-import { apiClient, type ProjectEntry } from "../lib/api-client";
+import { apiClient } from "../lib/api-client";
 import {
   CANVAS_PRESETS,
   type CanvasPreset,
   createEmptyProject,
 } from "../lib/project";
 import { getProjectPageUrl } from "../lib/routes";
+import type { ProjectEntry } from "../lib/server/api";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -91,7 +92,6 @@ function NewProjectMenu() {
     onSuccess: (_, { path }) => {
       window.location.href = getProjectPageUrl({ path });
     },
-    onError: (error) => window.alert(error.message),
   });
   return (
     <DropdownMenu>

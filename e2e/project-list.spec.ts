@@ -100,12 +100,9 @@ test("create a project from the start page", async ({ page }, testInfo) => {
   // Create the same project again and confirm it is refused without overwriting.
   await page.getByRole("button", { name: "New project", exact: true }).click();
   await page.getByRole("menuitem", { name: /vertical-video/ }).click();
-  await expect
-    .poll(() => dialogs)
-    .toEqual([
-      "Project name",
-      "Project name",
-      `Failed to create project: ${projectDir}/vertical-video.json already exists`,
-    ]);
+  await expect(
+    page.getByText(`${projectDir}/vertical-video.json already exists`),
+  ).toBeVisible();
+  expect(dialogs).toEqual(["Project name", "Project name"]);
   await expect(page).toHaveURL("/");
 });
