@@ -1,12 +1,14 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { PlusIcon } from "lucide-react";
-import { apiClient, type ProjectEntry } from "../lib/api-client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FolderOpenIcon, FolderPlusIcon, PlusIcon, XIcon } from "lucide-react";
+import { useState } from "react";
+import { apiClient } from "../lib/api-client";
 import {
   CANVAS_PRESETS,
   type CanvasPreset,
   createEmptyProject,
 } from "../lib/project";
 import { getProjectPageUrl } from "../lib/routes";
+import type { ProjectEntry, ProjectFolder } from "../lib/server/api";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -14,14 +16,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { useWindowEvent } from "./use-window-event";
 
-/** Start page listing the projects under the root, grouped by project directory. */
+const PROJECT_LIST_QUERY_KEY = ["project-list"];
+
+/** Start page listing the registered project folders with their project files. */
 export function ProjectList() {
   const query = useQuery({
-    queryKey: ["project-list"],
+    queryKey: PROJECT_LIST_QUERY_KEY,
     retry: false,
     queryFn: () => apiClient.listProjects(),
   });
+  // Switching back from the file manager focuses the window without changing
+  // page visibility, so refetch on focus to pick up copied project files.
+  useWindowEvent("focus", () => void query.refetch());
   return (
     <div className="fixed inset-0 overflow-hidden bg-neutral-900">
       {/* Gradient glow */}
@@ -32,19 +40,20 @@ export function ProjectList() {
           <h1 className="text-3xl font-bold tracking-tight text-neutral-100">
             Toy Compositor
           </h1>
-          <p
-            className="mt-1 truncate font-mono text-sm text-neutral-500"
-            title={query.data?.root}
-          >
-            {query.data?.root}
-          </p>
         </header>
 
         <main className="mt-10 min-h-0 flex-1">
           <div className="flex max-h-full min-h-0 flex-col overflow-hidden rounded-xl border border-neutral-700/70 bg-neutral-800/45 shadow-2xl shadow-black/20">
-            <div className="flex shrink-0 items-center justify-between gap-4 border-b border-neutral-700/70 p-4">
-              <h2 className="font-semibold">Projects</h2>
-              <NewProjectMenu />
+            <div className="shrink-0 border-b border-neutral-700/70 p-4">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="font-semibold">Projects</h2>
+                {query.data?.folderDialog && (
+                  <AddFolderDialogButtons dialog={query.data.folderDialog} />
+                )}
+              </div>
+              {query.data?.editable && !query.data.folderDialog && (
+                <AddFolderPathForm />
+              )}
             </div>
             <section
               aria-label="Projects"
@@ -54,17 +63,25 @@ export function ProjectList() {
                 <div className="p-8 text-center text-sm text-orange-300">
                   {query.error.message}
                 </div>
-              ) : !query.data ? null : query.data.projects.length === 0 ? (
+              ) : !query.data ? null : query.data.folders.length === 0 ? (
                 <div className="flex min-h-36 flex-col items-center justify-center text-center">
                   <p className="font-medium text-neutral-300">
-                    No projects yet
+                    No project folders yet
                   </p>
                   <p className="mt-1 text-sm text-neutral-500">
-                    Create a project to begin.
+                    Add a folder to begin.
                   </p>
                 </div>
               ) : (
-                <ProjectDirList projects={query.data.projects} />
+                <ul className="space-y-4" data-testid="project-list">
+                  {query.data.folders.map((folder) => (
+                    <FolderSection
+                      key={folder.directory}
+                      folder={folder}
+                      removable={query.data.editable}
+                    />
+                  ))}
+                </ul>
               )}
             </section>
           </div>
@@ -75,48 +92,189 @@ export function ProjectList() {
 }
 
 /**
- * Create `<name>/<preset>.json` from a canvas preset and a prompted name, and
- * open it in the editor.
+ * Register a folder picked in the server's native dialog. Linux dialogs pick
+ * either folders or files, so a secondary link picks a project file there.
  */
-function NewProjectMenu() {
+function AddFolderDialogButtons({
+  dialog,
+}: {
+  dialog: "zenity" | "osascript";
+}) {
+  const queryClient = useQueryClient();
+  const pickMutation = useMutation({
+    mutationFn: (kind: "folder" | "file") =>
+      apiClient.pickProjectFolder({ kind }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: PROJECT_LIST_QUERY_KEY }),
+  });
+  return (
+    <div className="flex items-center gap-3">
+      {dialog === "zenity" && (
+        <button
+          type="button"
+          disabled={pickMutation.isPending}
+          className="text-sm text-neutral-400 underline underline-offset-2 hover:text-neutral-100"
+          onClick={() => pickMutation.mutate("file")}
+        >
+          or pick a project file
+        </button>
+      )}
+      <Button
+        disabled={pickMutation.isPending}
+        className="gap-1.5 bg-emerald-600 px-4 py-2 text-sm text-white shadow-lg shadow-emerald-900/30 hover:bg-emerald-500"
+        onClick={() => pickMutation.mutate("folder")}
+      >
+        <FolderPlusIcon className="size-4" />
+        Add project folder
+      </Button>
+    </div>
+  );
+}
+
+/** Register a typed folder or project file path, for servers without a native dialog. */
+function AddFolderPathForm() {
+  const queryClient = useQueryClient();
+  const [path, setPath] = useState("");
+  const addMutation = useMutation({
+    mutationFn: (path: string) => apiClient.addProjectFolder({ path }),
+    onSuccess: async () => {
+      setPath("");
+      await queryClient.invalidateQueries({ queryKey: PROJECT_LIST_QUERY_KEY });
+    },
+  });
+  return (
+    <form
+      className="mt-3 flex gap-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (path.trim()) {
+          addMutation.mutate(path.trim());
+        }
+      }}
+    >
+      <input
+        aria-label="Project folder path"
+        placeholder="Folder or project file path"
+        value={path}
+        onChange={(event) => setPath(event.target.value)}
+        className="min-w-0 flex-1 rounded-md border border-neutral-700 bg-neutral-900/60 px-3 py-1.5 font-mono text-sm outline-none placeholder:text-neutral-600 focus:border-neutral-500"
+      />
+      <Button
+        type="submit"
+        disabled={addMutation.isPending}
+        className="px-3 text-sm text-neutral-200 hover:bg-neutral-700"
+      >
+        Add
+      </Button>
+    </form>
+  );
+}
+
+function FolderSection({
+  folder,
+  removable,
+}: {
+  folder: ProjectFolder;
+  removable: boolean;
+}) {
+  const queryClient = useQueryClient();
+  const removeMutation = useMutation({
+    mutationFn: () =>
+      apiClient.removeProjectFolder({ directory: folder.directory }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: PROJECT_LIST_QUERY_KEY }),
+  });
+  const openMutation = useMutation({
+    mutationFn: () =>
+      apiClient.openProjectFolder({ directory: folder.directory }),
+  });
+  const name = folder.directory.split(/[\\/]/).at(-1)!;
+  return (
+    <li>
+      <div className="flex items-center gap-3 px-1 pb-2">
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate font-mono text-sm font-medium text-neutral-300">
+            {name}
+          </h3>
+          <p
+            className="truncate font-mono text-xs text-neutral-500"
+            title={folder.directory}
+          >
+            {folder.directory}
+          </p>
+        </div>
+        {folder.missing ? (
+          <span className="text-xs text-orange-300">Missing</span>
+        ) : (
+          <>
+            <Button
+              title="Open the folder in the file manager"
+              className="gap-1 px-2.5 py-1 text-xs text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100"
+              onClick={() => openMutation.mutate()}
+            >
+              <FolderOpenIcon className="size-3.5" />
+              Open folder
+            </Button>
+            <NewProjectFileMenu directory={folder.directory} />
+          </>
+        )}
+        {removable && (
+          <Button
+            aria-label={`Remove ${name}`}
+            title="Remove from the list, keeping its files"
+            disabled={removeMutation.isPending}
+            className="size-7 border-transparent text-neutral-400 hover:bg-neutral-700 hover:text-neutral-100"
+            onClick={() => removeMutation.mutate()}
+          >
+            <XIcon className="size-4" />
+          </Button>
+        )}
+      </div>
+      {!folder.missing &&
+        (folder.files.length === 0 ? (
+          <p className="px-1 text-sm text-neutral-500">No project files yet.</p>
+        ) : (
+          <ul className="space-y-2">
+            {folder.files.map((entry) => (
+              <ProjectRow key={entry.path} entry={entry} />
+            ))}
+          </ul>
+        ))}
+    </li>
+  );
+}
+
+/** Create `<folder>/<preset>.json` from a canvas preset, and open it in the editor. */
+function NewProjectFileMenu({ directory }: { directory: string }) {
   const createProjectMutation = useMutation({
-    mutationFn: async ({
-      path,
-      preset,
-    }: {
-      path: string;
-      preset: CanvasPreset;
-    }) =>
-      apiClient.createProject({ path, project: createEmptyProject(preset) }),
-    onSuccess: (_, { path }) => {
+    mutationFn: async (preset: CanvasPreset) => {
+      const path = `${directory}/${preset.name}.json`;
+      await apiClient.createProject({
+        path,
+        project: createEmptyProject(preset),
+      });
+      return path;
+    },
+    onSuccess: (path) => {
       window.location.href = getProjectPageUrl({ path });
     },
-    onError: (error) => window.alert(error.message),
   });
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           disabled={createProjectMutation.isPending}
-          className="gap-1.5 bg-emerald-600 px-4 py-2 text-sm text-white shadow-lg shadow-emerald-900/30 hover:bg-emerald-500"
+          className="gap-1 px-2.5 py-1 text-xs text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100"
         >
-          <PlusIcon className="size-4" />
-          New project
+          <PlusIcon className="size-3.5" />
+          New project file
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {CANVAS_PRESETS.map((preset) => (
           <DropdownMenuItem
             key={preset.name}
-            onSelect={() => {
-              const name = window.prompt("Project name")?.trim();
-              if (name) {
-                createProjectMutation.mutate({
-                  path: `${name}/${preset.name}.json`,
-                  preset,
-                });
-              }
-            }}
+            onSelect={() => createProjectMutation.mutate(preset)}
           >
             {preset.name}
             <span className="ml-auto pl-4 text-xs text-neutral-500">
@@ -129,29 +287,6 @@ function NewProjectMenu() {
   );
 }
 
-function ProjectDirList({ projects }: { projects: ProjectEntry[] }) {
-  const projectDirs = Map.groupBy(
-    projects,
-    (entry) => entry.path.split("/")[0]!,
-  );
-  return (
-    <ul className="space-y-4" data-testid="project-list">
-      {[...projectDirs].map(([projectDir, entries]) => (
-        <li key={projectDir}>
-          <h3 className="truncate px-1 pb-2 font-mono text-sm font-medium text-neutral-300">
-            {projectDir}
-          </h3>
-          <ul className="space-y-2">
-            {entries.map((entry) => (
-              <ProjectRow key={entry.path} entry={entry} />
-            ))}
-          </ul>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 function ProjectRow({ entry }: { entry: ProjectEntry }) {
   return (
     <li>
@@ -160,7 +295,7 @@ function ProjectRow({ entry }: { entry: ProjectEntry }) {
         className="flex h-16 w-full flex-col justify-center rounded-lg border border-neutral-700/60 bg-neutral-800/70 px-4 transition-colors hover:bg-neutral-800"
       >
         <div className="truncate font-mono text-sm font-medium">
-          {entry.path.split("/").at(-1)}
+          {entry.path.split(/[\\/]/).at(-1)}
         </div>
         <div className="mt-1 text-xs text-neutral-500">
           {entry.width}x{entry.height} {entry.output}

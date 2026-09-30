@@ -1,31 +1,52 @@
 import { cp, rm } from "node:fs/promises";
 import path from "node:path";
 import {
+  type APIRequestContext,
   expect,
   type Locator,
   type Page,
   test as base,
 } from "@playwright/test";
+import { getProjectPageUrl } from "../src/lib/routes.ts";
 
 export const test = base.extend<{
   editor: { projectDir: string; url: string; projectFile: string };
 }>({
-  editor: async ({}, use, testInfo) => {
-    // Copy the synthetic sample into its own project directory under the
-    // server's projects root, so each test saves edits independently. Clear
-    // it first, so files a previous run added do not carry over.
-    const projectDir = testInfo.testId;
-    const projectDirPath = path.resolve(".local/e2e-projects", projectDir);
-    await rm(projectDirPath, { recursive: true, force: true });
-    await cp("samples/synthetic", projectDirPath, { recursive: true });
-    const url = `/?${new URLSearchParams({ project: `${projectDir}/project.json` })}`;
+  editor: async ({ request }, use, testInfo) => {
+    // Copy the synthetic sample into its own project folder and register it,
+    // so each test saves edits independently. Clear it first, so files a
+    // previous run added do not carry over.
+    const projectDir = getTestProjectDir(testInfo.testId);
+    await rm(projectDir, { recursive: true, force: true });
+    await cp("samples/synthetic", projectDir, { recursive: true });
+    await registerFolder(request, { directory: projectDir });
+    const projectFile = path.join(projectDir, "project.json");
     await use({
       projectDir,
-      url,
-      projectFile: path.join(projectDirPath, "project.json"),
+      url: getProjectPageUrl({ path: projectFile }),
+      projectFile,
     });
   },
 });
+
+/** The absolute path of a test's own project folder. */
+export function getTestProjectDir(name: string) {
+  return path.resolve(".local/e2e-projects", name);
+}
+
+/**
+ * Register a folder through the server, which runs registry changes in turn.
+ * Workers writing the registry file themselves would drop each other's folders.
+ */
+export async function registerFolder(
+  request: APIRequestContext,
+  { directory }: { directory: string },
+) {
+  const response = await request.post("/api/rpc/addProjectFolder", {
+    data: { path: directory },
+  });
+  expect(response.ok()).toBe(true);
+}
 
 /** Wait until an image element has loaded its source. */
 export async function expectImageLoaded(image: Locator) {
@@ -142,18 +163,24 @@ export async function expectInspectorFields(
   );
 }
 
-/** Click the timeline ruler at an offset from its origin, which is project time 0. */
+/**
+ * Click the timeline ruler, or empty space in another seeking row, at an
+ * offset from its origin, which is project time 0.
+ */
 export async function seekTimelineByPixels(
   page: Page,
-  { pixels }: { pixels: number },
+  {
+    pixels,
+    name = "Timeline ruler",
+  }: { pixels: number; name?: "Timeline ruler" | "Locator row" },
 ) {
   await test.step(
-    `Seek timeline to ${pixels}px`,
+    `Seek timeline to ${pixels}px from ${name}`,
     async () => {
-      const ruler = page
+      const target = page
         .getByTestId("editor-timeline")
-        .getByRole("button", { name: "Timeline ruler", exact: true });
-      const box = (await ruler.boundingBox())!;
+        .getByRole("button", { name, exact: true });
+      const box = (await target.boundingBox())!;
       await page.mouse.click(box.x + pixels, box.y + box.height / 2);
     },
     { box: true },

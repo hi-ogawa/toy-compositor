@@ -1,31 +1,25 @@
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import { serve } from "srvx";
 import { staticMiddleware } from "srvx/static";
-import { createEditorHandler } from "./api.ts";
-
-export const DEFAULT_ROOT = path.join(
-  os.homedir(),
-  "Documents",
-  "toy-compositor",
-);
+import { createEditorHandler, SERVER_NAME } from "./api.ts";
+import type { LiveConnections } from "./live.ts";
+import type { ProjectRegistry } from "./registry.ts";
 
 /**
- * Serve the prebuilt editor client and the editor API over `root` on
- * localhost, with the same `/api/` handler that the dev server mounts.
+ * Serve the prebuilt editor client and the editor API over the registered
+ * project folders on localhost, with the same `/api/` handler that the dev server mounts.
  */
 export async function serveEditor({
-  root,
+  registry,
+  live,
   port,
   clientDir,
 }: {
-  root: string;
+  registry: ProjectRegistry;
+  live: LiveConnections;
   port: number;
   clientDir: string;
 }) {
-  fs.mkdirSync(root, { recursive: true });
-  const handleApi = createEditorHandler({ root });
+  const handleApi = createEditorHandler({ registry, live });
   const serveClient = staticMiddleware({ dir: clientDir });
   const server = serve({
     hostname: "localhost",
@@ -53,4 +47,14 @@ export async function serveEditor({
 function isLocalHost(host: string | null) {
   const name = host?.replace(/:\d+$/, "");
   return name === "localhost" || name === "127.0.0.1" || name === "[::1]";
+}
+
+/** Whether an editor server, rather than another process, answers on `port`. */
+export async function checkEditorServer(port: number): Promise<boolean> {
+  try {
+    const res = await fetch(`http://localhost:${port}/api/server`);
+    return res.ok && (await res.json()).name === SERVER_NAME;
+  } catch {
+    return false;
+  }
 }

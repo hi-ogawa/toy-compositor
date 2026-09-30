@@ -1,20 +1,21 @@
 import {
   LoaderCircleIcon,
   PauseIcon,
+  PencilIcon,
   PlayIcon,
+  PlusIcon,
   VolumeXIcon,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { usePointerGesture } from "../hooks/use-pointer-gesture";
 import type { LayerEditType } from "../lib/layer-edit";
 import { getLayerRange, intersect, type TimeRange } from "../lib/layout";
-import type { Layer, Locator, Output } from "../lib/project";
+import type { Layer, Output } from "../lib/project";
 import type {
   DecodedAudio,
   EditorRuntime,
   EditorLayer,
-  EditorSelection,
   EditorProject,
 } from "../lib/runtime";
 import type { PromiseState } from "../utils/promise-state";
@@ -22,29 +23,36 @@ import { AudioWaveformView } from "./audio-waveform";
 import { LayerTypeIcon } from "./layer-type-icon";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
-import type { LayerInteraction } from "./use-layer-interaction";
+import type {
+  EditorSelection,
+  LayerInteraction,
+} from "./use-layer-interaction";
+import type { LocatorInteraction } from "./use-locator-interaction";
 import { TIMELINE_LABEL_WIDTH, type TimelineView } from "./use-timeline";
 
 export function Timeline({
   timeline,
   layerInteraction,
+  locatorInteraction,
   runtime,
   project,
   selection,
   playhead,
   playing,
   audioSources,
+  onClearSelection,
 }: {
   timeline: TimelineView;
   layerInteraction: LayerInteraction;
+  locatorInteraction: LocatorInteraction;
   runtime: EditorRuntime;
   project: EditorProject;
   selection?: EditorSelection;
   playhead: number;
   playing: boolean;
   audioSources: Record<string, PromiseState<DecodedAudio>>;
+  onClearSelection: () => void;
 }) {
-  const selectOutput = () => runtime.select({ type: "output" });
   const seek = (time: number) => runtime.seek(time);
   return (
     <section
@@ -90,12 +98,10 @@ export function Timeline({
           <TimelineLocatorRow
             timeline={timeline}
             output={project.output}
-            locators={project.locators ?? []}
+            locatorInteraction={locatorInteraction}
             renderSelected={selection?.type === "output"}
-            onRenderMarkerClick={(time) => {
-              selectOutput();
-              seek(time);
-            }}
+            onRenderSelect={() => layerInteraction.select({ type: "output" })}
+            onClearSelection={onClearSelection}
             onSeek={seek}
           />
           <TimelineRuler timeline={timeline} onSeek={seek} />
@@ -119,7 +125,9 @@ export function Timeline({
                 selected={
                   selection?.type === "layer" && selection.id === layer.id
                 }
-                onSelect={() => runtime.select({ type: "layer", id: layer.id })}
+                onSelect={() =>
+                  layerInteraction.select({ type: "layer", id: layer.id })
+                }
               />
             ))}
           {timeline.isVisible(playhead) && (
@@ -194,35 +202,43 @@ function TimelineRuler({
 function TimelineLocatorRow({
   timeline,
   output,
-  locators,
+  locatorInteraction,
   renderSelected,
-  onRenderMarkerClick,
+  onRenderSelect,
+  onClearSelection,
   onSeek,
 }: {
   timeline: TimelineView;
   output: Output;
-  locators: Locator[];
+  locatorInteraction: LocatorInteraction;
   renderSelected: boolean;
-  onRenderMarkerClick: (time: number) => void;
+  onRenderSelect: () => void;
+  onClearSelection: () => void;
   onSeek: (time: number) => void;
 }) {
   const renderMarkers =
     output.type === "video"
       ? [
           {
-            label: "Render start",
+            type: "start" as const,
+            name: "Render start",
+            label: "Start",
             time: output.start,
             labelSide: "after" as const,
           },
           {
-            label: "Render end",
+            type: "end" as const,
+            name: "Render end",
+            label: "End",
             time: output.end,
             labelSide: "before" as const,
           },
         ]
       : [
           {
-            label: "Render frame",
+            type: "time" as const,
+            name: "Render frame",
+            label: "Frame",
             time: output.time,
             labelSide: "after" as const,
           },
@@ -233,9 +249,17 @@ function TimelineLocatorRow({
       className="h-7"
       subdivisions={false}
       label={
-        <span className="px-3 text-xs font-semibold text-muted-foreground">
-          Locators
-        </span>
+        <div className="flex w-full items-center justify-between px-3 text-xs font-semibold text-muted-foreground">
+          <span>Locators</span>
+          <Button
+            title="Add locator at playhead (L)"
+            aria-label="Add locator at playhead"
+            className="size-5 hover:bg-neutral-700"
+            onClick={locatorInteraction.add}
+          >
+            <PlusIcon className="size-3" />
+          </Button>
+        </div>
       }
     >
       {/* Seeks from empty space, underneath the markers. */}
@@ -243,40 +267,52 @@ function TimelineLocatorRow({
         type="button"
         aria-label="Locator row"
         className="absolute inset-0 cursor-crosshair"
-        onClick={(event) =>
+        onClick={(event) => {
+          onClearSelection();
           onSeek(
             timeline.xToTime(
               event.clientX - event.currentTarget.getBoundingClientRect().left,
             ),
-          )
-        }
+          );
+        }}
       />
       {renderMarkers
         .filter((marker) => timeline.isVisible(marker.time))
         .map((marker) => (
           <LocatorMarker
-            key={marker.label}
+            key={marker.type}
+            name={marker.name}
             label={marker.label}
             time={marker.time}
             left={timeline.timeToX(marker.time)}
+            pixelsPerSecond={timeline.pixelsPerSecond}
             labelSide={marker.labelSide}
             render
             selected={renderSelected}
-            onClick={() => onRenderMarkerClick(marker.time)}
+            onSelect={onRenderSelect}
+            onClick={() => onSeek(marker.time)}
+            onMove={(time) =>
+              locatorInteraction.moveRenderMarker(marker.type, time)
+            }
           />
         ))}
-      {locators
+      {locatorInteraction.locators
         .filter((locator) => timeline.isVisible(locator.time))
-        .map((locator, index) => (
+        .map((locator) => (
           <LocatorMarker
-            key={index}
+            key={locator.id}
+            name={locator.label}
             label={locator.label}
             time={locator.time}
             left={timeline.timeToX(locator.time)}
+            pixelsPerSecond={timeline.pixelsPerSecond}
             labelSide="after"
             render={false}
-            selected={false}
+            selected={locatorInteraction.selectedId === locator.id}
+            onSelect={() => locatorInteraction.select(locator.id)}
             onClick={() => onSeek(locator.time)}
+            onMove={(time) => locatorInteraction.move(locator.id, time)}
+            onRename={(label) => locatorInteraction.rename(locator.id, label)}
           />
         ))}
     </TimelineRow>
@@ -530,58 +566,116 @@ function getTimelineGridBackground(
 }
 
 function LocatorMarker({
+  name,
   label,
   time,
   left,
+  pixelsPerSecond,
   labelSide,
   render,
   selected,
+  onSelect,
   onClick,
+  onMove,
+  onRename,
 }: {
+  /** Render markers show a short label, and their color says they render. */
+  name: string;
   label: string;
   time: number;
   left: number;
+  pixelsPerSecond: number;
   labelSide: "before" | "after";
   render: boolean;
   selected: boolean;
+  onSelect: () => void;
   onClick: () => void;
+  onMove: (time: number) => void;
+  /** Render markers always exist under fixed names, so only locators rename. */
+  onRename?: (label: string) => void;
 }) {
+  const [dragging, setDragging] = useState(false);
+  const dragRef = usePointerGesture({
+    onStart: (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      onSelect();
+      return time;
+    },
+    onClick,
+    onDragStart: () => setDragging(true),
+    onDragMove: (_event, { data, deltaX }) =>
+      onMove(data + deltaX / pixelsPerSecond),
+    onDragEnd: () => setDragging(false),
+    onCancel: (_event, { data }) => {
+      onMove(data);
+      setDragging(false);
+    },
+  });
+
+  function rename() {
+    const nextLabel = window.prompt("Rename locator:", label)?.trim();
+    if (nextLabel) {
+      onRename?.(nextLabel);
+    }
+  }
+
   return (
-    <button
-      type="button"
-      aria-label={label}
-      aria-pressed={render ? selected : undefined}
-      title={`${label} · ${time.toFixed(3)} s`}
-      onClick={onClick}
+    <div
+      className="group/locator absolute inset-y-0 flex w-max items-center gap-0.5"
       style={{
         left,
+        zIndex: render || selected ? 10 : undefined,
         transform:
           labelSide === "before"
             ? "translateX(calc(-100% + 6px))"
             : "translateX(-6px)",
       }}
-      className={cn(
-        "group absolute inset-y-0 flex w-max items-center outline-none hover:text-sky-200 focus-visible:ring-1 focus-visible:ring-sky-300",
-        labelSide === "before" ? "pr-4" : "pl-4",
-        render ? "z-10 text-primary" : "text-muted-foreground",
-        selected && "text-sky-300",
-      )}
     >
-      <span
-        aria-hidden="true"
+      <button
+        ref={dragRef}
+        type="button"
+        aria-label={name}
+        aria-pressed={selected}
+        title={`${name} · ${time.toFixed(3)} s\nDrag to move${onRename ? " · Delete to remove" : ""}`}
         className={cn(
-          "absolute bottom-1 size-0 border-x-[6px] border-t-[8px] border-x-transparent border-t-current",
-          labelSide === "before" ? "right-0" : "left-0",
-        )}
-      />
-      <span
-        className={cn(
-          "max-w-40 truncate rounded px-1 text-[11px] select-none group-hover:bg-secondary group-focus-visible:bg-sky-300/20",
-          selected && "bg-sky-300/20",
+          "group relative flex h-full touch-none items-center outline-none hover:text-sky-200 focus-visible:ring-1 focus-visible:ring-sky-300",
+          labelSide === "before" ? "pr-4" : "pl-4",
+          render ? "text-primary" : "text-muted-foreground",
+          selected && "text-sky-300",
+          dragging ? "cursor-ew-resize" : "cursor-pointer",
         )}
       >
-        <span className="inline-block translate-y-px">{label}</span>
-      </span>
-    </button>
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute bottom-1 size-0 border-x-[6px] border-t-[8px] border-x-transparent border-t-current",
+            labelSide === "before" ? "right-0" : "left-0",
+          )}
+        />
+        <span
+          className={cn(
+            "max-w-40 truncate rounded px-1 text-[11px] select-none group-hover:bg-secondary group-focus-visible:bg-sky-300/20",
+            selected && "bg-sky-300/20",
+          )}
+        >
+          <span className="inline-block translate-y-px">{label}</span>
+        </span>
+      </button>
+      {onRename && (
+        <button
+          type="button"
+          aria-label={`Rename ${label}`}
+          title="Rename locator"
+          onClick={rename}
+          className={cn(
+            "rounded p-0.5 text-neutral-500 opacity-0 outline-none hover:bg-neutral-700 hover:text-sky-200 focus-visible:opacity-100 focus-visible:ring-1 focus-visible:ring-sky-300 group-hover/locator:opacity-100",
+            selected && "opacity-100",
+          )}
+        >
+          <PencilIcon className="size-3" />
+        </button>
+      )}
+    </div>
   );
 }

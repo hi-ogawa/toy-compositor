@@ -6,22 +6,44 @@ import type { MediaInfo, Project } from "./project.ts";
 // runs as a static site over the bundled synthetic sample.
 
 export const apiClient: typeof serverApiClient = {
+  /** Lists the bundled sample as one folder, and adding folders is disabled. */
   async listProjects() {
     return {
-      root: "demo",
-      projects: [...projects].map(([path, project]) => ({
-        path,
-        width: project.canvas.width,
-        height: project.canvas.height,
-        output: project.output.type,
-      })),
+      folders: [
+        {
+          directory: DEMO_DIRECTORY,
+          files: [...projects].map(([path, project]) => ({
+            path,
+            width: project.canvas.width,
+            height: project.canvas.height,
+            output: project.output.type,
+          })),
+        },
+      ],
+      editable: false,
     };
+  },
+
+  async addProjectFolder() {
+    throw new Error("The demo cannot add project folders.");
+  },
+
+  async pickProjectFolder() {
+    throw new Error("The demo cannot add project folders.");
+  },
+
+  async removeProjectFolder() {
+    throw new Error("The demo cannot remove project folders.");
+  },
+
+  async openProjectFolder() {
+    throw new Error("The demo has no project folder to open.");
   },
 
   async loadProject({ path }) {
     const project = projects.get(path);
     if (!project) {
-      throw new Error(`Failed to load project: ${path} is not in the demo`);
+      throw new Error(`${path} is not in the demo`);
     }
     return { file: path, project: structuredClone(project) };
   },
@@ -34,7 +56,7 @@ export const apiClient: typeof serverApiClient = {
   /** Creates last for the browser tab's session. */
   async createProject({ path, project }) {
     if (projects.has(path)) {
-      throw new Error(`Failed to create project: ${path} already exists`);
+      throw new Error(`${path} already exists`);
     }
     writeProject({ path, project });
   },
@@ -58,10 +80,13 @@ export const apiClient: typeof serverApiClient = {
   async loadMediaInfo({ src }) {
     const mediaInfo = sampleMediaInfoMap[src];
     if (!mediaInfo) {
-      throw new Error(`Failed to load media info: ${src} is not in the demo`);
+      throw new Error(`${src} is not in the demo`);
     }
     return mediaInfo;
   },
+
+  /** The static demo has no server to keep running. */
+  openLiveConnection() {},
 
   async loadAudioData({ src, projectPath }) {
     const res = await fetch(apiClient.getMediaUrl({ src, projectPath }));
@@ -71,6 +96,9 @@ export const apiClient: typeof serverApiClient = {
     return res.arrayBuffer();
   },
 };
+
+// The one project folder, which holds the bundled sample's project files.
+const DEMO_DIRECTORY = "synthetic";
 
 // Saved and created projects are kept in session storage over the bundled
 // sample, because opening a project or going home reloads the page.
@@ -86,7 +114,10 @@ const sampleProjects = Object.entries(
     eager: true,
     import: "default",
   }),
-).map(([key, project]) => [key.replace("./", "synthetic/"), project] as const);
+).map(
+  ([key, project]) =>
+    [key.replace("./", `${DEMO_DIRECTORY}/`), project] as const,
+);
 
 const projects = new Map([
   ...sampleProjects,

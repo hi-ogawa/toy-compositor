@@ -1,6 +1,7 @@
+import { createNumberedName } from "../utils/name.ts";
 import { watchPromise, type PromiseState } from "../utils/promise-state.ts";
 import { createStore } from "../utils/store.ts";
-import { apiClient, type ProjectFile } from "./api-client.ts";
+import { apiClient } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
 import { createAudioView, type AudioView } from "./audio-view.ts";
 import {
@@ -14,20 +15,23 @@ import {
   deserializeEditorProject,
   serializeEditorProject,
 } from "./persistence.ts";
-import type { Canvas, Layer, Output, Project } from "./project.ts";
+import type { Canvas, Layer, Locator, Output, Project } from "./project.ts";
+import type { ProjectFile } from "./server/api.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
 import { VideoPlayback } from "./video-playback.ts";
 
-export type EditorSelection =
-  | { type: "output" }
-  | { type: "layer"; id: string };
-
 /** A project layer with an id that is stable for the session but never saved. */
 export type EditorLayer = Layer & { id: string };
 
-/** The project as the editor holds it, which saves without the layer ids. */
-export type EditorProject = Omit<Project, "layers"> & { layers: EditorLayer[] };
+/** A project locator with an id that is stable for the session but never saved. */
+export type EditorLocator = Locator & { id: string };
+
+/** The project as the editor holds it, which saves without the layer and locator ids. */
+export type EditorProject = Omit<Project, "layers" | "locators"> & {
+  layers: EditorLayer[];
+  locators: EditorLocator[];
+};
 
 export interface DecodedAudio {
   buffer: AudioBuffer;
@@ -35,13 +39,12 @@ export interface DecodedAudio {
 }
 
 export interface EditorState {
-  /** Project file path relative to the projects root, which is also where saves go. */
+  /** Absolute project file path, which is also where saves go. */
   file: string;
   project: EditorProject;
   /** Follows the transport, on the frame grid whenever playback is stopped. */
   playhead: number;
   playing: boolean;
-  selection?: EditorSelection;
   audioSources: Record<string, PromiseState<DecodedAudio>>;
 }
 
@@ -49,6 +52,7 @@ const EMPTY_PROJECT: EditorProject = {
   canvas: { width: 1920, height: 1080, fps: 30 },
   output: { type: "video", start: 0, end: 0 },
   layers: [],
+  locators: [],
   media: {},
 };
 
@@ -58,7 +62,6 @@ export class EditorRuntime {
     project: EMPTY_PROJECT,
     playhead: 0,
     playing: false,
-    selection: undefined,
     audioSources: {},
   }));
 
@@ -112,7 +115,7 @@ export class EditorRuntime {
   }
 
   /** Probes and records the file's media info first if the project has none. */
-  async addMediaLayer({ src, type }: MediaFile): Promise<void> {
+  async addMediaLayer({ src, type }: MediaFile): Promise<string> {
     const { file } = this.store.get();
     let mediaInfo = this.store.get().project.media[src];
     if (!mediaInfo) {
@@ -123,7 +126,7 @@ export class EditorRuntime {
       });
     }
     const { project, playhead } = this.store.get();
-    this.insertLayer(
+    return this.insertLayer(
       createMediaLayer({
         src,
         type,
@@ -135,29 +138,27 @@ export class EditorRuntime {
     );
   }
 
-  addTextLayer(): void {
+  addTextLayer(): string {
     const { canvas } = this.store.get().project;
-    this.insertLayer(
+    return this.insertLayer(
       createTextLayer({ canvas, range: this.getNewStillRange() }),
     );
   }
 
-  addColorLayer(): void {
-    this.insertLayer(createColorLayer({ range: this.getNewStillRange() }));
+  addColorLayer(): string {
+    return this.insertLayer(
+      createColorLayer({ range: this.getNewStillRange() }),
+    );
   }
 
   removeLayer(id: string): void {
     this.reschedulePlayback(() => {
-      const { project, selection } = this.store.get();
+      const { project } = this.store.get();
       this.store.update({
         project: {
           ...project,
           layers: project.layers.filter((layer) => layer.id !== id),
         },
-        selection:
-          selection?.type === "layer" && selection.id === id
-            ? undefined
-            : selection,
       });
       this.syncPlayback();
     });
@@ -205,8 +206,43 @@ export class EditorRuntime {
     );
   }
 
-  select(selection: EditorSelection | undefined): void {
-    this.store.update({ selection });
+  addLocator(time: number): string {
+    const { project } = this.store.get();
+    const { locators } = project;
+    const locator = {
+      id: crypto.randomUUID(),
+      label: createNumberedName({
+        names: locators.map((locator) => locator.label),
+        prefix: "Locator",
+      }),
+      time,
+    };
+    this.store.update({
+      project: { ...project, locators: [...locators, locator] },
+    });
+    return locator.id;
+  }
+
+  updateLocator(id: string, update: Partial<Locator>): void {
+    const { project } = this.store.get();
+    this.store.update({
+      project: {
+        ...project,
+        locators: project.locators.map((locator) =>
+          locator.id === id ? { ...locator, ...update } : locator,
+        ),
+      },
+    });
+  }
+
+  deleteLocator(id: string): void {
+    const { project } = this.store.get();
+    this.store.update({
+      project: {
+        ...project,
+        locators: project.locators.filter((locator) => locator.id !== id),
+      },
+    });
   }
 
   /**
@@ -231,19 +267,19 @@ export class EditorRuntime {
     };
   }
 
-  private insertLayer(layer: Layer): void {
+  private insertLayer(layer: Layer): string {
     const id = crypto.randomUUID();
     this.reschedulePlayback(() => {
       const { project } = this.store.get();
       this.store.update({
         project: { ...project, layers: [...project.layers, { ...layer, id }] },
-        selection: { type: "layer", id },
       });
       this.syncPlayback();
     });
     if (layer.type === "video" || layer.type === "audio") {
       this.loadAudio(layer.src);
     }
+    return id;
   }
 
   private getNewStillRange(): TimeRange {
@@ -330,7 +366,6 @@ export class EditorRuntime {
     this.store.update({
       file,
       project: deserializeEditorProject(project),
-      selection: undefined,
     });
     this.syncPlayback();
     this.seek(getOutputRange(project).start);

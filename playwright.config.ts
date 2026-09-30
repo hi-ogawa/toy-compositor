@@ -13,8 +13,9 @@ const port = process.env.E2E_PORT
   : await getFreePort();
 process.env.E2E_PORT = String(port);
 
-// Projects root that the server serves and tests copy samples into.
-const root = path.resolve(".local/e2e-projects");
+// Config directory for the server's project folder registry, so tests never
+// touch the user's own.
+process.env.TOY_COMPOSITOR_CONFIG_DIR = path.resolve(".local/e2e-config");
 
 const traceEnabled =
   process.env.E2E_TRACE === "1" ||
@@ -26,8 +27,8 @@ export default defineConfig({
     command:
       server === "dev"
         ? `pnpm dev --port ${port} --strictPort`
-        : `pnpm build && node dist/server/cli.js serve ${root} --port ${port}`,
-    env: { TOY_COMPOSITOR_ROOT: root },
+        : `pnpm build && node dist/server/cli.js serve --port ${port}`,
+    env: { TOY_COMPOSITOR_NO_FOLDER_DIALOG: "1" },
     url: `http://localhost:${port}`,
     reuseExistingServer: false,
     // pnpm forwards SIGTERM to Vite, but SIGKILL leaves it running, so never
