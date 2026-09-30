@@ -198,9 +198,8 @@ export class EditorRuntime {
     );
   }
 
-  /** Places the locator at the playhead, because the timeline has no other insertion point. */
-  addLocator(): string {
-    const { project, playhead } = this.store.get();
+  addLocator(time: number): string {
+    const { project } = this.store.get();
     const { locators } = project;
     const locator = {
       id: crypto.randomUUID(),
@@ -208,7 +207,7 @@ export class EditorRuntime {
         names: locators.map((locator) => locator.label),
         prefix: "Locator",
       }),
-      time: snapToFrame(playhead, project.canvas.fps),
+      time,
     };
     this.store.update({
       project: { ...project, locators: [...locators, locator] },
