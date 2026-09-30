@@ -3,7 +3,7 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import type { Project } from "../src/lib/project.ts";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
-import { readJson } from "../src/utils/fs.ts";
+import { readJson, writeJson } from "../src/utils/fs.ts";
 import {
   expectInspectorFields,
   getInspectorField,
@@ -121,15 +121,12 @@ test("set a new project's output from its first media layer", async ({
   // Write an empty project beside the synthetic media, as a new project
   // starts, and open it.
   const projectDir = path.dirname(editor.projectFile);
-  await writeFile(
-    path.join(projectDir, "new.json"),
-    JSON.stringify({
-      canvas: { width: 640, height: 360, fps: 30 },
-      output: { type: "video", start: 0, end: 0 },
-      layers: [],
-      media: {},
-    }),
-  );
+  await writeJson(path.join(projectDir, "new.json"), {
+    canvas: { width: 640, height: 360, fps: 30 },
+    output: { type: "video", start: 0, end: 0 },
+    layers: [],
+    media: {},
+  } satisfies Project);
   await page.goto(
     `/?${new URLSearchParams({ project: `${editor.projectDir}/new.json` })}`,
   );
