@@ -21,7 +21,7 @@ The editor works on a projects root laid out as `<root>/<project-dir>/<name>.jso
 
 The start page lists the root's projects, and opening one navigates to `?project=<project-dir>/<name>.json`. The server reads and saves projects and serves their media through `/api/`, resolving media relative to the project file as the renderer does. It listens on localhost only, rejects requests addressed to other hosts, and never serves hidden paths under the root.
 
-The editor adds media layers only from a project's `media/` folder, which the user fills with the desktop file manager. The Library tab lists that folder, and its "Open folder" asks the server to open it with `xdg-open` or `open`, which assumes the browser runs on the server's desktop. Adding a file's layer reuses the file's entry in the project's `media`, or probes the file through `/api/media-info` and records the entry first.
+The editor adds media layers only from a project's `media/` folder, which the user fills with the desktop file manager. The Library tab lists that folder, and its "Open folder" asks the server to open it with `xdg-open` or `open` on the server's desktop. Adding a file's layer reuses the file's entry in the project's `media`, or probes the file through `/api/media-info` and records the entry first.
 
 ## Static demo
 

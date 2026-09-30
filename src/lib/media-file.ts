@@ -1,8 +1,8 @@
 /** A layer type backed by a media file. */
 export type MediaType = "video" | "audio" | "image";
 
-/** A file in a project's `media/` folder, named by its path relative to the project, like a layer's `src`. */
-export type MediaFile = { path: string; type: MediaType };
+/** A file in a project's `media/` folder, named by its `src` relative to the project. */
+export type MediaFile = { src: string; type: MediaType };
 
 const MEDIA_TYPES: Record<string, MediaType> = {
   mp4: "video",

@@ -121,7 +121,7 @@ export class EditorRuntime {
    * in the project's `media` is probed and recorded first if the project has
    * none yet, and the layer's defaults come from it.
    */
-  async addMediaLayer({ path: src, type }: MediaFile): Promise<void> {
+  async addMediaLayer({ src, type }: MediaFile): Promise<void> {
     const { file } = this.store.get();
     let mediaInfo = this.store.get().project.media[src];
     if (!mediaInfo) {

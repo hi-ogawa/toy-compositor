@@ -45,9 +45,9 @@ export const apiClient: typeof serverApiClient = {
   },
 
   async listMediaFiles() {
-    return [...mediaUrls.keys()].flatMap((path): MediaFile[] => {
-      const type = getMediaType(path);
-      return type ? [{ path, type }] : [];
+    return [...mediaUrls.keys()].flatMap((src): MediaFile[] => {
+      const type = getMediaType(src);
+      return type ? [{ src, type }] : [];
     });
   },
 
@@ -114,7 +114,7 @@ const mediaUrls = new Map(
 );
 
 // The static demo has no server to probe media, so it looks files up in the
-// samples' own media info, which covers every file in their `media/`.
+// samples' own media info.
 const sampleMediaInfoMap: Record<string, MediaInfo> = Object.assign(
   {},
   ...sampleProjects.map(([, project]) => project.media),

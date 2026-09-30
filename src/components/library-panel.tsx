@@ -28,8 +28,7 @@ export function LibraryPanel({
     queryFn: () => apiClient.listMediaFiles({ projectPath }),
   });
   // Switching back from the file manager focuses the window without changing
-  // page visibility, which is all React Query watches, so files dropped into
-  // the folder show up only with this.
+  // page visibility, so refetch on focus to pick up new files.
   useWindowEvent("focus", () => void filesQuery.refetch());
   const openFolderMutation = useMutation({
     mutationFn: () => apiClient.openMediaFolder({ projectPath }),
@@ -60,12 +59,12 @@ export function LibraryPanel({
         <ul aria-label="Media files">
           {files.map((file) => (
             <LibraryItem
-              key={file.path}
+              key={file.src}
               type={file.type}
-              label={file.path.replace(/^media\//, "")}
+              label={file.src.replace(/^media\//, "")}
               mono
-              highlighted={highlighted === file.path}
-              onHighlight={() => setHighlighted(file.path)}
+              highlighted={highlighted === file.src}
+              onHighlight={() => setHighlighted(file.src)}
               onAdd={() => addMediaMutation.mutate(file)}
             />
           ))}

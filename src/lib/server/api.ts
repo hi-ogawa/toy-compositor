@@ -214,22 +214,22 @@ async function listMediaFiles({ root, url }: { root: string; url: URL }) {
   for (const entry of entries) {
     const type = getMediaType(entry.name);
     if (entry.isFile() && !entry.name.startsWith(".") && type) {
-      files.push({ path: `media/${entry.name}`, type });
+      files.push({ src: `media/${entry.name}`, type });
     }
   }
-  return files.sort((a, b) => a.path.localeCompare(b.path));
+  return files.sort((a, b) => a.src.localeCompare(b.src));
 }
 
 /**
- * Open the project's `media/` folder with the platform's opener, which only
- * reaches the user when the browser runs on the server's desktop.
+ * Open the project's `media/` folder with the platform's opener on the
+ * server's desktop, creating it first if needed.
  */
 async function openMediaFolder({ root, url }: { root: string; url: URL }) {
   const dir = resolveMediaFolder({ root, url });
   await fs.promises.mkdir(dir, { recursive: true });
   const opener = process.platform === "darwin" ? "open" : "xdg-open";
   const child = spawn(opener, [dir], { detached: true, stdio: "ignore" });
-  // Rejects when the opener is missing, instead of crashing the server.
+  // Rejects when the opener is missing.
   await once(child, "spawn");
   child.unref();
 }
