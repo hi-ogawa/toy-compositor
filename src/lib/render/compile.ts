@@ -14,6 +14,7 @@ import type {
   Layer,
   Project,
   MediaInfo,
+  VideoInfo,
   TextLayer,
   VideoLayer,
 } from "../project.ts";
@@ -417,10 +418,7 @@ function assembleGraph({
  * ffmpeg's accurate seek starts from the first frame at or after the seek time,
  * so seek to just before that frame. Assumes a constant frame rate source.
  */
-function getFrameShownAt(
-  video: NonNullable<MediaInfo["video"]>,
-  { time }: { time: number },
-) {
+function getFrameShownAt(video: VideoInfo, { time }: { time: number }) {
   const { startTime, frameRate } = video;
   const index = Math.round((time - startTime) * frameRate);
   return Math.max(0, startTime + index / frameRate - 0.1 / frameRate);

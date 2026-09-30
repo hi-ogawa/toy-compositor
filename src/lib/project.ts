@@ -21,14 +21,17 @@ export type MediaInfo = {
    */
   start: number;
   end: number;
-  video?: {
-    width: number;
-    height: number;
-    /** The video stream's own start time, which frame timing counts from. */
-    startTime: number;
-    frameRate: number;
-  };
+  video?: VideoInfo;
   audio: boolean;
+};
+
+/** A media file's video stream, which images have too. */
+export type VideoInfo = {
+  width: number;
+  height: number;
+  /** The video stream's own start time, which frame timing counts from. */
+  startTime: number;
+  frameRate: number;
 };
 
 /**
