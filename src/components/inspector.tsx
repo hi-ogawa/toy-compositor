@@ -1,10 +1,12 @@
 import type {
+  Canvas,
   AudioLayer,
   Box,
   ColorLayer,
   Crop,
   ImageLayer,
   Layer,
+  Output,
   Project,
   TextLayer,
   VideoLayer,
@@ -57,10 +59,6 @@ export function Inspector({
     }
   }
 }
-
-type Canvas = Project["canvas"];
-
-type Output = Project["output"];
 
 type TimeFieldOptions = ReturnType<typeof getTimeFieldOptions>;
 

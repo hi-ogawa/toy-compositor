@@ -1,4 +1,4 @@
-import type { Project } from "./project.ts";
+import type { Output, Project } from "./project.ts";
 
 export type ProjectFile = { file: string; project: Project };
 
@@ -7,7 +7,7 @@ export type ProjectEntry = {
   path: string;
   width: number;
   height: number;
-  output: Project["output"]["type"];
+  output: Output["type"];
 };
 
 export type ProjectList = { root: string; projects: ProjectEntry[] };
