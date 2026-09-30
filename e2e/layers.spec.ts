@@ -6,6 +6,7 @@ import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
 import { readJson } from "../src/utils/fs.ts";
 import {
   expectInspectorFields,
+  getInspectorField,
   seekTimelineByPixels,
   clickTimelineButton,
   test,
@@ -154,4 +155,51 @@ test("set a new project's output from its first media layer", async ({
   expect(project.media).toEqual({
     "media/audio.wav": sample.media["media/audio.wav"],
   });
+});
+
+test("remove the selected layer", async ({ page, editor }) => {
+  // Open the synthetic project and select the title text layer.
+  await page.goto(editor.url);
+  const lanes = page.getByTestId("editor-timeline");
+  await clickTimelineButton(page, { name: "Title text" });
+
+  // Press Backspace inside an inspector field, and confirm it edits the field
+  // instead of removing the layer, then discard the draft with Escape.
+  await getInspectorField(page, { name: "start" }).press("Backspace");
+  await expect(lanes.getByRole("button", { name: "Title text" })).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  // Click the time readout to leave the field, press Delete, and confirm the
+  // lane and its inspector go away.
+  await page.getByTestId("timeline-time").click();
+  await page.keyboard.press("Delete");
+  await expect(lanes.getByRole("button", { name: "Title text" })).toHaveCount(
+    0,
+  );
+  await expect(page.getByTestId("inspector")).toHaveCount(0);
+
+  // Select the audio and remove it with the inspector's button, then play for
+  // a moment with the remaining layers.
+  await clickTimelineButton(page, { name: "Tone 660 Hz audio" });
+  await page.getByRole("button", { name: "Remove layer", exact: true }).click();
+  await expect(
+    lanes.getByRole("button", { name: "Tone 660 Hz audio" }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  await expect(page.getByTestId("timeline-time")).not.toHaveText("0.000 s");
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+
+  // Save and confirm the file keeps only the video and the image.
+  await page.getByTestId("editor-save-button").click();
+  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
+  const project = await readJson<{ layers: { name: string }[] }>(
+    editor.projectFile,
+  );
+  expect(project.layers.map((layer) => layer.name)).toEqual([
+    "Test pattern",
+    "Label backdrop",
+  ]);
 });
