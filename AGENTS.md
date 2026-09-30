@@ -25,4 +25,4 @@
 - Make props/params required when all call sites always pass them
 - Shape arguments the way a reader expects from the operation. Take a value positionally when the operation conventionally takes just that value. Use an options object when a call site would be ambiguous without names, or when the operation is the kind that accumulates options, even if it takes one today. When a function acts on one main subject with modifiers, pass the subject positionally and the modifiers in an object
 - Use braces for every `switch` case body (`case "x": { ... }`, `default: { ... }`)
-- Docs hold only durable, high-level architecture and existing facts such as formats and developer gotchas. Decisions and their reasons belong in issues and PRs. A change updates docs only when one of those facts changes
+- Docs hold only durable, high-level architecture and existing facts. Decisions and their reasons belong in issues and PRs. A change updates docs only when one of those facts changes
