@@ -19,7 +19,7 @@ import {
   deserializeEditorProject,
   serializeEditorProject,
 } from "./persistence.ts";
-import type { Canvas, Layer, Output, Project } from "./project.ts";
+import type { Layer, Project } from "./project.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
 import { VideoPlayback } from "./video-playback.ts";
@@ -173,12 +173,12 @@ export class EditorRuntime {
     });
   }
 
-  setCanvas(canvas: Canvas): void {
+  setCanvas(canvas: Project["canvas"]): void {
     const { project } = this.store.get();
     this.store.update({ project: { ...project, canvas } });
   }
 
-  setOutput(output: Output): void {
+  setOutput(output: Project["output"]): void {
     const { project } = this.store.get();
     this.store.update({ project: { ...project, output } });
   }
@@ -187,7 +187,7 @@ export class EditorRuntime {
    * Switches between video and still output. A still takes the playhead's
    * frame, and a video spans every layer so its markers trim inward.
    */
-  setOutputType(type: Output["type"]): void {
+  setOutputType(type: Project["output"]["type"]): void {
     const { project, playhead } = this.store.get();
     if (project.output.type === type) {
       return;

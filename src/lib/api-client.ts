@@ -1,5 +1,5 @@
 import type { MediaFile } from "./media-file.ts";
-import type { MediaInfo, Output, Project } from "./project.ts";
+import type { MediaInfo, Project } from "./project.ts";
 
 export type ProjectFile = { file: string; project: Project };
 
@@ -8,7 +8,7 @@ export type ProjectEntry = {
   path: string;
   width: number;
   height: number;
-  output: Output["type"];
+  output: Project["output"]["type"];
 };
 
 export type ProjectList = { root: string; projects: ProjectEntry[] };

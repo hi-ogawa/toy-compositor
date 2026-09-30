@@ -7,7 +7,6 @@ import {
   type Range,
 } from "../layout.ts";
 import type {
-  Canvas,
   AudioLayer,
   ColorLayer,
   Crop,
@@ -90,7 +89,7 @@ export function compile({
 
 /** The output settings every layer compiles against. */
 type Scene = {
-  canvas: Canvas;
+  canvas: Project["canvas"];
   /** The output's timeline range. */
   range: Range;
   /** Whether the output has an audio track, which a still does not. */
@@ -373,7 +372,7 @@ function assembleGraph({
   duration,
   layers,
 }: {
-  canvas: Canvas;
+  canvas: Project["canvas"];
   duration: number;
   layers: LayerStreams[];
 }) {
