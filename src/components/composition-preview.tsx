@@ -113,7 +113,7 @@ function PreviewLayer({
   runtime: EditorRuntime;
   selected: boolean;
   id: string;
-  /** Position in the project, which only labels the element for tests. */
+  /** Position in the project, for test ids. */
   index: number;
   canvas: Project["canvas"];
   mediaInfoMap: Project["media"];

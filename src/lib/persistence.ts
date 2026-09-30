@@ -8,7 +8,6 @@ export function serializeEditorProject(project: EditorProject): Project {
   };
 }
 
-/** Layer ids are assigned on load, because the file is also written by hand and by agents. */
 export function deserializeEditorProject(project: Project): EditorProject {
   return {
     ...project,

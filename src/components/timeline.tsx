@@ -301,7 +301,7 @@ function TimelineLayerLane({
   timeline: TimelineView;
   layerInteraction: LayerInteraction;
   layer: EditorLayer;
-  /** Position in the project, which only labels the element for tests. */
+  /** Position in the project, for test ids. */
   index: number;
   range: Range;
   audioSource?: PromiseState<DecodedAudio>;
@@ -420,7 +420,7 @@ function LayerTrimHandle({
 }: {
   type: Exclude<LayerEditType, "move">;
   id: string;
-  /** Position in the project, which only labels the element for tests. */
+  /** Position in the project, for test ids. */
   index: number;
   timeline: TimelineView;
   layerInteraction: LayerInteraction;

@@ -20,7 +20,7 @@ export type EditorSelection =
 /** A project layer with an id that is stable for the session but never saved. */
 export type EditorLayer = Layer & { id: string };
 
-/** The project as the editor holds it, which is exactly what saving persists. */
+/** The project as the editor holds it, which saves without the layer ids. */
 export type EditorProject = Omit<Project, "layers"> & { layers: EditorLayer[] };
 
 export interface DecodedAudio {
@@ -36,7 +36,7 @@ export interface EditorState {
   playhead: number;
   playing: boolean;
   selection?: EditorSelection;
-  /** Keyed by source, because a decode belongs to the file, not a layer. */
+  /** Decoded audio keyed by `src`, shared by the layers that use a file. */
   audioSources: Record<string, PromiseState<DecodedAudio>>;
 }
 
@@ -184,8 +184,8 @@ export class EditorRuntime {
       }
     }
 
-    // Every video and audio layer gets a playback, and muting only decides
-    // whether it schedules sound, so unmuting needs no load.
+    // Every video and audio layer gets a playback, and `muted` only decides
+    // whether it schedules sound.
     const heard = new Set<string>();
     for (const layer of layers) {
       if (layer.type !== "video" && layer.type !== "audio") {
