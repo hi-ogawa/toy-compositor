@@ -178,10 +178,10 @@ test("remove the selected layer", async ({ page, editor }) => {
   );
   await expect(page.getByTestId("inspector")).toHaveCount(0);
 
-  // Select the audio and remove it with the inspector's button, then play for
-  // a moment with the remaining layers.
+  // Select the audio and remove it with Backspace, then play for a moment
+  // with the remaining layers.
   await clickTimelineButton(page, { name: "Tone 660 Hz audio" });
-  await page.getByRole("button", { name: "Remove layer", exact: true }).click();
+  await page.keyboard.press("Backspace");
   await expect(
     lanes.getByRole("button", { name: "Tone 660 Hz audio" }),
   ).toHaveCount(0);

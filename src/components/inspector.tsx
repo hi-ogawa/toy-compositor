@@ -1,4 +1,3 @@
-import { Trash2Icon } from "lucide-react";
 import type {
   AudioLayer,
   Box,
@@ -15,7 +14,6 @@ import type {
   EditorSelection,
   EditorProject,
 } from "../lib/runtime";
-import { Button } from "./ui/button";
 import { useDraftInput } from "./use-draft-input";
 
 export function Inspector({
@@ -59,7 +57,6 @@ export function Inspector({
           layer={layer}
           time={time}
           onUpdate={(update) => runtime.updateLayer({ id, update })}
-          onRemove={() => runtime.removeLayer(id)}
         />
       );
     }
@@ -177,20 +174,14 @@ function LayerInspector({
   layer,
   time,
   onUpdate,
-  onRemove,
 }: {
   layer: Layer;
   time: TimeFieldOptions;
   onUpdate: LayerUpdate;
-  onRemove: () => void;
 }) {
   return (
     <div data-testid="inspector">
-      <InspectorTitle
-        title={layer.name ?? layer.type}
-        subtitle={layer.type}
-        onRemove={onRemove}
-      />
+      <InspectorTitle title={layer.name ?? layer.type} subtitle={layer.type} />
       <div className="flex flex-col gap-4 p-3">
         <LayerFields layer={layer} time={time} onUpdate={onUpdate} />
       </div>
@@ -514,12 +505,9 @@ function Group({
 function InspectorTitle({
   title,
   subtitle,
-  onRemove,
 }: {
   title?: string;
   subtitle?: string;
-  /** Shows a remove button for the selected layer. */
-  onRemove?: () => void;
 }) {
   return (
     <div className="flex h-7 shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-3 text-xs">
@@ -533,16 +521,6 @@ function InspectorTitle({
         <span className="shrink-0 text-[10px] text-neutral-400">
           {subtitle}
         </span>
-      )}
-      {onRemove && (
-        <Button
-          aria-label="Remove layer"
-          title="Remove layer (Delete)"
-          className="ml-auto size-5 shrink-0 text-neutral-400 hover:bg-neutral-700 hover:text-destructive"
-          onClick={onRemove}
-        >
-          <Trash2Icon className="size-3.5" />
-        </Button>
       )}
     </div>
   );
