@@ -26,6 +26,15 @@ export function useEditorInteraction({
     onSelect: () => layerInteraction.clear(),
   });
 
+  function clearSelection() {
+    const hadSelection =
+      layerInteraction.selection !== undefined ||
+      locatorInteraction.selectedId !== undefined;
+    layerInteraction.clear();
+    locatorInteraction.select(undefined);
+    return hadSelection;
+  }
+
   return {
     layerInteraction,
     locatorInteraction,
