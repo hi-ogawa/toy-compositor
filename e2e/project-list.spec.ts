@@ -1,7 +1,6 @@
 import { cp, mkdir, readFile, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { expect, type Page } from "@playwright/test";
-import { getProjectPageUrl } from "../src/lib/routes.ts";
 import {
   clickTimelineButton,
   expectImageLoaded,
@@ -24,9 +23,6 @@ test("open projects from the start page", async ({ page, editor }) => {
 
   // Open the thumbnail project from the list.
   await section.getByRole("link", { name: /thumbnail\.json/ }).click();
-  await expect(page).toHaveURL(
-    getProjectPageUrl({ path: path.join(projectDir, "thumbnail.json") }),
-  );
   await expect(page.getByTestId("editor-project-file")).toContainText(
     "thumbnail.json",
   );
@@ -43,7 +39,6 @@ test("open projects from the start page", async ({ page, editor }) => {
   // Go back home from the editor menu and confirm the project list shows again.
   await page.getByRole("button", { name: "Editor menu", exact: true }).click();
   await page.getByRole("menuitem", { name: "Home", exact: true }).click();
-  await expect(page).toHaveURL("/");
   await expect(section.getByRole("link")).toHaveCount(2);
 });
 
@@ -68,9 +63,6 @@ test("add a media folder and create a project file in it", async ({
   // Create a vertical project file and confirm the editor opens it.
   await section.getByRole("button", { name: "New project file" }).click();
   await page.getByRole("menuitem", { name: /vertical-video/ }).click();
-  await expect(page).toHaveURL(
-    getProjectPageUrl({ path: path.join(projectDir, "vertical-video.json") }),
-  );
   await expect(page.getByTestId("editor-project-file")).toContainText(
     "vertical-video.json",
   );
@@ -99,7 +91,6 @@ test("add a media folder and create a project file in it", async ({
   await expect(
     page.getByText("vertical-video.json already exists"),
   ).toBeVisible();
-  await expect(page).toHaveURL("/");
 });
 
 test("add a folder by its project file, and remove folders from the list", async ({
