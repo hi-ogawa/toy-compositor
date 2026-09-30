@@ -1,6 +1,6 @@
 import { watchPromise, type PromiseState } from "../utils/promise-state.ts";
 import { createStore } from "../utils/store.ts";
-import { apiClient, loadAudioData, type ProjectFile } from "./api-client.ts";
+import { apiClient, type ProjectFile } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
 import { createAudioView, type AudioView } from "./audio-view.ts";
 import {
@@ -290,7 +290,7 @@ export class EditorRuntime {
       return;
     }
     const decodeAudio = async (): Promise<DecodedAudio> => {
-      const data = await loadAudioData({
+      const data = await apiClient.loadAudioData({
         src,
         projectPath: this.store.get().file,
       });

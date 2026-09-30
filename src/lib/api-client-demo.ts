@@ -1,11 +1,11 @@
+import type { apiClient as serverApiClient } from "./api-client.ts";
 import { getMediaType, type MediaFile } from "./media-file.ts";
 import type { MediaInfo, Project } from "./project.ts";
-import type { EditorHandlers } from "./server/api.ts";
 
 // The demo build uses this module in place of `api-client.ts`, so the editor
 // runs as a static site over the bundled synthetic sample.
 
-export const apiClient: EditorHandlers = {
+export const apiClient: typeof serverApiClient = {
   async listProjects() {
     return {
       root: "demo",
@@ -39,6 +39,11 @@ export const apiClient: EditorHandlers = {
     writeProject({ path, project });
   },
 
+  /** Every demo project sits beside the sample's `media/`, so `src` is the key. */
+  getMediaUrl({ src }) {
+    return mediaUrls.get(src) ?? src;
+  },
+
   async listMediaFiles() {
     return [...mediaUrls.keys()].flatMap((src): MediaFile[] => {
       const type = getMediaType(src);
@@ -57,31 +62,15 @@ export const apiClient: EditorHandlers = {
     }
     return mediaInfo;
   },
+
+  async loadAudioData({ src, projectPath }) {
+    const res = await fetch(apiClient.getMediaUrl({ src, projectPath }));
+    if (!res.ok) {
+      throw new Error(`Failed to load audio data: ${await res.text()}`);
+    }
+    return res.arrayBuffer();
+  },
 };
-
-/** Every demo project sits beside the sample's `media/`, so `src` is the key. */
-export function getMediaUrl({
-  src,
-}: {
-  src: string;
-  projectPath: string;
-}): string {
-  return mediaUrls.get(src) ?? src;
-}
-
-export async function loadAudioData({
-  src,
-  projectPath,
-}: {
-  src: string;
-  projectPath: string;
-}): Promise<ArrayBuffer> {
-  const res = await fetch(getMediaUrl({ src, projectPath }));
-  if (!res.ok) {
-    throw new Error(`Failed to load audio data: ${await res.text()}`);
-  }
-  return res.arrayBuffer();
-}
 
 // Saved and created projects are kept in session storage over the bundled
 // sample, because opening a project or going home reloads the page.
