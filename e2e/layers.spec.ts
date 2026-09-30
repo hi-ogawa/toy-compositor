@@ -3,7 +3,7 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import type { Project } from "../src/lib/project.ts";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
-import { readJson, writeJson } from "../src/utils/fs.ts";
+import { readJson } from "../src/utils/fs.ts";
 import {
   expectInspectorFields,
   getInspectorField,
@@ -69,9 +69,15 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     /video\.mp4$/,
   ]);
 
+  // Add the new file, which the project has no media info for yet.
+  await page
+    .getByRole("button", { name: "Add extra.wav", exact: true })
+    .click();
+  await expect(page.getByTestId("timeline-layer-8")).toBeVisible();
+
   // Select the added video from its lane, then save, and confirm the new layers
-  // reach the file on top of the existing four, without runtime ids, and the
-  // files' existing media info is reused as is.
+  // reach the file on top of the existing four, without runtime ids, the
+  // existing media info is reused as is, and the new file's info is probed.
   await clickTimelineButton(page, { name: "video video" });
   await expectInspectorFields(page, { start: "1" });
   await page.getByTestId("editor-save-button").click();
@@ -81,7 +87,10 @@ test("add layers from the Library tab", async ({ page, editor }) => {
   );
   const project = await readJson<Project>(editor.projectFile);
   const sample = await readJson<Project>("samples/synthetic/project.json");
-  expect(project.media).toEqual(sample.media);
+  expect(project.media).toEqual({
+    ...sample.media,
+    "media/extra.wav": sample.media["media/audio.wav"],
+  });
   expect(project.layers.slice(4)).toEqual([
     {
       name: "video",
@@ -111,49 +120,15 @@ test("add layers from the Library tab", async ({ page, editor }) => {
       end: 3,
     },
     { type: "color", color: "#000000", opacity: 0.5, start: 0, end: 3 },
+    {
+      name: "extra",
+      type: "audio",
+      src: "media/extra.wav",
+      start: 1,
+      in: 0,
+      out: 3,
+    },
   ]);
-});
-
-test("set a new project's output from its first media layer", async ({
-  page,
-  editor,
-}) => {
-  // Write an empty project beside the synthetic media, as a new project
-  // starts, and open it.
-  const projectDir = path.dirname(editor.projectFile);
-  await writeJson(path.join(projectDir, "new.json"), {
-    canvas: { width: 640, height: 360, fps: 30 },
-    output: { type: "video", start: 0, end: 0 },
-    layers: [],
-    media: {},
-  } satisfies Project);
-  await page.goto(
-    `/?${new URLSearchParams({ project: `${editor.projectDir}/new.json` })}`,
-  );
-
-  // Add the audio, and confirm the output takes its 3 s range.
-  await page
-    .getByRole("button", { name: "Add audio.wav", exact: true })
-    .click();
-  await expect(page.getByTestId("timeline-layer-0")).toBeVisible();
-  await page.getByRole("button", { name: "Composition settings" }).click();
-  await expectInspectorFields(page, { start: "0", end: "3" });
-
-  // Add a text layer, and confirm it spans that output.
-  await page.getByRole("button", { name: "Add Text", exact: true }).click();
-  await expectInspectorFields(page, { start: "0", end: "3" });
-
-  // Save, and confirm the audio's probed media info is recorded in the file.
-  await page.getByTestId("editor-save-button").click();
-  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
-    "data-status",
-    "saved",
-  );
-  const project = await readJson<Project>(path.join(projectDir, "new.json"));
-  const sample = await readJson<Project>("samples/synthetic/project.json");
-  expect(project.media).toEqual({
-    "media/audio.wav": sample.media["media/audio.wav"],
-  });
 });
 
 test("remove the selected layer", async ({ page, editor }) => {

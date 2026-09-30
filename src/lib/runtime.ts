@@ -8,12 +8,7 @@ import {
   createMediaLayer,
   createTextLayer,
 } from "./layer-defaults.ts";
-import {
-  getContentRange,
-  getLayerRange,
-  getOutputRange,
-  type TimeRange,
-} from "./layout.ts";
+import { getContentRange, getOutputRange, type TimeRange } from "./layout.ts";
 import type { MediaFile } from "./media-file.ts";
 import {
   deserializeEditorProject,
@@ -220,24 +215,12 @@ export class EditorRuntime {
     };
   }
 
-  /** The first video or audio layer also sets an empty output to its range. */
   private insertLayer(layer: Layer): void {
     const id = crypto.randomUUID();
     this.reschedulePlayback(() => {
       const { project } = this.store.get();
-      const { output } = project;
-      const range = getLayerRange(layer);
       this.store.update({
-        project: {
-          ...project,
-          layers: [...project.layers, { ...layer, id }],
-          output:
-            (layer.type === "video" || layer.type === "audio") &&
-            output.type === "video" &&
-            output.end <= output.start
-              ? { ...output, ...range, end: roundToMillisecond(range.end) }
-              : output,
-        },
+        project: { ...project, layers: [...project.layers, { ...layer, id }] },
         selection: { type: "layer", id },
       });
       this.syncPlayback();
@@ -247,15 +230,9 @@ export class EditorRuntime {
     }
   }
 
-  /** Spans the output, or five seconds from the playhead without one. */
   private getNewStillRange(): TimeRange {
-    const { project, playhead } = this.store.get();
-    const output = getOutputRange(project);
-    if (output.end > output.start) {
-      return { start: output.start, end: roundToMillisecond(output.end) };
-    }
-    const start = snapToFrame(playhead, project.canvas.fps);
-    return { start, end: start + 5 };
+    const output = getOutputRange(this.store.get().project);
+    return { start: output.start, end: roundToMillisecond(output.end) };
   }
 
   /**
