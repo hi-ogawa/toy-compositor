@@ -34,7 +34,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
   function clearSelection(): boolean {
     const hadSelection =
       state.selection !== undefined ||
-      locatorInteraction.selectedIndex !== undefined;
+      locatorInteraction.selectedId !== undefined;
     runtime.select(undefined);
     locatorInteraction.select(undefined);
     return hadSelection;
