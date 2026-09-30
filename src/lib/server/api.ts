@@ -3,10 +3,9 @@ import { once } from "node:events";
 import fs from "node:fs";
 import path from "node:path";
 import { readJson, writeJson } from "../../utils/fs.ts";
-import type { ProjectEntry, ProjectFile, ProjectList } from "../api-client.ts";
 import { getMediaType, type MediaFile } from "../media-file.ts";
 import { probeMediaInfo } from "../media-info.ts";
-import type { MediaInfo, Project } from "../project.ts";
+import type { MediaInfo, Output, Project } from "../project.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 
 /**
@@ -44,6 +43,18 @@ export function createEditorHandler({ root }: { root: string }) {
 }
 
 export type EditorHandlers = ReturnType<typeof createEditorHandlers>;
+
+export type ProjectFile = { file: string; project: Project };
+
+/** A project file found under the projects root, as `<project-dir>/<name>.json`. */
+export type ProjectEntry = {
+  path: string;
+  width: number;
+  height: number;
+  output: Output["type"];
+};
+
+export type ProjectList = { root: string; projects: ProjectEntry[] };
 
 async function handleRpc({
   handlers,

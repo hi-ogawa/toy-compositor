@@ -1,18 +1,5 @@
-import type { Output, Project } from "./project.ts";
 import { createRpcProxy } from "./rpc.ts";
 import type { EditorHandlers } from "./server/api.ts";
-
-export type ProjectFile = { file: string; project: Project };
-
-/** A project file found under the projects root, as `<project-dir>/<name>.json`. */
-export type ProjectEntry = {
-  path: string;
-  width: number;
-  height: number;
-  output: Output["type"];
-};
-
-export type ProjectList = { root: string; projects: ProjectEntry[] };
 
 const rpcClient = createRpcProxy<EditorHandlers>(async (method, params) => {
   const res = await fetch(`/api/rpc/${method}`, {
