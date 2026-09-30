@@ -1,24 +1,28 @@
 import { cp, rm } from "node:fs/promises";
 import path from "node:path";
 import {
-  type APIRequestContext,
   expect,
   type Locator,
   type Page,
   test as base,
 } from "@playwright/test";
+import { getProjectPageUrl } from "../src/lib/routes.ts";
+import {
+  createProjectRegistry,
+  getConfigDir,
+} from "../src/lib/server/registry.ts";
 
 export const test = base.extend<{
   editor: { projectDir: string; url: string; projectFile: string };
 }>({
-  editor: async ({ request }, use, testInfo) => {
+  editor: async ({}, use, testInfo) => {
     // Copy the synthetic sample into its own project folder and register it,
     // so each test saves edits independently. Clear it first, so files a
     // previous run added do not carry over.
     const projectDir = getTestProjectDir(testInfo.testId);
     await rm(projectDir, { recursive: true, force: true });
     await cp("samples/synthetic", projectDir, { recursive: true });
-    await addProjectFolder(request, projectDir);
+    await registry.addFolder(projectDir);
     const projectFile = path.join(projectDir, "project.json");
     await use({
       projectDir,
@@ -33,21 +37,9 @@ export function getTestProjectDir(name: string) {
   return path.resolve(".local/e2e-projects", name);
 }
 
-/** Register a project folder with the server, as a typed path does. */
-export async function addProjectFolder(
-  request: APIRequestContext,
-  directory: string,
-) {
-  const res = await request.post("/api/rpc/addProjectFolder", {
-    data: { path: directory },
-  });
-  expect(res.ok()).toBe(true);
-}
-
-/** The editor page URL for a project file, as the app links to it. */
-export function getProjectPageUrl({ path }: { path: string }) {
-  return `/?${new URLSearchParams({ project: path })}`;
-}
+// The server rereads the registry on every request, so tests register folders
+// in the e2e config directory directly.
+export const registry = createProjectRegistry({ configDir: getConfigDir() });
 
 /** Wait until an image element has loaded its source. */
 export async function expectImageLoaded(image: Locator) {

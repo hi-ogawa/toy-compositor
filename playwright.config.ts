@@ -14,8 +14,8 @@ const port = process.env.E2E_PORT
 process.env.E2E_PORT = String(port);
 
 // Config directory for the server's project folder registry, so tests never
-// touch the user's own.
-const configDir = path.resolve(".local/e2e-config");
+// touch the user's own. Workers inherit it to register folders directly.
+process.env.TOY_COMPOSITOR_CONFIG_DIR = path.resolve(".local/e2e-config");
 
 const traceEnabled =
   process.env.E2E_TRACE === "1" ||
@@ -28,10 +28,7 @@ export default defineConfig({
       server === "dev"
         ? `pnpm dev --port ${port} --strictPort`
         : `pnpm build && node dist/server/cli.js serve --port ${port}`,
-    env: {
-      TOY_COMPOSITOR_CONFIG_DIR: configDir,
-      TOY_COMPOSITOR_NO_FOLDER_DIALOG: "1",
-    },
+    env: { TOY_COMPOSITOR_NO_FOLDER_DIALOG: "1" },
     url: `http://localhost:${port}`,
     reuseExistingServer: false,
     // pnpm forwards SIGTERM to Vite, but SIGKILL leaves it running, so never
