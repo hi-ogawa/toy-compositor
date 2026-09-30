@@ -1,7 +1,7 @@
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { isShortcutTextInputTarget, matchKeyboardEvent } from "../lib/keyboard";
-import { EditorRuntime } from "../lib/runtime";
+import { EditorRuntime, type EditorLayer } from "../lib/runtime";
 import { CollapsibleSplit } from "./collapsible-split";
 import { CompositionPreview } from "./composition-preview";
 import { EditorHeader } from "./editor-header";
@@ -26,7 +26,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
   const timeline = useTimeline(runtime);
   const layerInteraction = useLayerInteraction({ runtime, state });
   const [sideOpen, setSideOpen] = useState(true);
-  const [sideTab, setSideTab] = useState<SideTab>("library");
+  const [sideTab, setSideTab] = useState<LibrarySourceTab>("library");
 
   useEffect(() => {
     document.title = state.file
@@ -92,71 +92,15 @@ export function Editor({ projectPath }: { projectPath: string }) {
             sideId="side-panel"
             sideLabel="side panel"
             side={
-              <>
-                <div className="flex h-7 shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 pl-1 pr-3 text-xs">
-                  <div
-                    role="tablist"
-                    aria-label="Side panel"
-                    className="flex h-full"
-                  >
-                    {SIDE_TABS.map((tab) => (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        role="tab"
-                        id={`side-tab-${tab.id}`}
-                        aria-selected={sideTab === tab.id}
-                        aria-controls={`side-panel-${tab.id}`}
-                        title={tab.title}
-                        className={cn(
-                          "-mb-px border-b-2 px-2 font-semibold",
-                          sideTab === tab.id
-                            ? "border-sky-400 text-neutral-100"
-                            : "border-transparent text-neutral-400 hover:text-neutral-100",
-                        )}
-                        onClick={() => setSideTab(tab.id)}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
-                  </div>
-                  {sideTab === "source" &&
-                    selectedLayer &&
-                    "src" in selectedLayer && (
-                      <span
-                        className="truncate font-mono text-[10px] text-neutral-400"
-                        title={selectedLayer.src}
-                      >
-                        {selectedLayer.src}
-                      </span>
-                    )}
-                  <Button
-                    aria-label="Collapse side panel"
-                    title="Collapse side panel"
-                    aria-expanded={true}
-                    aria-controls="side-panel"
-                    className="ml-auto size-5 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-100"
-                    onClick={() => setSideOpen(false)}
-                  >
-                    <PanelLeftCloseIcon className="size-3.5" />
-                  </Button>
-                </div>
-                <div
-                  role="tabpanel"
-                  id={`side-panel-${sideTab}`}
-                  aria-labelledby={`side-tab-${sideTab}`}
-                  className="flex min-h-0 flex-1 flex-col"
-                >
-                  {sideTab === "library" ? (
-                    <LibraryPanel runtime={runtime} projectPath={projectPath} />
-                  ) : (
-                    <MediaPreview
-                      layer={selectedLayer}
-                      resolveMediaUrl={project.resolveMediaUrl}
-                    />
-                  )}
-                </div>
-              </>
+              <LibrarySourceTabs
+                tab={sideTab}
+                layer={selectedLayer}
+                runtime={runtime}
+                projectPath={projectPath}
+                resolveMediaUrl={project.resolveMediaUrl}
+                onTabChange={setSideTab}
+                onCollapse={() => setSideOpen(false)}
+              />
             }
             strip={
               <Button
@@ -206,7 +150,89 @@ export function Editor({ projectPath }: { projectPath: string }) {
   );
 }
 
-const SIDE_TABS = [
+/** The Library tab to add layers from, and the Source tab for the selected layer's file. */
+function LibrarySourceTabs({
+  tab,
+  layer,
+  runtime,
+  projectPath,
+  resolveMediaUrl,
+  onTabChange,
+  onCollapse,
+}: {
+  tab: LibrarySourceTab;
+  layer?: EditorLayer;
+  runtime: EditorRuntime;
+  projectPath: string;
+  resolveMediaUrl: (src: string) => string;
+  onTabChange: (tab: LibrarySourceTab) => void;
+  onCollapse: () => void;
+}) {
+  return (
+    <>
+      <div className="flex h-7 shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 pl-1 pr-3 text-xs">
+        <div
+          role="tablist"
+          aria-label="Library and Source"
+          className="flex h-full"
+        >
+          {TABS.map(({ id, label, title }) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              id={`${id}-tab`}
+              aria-selected={tab === id}
+              aria-controls={`${id}-tabpanel`}
+              title={title}
+              className={cn(
+                "-mb-px border-b-2 px-2 font-semibold",
+                tab === id
+                  ? "border-sky-400 text-neutral-100"
+                  : "border-transparent text-neutral-400 hover:text-neutral-100",
+              )}
+              onClick={() => onTabChange(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {tab === "source" && layer && "src" in layer && (
+          <span
+            className="truncate font-mono text-[10px] text-neutral-400"
+            title={layer.src}
+          >
+            {layer.src}
+          </span>
+        )}
+        <Button
+          aria-label="Collapse side panel"
+          title="Collapse side panel"
+          aria-expanded={true}
+          aria-controls="side-panel"
+          className="ml-auto size-5 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-100"
+          onClick={onCollapse}
+        >
+          <PanelLeftCloseIcon className="size-3.5" />
+        </Button>
+      </div>
+      <div
+        role="tabpanel"
+        id={`${tab}-tabpanel`}
+        aria-labelledby={`${tab}-tab`}
+        className="flex min-h-0 flex-1 flex-col"
+      >
+        {tab === "library" ? (
+          <LibraryPanel runtime={runtime} projectPath={projectPath} />
+        ) : (
+          <MediaPreview layer={layer} resolveMediaUrl={resolveMediaUrl} />
+        )}
+      </div>
+    </>
+  );
+}
+
+const TABS = [
   {
     id: "library",
     label: "Library",
@@ -219,4 +245,4 @@ const SIDE_TABS = [
   },
 ] as const;
 
-type SideTab = (typeof SIDE_TABS)[number]["id"];
+type LibrarySourceTab = (typeof TABS)[number]["id"];
