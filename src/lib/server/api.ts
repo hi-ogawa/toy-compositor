@@ -11,10 +11,6 @@ import { openWithDefaultApp } from "./open-default.ts";
 import type { ProjectRegistry } from "./registry.ts";
 
 /**
- * Editor API over the registered project folders. A project folder holds its
- * project files at the top level and media next to them, and only files inside
- * a registered folder are served or saved. Project files are named by
- * absolute path, so a file path is never encoded as a URL path.
  *
  * - `POST /api/rpc/<method>` calls one of `createEditorHandlers`' methods with
  *   the JSON body as its params, and answers with its JSON result.
