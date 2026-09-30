@@ -1,6 +1,7 @@
+import { createNumberedName } from "../utils/name.ts";
 import { watchPromise, type PromiseState } from "../utils/promise-state.ts";
 import { createStore } from "../utils/store.ts";
-import { apiClient, type ProjectFile } from "./api-client.ts";
+import { apiClient } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
 import { createAudioView, type AudioView } from "./audio-view.ts";
 import {
@@ -14,7 +15,8 @@ import {
   deserializeEditorProject,
   serializeEditorProject,
 } from "./persistence.ts";
-import type { Canvas, Layer, Output, Project } from "./project.ts";
+import type { Canvas, Layer, Locator, Output, Project } from "./project.ts";
+import type { ProjectFile } from "./server/api.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
 import { VideoPlayback } from "./video-playback.ts";
@@ -26,8 +28,14 @@ export type EditorSelection =
 /** A project layer with an id that is stable for the session but never saved. */
 export type EditorLayer = Layer & { id: string };
 
-/** The project as the editor holds it, which saves without the layer ids. */
-export type EditorProject = Omit<Project, "layers"> & { layers: EditorLayer[] };
+/** A project locator with an id that is stable for the session but never saved. */
+export type EditorLocator = Locator & { id: string };
+
+/** The project as the editor holds it, which saves without the layer and locator ids. */
+export type EditorProject = Omit<Project, "layers" | "locators"> & {
+  layers: EditorLayer[];
+  locators: EditorLocator[];
+};
 
 export interface DecodedAudio {
   buffer: AudioBuffer;
@@ -35,7 +43,7 @@ export interface DecodedAudio {
 }
 
 export interface EditorState {
-  /** Project file path relative to the projects root, which is also where saves go. */
+  /** Absolute project file path, which is also where saves go. */
   file: string;
   project: EditorProject;
   /** Follows the transport, on the frame grid whenever playback is stopped. */
@@ -49,6 +57,7 @@ const EMPTY_PROJECT: EditorProject = {
   canvas: { width: 1920, height: 1080, fps: 30 },
   output: { type: "video", start: 0, end: 0 },
   layers: [],
+  locators: [],
   media: {},
 };
 
@@ -187,6 +196,45 @@ export class EditorRuntime {
         ? { type, time: snapToFrame(playhead, project.canvas.fps) }
         : { type, ...getContentRange(project) },
     );
+  }
+
+  addLocator(time: number): string {
+    const { project } = this.store.get();
+    const { locators } = project;
+    const locator = {
+      id: crypto.randomUUID(),
+      label: createNumberedName({
+        names: locators.map((locator) => locator.label),
+        prefix: "Locator",
+      }),
+      time,
+    };
+    this.store.update({
+      project: { ...project, locators: [...locators, locator] },
+    });
+    return locator.id;
+  }
+
+  updateLocator(id: string, update: Partial<Locator>): void {
+    const { project } = this.store.get();
+    this.store.update({
+      project: {
+        ...project,
+        locators: project.locators.map((locator) =>
+          locator.id === id ? { ...locator, ...update } : locator,
+        ),
+      },
+    });
+  }
+
+  deleteLocator(id: string): void {
+    const { project } = this.store.get();
+    this.store.update({
+      project: {
+        ...project,
+        locators: project.locators.filter((locator) => locator.id !== id),
+      },
+    });
   }
 
   select(selection: EditorSelection | undefined): void {

@@ -13,6 +13,7 @@ import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { useEditorProject } from "./use-editor-project";
 import { useLayerInteraction } from "./use-layer-interaction";
+import { useLocatorInteraction } from "./use-locator-interaction";
 import { useTimeline } from "./use-timeline";
 import { useWindowEvent } from "./use-window-event";
 
@@ -25,6 +26,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
   const project = useEditorProject({ projectPath, runtime });
   const timeline = useTimeline(runtime);
   const layerInteraction = useLayerInteraction({ runtime, state });
+  const locatorInteraction = useLocatorInteraction({ runtime, state });
   const [sideOpen, setSideOpen] = useState(true);
 
   useEffect(() => {
@@ -53,12 +55,20 @@ export function Editor({ projectPath }: { projectPath: string }) {
       event.preventDefault();
       return;
     }
+    if (matchKeyboardEvent(event, "L")) {
+      event.preventDefault();
+      locatorInteraction.add();
+      return;
+    }
     if (matchKeyboardEvent(event, "Space") && !event.repeat) {
       event.preventDefault();
       void runtime.togglePlayback();
       return;
     }
-    if (layerInteraction.handleRemoveShortcut(event)) {
+    if (
+      layerInteraction.handleRemoveShortcut(event) ||
+      locatorInteraction.handleRemoveShortcut(event)
+    ) {
       event.preventDefault();
     }
   });
@@ -124,6 +134,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
           <Timeline
             timeline={timeline}
             layerInteraction={layerInteraction}
+            locatorInteraction={locatorInteraction}
             runtime={runtime}
             project={state.project}
             selection={selection}
