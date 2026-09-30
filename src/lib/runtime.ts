@@ -3,13 +3,19 @@ import { createStore } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
 import { createAudioView, type AudioView } from "./audio-view.ts";
-import { getContentRange, getOutputRange } from "./layout.ts";
+import {
+  createColorLayer,
+  createMediaLayer,
+  createTextLayer,
+} from "./layer-defaults.ts";
+import { getContentRange, getOutputRange, type TimeRange } from "./layout.ts";
+import type { MediaFile } from "./media-file.ts";
 import {
   deserializeEditorProject,
   serializeEditorProject,
 } from "./persistence.ts";
 import type { Canvas, Layer, Output, Project } from "./project.ts";
-import { snapToFrame } from "./timeline.ts";
+import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
 import { VideoPlayback } from "./video-playback.ts";
 
@@ -105,6 +111,58 @@ export class EditorRuntime {
     });
   }
 
+  /** Probes and records the file's media info first if the project has none. */
+  async addMediaLayer({ src, type }: MediaFile): Promise<void> {
+    const { file } = this.store.get();
+    let mediaInfo = this.store.get().project.media[src];
+    if (!mediaInfo) {
+      mediaInfo = await apiClient.loadMediaInfo({ src, projectPath: file });
+      const { project } = this.store.get();
+      this.store.update({
+        project: { ...project, media: { ...project.media, [src]: mediaInfo } },
+      });
+    }
+    const { project, playhead } = this.store.get();
+    this.insertLayer(
+      createMediaLayer({
+        src,
+        type,
+        mediaInfo,
+        canvas: project.canvas,
+        start: snapToFrame(playhead, project.canvas.fps),
+        stillRange: this.getNewStillRange(),
+      }),
+    );
+  }
+
+  addTextLayer(): void {
+    const { canvas } = this.store.get().project;
+    this.insertLayer(
+      createTextLayer({ canvas, range: this.getNewStillRange() }),
+    );
+  }
+
+  addColorLayer(): void {
+    this.insertLayer(createColorLayer({ range: this.getNewStillRange() }));
+  }
+
+  removeLayer(id: string): void {
+    this.reschedulePlayback(() => {
+      const { project, selection } = this.store.get();
+      this.store.update({
+        project: {
+          ...project,
+          layers: project.layers.filter((layer) => layer.id !== id),
+        },
+        selection:
+          selection?.type === "layer" && selection.id === id
+            ? undefined
+            : selection,
+      });
+      this.syncPlayback();
+    });
+  }
+
   setCanvas(canvas: Canvas): void {
     const { project } = this.store.get();
     this.store.update({ project: { ...project, canvas } });
@@ -155,6 +213,26 @@ export class EditorRuntime {
         this.videoPlaybacks.delete(id);
       }
     };
+  }
+
+  private insertLayer(layer: Layer): void {
+    const id = crypto.randomUUID();
+    this.reschedulePlayback(() => {
+      const { project } = this.store.get();
+      this.store.update({
+        project: { ...project, layers: [...project.layers, { ...layer, id }] },
+        selection: { type: "layer", id },
+      });
+      this.syncPlayback();
+    });
+    if (layer.type === "video" || layer.type === "audio") {
+      this.loadAudio(layer.src);
+    }
+  }
+
+  private getNewStillRange(): TimeRange {
+    const output = getOutputRange(this.store.get().project);
+    return { start: output.start, end: roundToMillisecond(output.end) };
   }
 
   /**
@@ -208,6 +286,9 @@ export class EditorRuntime {
 
   /** Starts decoding a source, and syncs playback once its buffer arrives. */
   private loadAudio(src: string): void {
+    if (this.store.get().audioSources[src]) {
+      return;
+    }
     const decodeAudio = async (): Promise<DecodedAudio> => {
       const data = await apiClient.loadAudioData({
         src,

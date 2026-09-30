@@ -16,20 +16,22 @@ test("preview synthetic sources", async ({ page, editor }) => {
   const save = page.getByTestId("editor-save-button");
   await expect(save).toHaveAttribute("data-status", "saved");
 
-  // Select the video and confirm its source preview appears.
+  // Switch the side panel to Source, select the video, and confirm its source
+  // preview appears.
+  await page.getByRole("tab", { name: "Source" }).click();
   await clickTimelineButton(page, { name: "Test pattern video" });
-  await expect(page.locator("#source-monitor video")).toBeVisible();
+  await expect(page.locator("#side-panel video")).toBeVisible();
 
   // Switch to audio and confirm its preview replaces the video player.
   await clickTimelineButton(page, { name: "Tone 660 Hz audio" });
-  await expect(page.locator("#source-monitor video")).toHaveCount(0);
-  await expect(page.locator("#source-monitor audio")).toBeVisible();
+  await expect(page.locator("#side-panel video")).toHaveCount(0);
+  await expect(page.locator("#side-panel audio")).toBeVisible();
 
   // Select the image and confirm it loads without making the project dirty.
   await clickTimelineButton(page, { name: "Label backdrop image" });
-  await expect(page.locator("#source-monitor audio")).toHaveCount(0);
+  await expect(page.locator("#side-panel audio")).toHaveCount(0);
   const image = page
-    .locator("#source-monitor")
+    .locator("#side-panel")
     .getByRole("img", { name: "Label backdrop", exact: true });
   await expect(image).toBeVisible();
   await expectImageLoaded(image);
@@ -42,32 +44,33 @@ test("resize and collapse the source panel without changing the project", async 
 }) => {
   // Open a video source and seek independently of project timing.
   await page.goto(editor.url);
+  await page.getByRole("tab", { name: "Source" }).click();
   await clickTimelineButton(page, { name: "Test pattern video" });
-  const source = page.locator("#source-monitor video");
+  const source = page.locator("#side-panel video");
   await seekVideo(source, { time: 1 });
 
   // Drag the split to resize the source panel.
-  const split = page.getByTitle("Resize source panel");
-  const sourcePanel = page.locator("#source-monitor");
+  const split = page.getByTitle("Resize side panel");
+  const sourcePanel = page.locator("#side-panel");
   const initialWidth = (await sourcePanel.boundingBox())!.width;
   await dragBy(page, split, { deltaX: 100 });
   const resizedWidth = (await sourcePanel.boundingBox())!.width;
   expect(resizedWidth).toBeGreaterThan(initialWidth);
 
-  // Collapse Source to its edge strip, then expand it while preserving the
-  // split and save status.
+  // Collapse the side panel to its edge strip, then expand it while preserving
+  // the split, the Source tab, the source's seek position, and save status.
   await page
-    .getByRole("button", { name: "Collapse source panel", exact: true })
+    .getByRole("button", { name: "Collapse side panel", exact: true })
     .click();
-  await expect(source).toHaveCount(0);
+  await expect(source).toBeHidden();
   await page
-    .getByRole("button", { name: "Expand source panel", exact: true })
+    .getByRole("button", { name: "Expand side panel", exact: true })
     .click();
   expect((await sourcePanel.boundingBox())!.width).toBe(resizedWidth);
   await expect(source).toBeVisible();
   await expect
     .poll(() => source.evaluate((video: HTMLVideoElement) => video.currentTime))
-    .toBe(0);
+    .toBe(1);
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
     "data-status",
     "saved",

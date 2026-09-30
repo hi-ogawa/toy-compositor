@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { matchKeyboardEvent } from "../lib/keyboard";
 import { applyLayerEdit, type LayerEditType } from "../lib/layer-edit";
 import type { Layer } from "../lib/project";
 import type { EditorRuntime, EditorState } from "../lib/runtime";
@@ -57,6 +58,22 @@ export function useLayerInteraction({
     });
   }
 
+  function handleRemoveShortcut(event: KeyboardEvent): boolean {
+    const { selection } = state;
+    if (
+      selection?.type !== "layer" ||
+      edit ||
+      !(
+        matchKeyboardEvent(event, "Delete") ||
+        matchKeyboardEvent(event, "Backspace")
+      )
+    ) {
+      return false;
+    }
+    runtime.removeLayer(selection.id);
+    return true;
+  }
+
   return {
     layers: edit
       ? layers.map((layer) =>
@@ -68,6 +85,7 @@ export function useLayerInteraction({
     updateEdit,
     finishEdit,
     cancelEdit: () => setEdit(undefined),
+    handleRemoveShortcut,
   };
 }
 

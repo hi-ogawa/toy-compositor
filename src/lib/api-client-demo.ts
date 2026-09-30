@@ -1,5 +1,6 @@
 import type { apiClient as serverApiClient } from "./api-client.ts";
-import type { Project } from "./project.ts";
+import { getMediaType, type MediaFile } from "./media-file.ts";
+import type { MediaInfo, Project } from "./project.ts";
 
 // The demo build uses this module in place of `api-client.ts`, so the editor
 // runs as a static site over the bundled synthetic sample.
@@ -43,6 +44,25 @@ export const apiClient: typeof serverApiClient = {
     return mediaUrls.get(src) ?? src;
   },
 
+  async listMediaFiles() {
+    return [...mediaUrls.keys()].flatMap((src): MediaFile[] => {
+      const type = getMediaType(src);
+      return type ? [{ src, type }] : [];
+    });
+  },
+
+  async openMediaFolder() {
+    throw new Error("The demo has no media folder to open.");
+  },
+
+  async loadMediaInfo({ src }) {
+    const mediaInfo = sampleMediaInfoMap[src];
+    if (!mediaInfo) {
+      throw new Error(`Failed to load media info: ${src} is not in the demo`);
+    }
+    return mediaInfo;
+  },
+
   async loadAudioData({ src, projectPath }) {
     const res = await fetch(apiClient.getMediaUrl({ src, projectPath }));
     if (!res.ok) {
@@ -60,16 +80,16 @@ const writtenProjects: Record<string, Project> = JSON.parse(
   sessionStorage.getItem(STORAGE_KEY) ?? "{}",
 );
 
+const sampleProjects = Object.entries(
+  import.meta.glob<Project>("./*.json", {
+    base: "../../samples/synthetic",
+    eager: true,
+    import: "default",
+  }),
+).map(([key, project]) => [key.replace("./", "synthetic/"), project] as const);
+
 const projects = new Map([
-  ...Object.entries(
-    import.meta.glob<Project>("./*.json", {
-      base: "../../samples/synthetic",
-      eager: true,
-      import: "default",
-    }),
-  ).map(
-    ([key, project]) => [key.replace("./", "synthetic/"), project] as const,
-  ),
+  ...sampleProjects,
   ...Object.entries(writtenProjects),
 ]);
 
@@ -91,4 +111,10 @@ const mediaUrls = new Map(
       import: "default",
     }),
   ).map(([key, url]) => [key.replace("./", ""), url]),
+);
+
+// The static demo has no server to probe media, so it looks files up in the
+// samples' own media info.
+const sampleMediaInfoMap: Record<string, MediaInfo> = Object.fromEntries(
+  sampleProjects.flatMap(([, project]) => Object.entries(project.media)),
 );

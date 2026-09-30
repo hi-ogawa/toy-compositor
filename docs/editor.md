@@ -11,7 +11,9 @@ Each component answers one question about the preview, and the preview holds no 
 ```text
 Editor                     editor.tsx               runtime store, selection, playhead
 ├─ CollapsibleSplit        collapsible-split.tsx    side panel width, collapsed strip
-│  ├─ MediaPreview         media-preview.tsx        the selected layer's raw file
+│  ├─ LibrarySourceTabs    editor.tsx               Library or Source tab
+│  │  ├─ LibraryPanel      library-panel.tsx        media files and built-in layers to add
+│  │  └─ MediaPreview      media-preview.tsx        the selected layer's raw file
 │  └─ CompositionPreview   composition-preview.tsx  viewport scale, layers visible at time, audio
 │     └─ PreviewLayer × N                           box to CSS, per-type rendering, outline
 │        └─ CompositionMedia  composition-media.tsx fit and crop by the stored size, video

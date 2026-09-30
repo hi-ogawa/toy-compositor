@@ -1,14 +1,8 @@
 import {
-  AudioLinesIcon,
-  FilmIcon,
-  ImageIcon,
   LoaderCircleIcon,
   PauseIcon,
   PlayIcon,
-  SquareIcon,
-  TypeIcon,
   VolumeXIcon,
-  type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
@@ -25,6 +19,7 @@ import type {
 } from "../lib/runtime";
 import type { PromiseState } from "../utils/promise-state";
 import { AudioWaveformView } from "./audio-waveform";
+import { LayerTypeIcon } from "./layer-type-icon";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import type { LayerInteraction } from "./use-layer-interaction";
@@ -451,28 +446,6 @@ function LayerTrimHandle({
     />
   );
 }
-
-/** Marks the layer type by icon, keeping the header column for the name. */
-function LayerTypeIcon({ type }: { type: Layer["type"] }) {
-  const Icon = LAYER_TYPE_ICONS[type];
-  return (
-    <Icon
-      role="img"
-      aria-label={type}
-      className="size-3.5 shrink-0 text-neutral-400"
-    >
-      <title>{type}</title>
-    </Icon>
-  );
-}
-
-const LAYER_TYPE_ICONS: Record<Layer["type"], LucideIcon> = {
-  video: FilmIcon,
-  audio: AudioLinesIcon,
-  image: ImageIcon,
-  text: TypeIcon,
-  color: SquareIcon,
-};
 
 const LAYER_CLIP_CLASSES: Record<
   Layer["type"],
