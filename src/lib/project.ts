@@ -6,9 +6,57 @@ export type Project = {
     | { type: "still"; time: number };
   layers: Layer[];
   locators?: Locator[];
+  /** Facts about every media file a layer uses, keyed by the layers' `src`. */
+  media: Record<string, MediaInfo>;
 };
 
 export type Locator = { label: string; time: number };
+
+/** What ffprobe reports about a media file, which depends only on its contents. */
+export type MediaInfo = {
+  /**
+   * The file's source time range, in the presentation timestamps that `in` and
+   * `out` use, so it includes the container's start offset. A still image has
+   * no duration, so both are 0.
+   */
+  start: number;
+  end: number;
+  video?: VideoInfo;
+  audio: boolean;
+};
+
+/** A media file's video stream, which images have too. */
+export type VideoInfo = {
+  width: number;
+  height: number;
+  /** The video stream's own start time, which frame timing counts from. */
+  startTime: number;
+  frameRate: number;
+};
+
+/**
+ * Check that every file-backed layer has media info for its `src`, and that
+ * video and image layers' files have a video stream, so consumers can read
+ * `media` without checking. It does not compare the facts with the files.
+ */
+export function validateMedia(project: Project): void {
+  for (const layer of project.layers) {
+    if (!("src" in layer)) {
+      continue;
+    }
+    const label = `${layer.type} layer "${layer.name ?? layer.type}" (${layer.src})`;
+    // A project file from before `media` has none at all.
+    const mediaInfo = project.media?.[layer.src];
+    if (!mediaInfo) {
+      throw new Error(`${label} has no media info, run update-media`);
+    }
+    if (layer.type !== "audio" && !mediaInfo.video) {
+      throw new Error(
+        `${label} has no video stream, use a file with video or run update-media if the file changed`,
+      );
+    }
+  }
+}
 
 /** Canvas presets for new projects, named as their first project file. */
 export const CANVAS_PRESETS = [
@@ -33,6 +81,7 @@ export function createEmptyProject(preset: CanvasPreset): Project {
     output: { type: "video", start: 0, end: 10 },
     layers: [],
     locators: [],
+    media: {},
   };
 }
 

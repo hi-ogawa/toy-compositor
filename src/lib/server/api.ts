@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { readJson, writeJson } from "../../utils/fs.ts";
 import type { ProjectEntry } from "../api-client.ts";
+import { probeMediaInfo } from "../media-info.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 
 /**
@@ -14,6 +15,8 @@ import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
  *   creates a new one.
  * - `GET /api/media?project=&src=` serves a layer source resolved against the
  *   project's directory, as the renderer does, with range requests.
+ * - `GET /api/media-info?project=&src=` probes a layer source into its media
+ *   info, the entry that the project's `media` keeps for it.
  */
 export function createEditorHandler({ root }: { root: string }) {
   return async (request: Request): Promise<Response> => {
@@ -38,6 +41,11 @@ export function createEditorHandler({ root }: { root: string }) {
         case "GET /api/media":
         case "HEAD /api/media": {
           return await handleMedia({ root, url, request });
+        }
+        case "GET /api/media-info": {
+          return Response.json(
+            await probeMediaInfo(resolveMediaFile({ root, url })),
+          );
         }
         default: {
           return new Response(undefined, { status: 404 });
@@ -169,13 +177,18 @@ async function handleMedia({
   url: URL;
   request: Request;
 }) {
+  return await serveFile({ file: resolveMediaFile({ root, url }), request });
+}
+
+/** Resolve `?src=` against the directory of the `?project=` file, as the renderer does. */
+function resolveMediaFile({ root, url }: { root: string; url: URL }) {
   const project = getParam(url, "project");
   const src = getParam(url, "src");
   const file = resolveFile({ root, paths: [path.dirname(project), src] });
   if (!fs.existsSync(file)) {
     throw new HttpError({ status: 404, message: "Media not found" });
   }
-  return await serveFile({ file, request });
+  return file;
 }
 
 /**

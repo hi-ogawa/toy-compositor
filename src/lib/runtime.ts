@@ -1,4 +1,3 @@
-import { loadMediaDuration } from "../utils/media.ts";
 import { watchPromise, type PromiseState } from "../utils/promise-state.ts";
 import { createStore } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
@@ -27,7 +26,6 @@ export interface EditorState {
   playhead: number;
   playing: boolean;
   selection?: EditorSelection;
-  sourceDurations: Record<string, PromiseState<number>>;
   audioSources: Record<string, PromiseState<DecodedAudio>>;
 }
 
@@ -35,6 +33,7 @@ const EMPTY_PROJECT: Project = {
   canvas: { width: 1920, height: 1080, fps: 30 },
   output: { type: "video", start: 0, end: 0 },
   layers: [],
+  media: {},
 };
 
 export class EditorRuntime {
@@ -44,7 +43,6 @@ export class EditorRuntime {
     playhead: 0,
     playing: false,
     selection: undefined,
-    sourceDurations: {},
     audioSources: {},
   }));
 
@@ -224,19 +222,6 @@ export class EditorRuntime {
     });
   }
 
-  private loadDuration(src: string): void {
-    const url = apiClient.getMediaUrl({
-      src,
-      projectPath: this.store.get().file,
-    });
-    watchPromise(loadMediaDuration(url), (duration) => {
-      const { sourceDurations } = this.store.get();
-      this.store.update({
-        sourceDurations: { ...sourceDurations, [src]: duration },
-      });
-    });
-  }
-
   serializeProject(): Project {
     return this.store.get().project;
   }
@@ -246,7 +231,6 @@ export class EditorRuntime {
       file,
       project,
       selection: undefined,
-      sourceDurations: {},
     });
     this.syncPlayback();
     this.seek(getOutputRange(project).start);
@@ -257,7 +241,6 @@ export class EditorRuntime {
     );
     for (const src of sources) {
       this.loadAudio(src);
-      this.loadDuration(src);
     }
   }
 

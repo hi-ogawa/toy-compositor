@@ -1,44 +1,43 @@
 import { useCallback, useState, type CSSProperties } from "react";
 import { fitBox } from "../lib/layout";
-import type { ImageLayer, VideoLayer } from "../lib/project";
+import type { ImageLayer, MediaInfo, VideoLayer } from "../lib/project";
 import type { EditorRuntime } from "../lib/runtime";
 
-/** Fit the cropped source into its canvas box after the browser reads its dimensions. */
+/** Fit the cropped source into its canvas box, by the size its media info records. */
 export function CompositionMedia({
   layer,
+  mediaInfo,
   runtime,
   index,
   resolveMediaUrl,
 }: {
   layer: ImageLayer | VideoLayer;
+  mediaInfo: MediaInfo;
   runtime: EditorRuntime;
   index: number;
   resolveMediaUrl: (src: string) => string;
 }) {
-  const [source, setSource] = useState<{ width: number; height: number }>();
   const [failed, setFailed] = useState(false);
 
+  const video = mediaInfo.video!;
   const crop = layer.crop ?? {};
-  const fit = source && fitBox({ source, crop, box: layer.box });
-  const mediaStyle: CSSProperties | undefined =
-    source && fit
-      ? {
-          position: "absolute",
-          maxWidth: "none",
-          width:
-            (source.width * fit.width) /
-            (source.width * (1 - (crop.left ?? 0) - (crop.right ?? 0))),
-          height:
-            (source.height * fit.height) /
-            (source.height * (1 - (crop.top ?? 0) - (crop.bottom ?? 0))),
-          left:
-            (-(crop.left ?? 0) * fit.width) /
-            (1 - (crop.left ?? 0) - (crop.right ?? 0)),
-          top:
-            (-(crop.top ?? 0) * fit.height) /
-            (1 - (crop.top ?? 0) - (crop.bottom ?? 0)),
-        }
-      : undefined;
+  const fit = fitBox({ source: video, crop, box: layer.box });
+  const mediaStyle: CSSProperties = {
+    position: "absolute",
+    maxWidth: "none",
+    width:
+      (video.width * fit.width) /
+      (video.width * (1 - (crop.left ?? 0) - (crop.right ?? 0))),
+    height:
+      (video.height * fit.height) /
+      (video.height * (1 - (crop.top ?? 0) - (crop.bottom ?? 0))),
+    left:
+      (-(crop.left ?? 0) * fit.width) /
+      (1 - (crop.left ?? 0) - (crop.right ?? 0)),
+    top:
+      (-(crop.top ?? 0) * fit.height) /
+      (1 - (crop.top ?? 0) - (crop.bottom ?? 0)),
+  };
   return (
     <>
       {failed && (
@@ -52,11 +51,12 @@ export function CompositionMedia({
       )}
       <div
         className="absolute overflow-hidden"
-        style={
-          fit
-            ? { left: fit.x, top: fit.y, width: fit.width, height: fit.height }
-            : { display: "none" }
-        }
+        style={{
+          left: fit.x,
+          top: fit.y,
+          width: fit.width,
+          height: fit.height,
+        }}
       >
         {layer.type === "video" ? (
           <CompositionVideo
@@ -65,7 +65,6 @@ export function CompositionMedia({
             index={index}
             src={resolveMediaUrl(layer.src)}
             style={mediaStyle}
-            onSize={setSource}
             onError={() => setFailed(true)}
           />
         ) : (
@@ -73,13 +72,6 @@ export function CompositionMedia({
             src={resolveMediaUrl(layer.src)}
             alt={layer.name ?? layer.src}
             style={mediaStyle}
-            onLoad={(event) => {
-              const image = event.currentTarget;
-              setSource({
-                width: image.naturalWidth,
-                height: image.naturalHeight,
-              });
-            }}
             onError={() => setFailed(true)}
           />
         )}
@@ -94,15 +86,13 @@ function CompositionVideo({
   index,
   src,
   style,
-  onSize,
   onError,
 }: {
   layer: VideoLayer;
   runtime: EditorRuntime;
   index: number;
   src: string;
-  style?: CSSProperties;
-  onSize: (size: { width: number; height: number }) => void;
+  style: CSSProperties;
   onError: () => void;
 }) {
   const playbackRef = useCallback(
@@ -118,10 +108,6 @@ function CompositionVideo({
       preload="auto"
       aria-label={layer.name ?? layer.src}
       style={style}
-      onLoadedMetadata={(event) => {
-        const video = event.currentTarget;
-        onSize({ width: video.videoWidth, height: video.videoHeight });
-      }}
       onError={onError}
     />
   );
