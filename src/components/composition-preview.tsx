@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
 import { getLayerRange } from "../lib/layout";
-import type { Layer, Project, TextLayer } from "../lib/project";
+import type { Canvas, Layer, Project, TextLayer } from "../lib/project";
 import type { EditorRuntime, EditorSelection } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
 
@@ -107,7 +107,7 @@ function PreviewLayer({
   runtime: EditorRuntime;
   selected: boolean;
   index: number;
-  canvas: Project["canvas"];
+  canvas: Canvas;
   mediaInfoMap: Project["media"];
   resolveMediaUrl: (src: string) => string;
 }) {

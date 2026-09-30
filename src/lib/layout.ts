@@ -1,8 +1,8 @@
 import type { Box, Crop, Layer, Project } from "./project.ts";
 
-export type Range = { start: number; end: number };
+export type TimeRange = { start: number; end: number };
 
-export function getOutputRange(project: Project): Range {
+export function getOutputRange(project: Project): TimeRange {
   const { output, canvas } = project;
   return output.type === "video"
     ? output
@@ -10,7 +10,7 @@ export function getOutputRange(project: Project): Range {
 }
 
 /** Timeline span covering every layer, from the earliest start to the latest end. */
-export function getContentRange(project: Project): Range {
+export function getContentRange(project: Project): TimeRange {
   if (project.layers.length === 0) {
     return { start: 0, end: 0 };
   }
@@ -22,14 +22,14 @@ export function getContentRange(project: Project): Range {
 }
 
 /** Timeline span of a layer, from its source range for video and audio. */
-export function getLayerRange(layer: Layer): Range {
+export function getLayerRange(layer: Layer): TimeRange {
   if (layer.type === "video" || layer.type === "audio") {
     return { start: layer.start, end: layer.start + layer.out - layer.in };
   }
   return { start: layer.start, end: layer.end };
 }
 
-export function intersect(a: Range, b: Range): Range | undefined {
+export function intersect(a: TimeRange, b: TimeRange): TimeRange | undefined {
   const start = Math.max(a.start, b.start);
   const end = Math.min(a.end, b.end);
   return end > start ? { start, end } : undefined;
