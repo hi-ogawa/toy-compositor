@@ -57,15 +57,8 @@ export function Editor({ projectPath }: { projectPath: string }) {
       void runtime.togglePlayback();
       return;
     }
-    const { selection } = runtime.store.get();
-    if (
-      selection?.type === "layer" &&
-      !layerInteraction.editing &&
-      (matchKeyboardEvent(event, "Delete") ||
-        matchKeyboardEvent(event, "Backspace"))
-    ) {
+    if (layerInteraction.handleRemoveShortcut(event)) {
       event.preventDefault();
-      runtime.removeLayer(selection.id);
     }
   });
 
