@@ -36,7 +36,6 @@ export interface EditorState {
   playhead: number;
   playing: boolean;
   selection?: EditorSelection;
-  /** Decoded audio keyed by `src`, shared by the layers that use a file. */
   audioSources: Record<string, PromiseState<DecodedAudio>>;
 }
 
@@ -59,9 +58,7 @@ export class EditorRuntime {
 
   readonly context = new AudioContext();
   readonly transport = new AudioContextTransport(this.context);
-  /** Keyed by layer id. */
   private readonly audioPlaybacks = new Map<string, AudioBufferPlayback>();
-  /** Keyed by layer id. */
   private readonly videoPlaybacks = new Map<string, VideoPlayback>();
 
   constructor() {
