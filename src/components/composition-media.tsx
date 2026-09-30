@@ -8,13 +8,13 @@ export function CompositionMedia({
   layer,
   mediaInfo,
   runtime,
-  index,
+  id,
   resolveMediaUrl,
 }: {
   layer: ImageLayer | VideoLayer;
   mediaInfo: MediaInfo;
   runtime: EditorRuntime;
-  index: number;
+  id: string;
   resolveMediaUrl: (src: string) => string;
 }) {
   const [failed, setFailed] = useState(false);
@@ -62,7 +62,7 @@ export function CompositionMedia({
           <CompositionVideo
             layer={layer}
             runtime={runtime}
-            index={index}
+            id={id}
             src={resolveMediaUrl(layer.src)}
             style={mediaStyle}
             onError={() => setFailed(true)}
@@ -83,22 +83,22 @@ export function CompositionMedia({
 function CompositionVideo({
   layer,
   runtime,
-  index,
+  id,
   src,
   style,
   onError,
 }: {
   layer: VideoLayer;
   runtime: EditorRuntime;
-  index: number;
+  id: string;
   src: string;
   style: CSSProperties;
   onError: () => void;
 }) {
   const playbackRef = useCallback(
     (element: HTMLVideoElement | null) =>
-      element ? runtime.attachVideo({ index, element }) : undefined,
-    [runtime, index],
+      element ? runtime.attachVideo({ id, element }) : undefined,
+    [runtime, id],
   );
   return (
     <video

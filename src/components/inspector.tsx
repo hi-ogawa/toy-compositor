@@ -9,11 +9,15 @@ import type {
   ImageLayer,
   Layer,
   Output,
-  Project,
   TextLayer,
   VideoLayer,
 } from "../lib/project";
-import type { EditorRuntime, EditorSelection } from "../lib/runtime";
+import type {
+  EditorRuntime,
+  EditorSelection,
+  EditorProject,
+} from "../lib/runtime";
+import { cn } from "./ui/utils";
 import { useDraftInput } from "./use-draft-input";
 
 export function Inspector({
@@ -22,7 +26,7 @@ export function Inspector({
   selection,
 }: {
   runtime: EditorRuntime;
-  project: Project;
+  project: EditorProject;
   selection?: EditorSelection;
 }) {
   if (!selection) {
@@ -50,13 +54,14 @@ export function Inspector({
       );
     }
     case "layer": {
-      const { index } = selection;
+      const { id } = selection;
+      const layer = project.layers.find((layer) => layer.id === id)!;
       return (
         <LayerInspector
-          layer={project.layers[index]}
+          layer={layer}
           canvas={project.canvas}
           time={time}
-          onUpdate={(update) => runtime.updateLayer({ index, update })}
+          onUpdate={(update) => runtime.updateLayer({ id, update })}
         />
       );
     }
@@ -181,7 +186,12 @@ function LayerInspector({
     <div data-testid="inspector">
       <InspectorTitle title={layer.name ?? layer.type} subtitle={layer.type} />
       <div className="flex flex-col gap-4 p-3">
-        <NameField name={layer.name} onCommit={(name) => onUpdate({ name })} />
+        {/* An empty name removes it, so the layer reads as its type again. */}
+        <TextField
+          label="name"
+          value={layer.name ?? ""}
+          onCommit={(name) => onUpdate({ name: name || undefined })}
+        />
         <LayerFields
           layer={layer}
           canvas={canvas}
@@ -243,6 +253,7 @@ function LayerFields({
       return (
         <>
           <RangeTimingFields layer={layer} time={time} onUpdate={onUpdate} />
+          <TextFields layer={layer} onUpdate={onUpdate} />
           <Group title="Box">
             {(["x", "y", "width"] as const).map((key) => (
               <NumberField
@@ -264,16 +275,11 @@ function LayerFields({
         <>
           <RangeTimingFields layer={layer} time={time} onUpdate={onUpdate} />
           <Group title="Fill">
-            <label className="flex flex-col gap-1">
-              <span className="text-[10px] text-neutral-400">color</span>
-              <input
-                type="color"
-                aria-label="color"
-                className="h-8 w-full min-w-0 cursor-pointer rounded border border-neutral-600 bg-neutral-900 px-1 outline-none focus-visible:border-ring"
-                value={layer.color}
-                onChange={(e) => onUpdate({ color: e.target.value })}
-              />
-            </label>
+            <ColorField
+              label="color"
+              value={layer.color}
+              onCommit={(color) => onUpdate({ color })}
+            />
             <NumberField
               label="opacity"
               value={layer.opacity ?? 1}
@@ -391,6 +397,125 @@ function AudioFields({
         onCommit={(fadeOut) => onUpdate({ fadeOut: fadeOut || undefined })}
       />
     </Group>
+  );
+}
+
+function TextFields({
+  layer,
+  onUpdate,
+}: {
+  layer: TextLayer;
+  onUpdate: LayerUpdate;
+}) {
+  const { font, outline } = layer;
+  const align = layer.align ?? "left";
+  return (
+    <>
+      <Group title="Text">
+        <TextField
+          label="text"
+          value={layer.text}
+          multiline
+          onCommit={(text) => onUpdate({ text })}
+        />
+        <div
+          role="group"
+          aria-label="Text align"
+          className="col-span-2 grid grid-cols-3 gap-1"
+        >
+          {(["left", "center", "right"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={align === value}
+              onClick={() =>
+                onUpdate({ align: value === "left" ? undefined : value })
+              }
+              className="h-8 rounded border border-neutral-600 bg-neutral-900 text-xs text-neutral-400 outline-none hover:bg-neutral-800 focus-visible:border-ring aria-pressed:bg-neutral-700 aria-pressed:text-neutral-100"
+            >
+              {value}
+            </button>
+          ))}
+        </div>
+        <ColorField
+          label="color"
+          value={layer.color}
+          onCommit={(color) => onUpdate({ color })}
+        />
+      </Group>
+      <Group title="Font">
+        <TextField
+          label="family"
+          value={font.family}
+          onCommit={(family) => onUpdate({ font: { ...font, family } })}
+        />
+        <NumberField
+          label="size"
+          value={font.size}
+          {...PIXEL_FIELD}
+          min={1}
+          onCommit={(size) => onUpdate({ font: { ...font, size } })}
+        />
+        <label className="flex flex-col gap-1">
+          <span className="text-[10px] text-neutral-400">weight</span>
+          {/* The renderer maps only these weights to font faces. */}
+          <select
+            aria-label="weight"
+            className="h-8 w-full min-w-0 rounded border border-neutral-600 bg-neutral-900 px-1 text-sm outline-none focus-visible:border-ring"
+            value={font.weight ?? 400}
+            onChange={(e) => {
+              const weight = Number(e.target.value);
+              onUpdate({
+                font: { ...font, weight: weight === 400 ? undefined : weight },
+              });
+            }}
+          >
+            {[300, 400, 500, 700, 900].map((weight) => (
+              <option key={weight} value={weight}>
+                {weight}
+              </option>
+            ))}
+          </select>
+        </label>
+        <NumberField
+          label="line spacing"
+          value={font.lineSpacing ?? 0}
+          {...PIXEL_FIELD}
+          onCommit={(lineSpacing) =>
+            onUpdate({
+              font: { ...font, lineSpacing: lineSpacing || undefined },
+            })
+          }
+        />
+      </Group>
+      <Group title="Outline">
+        <NumberField
+          label="outline width"
+          value={outline?.width ?? 0}
+          step={1}
+          min={0}
+          round={(value) => roundTo(value, 0.1)}
+          onCommit={(width) =>
+            onUpdate({
+              outline: width
+                ? { color: outline?.color ?? "#000000", width }
+                : undefined,
+            })
+          }
+        />
+        {/* A color without a width would draw nothing, so it waits for a width. */}
+        <ColorField
+          label="outline color"
+          value={outline?.color ?? "#000000"}
+          disabled={!outline}
+          onCommit={(color) => {
+            if (outline) {
+              onUpdate({ outline: { ...outline, color } });
+            }
+          }}
+        />
+      </Group>
+    </>
   );
 }
 
@@ -541,40 +666,89 @@ function NumberField({
   );
 }
 
-/** Commits on Enter or blur like the number fields, and an empty name removes it. */
-function NameField({
-  name,
+/**
+ * Commits on blur or Enter like NumberField. A multiline field keeps Enter for
+ * line breaks, so it commits only on blur.
+ */
+function TextField({
+  label,
+  value,
+  multiline,
   onCommit,
 }: {
-  name?: string;
-  onCommit: (name: string | undefined) => void;
+  label: string;
+  value: string;
+  multiline?: boolean;
+  onCommit: (value: string) => void;
 }) {
-  const [draft, setDraft] = useState(name ?? "");
-  useEffect(() => setDraft(name ?? ""), [name]);
-  const commit = () => {
-    if (draft !== (name ?? "")) {
-      onCommit(draft || undefined);
-    }
+  const [draft, setDraft] = useState(value);
+
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  const props = {
+    "aria-label": label,
+    value: draft,
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setDraft(e.target.value),
+    onKeyDown: (
+      e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+    ) => {
+      if (matchKeyboardEvent(e, "Escape")) {
+        setDraft(value);
+        e.currentTarget.blur();
+      } else if (!multiline && matchKeyboardEvent(e, "Enter")) {
+        e.currentTarget.blur();
+      }
+    },
+    onBlur: () => {
+      if (draft !== value) {
+        onCommit(draft);
+      }
+    },
   };
   return (
+    <label className={cn("flex flex-col gap-1", multiline && "col-span-2")}>
+      <span className="text-[10px] text-neutral-400">{label}</span>
+      {multiline ? (
+        <textarea
+          rows={3}
+          className="w-full min-w-0 resize-y rounded border border-neutral-600 bg-neutral-900 px-2 py-1 text-sm outline-none focus-visible:border-ring"
+          {...props}
+        />
+      ) : (
+        <input
+          type="text"
+          className="h-8 w-full min-w-0 rounded border border-neutral-600 bg-neutral-900 px-2 text-sm outline-none focus-visible:border-ring"
+          {...props}
+        />
+      )}
+    </label>
+  );
+}
+
+function ColorField({
+  label,
+  value,
+  disabled,
+  onCommit,
+}: {
+  label: string;
+  value: string;
+  disabled?: boolean;
+  onCommit: (value: string) => void;
+}) {
+  return (
     <label className="flex flex-col gap-1">
-      <span className="text-[10px] text-neutral-400">name</span>
+      <span className="text-[10px] text-neutral-400">{label}</span>
       <input
-        type="text"
-        aria-label="name"
-        className="h-8 w-full min-w-0 rounded border border-neutral-600 bg-neutral-900 px-2 text-sm outline-none focus-visible:border-ring"
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (matchKeyboardEvent(e, "Enter")) {
-            commit();
-            e.currentTarget.blur();
-          } else if (matchKeyboardEvent(e, "Escape")) {
-            // Blurring here would commit the stale draft before the reset renders.
-            setDraft(name ?? "");
-          }
-        }}
+        type="color"
+        aria-label={label}
+        disabled={disabled}
+        className="h-8 w-full min-w-0 cursor-pointer rounded border border-neutral-600 bg-neutral-900 px-1 outline-none focus-visible:border-ring disabled:cursor-default disabled:opacity-50"
+        value={value}
+        onChange={(e) => onCommit(e.target.value)}
       />
     </label>
   );
