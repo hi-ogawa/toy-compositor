@@ -9,7 +9,7 @@ import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { usePointerGesture } from "../hooks/use-pointer-gesture";
 import type { LayerEditType } from "../lib/layer-edit";
 import { getLayerRange, intersect, type Range } from "../lib/layout";
-import type { Layer, Locator, Project } from "../lib/project";
+import type { Layer, Locator, Output } from "../lib/project";
 import type {
   DecodedAudio,
   EditorRuntime,
@@ -200,7 +200,7 @@ function TimelineLocatorRow({
   onSeek,
 }: {
   timeline: TimelineView;
-  output: Project["output"];
+  output: Output;
   locators: Locator[];
   renderSelected: boolean;
   onRenderMarkerClick: (time: number) => void;

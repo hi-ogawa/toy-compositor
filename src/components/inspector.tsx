@@ -6,7 +6,7 @@ import type {
   Crop,
   ImageLayer,
   Layer,
-  Project,
+  Output,
   TextLayer,
   VideoLayer,
 } from "../lib/project";
@@ -63,8 +63,6 @@ export function Inspector({
     }
   }
 }
-
-type Output = Project["output"];
 
 type TimeFieldOptions = ReturnType<typeof getTimeFieldOptions>;
 

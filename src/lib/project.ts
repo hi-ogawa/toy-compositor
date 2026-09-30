@@ -1,9 +1,7 @@
 /** See docs/project-format.md */
 export type Project = {
   canvas: Canvas;
-  output:
-    | { type: "video"; start: number; end: number }
-    | { type: "still"; time: number };
+  output: Output;
   layers: Layer[];
   locators?: Locator[];
   /** Facts about every media file a layer uses, keyed by the layers' `src`. */
@@ -16,6 +14,10 @@ export type Canvas = {
   fps: number;
   background?: string;
 };
+
+export type Output =
+  | { type: "video"; start: number; end: number }
+  | { type: "still"; time: number };
 
 export type Locator = { label: string; time: number };
 
