@@ -283,25 +283,24 @@ function TimelineLocatorRow({
             }
           />
         ))}
-      {locatorInteraction.locators.map(
-        (locator, index) =>
-          timeline.isVisible(locator.time) && (
-            <LocatorMarker
-              key={index}
-              label={locator.label}
-              time={locator.time}
-              left={timeline.timeToX(locator.time)}
-              pixelsPerSecond={timeline.pixelsPerSecond}
-              labelSide="after"
-              render={false}
-              selected={locatorInteraction.selectedIndex === index}
-              onSelect={() => locatorInteraction.select(index)}
-              onClick={() => onSeek(locator.time)}
-              onMove={(time) => locatorInteraction.move(index, time)}
-              onRename={(label) => locatorInteraction.rename(index, label)}
-            />
-          ),
-      )}
+      {locatorInteraction.locators
+        .filter((locator) => timeline.isVisible(locator.time))
+        .map((locator) => (
+          <LocatorMarker
+            key={locator.id}
+            label={locator.label}
+            time={locator.time}
+            left={timeline.timeToX(locator.time)}
+            pixelsPerSecond={timeline.pixelsPerSecond}
+            labelSide="after"
+            render={false}
+            selected={locatorInteraction.selectedId === locator.id}
+            onSelect={() => locatorInteraction.select(locator.id)}
+            onClick={() => onSeek(locator.time)}
+            onMove={(time) => locatorInteraction.move(locator.id, time)}
+            onRename={(label) => locatorInteraction.rename(locator.id, label)}
+          />
+        ))}
     </TimelineRow>
   );
 }

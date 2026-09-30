@@ -28,8 +28,14 @@ export type EditorSelection =
 /** A project layer with an id that is stable for the session but never saved. */
 export type EditorLayer = Layer & { id: string };
 
-/** The project as the editor holds it, which saves without the layer ids. */
-export type EditorProject = Omit<Project, "layers"> & { layers: EditorLayer[] };
+/** A project locator with an id that is stable for the session but never saved. */
+export type EditorLocator = Locator & { id: string };
+
+/** The project as the editor holds it, which saves without the layer and locator ids. */
+export type EditorProject = Omit<Project, "layers" | "locators"> & {
+  layers: EditorLayer[];
+  locators?: EditorLocator[];
+};
 
 export interface DecodedAudio {
   buffer: AudioBuffer;
@@ -191,11 +197,12 @@ export class EditorRuntime {
     );
   }
 
-  /** Appends a numbered locator, like toy-midi's `addLocator`, and returns its index. */
-  addLocator(time: number): number {
+  /** Appends a numbered locator, like toy-midi's `addLocator`, and returns its id. */
+  addLocator(time: number): string {
     const { project } = this.store.get();
     const locators = project.locators ?? [];
     const locator = {
+      id: crypto.randomUUID(),
       label: createNumberedName({
         names: locators.map((locator) => locator.label),
         prefix: "Locator",
@@ -205,33 +212,33 @@ export class EditorRuntime {
     this.store.update({
       project: { ...project, locators: [...locators, locator] },
     });
-    return locators.length;
+    return locator.id;
   }
 
   updateLocator({
-    index,
+    id,
     update,
   }: {
-    index: number;
+    id: string;
     update: Partial<Locator>;
   }): void {
     const { project } = this.store.get();
     this.store.update({
       project: {
         ...project,
-        locators: project.locators?.map((locator, i) =>
-          i === index ? { ...locator, ...update } : locator,
+        locators: project.locators?.map((locator) =>
+          locator.id === id ? { ...locator, ...update } : locator,
         ),
       },
     });
   }
 
-  deleteLocator(index: number): void {
+  deleteLocator(id: string): void {
     const { project } = this.store.get();
     this.store.update({
       project: {
         ...project,
-        locators: project.locators?.filter((_locator, i) => i !== index),
+        locators: project.locators?.filter((locator) => locator.id !== id),
       },
     });
   }

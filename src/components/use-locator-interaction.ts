@@ -19,42 +19,42 @@ export function useLocatorInteraction({
   runtime: EditorRuntime;
   state: EditorState;
 }) {
-  const [selectedIndex, setSelectedIndex] = useState<number>();
+  const [selectedId, setSelectedId] = useState<string>();
   const { project, playhead } = state;
   const { fps } = project.canvas;
 
   // Selecting a layer or the output clears the locator selection, like
   // toy-midi's clearing across selection domains.
-  if (state.selection && selectedIndex !== undefined) {
-    setSelectedIndex(undefined);
+  if (state.selection && selectedId !== undefined) {
+    setSelectedId(undefined);
   }
 
-  function select(index: number | undefined) {
-    if (index !== undefined) {
+  function select(id: string | undefined) {
+    if (id !== undefined) {
       runtime.select(undefined);
     }
-    setSelectedIndex(index);
+    setSelectedId(id);
   }
 
   function add() {
     select(runtime.addLocator(snapToFrame(playhead, fps)));
   }
 
-  function move(index: number, time: number) {
+  function move(id: string, time: number) {
     runtime.updateLocator({
-      index,
+      id,
       update: { time: Math.max(0, snapToFrame(time, fps)) },
     });
   }
 
-  function rename(index: number, label: string) {
-    runtime.updateLocator({ index, update: { label } });
+  function rename(id: string, label: string) {
+    runtime.updateLocator({ id, update: { label } });
   }
 
   /** Deletes the selected locator, which excludes a selected layer, so only one remove shortcut applies. */
   function handleRemoveShortcut(event: KeyboardEvent): boolean {
     if (
-      selectedIndex === undefined ||
+      selectedId === undefined ||
       !(
         matchKeyboardEvent(event, "Delete") ||
         matchKeyboardEvent(event, "Backspace")
@@ -62,7 +62,7 @@ export function useLocatorInteraction({
     ) {
       return false;
     }
-    runtime.deleteLocator(selectedIndex);
+    runtime.deleteLocator(selectedId);
     select(undefined);
     return true;
   }
@@ -74,7 +74,7 @@ export function useLocatorInteraction({
 
   return {
     locators: project.locators ?? [],
-    selectedIndex,
+    selectedId,
     select,
     add,
     move,
