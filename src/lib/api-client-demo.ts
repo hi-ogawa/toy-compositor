@@ -81,6 +81,9 @@ export const apiClient: typeof serverApiClient = {
     return mediaInfo;
   },
 
+  /** The static demo has no server to keep running. */
+  openLiveConnection() {},
+
   async loadAudioData({ src, projectPath }) {
     const res = await fetch(apiClient.getMediaUrl({ src, projectPath }));
     if (!res.ok) {

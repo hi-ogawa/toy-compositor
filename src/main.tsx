@@ -3,9 +3,12 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster, toast } from "sonner";
 import { App } from "./app";
+import { apiClient } from "./lib/api-client";
 import "./index.css";
 
 function main() {
+  apiClient.openLiveConnection();
+
   const queryClient = new QueryClient({
     defaultOptions: {
       mutations: {

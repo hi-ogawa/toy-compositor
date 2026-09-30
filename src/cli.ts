@@ -2,15 +2,22 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
+import { installDesktopEntry } from "./lib/desktop-entry.ts";
 import { updateProjectMedia } from "./lib/media-info.ts";
 import { renderProject } from "./lib/render/render.ts";
+import { createLiveConnections } from "./lib/server/live.ts";
+import { openWithDefaultApp } from "./lib/server/open-default.ts";
 import { createProjectRegistry, getConfigDir } from "./lib/server/registry.ts";
-import { serveEditor } from "./lib/server/serve.ts";
+import { checkEditorServer, serveEditor } from "./lib/server/serve.ts";
 
 const HELP = `\
 Usage:
-  toy-compositor serve [directory] [--port <port>]
-      Open the editor for the project folders, adding directory to them first
+  toy-compositor serve [directory] [--port <port>] [--open]
+      Open the editor for the project folders, adding directory to them first.
+      --open opens it in the browser, reusing a server already on the port,
+      and exits shortly after the last editor tab closes
+  toy-compositor install-desktop
+      Add an app launcher entry that runs serve --open (Linux)
   toy-compositor add <path>
       Add a project folder, given as the folder or a project file inside it
   toy-compositor render <project.json> <output> [--dry-run]
@@ -23,6 +30,7 @@ async function main() {
     allowPositionals: true,
     options: {
       port: { type: "string", default: "5190" },
+      open: { type: "boolean" },
       "dry-run": { type: "boolean" },
       help: { type: "boolean", short: "h" },
     },
@@ -30,25 +38,47 @@ async function main() {
   const [command, ...args] = positionals;
   switch (command) {
     case "serve": {
-      // The build places the client next to the bundled CLI.
-      const clientDir = path.join(import.meta.dirname, "../client");
-      if (!fs.existsSync(path.join(clientDir, "index.html"))) {
-        throw new Error(
-          `Editor client not found at ${clientDir}. Run pnpm build first.`,
-        );
-      }
+      const clientDir = getClientDir();
       const registry = createProjectRegistry({ configDir: getConfigDir() });
       if (args[0]) {
         console.log(`Added ${await registry.addFolder(args[0])}`);
       }
-      const server = await serveEditor({
-        registry,
-        port: Number(values.port),
-        clientDir,
+      const port = Number(values.port);
+      const url = `http://localhost:${port}/`;
+      const live = createLiveConnections();
+      let server: Awaited<ReturnType<typeof serveEditor>>;
+      try {
+        server = await serveEditor({ registry, live, port, clientDir });
+      } catch (error) {
+        // The server reads the registry on every request, so a tab on the
+        // running one also lists a folder added above.
+        if (
+          values.open &&
+          (error as NodeJS.ErrnoException).code === "EADDRINUSE" &&
+          (await checkEditorServer(port))
+        ) {
+          await openWithDefaultApp(url);
+          console.log(`Opened the editor already running at ${url}`);
+          return;
+        }
+        throw error;
+      }
+      console.log(`Editor: ${url}`);
+      if (values.open) {
+        await openWithDefaultApp(url);
+        await live.waitForLastClose({ graceMs: 3000 });
+        console.log("Closing after the last editor tab closed");
+        await server.close(true);
+      }
+      break;
+    }
+    case "install-desktop": {
+      const iconFile = path.join(getClientDir(), "icon.svg");
+      const entryFile = await installDesktopEntry({
+        command: [process.execPath, import.meta.filename, "serve", "--open"],
+        iconFile,
       });
-      const url = new URL(server.url!);
-      url.hostname = "localhost";
-      console.log(`Editor: ${url.href}`);
+      console.log(`Installed ${entryFile}`);
       break;
     }
     case "add": {
@@ -87,6 +117,17 @@ async function main() {
       process.exitCode = values.help ? 0 : 1;
     }
   }
+}
+
+// The build places the client next to the bundled CLI.
+function getClientDir() {
+  const clientDir = path.join(import.meta.dirname, "../client");
+  if (!fs.existsSync(path.join(clientDir, "index.html"))) {
+    throw new Error(
+      `Editor client not found at ${clientDir}. Run pnpm build first.`,
+    );
+  }
+  return clientDir;
 }
 
 main().catch((error: unknown) => {
