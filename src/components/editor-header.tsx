@@ -38,7 +38,7 @@ export function EditorHeader({
         title={file}
         data-testid="editor-project-file"
       >
-        {file}
+        {file.split(/[\\/]/).slice(-2).join("/")}
       </span>
       <EditorSaveButton status={saveStatus} onSave={onSave} />
       <div className="flex-1" />
