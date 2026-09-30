@@ -251,10 +251,7 @@ export class EditorRuntime {
       });
       this.syncPlayback();
     });
-    if (
-      (layer.type === "video" || layer.type === "audio") &&
-      !this.store.get().audioSources[layer.src]
-    ) {
+    if (layer.type === "video" || layer.type === "audio") {
       this.loadAudio(layer.src);
     }
   }
@@ -323,8 +320,14 @@ export class EditorRuntime {
     }
   }
 
-  /** Starts decoding a source, and syncs playback once its buffer arrives. */
+  /**
+   * Starts decoding a source unless it already has, and syncs playback once its
+   * buffer arrives.
+   */
   private loadAudio(src: string): void {
+    if (this.store.get().audioSources[src]) {
+      return;
+    }
     const decodeAudio = async (): Promise<DecodedAudio> => {
       const data = await apiClient.loadAudioData({
         src,
