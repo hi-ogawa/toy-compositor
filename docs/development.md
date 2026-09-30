@@ -13,8 +13,6 @@ pnpm build                           # dist/client/ and dist/server/cli.js
 pnpm dev-demo                        # editor without a server, see below
 ```
 
-The editor and CLI run on Node 24 directly.
-
 The dev server works on `.local/projects/`, and `TOY_COMPOSITOR_ROOT` points it at another projects root. Open a project directly with `?project=<project-dir>/<name>.json`, relative to that root.
 
 ## Static demo
