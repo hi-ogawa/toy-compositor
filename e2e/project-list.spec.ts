@@ -23,8 +23,8 @@ test("open projects from the start page", async ({ page, editor }) => {
 
   // Open the thumbnail project from the list.
   await section.getByRole("link", { name: /thumbnail\.json/ }).click();
-  await expect(page.getByTestId("editor-project-file")).toContainText(
-    "thumbnail.json",
+  await expect(page.getByTestId("editor-project-file")).toHaveText(
+    `${path.basename(projectDir)}/thumbnail.json`,
   );
 
   // Select the image in the Source tab and confirm its source resolves
