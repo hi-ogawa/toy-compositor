@@ -22,6 +22,10 @@ toy-compositor render <project.json> <output>  # .mp4 or .png
 toy-compositor update-media <project.json...>  # record the media info layers use
 ```
 
+A project folder holds its project files at the top level and its media under `media/`. The start page lists the folders you add, kept in `projects.json` under the user config directory such as `~/.config/toy-compositor/`, and the editor only serves files inside them.
+
+Rendering needs `ffmpeg`, `ffprobe`, and ImageMagick (`magick`) on PATH.
+
 ## Development
 
 ```sh
