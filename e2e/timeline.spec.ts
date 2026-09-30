@@ -8,6 +8,7 @@ import {
   getInspectorField,
   seekTimelineByPixels,
   clickTimelineButton,
+  commitInspectorField,
   test,
 } from "./helper";
 
@@ -277,5 +278,104 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
       { start: 0, end: 2 },
       { start: 0, end: 3 },
     ],
+  });
+});
+
+test("add, move, rename, and delete locators", async ({ page, editor }) => {
+  // Open the synthetic project and seek to 4 s, past the render end marker.
+  await page.goto(editor.url);
+  const secondsToPixels = (seconds: number) =>
+    seconds * DEFAULT_PIXELS_PER_SECOND;
+  const timeline = page.getByTestId("editor-timeline");
+  const getMarker = (name: string) =>
+    timeline.getByRole("button", { name, exact: true });
+  await seekTimelineByPixels(page, { pixels: secondsToPixels(4) });
+
+  // Press L and confirm it adds a numbered locator at the playhead, selected.
+  await page.keyboard.press("L");
+  const added = getMarker("Locator 2");
+  await expect(added).toHaveAttribute("aria-pressed", "true");
+  await expect(added).toHaveAttribute("title", /4\.000 s/);
+
+  // Drag it 0.51 s right, and confirm it lands on the nearest frame at 4.5 s.
+  await dragBy(page, added, { deltaX: secondsToPixels(0.51) });
+  await expect(added).toHaveAttribute("title", /4\.500 s/);
+
+  // Rename it through the prompt.
+  page.once("dialog", (dialog) => dialog.accept("shorts"));
+  await clickTimelineButton(page, { name: "Rename Locator 2" });
+  await expect(getMarker("shorts")).toBeVisible();
+
+  // Click the thumbnail locator, which selects it and seeks, and delete it.
+  await clickTimelineButton(page, { name: "thumbnail" });
+  await expect(page.getByTestId("timeline-time")).toContainText("1.500 s");
+  await expect(getMarker("shorts")).toHaveAttribute("aria-pressed", "false");
+  await page.keyboard.press("Delete");
+  await expect(getMarker("thumbnail")).toHaveCount(0);
+
+  // Save and confirm the locators reach the project file.
+  await page.getByTestId("editor-save-button").click();
+  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
+  expect((await readJson<Project>(editor.projectFile)).locators).toEqual([
+    { label: "shorts", time: 4.5 },
+  ]);
+});
+
+test("drag render markers on the timeline", async ({ page, editor }) => {
+  // Open the synthetic project, which renders 0 to 3 s.
+  await page.goto(editor.url);
+  const secondsToPixels = (seconds: number) =>
+    seconds * DEFAULT_PIXELS_PER_SECOND;
+  const getMarker = (name: string) =>
+    page
+      .getByTestId("editor-timeline")
+      .getByRole("button", { name, exact: true });
+
+  // Drag render end 1 s left, and confirm it selects the output and moves the
+  // end without seeking.
+  await dragBy(page, getMarker("Render end"), {
+    deltaX: secondsToPixels(-1),
+  });
+  await expectInspectorFields(page, { start: "0", end: "2" });
+  await expect(page.getByTestId("timeline-time")).toContainText("0.000 s");
+
+  // Drag render start 3 s right, and confirm it stops one frame before the end.
+  await dragBy(page, getMarker("Render start"), {
+    deltaX: secondsToPixels(3),
+  });
+  await expectInspectorFields(page, { start: "1.967", end: "2" });
+
+  // Reset the start, then drag render end 3 s left, and confirm it stops one
+  // frame after the start.
+  await commitInspectorField(page, { name: "start", value: "0" });
+  await dragBy(page, getMarker("Render end"), {
+    deltaX: secondsToPixels(-3),
+  });
+  await expectInspectorFields(page, { start: "0", end: "0.033" });
+
+  // Switch to a still at 1 s, and drag its render frame 0.51 s right onto the
+  // nearest frame.
+  await seekTimelineByPixels(page, { pixels: secondsToPixels(1) });
+  await page
+    .getByTestId("inspector")
+    .getByRole("button", { name: "still", exact: true })
+    .click();
+  await dragBy(page, getMarker("Render frame"), {
+    deltaX: secondsToPixels(0.51),
+  });
+  await expectInspectorFields(page, { time: "1.5" });
+
+  // Save and confirm the output reaches the project file.
+  await page.getByTestId("editor-save-button").click();
+  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
+  expect((await readJson<Project>(editor.projectFile)).output).toEqual({
+    type: "still",
+    time: 1.5,
   });
 });

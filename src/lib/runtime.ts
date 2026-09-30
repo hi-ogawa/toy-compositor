@@ -1,3 +1,4 @@
+import { createNumberedName } from "../utils/name.ts";
 import { watchPromise, type PromiseState } from "../utils/promise-state.ts";
 import { createStore } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
@@ -8,6 +9,7 @@ import type {
   AudioLayer,
   Canvas,
   Layer,
+  Locator,
   Output,
   Project,
   VideoLayer,
@@ -132,6 +134,51 @@ export class EditorRuntime {
         ? { type, time: snapToFrame(playhead, project.canvas.fps) }
         : { type, ...getContentRange(project) },
     );
+  }
+
+  /** Appends a numbered locator, like toy-midi's `addLocator`, and returns its index. */
+  addLocator(time: number): number {
+    const { project } = this.store.get();
+    const locators = project.locators ?? [];
+    const locator = {
+      label: createNumberedName({
+        names: locators.map((locator) => locator.label),
+        prefix: "Locator",
+      }),
+      time,
+    };
+    this.store.update({
+      project: { ...project, locators: [...locators, locator] },
+    });
+    return locators.length;
+  }
+
+  updateLocator({
+    index,
+    update,
+  }: {
+    index: number;
+    update: Partial<Locator>;
+  }): void {
+    const { project } = this.store.get();
+    this.store.update({
+      project: {
+        ...project,
+        locators: project.locators?.map((locator, i) =>
+          i === index ? { ...locator, ...update } : locator,
+        ),
+      },
+    });
+  }
+
+  deleteLocator(index: number): void {
+    const { project } = this.store.get();
+    this.store.update({
+      project: {
+        ...project,
+        locators: project.locators?.filter((_locator, i) => i !== index),
+      },
+    });
   }
 
   select(selection: EditorSelection | undefined): void {

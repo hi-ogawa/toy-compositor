@@ -11,6 +11,7 @@ import { Timeline } from "./timeline";
 import { Button } from "./ui/button";
 import { useEditorProject } from "./use-editor-project";
 import { useLayerInteraction } from "./use-layer-interaction";
+import { useLocatorInteraction } from "./use-locator-interaction";
 import { useTimeline } from "./use-timeline";
 import { useWindowEvent } from "./use-window-event";
 
@@ -23,6 +24,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
   const project = useEditorProject({ projectPath, runtime });
   const timeline = useTimeline(runtime);
   const layerInteraction = useLayerInteraction({ runtime, state });
+  const locatorInteraction = useLocatorInteraction({ runtime, state });
   const [sourceOpen, setSourceOpen] = useState(true);
 
   useEffect(() => {
@@ -49,6 +51,20 @@ export function Editor({ projectPath }: { projectPath: string }) {
     }
     if (timeline.handleFrameStepShortcut(event)) {
       event.preventDefault();
+      return;
+    }
+    if (matchKeyboardEvent(event, "L")) {
+      event.preventDefault();
+      locatorInteraction.add();
+      return;
+    }
+    if (
+      (matchKeyboardEvent(event, "Delete") ||
+        matchKeyboardEvent(event, "Backspace")) &&
+      locatorInteraction.selectedIndex !== undefined
+    ) {
+      event.preventDefault();
+      locatorInteraction.removeSelected();
       return;
     }
     if (matchKeyboardEvent(event, "Space") && !event.repeat) {
@@ -115,6 +131,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
           <Timeline
             timeline={timeline}
             layerInteraction={layerInteraction}
+            locatorInteraction={locatorInteraction}
             runtime={runtime}
             project={state.project}
             selection={selection}
