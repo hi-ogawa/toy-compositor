@@ -15,12 +15,8 @@ pnpm dev-demo                        # editor as a static site, see below
 
 The editor and CLI run on Node 24 directly. See [samples/README.md](../samples/README.md) for the synthetic and local samples, [e2e.md](e2e.md) for E2E traces on GitHub Actions, and [working-media.md](working-media.md) for preparing camera footage.
 
-## Projects root
-
-The editor works on a projects root laid out as `<root>/<project-dir>/<name>.json`, where each project directory holds its project JSON files and their media. The dev server's root is `.local/projects/`, and `TOY_COMPOSITOR_ROOT` overrides it. `toy-compositor serve <root>` serves any other directory the same way.
-
-The start page lists the root's projects, and opening one navigates to `?project=<project-dir>/<name>.json`. The server reads and saves projects and serves their media through `/api/`, resolving media relative to the project file as the renderer does. It listens on localhost only, rejects requests addressed to other hosts, and never serves hidden paths under the root.
+The dev server works on `.local/projects/`, and `TOY_COMPOSITOR_ROOT` points it at another projects root.
 
 ## Static demo
 
-`pnpm build-demo` builds the editor into `dist/demo/` as a static site over the synthetic sample, with no server. [vite.demo.config.ts](../vite.demo.config.ts) resolves [src/lib/api-client.ts](../src/lib/api-client.ts), the editor's only access to the server, to [src/lib/api-client-demo.ts](../src/lib/api-client-demo.ts). The demo module serves the bundled sample, keeps saves until reload, and inlines media as data URLs so videos can seek on hosts that ignore range requests. [wrangler.jsonc](../wrangler.jsonc) deploys it as Cloudflare static assets.
+`pnpm build-demo` builds the editor into `dist/demo/` as a static site, which [wrangler.jsonc](../wrangler.jsonc) deploys as Cloudflare static assets. [vite.demo.config.ts](../vite.demo.config.ts) swaps [src/lib/api-client.ts](../src/lib/api-client.ts) for [src/lib/api-client-demo.ts](../src/lib/api-client-demo.ts), so a new `apiClient` method also needs a demo version. The demo inlines media as data URLs, because some static hosts ignore range requests and videos then cannot seek.
