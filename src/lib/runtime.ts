@@ -122,24 +122,23 @@ export class EditorRuntime {
    * none yet, and the layer's defaults come from it.
    */
   async addMediaLayer({ path: src, type }: MediaFile): Promise<void> {
-    const { file, project } = this.store.get();
-    const mediaInfo =
-      project.media[src] ??
-      (await apiClient.loadMediaInfo({ src, projectPath: file }));
-    const latest = this.store.get();
-    this.store.update({
-      project: {
-        ...latest.project,
-        media: { ...latest.project.media, [src]: mediaInfo },
-      },
-    });
+    const { file } = this.store.get();
+    let mediaInfo = this.store.get().project.media[src];
+    if (!mediaInfo) {
+      mediaInfo = await apiClient.loadMediaInfo({ src, projectPath: file });
+      const { project } = this.store.get();
+      this.store.update({
+        project: { ...project, media: { ...project.media, [src]: mediaInfo } },
+      });
+    }
+    const { project, playhead } = this.store.get();
     this.insertLayer(
       createMediaLayer({
         src,
         type,
         mediaInfo,
-        canvas: latest.project.canvas,
-        start: snapToFrame(latest.playhead, latest.project.canvas.fps),
+        canvas: project.canvas,
+        start: snapToFrame(playhead, project.canvas.fps),
         stillRange: this.getNewStillRange(),
       }),
     );
