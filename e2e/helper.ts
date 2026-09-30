@@ -163,18 +163,24 @@ export async function expectInspectorFields(
   );
 }
 
-/** Click the timeline ruler at an offset from its origin, which is project time 0. */
+/**
+ * Click the timeline ruler, or empty space in another seeking row, at an
+ * offset from its origin, which is project time 0.
+ */
 export async function seekTimelineByPixels(
   page: Page,
-  { pixels }: { pixels: number },
+  {
+    pixels,
+    row = "Timeline ruler",
+  }: { pixels: number; row?: "Timeline ruler" | "Locator row" },
 ) {
   await test.step(
-    `Seek timeline to ${pixels}px`,
+    `Seek timeline to ${pixels}px from ${row}`,
     async () => {
-      const ruler = page
+      const target = page
         .getByTestId("editor-timeline")
-        .getByRole("button", { name: "Timeline ruler", exact: true });
-      const box = (await ruler.boundingBox())!;
+        .getByRole("button", { name: row, exact: true });
+      const box = (await target.boundingBox())!;
       await page.mouse.click(box.x + pixels, box.y + box.height / 2);
     },
     { box: true },

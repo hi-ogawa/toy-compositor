@@ -62,14 +62,10 @@ test("navigate the timeline without editing the project", async ({
 
   // Click empty space in the locator row at 5 s, past the markers, and confirm
   // it seeks like the ruler.
-  const locatorRow = page
-    .getByTestId("editor-timeline")
-    .getByRole("button", { name: "Locator row", exact: true });
-  const locatorRowBox = (await locatorRow.boundingBox())!;
-  await page.mouse.click(
-    locatorRowBox.x + 5 * DEFAULT_PIXELS_PER_SECOND,
-    locatorRowBox.y + locatorRowBox.height / 2,
-  );
+  await seekTimelineByPixels(page, {
+    pixels: 5 * DEFAULT_PIXELS_PER_SECOND,
+    row: "Locator row",
+  });
   await expect(time).toContainText("5.000 s");
 
   // Confirm navigation did not mark the project as having unsaved changes.
@@ -130,14 +126,10 @@ test("clear the selection with Escape or the locator row", async ({
   // 5 s, and confirm it deselects the locator and seeks.
   await thumbnail.click();
   await expect(thumbnail).toHaveAttribute("aria-pressed", "true");
-  const locatorRow = page
-    .getByTestId("editor-timeline")
-    .getByRole("button", { name: "Locator row", exact: true });
-  const locatorRowBox = (await locatorRow.boundingBox())!;
-  await page.mouse.click(
-    locatorRowBox.x + 5 * DEFAULT_PIXELS_PER_SECOND,
-    locatorRowBox.y + locatorRowBox.height / 2,
-  );
+  await seekTimelineByPixels(page, {
+    pixels: 5 * DEFAULT_PIXELS_PER_SECOND,
+    row: "Locator row",
+  });
   await expect(time).toContainText("5.000 s");
   await expect(thumbnail).toHaveAttribute("aria-pressed", "false");
 
