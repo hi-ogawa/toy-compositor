@@ -8,3 +8,4 @@ dist
 # Playwright output
 test-results/
 playwright-report/
+.playwright-cli/

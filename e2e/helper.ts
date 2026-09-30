@@ -6,26 +6,40 @@ import {
   type Page,
   test as base,
 } from "@playwright/test";
+import { getProjectPageUrl } from "../src/lib/routes.ts";
+import {
+  createProjectRegistry,
+  getConfigDir,
+} from "../src/lib/server/registry.ts";
 
 export const test = base.extend<{
   editor: { projectDir: string; url: string; projectFile: string };
 }>({
   editor: async ({}, use, testInfo) => {
-    // Copy the synthetic sample into its own project directory under the
-    // server's projects root, so each test saves edits independently. Clear
-    // it first, so files a previous run added do not carry over.
-    const projectDir = testInfo.testId;
-    const projectDirPath = path.resolve(".local/e2e-projects", projectDir);
-    await rm(projectDirPath, { recursive: true, force: true });
-    await cp("samples/synthetic", projectDirPath, { recursive: true });
-    const url = `/?${new URLSearchParams({ project: `${projectDir}/project.json` })}`;
+    // Copy the synthetic sample into its own project folder and register it,
+    // so each test saves edits independently. Clear it first, so files a
+    // previous run added do not carry over.
+    const projectDir = getTestProjectDir(testInfo.testId);
+    await rm(projectDir, { recursive: true, force: true });
+    await cp("samples/synthetic", projectDir, { recursive: true });
+    await registry.addFolder(projectDir);
+    const projectFile = path.join(projectDir, "project.json");
     await use({
       projectDir,
-      url,
-      projectFile: path.join(projectDirPath, "project.json"),
+      url: getProjectPageUrl({ path: projectFile }),
+      projectFile,
     });
   },
 });
+
+/** The absolute path of a test's own project folder. */
+export function getTestProjectDir(name: string) {
+  return path.resolve(".local/e2e-projects", name);
+}
+
+// The server rereads the registry on every request, so tests register folders
+// in the e2e config directory directly.
+export const registry = createProjectRegistry({ configDir: getConfigDir() });
 
 /** Wait until an image element has loaded its source. */
 export async function expectImageLoaded(image: Locator) {

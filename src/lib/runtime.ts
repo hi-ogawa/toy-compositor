@@ -1,7 +1,7 @@
 import { createNumberedName } from "../utils/name.ts";
 import { watchPromise, type PromiseState } from "../utils/promise-state.ts";
 import { createStore } from "../utils/store.ts";
-import { apiClient, type ProjectFile } from "./api-client.ts";
+import { apiClient } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
 import { createAudioView, type AudioView } from "./audio-view.ts";
 import {
@@ -16,6 +16,7 @@ import {
   serializeEditorProject,
 } from "./persistence.ts";
 import type { Canvas, Layer, Locator, Output, Project } from "./project.ts";
+import type { ProjectFile } from "./server/api.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
 import { VideoPlayback } from "./video-playback.ts";
@@ -36,7 +37,7 @@ export interface DecodedAudio {
 }
 
 export interface EditorState {
-  /** Project file path relative to the projects root, which is also where saves go. */
+  /** Absolute project file path, which is also where saves go. */
   file: string;
   project: EditorProject;
   /** Follows the transport, on the frame grid whenever playback is stopped. */
