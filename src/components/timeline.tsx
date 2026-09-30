@@ -1,30 +1,27 @@
 import {
-  AudioLinesIcon,
-  FilmIcon,
-  ImageIcon,
   LoaderCircleIcon,
   PauseIcon,
   PencilIcon,
   PlayIcon,
   PlusIcon,
-  SquareIcon,
-  TypeIcon,
   VolumeXIcon,
-  type LucideIcon,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { usePointerGesture } from "../hooks/use-pointer-gesture";
 import type { LayerEditType } from "../lib/layer-edit";
 import { getLayerRange, intersect, type TimeRange } from "../lib/layout";
-import type { Layer, Output, Project } from "../lib/project";
+import type { Layer, Output } from "../lib/project";
 import type {
   DecodedAudio,
   EditorRuntime,
+  EditorLayer,
   EditorSelection,
+  EditorProject,
 } from "../lib/runtime";
 import type { PromiseState } from "../utils/promise-state";
 import { AudioWaveformView } from "./audio-waveform";
+import { LayerTypeIcon } from "./layer-type-icon";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import type { LayerInteraction } from "./use-layer-interaction";
@@ -46,7 +43,7 @@ export function Timeline({
   layerInteraction: LayerInteraction;
   locatorInteraction: LocatorInteraction;
   runtime: EditorRuntime;
-  project: Project;
+  project: EditorProject;
   selection?: EditorSelection;
   playhead: number;
   playing: boolean;
@@ -109,7 +106,7 @@ export function Timeline({
             .reverse()
             .map(({ layer, index }) => (
               <TimelineLayerLane
-                key={index}
+                key={layer.id}
                 timeline={timeline}
                 layerInteraction={layerInteraction}
                 layer={layer}
@@ -121,9 +118,9 @@ export function Timeline({
                     : undefined
                 }
                 selected={
-                  selection?.type === "layer" && selection.index === index
+                  selection?.type === "layer" && selection.id === layer.id
                 }
-                onSelect={() => runtime.select({ type: "layer", index })}
+                onSelect={() => runtime.select({ type: "layer", id: layer.id })}
               />
             ))}
           {timeline.isVisible(playhead) && (
@@ -321,7 +318,8 @@ function TimelineLayerLane({
 }: {
   timeline: TimelineView;
   layerInteraction: LayerInteraction;
-  layer: Layer;
+  layer: EditorLayer;
+  /** Position in the project, for test ids. */
   index: number;
   range: TimeRange;
   audioSource?: PromiseState<DecodedAudio>;
@@ -334,7 +332,8 @@ function TimelineLayerLane({
   // A click without dragging selects through the button's own click.
   const moveRef = usePointerGesture({
     onStart: (event) => event.preventDefault(),
-    onDragStart: () => layerInteraction.startEdit({ type: "move", index }),
+    onDragStart: () =>
+      layerInteraction.startEdit({ type: "move", id: layer.id }),
     onDragMove: (_event, { deltaX }) =>
       layerInteraction.updateEdit(pixelsToSeconds(deltaX)),
     onDragEnd: (_event, { deltaX }) =>
@@ -408,6 +407,7 @@ function TimelineLayerLane({
           {timeline.isVisible(range.start) && (
             <LayerTrimHandle
               type="trim-start"
+              id={layer.id}
               index={index}
               timeline={timeline}
               layerInteraction={layerInteraction}
@@ -416,6 +416,7 @@ function TimelineLayerLane({
           {timeline.isVisible(range.end) && (
             <LayerTrimHandle
               type="trim-end"
+              id={layer.id}
               index={index}
               timeline={timeline}
               layerInteraction={layerInteraction}
@@ -430,11 +431,14 @@ function TimelineLayerLane({
 /** A grip on a region's edge, like toy-midi's clip trim handles. */
 function LayerTrimHandle({
   type,
+  id,
   index,
   timeline,
   layerInteraction,
 }: {
   type: Exclude<LayerEditType, "move">;
+  id: string;
+  /** Position in the project, for test ids. */
   index: number;
   timeline: TimelineView;
   layerInteraction: LayerInteraction;
@@ -444,7 +448,7 @@ function LayerTrimHandle({
     onStart: (event) => {
       event.preventDefault();
       event.stopPropagation();
-      layerInteraction.startEdit({ type, index });
+      layerInteraction.startEdit({ type, id });
     },
     onMove: (_event, { deltaX }) =>
       layerInteraction.updateEdit(pixelsToSeconds(deltaX)),
@@ -465,28 +469,6 @@ function LayerTrimHandle({
     />
   );
 }
-
-/** Marks the layer type by icon, keeping the header column for the name. */
-function LayerTypeIcon({ type }: { type: Layer["type"] }) {
-  const Icon = LAYER_TYPE_ICONS[type];
-  return (
-    <Icon
-      role="img"
-      aria-label={type}
-      className="size-3.5 shrink-0 text-neutral-400"
-    >
-      <title>{type}</title>
-    </Icon>
-  );
-}
-
-const LAYER_TYPE_ICONS: Record<Layer["type"], LucideIcon> = {
-  video: FilmIcon,
-  audio: AudioLinesIcon,
-  image: ImageIcon,
-  text: TypeIcon,
-  color: SquareIcon,
-};
 
 const LAYER_CLIP_CLASSES: Record<
   Layer["type"],

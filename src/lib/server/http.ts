@@ -1,6 +1,6 @@
 import fs from "node:fs";
-import path from "node:path";
 import { Readable } from "node:stream";
+import { getMediaContentType } from "../media-file.ts";
 
 /** An error that becomes a response with its status and message. */
 export class HttpError extends Error {
@@ -30,20 +30,6 @@ export function toErrorResponse(error: unknown): Response {
   });
 }
 
-const CONTENT_TYPES: Record<string, string> = {
-  ".json": "application/json",
-  ".mp4": "video/mp4",
-  ".webm": "video/webm",
-  ".mov": "video/quicktime",
-  ".mp3": "audio/mpeg",
-  ".wav": "audio/wav",
-  ".m4a": "audio/mp4",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".webp": "image/webp",
-};
-
 /**
  * Stream a file, honoring the single `bytes=<start>-[<end>]` ranges that media
  * elements send when seeking. Other ranges get the whole file, which HTTP
@@ -59,9 +45,7 @@ export async function serveFile({
   const { size } = await fs.promises.stat(file);
   const headers = new Headers({
     "Accept-Ranges": "bytes",
-    "Content-Type":
-      CONTENT_TYPES[path.extname(file).toLowerCase()] ??
-      "application/octet-stream",
+    "Content-Type": getMediaContentType(file) ?? "application/octet-stream",
   });
   const range = request.headers.get("range")?.match(/^bytes=(\d+)-(\d*)$/);
   const start = range ? Number(range[1]) : 0;

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { matchKeyboardEvent } from "../lib/keyboard";
 import type { Output } from "../lib/project";
 import type { EditorRuntime, EditorState } from "../lib/runtime";
 import { snapToFrame } from "../lib/timeline";
@@ -50,11 +51,20 @@ export function useLocatorInteraction({
     runtime.updateLocator({ index, update: { label } });
   }
 
-  function removeSelected() {
-    if (selectedIndex !== undefined) {
-      runtime.deleteLocator(selectedIndex);
+  /** Deletes the selected locator, which excludes a selected layer, so only one remove shortcut applies. */
+  function handleRemoveShortcut(event: KeyboardEvent): boolean {
+    if (
+      selectedIndex === undefined ||
+      !(
+        matchKeyboardEvent(event, "Delete") ||
+        matchKeyboardEvent(event, "Backspace")
+      )
+    ) {
+      return false;
     }
+    runtime.deleteLocator(selectedIndex);
     select(undefined);
+    return true;
   }
 
   /** Keeps render start at least one frame before render end, and the reverse. */
@@ -69,7 +79,7 @@ export function useLocatorInteraction({
     add,
     move,
     rename,
-    removeSelected,
+    handleRemoveShortcut,
     moveRenderMarker,
   };
 }

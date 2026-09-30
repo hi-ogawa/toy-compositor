@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { matchKeyboardEvent } from "../lib/keyboard";
 import { applyLayerEdit, type LayerEditType } from "../lib/layer-edit";
 import type { Layer } from "../lib/project";
 import type { EditorRuntime, EditorState } from "../lib/runtime";
 
 type LayerEdit = {
   type: LayerEditType;
-  index: number;
+  id: string;
   layer: Layer;
 };
 
@@ -23,14 +24,15 @@ export function useLayerInteraction({
 }) {
   const [edit, setEdit] = useState<LayerEdit>();
   const { layers, canvas, media: mediaInfoMap } = state.project;
+  const getLayer = (id: string) => layers.find((layer) => layer.id === id)!;
 
-  function startEdit({ type, index }: { type: LayerEditType; index: number }) {
-    runtime.select({ type: "layer", index });
-    setEdit({ type, index, layer: layers[index] });
+  function startEdit({ type, id }: { type: LayerEditType; id: string }) {
+    runtime.select({ type: "layer", id });
+    setEdit({ type, id, layer: getLayer(id) });
   }
 
   function getEditedLayer(edit: LayerEdit, delta: number): Layer {
-    return applyLayerEdit(layers[edit.index], {
+    return applyLayerEdit(getLayer(edit.id), {
       type: edit.type,
       delta,
       fps: canvas.fps,
@@ -51,18 +53,39 @@ export function useLayerInteraction({
     }
     setEdit(undefined);
     runtime.updateLayer({
-      index: edit.index,
+      id: edit.id,
       update: getEditedLayer(edit, delta),
     });
   }
 
+  function handleRemoveShortcut(event: KeyboardEvent): boolean {
+    const { selection } = state;
+    if (
+      selection?.type !== "layer" ||
+      edit ||
+      !(
+        matchKeyboardEvent(event, "Delete") ||
+        matchKeyboardEvent(event, "Backspace")
+      )
+    ) {
+      return false;
+    }
+    runtime.removeLayer(selection.id);
+    return true;
+  }
+
   return {
-    layers: edit ? layers.with(edit.index, edit.layer) : layers,
+    layers: edit
+      ? layers.map((layer) =>
+          layer.id === edit.id ? { ...edit.layer, id: edit.id } : layer,
+        )
+      : layers,
     editing: edit !== undefined,
     startEdit,
     updateEdit,
     finishEdit,
     cancelEdit: () => setEdit(undefined),
+    handleRemoveShortcut,
   };
 }
 

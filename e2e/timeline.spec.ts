@@ -306,12 +306,15 @@ test("add, move, rename, and delete locators", async ({ page, editor }) => {
   await clickTimelineButton(page, { name: "Rename Locator 2" });
   await expect(getMarker("shorts")).toBeVisible();
 
-  // Click the thumbnail locator, which selects it and seeks, and delete it.
+  // Select the video layer, then click the thumbnail locator, which takes
+  // over the selection and seeks, and delete it without removing the layer.
+  await clickTimelineButton(page, { name: "Test pattern video" });
   await clickTimelineButton(page, { name: "thumbnail" });
   await expect(page.getByTestId("timeline-time")).toContainText("1.500 s");
   await expect(getMarker("shorts")).toHaveAttribute("aria-pressed", "false");
   await page.keyboard.press("Delete");
   await expect(getMarker("thumbnail")).toHaveCount(0);
+  await expect(page.getByTestId("timeline-layer-0")).toBeVisible();
 
   // Save and confirm the locators reach the project file.
   await page.getByTestId("editor-save-button").click();

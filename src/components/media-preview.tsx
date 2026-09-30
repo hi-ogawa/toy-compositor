@@ -1,59 +1,27 @@
-import { PanelLeftCloseIcon } from "lucide-react";
 import { useState } from "react";
 import type { Layer } from "../lib/project";
-import { Button } from "./ui/button";
+import type { EditorLayer } from "../lib/runtime";
 
+/** The selected layer's whole source file, independent of project timing and layout. */
 export function MediaPreview({
   layer,
   resolveMediaUrl,
-  onCollapse,
 }: {
-  layer?: Layer;
+  layer?: EditorLayer;
   resolveMediaUrl: (src: string) => string;
-  onCollapse: () => void;
 }) {
   const source = layer && "src" in layer ? layer : undefined;
-  return (
-    <>
-      <div className="flex h-7 shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-3 text-xs">
-        <h2
-          className="shrink-0 font-semibold"
-          title="Full source file, independent of project timing and layout."
-        >
-          Source
-        </h2>
-        {source && (
-          <span
-            className="truncate font-mono text-[10px] text-neutral-400"
-            title={source.src}
-          >
-            {source.src}
-          </span>
-        )}
-        <Button
-          aria-label="Collapse source panel"
-          title="Collapse source panel"
-          aria-expanded={true}
-          aria-controls="source-monitor"
-          className="ml-auto size-5 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-100"
-          onClick={onCollapse}
-        >
-          <PanelLeftCloseIcon className="size-3.5" />
-        </Button>
-      </div>
-      {source ? (
-        // Remounts per source so a load failure does not carry over.
-        <SourceMedia
-          key={`${source.type}:${source.src}`}
-          layer={source}
-          resolveMediaUrl={resolveMediaUrl}
-        />
-      ) : (
-        <p className="grid flex-1 place-items-center p-3 text-center text-xs text-neutral-500">
-          Select a video, audio, or image layer to preview its source.
-        </p>
-      )}
-    </>
+  return source ? (
+    // Remounts per layer so a load failure does not carry over.
+    <SourceMedia
+      key={source.id}
+      layer={source}
+      resolveMediaUrl={resolveMediaUrl}
+    />
+  ) : (
+    <p className="grid flex-1 place-items-center p-3 text-center text-xs text-neutral-500">
+      Select a video, audio, or image layer to preview its source.
+    </p>
   );
 }
 
