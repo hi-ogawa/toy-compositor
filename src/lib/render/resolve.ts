@@ -11,7 +11,7 @@ export type Resolved = {
  * Render the derived assets a project needs before compiling. Each text layer
  * is drawn to a PNG in textDir, so compile() can build ffmpeg arguments
  * without any I/O. Media facts need no step here, because the project carries
- * them in `sources`.
+ * them in `media`.
  */
 export async function resolveProject({
   project,

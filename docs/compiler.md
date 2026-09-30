@@ -21,7 +21,7 @@ pnpm render <project.json> <output> --dry-run   # print the command only
 
 ## Draw Text, Compile, Run
 
-A render has three steps. First, it draws each text layer to a transparent PNG with ImageMagick. The facts about its media, such as each source's size, frame timing, and whether it has audio, need no step, because the project carries them in `sources` ([project-format.md](project-format.md#sources)). Then the project and the text images are compiled into ffmpeg arguments. Finally, ffmpeg runs.
+A render has three steps. First, it draws each text layer to a transparent PNG with ImageMagick. The facts about its media, such as each source's size, frame timing, and whether it has audio, need no step, because the project carries them in `media` ([project-format.md](project-format.md#media)). Then the project and the text images are compiled into ffmpeg arguments. Finally, ffmpeg runs.
 
 ![The project file flows through drawing text, compiling, and running ffmpeg, and only the first and last steps touch files or processes](images/render-pipeline.svg)
 

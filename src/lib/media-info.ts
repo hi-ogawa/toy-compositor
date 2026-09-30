@@ -1,28 +1,28 @@
 import path from "node:path";
 import { execFileAsync } from "../utils/exec.ts";
 import { readJson, writeJson } from "../utils/fs.ts";
-import type { Project, Source } from "./project.ts";
+import type { Project, MediaInfo } from "./project.ts";
 
 /**
  * Probe every media file a project file's layers use and write the facts into
- * its `sources`, replacing what was there.
+ * its `media`, replacing what was there.
  */
-export async function updateProjectSources(projectFile: string) {
+export async function updateProjectMedia(projectFile: string) {
   const project = await readJson<Project>(projectFile);
   const projectDir = path.dirname(path.resolve(projectFile));
-  const sources: Project["sources"] = {};
+  const media: Project["media"] = {};
   for (const layer of project.layers) {
-    if ("src" in layer && !sources[layer.src]) {
-      sources[layer.src] = await probeSource(
+    if ("src" in layer && !media[layer.src]) {
+      media[layer.src] = await probeMediaInfo(
         path.resolve(projectDir, layer.src),
       );
     }
   }
-  await writeJson(projectFile, { ...project, sources });
+  await writeJson(projectFile, { ...project, media });
 }
 
 /** Read a media file's time range, video size and frame timing, and whether it has audio. */
-export async function probeSource(file: string): Promise<Source> {
+export async function probeMediaInfo(file: string): Promise<MediaInfo> {
   const { stdout } = await execFileAsync("ffprobe", [
     "-v",
     "error",

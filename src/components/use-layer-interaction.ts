@@ -22,7 +22,7 @@ export function useLayerInteraction({
   state: EditorState;
 }) {
   const [edit, setEdit] = useState<LayerEdit>();
-  const { layers, canvas, sources } = state.project;
+  const { layers, canvas, media } = state.project;
 
   function startEdit({ type, index }: { type: LayerEditType; index: number }) {
     runtime.select({ type: "layer", index });
@@ -34,7 +34,7 @@ export function useLayerInteraction({
       type: edit.type,
       delta,
       fps: canvas.fps,
-      sources,
+      media,
     });
   }
 

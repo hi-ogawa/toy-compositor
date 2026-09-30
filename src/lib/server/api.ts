@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { readJson, writeJson } from "../../utils/fs.ts";
 import type { ProjectEntry } from "../api-client.ts";
-import { probeSource } from "../probe.ts";
+import { probeMediaInfo } from "../media-info.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 
 /**
@@ -16,7 +16,7 @@ import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
  * - `GET /api/media?project=&src=` serves a layer source resolved against the
  *   project's directory, as the renderer does, with range requests.
  * - `GET /api/media-info?project=&src=` probes a layer source into the entry
- *   that the project's `sources` keeps for it.
+ *   that the project's `media` keeps for it.
  */
 export function createEditorHandler({ root }: { root: string }) {
   return async (request: Request): Promise<Response> => {
@@ -44,7 +44,7 @@ export function createEditorHandler({ root }: { root: string }) {
         }
         case "GET /api/media-info": {
           return Response.json(
-            await probeSource(resolveMediaFile({ root, url })),
+            await probeMediaInfo(resolveMediaFile({ root, url })),
           );
         }
         default: {

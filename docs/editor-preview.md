@@ -28,7 +28,7 @@ Layers use the project's numbers directly as CSS pixels inside a canvas div of `
 
 ![Layers are placed in canvas pixels, the canvas is scaled once, and media is cropped by a clipping wrapper](images/coordinate-spaces.svg)
 
-Video and image layers go through the compiler's `fitBox`, which returns the visible cropped rectangle inside `layer.box`. The DOM cannot crop an element directly, so a wrapper div with `overflow: hidden` is that rectangle, and the media element inside keeps its uncropped size at the fitted scale, shifted by the left and top crop. The source's size comes from the project's `sources`, the same number the compiler fits with, so the layout is right before the media loads.
+Video and image layers go through the compiler's `fitBox`, which returns the visible cropped rectangle inside `layer.box`. The DOM cannot crop an element directly, so a wrapper div with `overflow: hidden` is that rectangle, and the media element inside keeps its uncropped size at the fitted scale, shifted by the left and top crop. The source's size comes from the project's `media`, the same number the compiler fits with, so the layout is right before the media loads.
 
 ## Pick Layers and Frames by Time
 

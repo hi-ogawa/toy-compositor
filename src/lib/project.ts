@@ -7,7 +7,7 @@ export type Project = {
   layers: Layer[];
   locators?: Locator[];
   /** Facts about every media file a layer uses, keyed by the layers' `src`. */
-  sources: Record<string, Source>;
+  media: Record<string, MediaInfo>;
 };
 
 export type Locator = { label: string; time: number };
@@ -16,7 +16,7 @@ export type Locator = { label: string; time: number };
  * What ffprobe reports about a media file, and nothing else, so checking a file
  * later means probing it again and comparing.
  */
-export type Source = {
+export type MediaInfo = {
   /**
    * The file's source time range, in the presentation timestamps that `in` and
    * `out` use, so it includes the container's start offset. A still image has
@@ -57,7 +57,7 @@ export function createEmptyProject(preset: CanvasPreset): Project {
     output: { type: "video", start: 0, end: 10 },
     layers: [],
     locators: [],
-    sources: {},
+    media: {},
   };
 }
 

@@ -13,14 +13,14 @@ import type {
   ImageLayer,
   Layer,
   Project,
-  Source,
+  MediaInfo,
   TextLayer,
   VideoLayer,
 } from "../project.ts";
 import type { Resolved } from "./resolve.ts";
 
 /**
- * Compile a project, with its media facts from `sources` and its resolved text
+ * Compile a project, with its media facts from `media` and its resolved text
  * images, into the ffmpeg inputs, filter graph,
  * and output options, without any I/O. The caller adds the output file.
  * Each layer compiles on its own into the streams it contributes, and then one
@@ -49,7 +49,7 @@ export function compile({
       layer,
       index: i,
       projectDir,
-      sources: project.sources,
+      media: project.media,
       resolved,
       scene,
     }),
@@ -121,14 +121,14 @@ function compileLayer({
   layer,
   index,
   projectDir,
-  sources,
+  media,
   resolved,
   scene,
 }: {
   layer: Layer;
   index: number;
   projectDir: string;
-  sources: Project["sources"];
+  media: Project["media"];
   resolved: Resolved;
   scene: Scene;
 }): LayerStreams {
@@ -137,7 +137,7 @@ function compileLayer({
       return compileVideo({
         layer,
         file: path.resolve(projectDir, layer.src),
-        source: sources[layer.src],
+        mediaInfo: media[layer.src],
         scene,
       });
     }
@@ -145,7 +145,7 @@ function compileLayer({
       return compileImage({
         layer,
         file: path.resolve(projectDir, layer.src),
-        source: sources[layer.src],
+        mediaInfo: media[layer.src],
         scene,
       });
     }
@@ -168,19 +168,19 @@ function compileLayer({
 function compileVideo({
   layer,
   file,
-  source,
+  mediaInfo,
   scene,
 }: {
   layer: VideoLayer;
   file: string;
-  source: Source;
+  mediaInfo: MediaInfo;
   scene: Scene;
 }): LayerStreams {
   const visible = intersect(getLayerRange(layer), scene.range);
   if (!visible) {
     return {};
   }
-  const video = source.video!;
+  const video = mediaInfo.video!;
   const fit = fitBox({ source: video, crop: layer.crop, box: layer.box });
   return {
     video: {
@@ -201,7 +201,7 @@ function compileVideo({
       y: fit.y,
     },
     audio:
-      scene.withAudio && !layer.muted && source.audio
+      scene.withAudio && !layer.muted && mediaInfo.audio
         ? compileAudioStream({ layer, file, visible, scene })
         : undefined,
   };
@@ -210,12 +210,12 @@ function compileVideo({
 function compileImage({
   layer,
   file,
-  source,
+  mediaInfo,
   scene,
 }: {
   layer: ImageLayer;
   file: string;
-  source: Source;
+  mediaInfo: MediaInfo;
   scene: Scene;
 }): LayerStreams {
   const visible = intersect(getLayerRange(layer), scene.range);
@@ -223,7 +223,7 @@ function compileImage({
     return {};
   }
   const fit = fitBox({
-    source: source.video!,
+    source: mediaInfo.video!,
     crop: layer.crop,
     box: layer.box,
   });
@@ -418,7 +418,7 @@ function assembleGraph({
  * so seek to just before that frame. Assumes a constant frame rate source.
  */
 function getFrameShownAt(
-  video: NonNullable<Source["video"]>,
+  video: NonNullable<MediaInfo["video"]>,
   { time }: { time: number },
 ) {
   const { startTime, frameRate } = video;

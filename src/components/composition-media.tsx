@@ -1,35 +1,36 @@
 import { useCallback, useState, type CSSProperties } from "react";
 import { fitBox } from "../lib/layout";
-import type { ImageLayer, VideoLayer } from "../lib/project";
+import type { ImageLayer, MediaInfo, VideoLayer } from "../lib/project";
 import type { EditorRuntime } from "../lib/runtime";
 
-/** Fit the cropped source into its canvas box, by the size its `sources` entry records. */
+/** Fit the cropped source into its canvas box, by the size its `media` entry records. */
 export function CompositionMedia({
   layer,
-  source,
+  mediaInfo,
   runtime,
   index,
   resolveMediaUrl,
 }: {
   layer: ImageLayer | VideoLayer;
-  source: { width: number; height: number };
+  mediaInfo: MediaInfo;
   runtime: EditorRuntime;
   index: number;
   resolveMediaUrl: (src: string) => string;
 }) {
   const [failed, setFailed] = useState(false);
 
+  const video = mediaInfo.video!;
   const crop = layer.crop ?? {};
-  const fit = fitBox({ source, crop, box: layer.box });
+  const fit = fitBox({ source: video, crop, box: layer.box });
   const mediaStyle: CSSProperties = {
     position: "absolute",
     maxWidth: "none",
     width:
-      (source.width * fit.width) /
-      (source.width * (1 - (crop.left ?? 0) - (crop.right ?? 0))),
+      (video.width * fit.width) /
+      (video.width * (1 - (crop.left ?? 0) - (crop.right ?? 0))),
     height:
-      (source.height * fit.height) /
-      (source.height * (1 - (crop.top ?? 0) - (crop.bottom ?? 0))),
+      (video.height * fit.height) /
+      (video.height * (1 - (crop.top ?? 0) - (crop.bottom ?? 0))),
     left:
       (-(crop.left ?? 0) * fit.width) /
       (1 - (crop.left ?? 0) - (crop.right ?? 0)),

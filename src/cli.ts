@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { updateProjectSources } from "./lib/probe.ts";
+import { updateProjectMedia } from "./lib/media-info.ts";
 import { renderProject } from "./lib/render/render.ts";
 import { DEFAULT_ROOT, serveEditor } from "./lib/server/serve.ts";
 
@@ -12,8 +12,8 @@ Usage:
       Open the editor for projects under root (default: ${DEFAULT_ROOT})
   toy-compositor render <project.json> <output> [--dry-run]
       Render a project to a video or still with ffmpeg
-  toy-compositor probe <project.json...>
-      Probe the media files that layers use into each project's sources`;
+  toy-compositor update-media <project.json...>
+      Probe the media files that layers use into each project's media`;
 
 async function main() {
   const { positionals, values } = parseArgs({
@@ -56,14 +56,14 @@ async function main() {
       await renderProject({ projectFile, outFile, dryRun: values["dry-run"] });
       break;
     }
-    case "probe": {
+    case "update-media": {
       if (args.length === 0) {
         console.error(HELP);
         process.exitCode = 1;
         return;
       }
       for (const projectFile of args) {
-        await updateProjectSources(projectFile);
+        await updateProjectMedia(projectFile);
       }
       break;
     }

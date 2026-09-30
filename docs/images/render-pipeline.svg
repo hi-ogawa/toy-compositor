@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="270" viewBox="0 0 760 270" role="img" aria-labelledby="title desc">
 <title id="title">One render draws text, compiles, then runs ffmpeg</title>
-<desc id="desc">The project file, which carries its media facts in sources, flows into a resolve step that draws each text layer to a PNG. The project and those PNGs flow into a compile step that turns each layer into streams and joins the streams into one filter graph. The resulting arguments run ffmpeg, which writes a video or an image. Only resolve and run touch files or processes.</desc>
+<desc id="desc">The project file, which carries facts about its media files in media, flows into a resolve step that draws each text layer to a PNG. The project and those PNGs flow into a compile step that turns each layer into streams and joins the streams into one filter graph. The resulting arguments run ffmpeg, which writes a video or an image. Only resolve and run touch files or processes.</desc>
 <defs>
 <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7d8a84"/></marker>
 </defs>
@@ -9,7 +9,7 @@
 <text x="30" y="34" font-size="20" font-weight="700">One render: draw text, compile, run</text>
 <rect x="30" y="120" width="120" height="64" rx="8" fill="#ffffff" stroke="#a3b0a9"/>
 <text x="90" y="147" text-anchor="middle">Project file</text>
-<text x="90" y="167" text-anchor="middle" font-size="13" fill="#52625d">layers, sources</text>
+<text x="90" y="167" text-anchor="middle" font-size="13" fill="#52625d">layers, media</text>
 <rect x="190" y="96" width="170" height="112" rx="8" fill="#f0ebf8" stroke="#6b4fa0"/>
 <text x="275" y="124" text-anchor="middle" font-weight="700">Resolve text</text>
 <text x="275" y="164" text-anchor="middle" font-size="13">draw each text to a PNG</text>
