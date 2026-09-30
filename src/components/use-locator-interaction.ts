@@ -41,14 +41,11 @@ export function useLocatorInteraction({
   }
 
   function move(id: string, time: number) {
-    runtime.updateLocator({
-      id,
-      update: { time: Math.max(0, snapToFrame(time, fps)) },
-    });
+    runtime.updateLocator(id, { time: Math.max(0, snapToFrame(time, fps)) });
   }
 
   function rename(id: string, label: string) {
-    runtime.updateLocator({ id, update: { label } });
+    runtime.updateLocator(id, { label });
   }
 
   /** Deletes the selected locator, which excludes a selected layer, so only one remove shortcut applies. */

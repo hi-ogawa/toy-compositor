@@ -216,13 +216,7 @@ export class EditorRuntime {
     return locator.id;
   }
 
-  updateLocator({
-    id,
-    update,
-  }: {
-    id: string;
-    update: Partial<Locator>;
-  }): void {
+  updateLocator(id: string, update: Partial<Locator>): void {
     const { project } = this.store.get();
     this.store.update({
       project: {
