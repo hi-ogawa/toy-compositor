@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { matchKeyboardEvent } from "../lib/keyboard";
-import { intersect, type Range } from "../lib/layout";
+import { intersect, type TimeRange } from "../lib/layout";
 import type { EditorRuntime } from "../lib/runtime";
 import {
   DEFAULT_PIXELS_PER_SECOND,
@@ -106,7 +106,7 @@ export function useTimeline(runtime: EditorRuntime) {
     xToTime: (x: number) => viewportStart + x / pixelsPerSecond,
     isVisible: (time: number) => time >= visible.start && time <= visible.end,
     /** Position a range within the graph, or nothing when it is outside the viewport. */
-    rangeStyle: (range: Range) => {
+    rangeStyle: (range: TimeRange) => {
       const clipped = intersect(range, visible);
       return (
         clipped && {
