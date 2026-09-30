@@ -49,16 +49,3 @@ test("reject a layer whose file has no media info", async ({
     ]),
   ).rejects.toMatchObject({ stderr: expect.stringContaining(message) });
 });
-
-test("probe one file's media info through the editor API", async ({
-  request,
-  editor,
-}) => {
-  // Request the video's media info, and confirm it matches its media entry.
-  const { media: mediaInfoMap } = await readJson<Project>(editor.projectFile);
-  const res = await request.get("/api/media-info", {
-    params: { project: editor.projectDir, src: "media/video.mp4" },
-  });
-  expect(res.ok()).toBe(true);
-  expect(await res.json()).toEqual(mediaInfoMap["media/video.mp4"]);
-});

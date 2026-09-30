@@ -1,6 +1,6 @@
 import { watchPromise, type PromiseState } from "../utils/promise-state.ts";
 import { createStore } from "../utils/store.ts";
-import { apiClient, type ProjectFile } from "./api-client.ts";
+import { apiClient } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
 import { createAudioView, type AudioView } from "./audio-view.ts";
 import {
@@ -15,6 +15,7 @@ import {
   serializeEditorProject,
 } from "./persistence.ts";
 import type { Canvas, Layer, Output, Project } from "./project.ts";
+import type { ProjectFile } from "./server/api.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
 import { VideoPlayback } from "./video-playback.ts";

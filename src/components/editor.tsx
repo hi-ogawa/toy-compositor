@@ -1,8 +1,8 @@
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import type { ProjectLocation } from "../lib/api-client";
 import { isShortcutTextInputTarget, matchKeyboardEvent } from "../lib/keyboard";
 import { EditorRuntime, type EditorLayer } from "../lib/runtime";
+import type { ProjectLocation } from "../lib/server/api";
 import { CollapsibleSplit } from "./collapsible-split";
 import { CompositionPreview } from "./composition-preview";
 import { EditorHeader } from "./editor-header";

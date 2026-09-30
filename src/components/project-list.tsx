@@ -1,17 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FolderPlusIcon, PlusIcon, XIcon } from "lucide-react";
 import { useState } from "react";
-import {
-  apiClient,
-  type ProjectEntry,
-  type ProjectFolder,
-} from "../lib/api-client";
+import { apiClient } from "../lib/api-client";
 import {
   CANVAS_PRESETS,
   type CanvasPreset,
   createEmptyProject,
 } from "../lib/project";
 import { getProjectPageUrl } from "../lib/routes";
+import type { ProjectEntry, ProjectFolder } from "../lib/server/api";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,

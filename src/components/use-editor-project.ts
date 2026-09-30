@@ -1,8 +1,9 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { apiClient, type ProjectLocation } from "../lib/api-client";
+import { apiClient } from "../lib/api-client";
 import { validateMedia } from "../lib/project";
 import type { EditorRuntime } from "../lib/runtime";
+import type { ProjectLocation } from "../lib/server/api";
 import { useWindowEvent } from "./use-window-event";
 
 export type SaveStatus = "saved" | "unsaved" | "saving" | "error";

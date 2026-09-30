@@ -1,4 +1,4 @@
-import type { ProjectLocation } from "./api-client.ts";
+import type { ProjectLocation } from "./server/api.ts";
 
 /** Get the start page URL that lists the project folders. */
 export function getHomePageUrl(): string {

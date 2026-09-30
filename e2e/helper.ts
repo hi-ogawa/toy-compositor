@@ -37,7 +37,7 @@ export async function addProjectFolder(
   request: APIRequestContext,
   dir: string,
 ) {
-  const res = await request.post("/api/project-folders", {
+  const res = await request.post("/api/rpc/addProjectFolder", {
     data: { path: dir },
   });
   expect(res.ok()).toBe(true);

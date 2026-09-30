@@ -97,9 +97,7 @@ test("add a media folder and create a project file in it", async ({
   await section.getByRole("button", { name: "New project file" }).click();
   await page.getByRole("menuitem", { name: /vertical-video/ }).click();
   await expect(
-    page.getByText(
-      "Failed to create project: vertical-video.json already exists",
-    ),
+    page.getByText("vertical-video.json already exists"),
   ).toBeVisible();
   await expect(page).toHaveURL("/");
 });
