@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import tailwindcss from "@tailwindcss/vite";
@@ -14,6 +15,7 @@ import {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), editorApi()],
+  define: { __BUILD_COMMIT__: JSON.stringify(getGitCommit()) },
   builder: {},
   environments: {
     client: {
@@ -28,6 +30,19 @@ export default defineConfig({
     },
   },
 });
+
+// The pkg.pr.new workflow checks out one commit without history, which still
+// resolves HEAD, and a build outside a git checkout falls back to "dev".
+function getGitCommit() {
+  try {
+    return execFileSync("git", ["rev-parse", "--short", "HEAD"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "dev";
+  }
+}
 
 /**
  * Serve the editor API during development only. It keeps its registry in
