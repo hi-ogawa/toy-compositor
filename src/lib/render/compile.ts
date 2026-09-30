@@ -4,7 +4,7 @@ import {
   intersect,
   getLayerRange,
   getOutputRange,
-  type Range,
+  type TimeRange,
 } from "../layout.ts";
 import type {
   Canvas,
@@ -92,7 +92,7 @@ export function compile({
 type Scene = {
   canvas: Canvas;
   /** The output's timeline range. */
-  range: Range;
+  range: TimeRange;
   /** Whether the output has an audio track, which a still does not. */
   withAudio: boolean;
 };
@@ -335,7 +335,7 @@ function compileAudioStream({
 }: {
   layer: VideoLayer | AudioLayer;
   file: string;
-  visible: Range;
+  visible: TimeRange;
   scene: Scene;
 }): AudioStream {
   // Decode from the layer's start, because afade cannot start before the

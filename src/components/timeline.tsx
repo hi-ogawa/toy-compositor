@@ -14,7 +14,7 @@ import type { ReactNode } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { usePointerGesture } from "../hooks/use-pointer-gesture";
 import type { LayerEditType } from "../lib/layer-edit";
-import { getLayerRange, intersect, type Range } from "../lib/layout";
+import { getLayerRange, intersect, type TimeRange } from "../lib/layout";
 import type { Layer, Locator, Output, Project } from "../lib/project";
 import type {
   DecodedAudio,
@@ -300,7 +300,7 @@ function TimelineLayerLane({
   layerInteraction: LayerInteraction;
   layer: Layer;
   index: number;
-  range: Range;
+  range: TimeRange;
   audioSource?: PromiseState<DecodedAudio>;
   selected: boolean;
   onSelect: () => void;
