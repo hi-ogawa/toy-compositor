@@ -79,7 +79,7 @@ test("navigate the timeline without editing the project", async ({
   );
 });
 
-test("clear the selection with Escape or by seeking", async ({
+test("clear the selection with Escape or the locator row", async ({
   page,
   editor,
 }) => {
@@ -116,12 +116,14 @@ test("clear the selection with Escape or by seeking", async ({
   await expect(emptyInspector).toBeVisible();
 
   // Click the render end marker, which selects the output, then click the
-  // ruler at 1 s, and confirm it clears the selection and seeks.
+  // ruler at 1 s, and confirm it seeks but keeps the output selected.
   await clickTimelineButton(page, { name: "Render end" });
   await expect(time).toContainText("3.000 s");
   await expect(emptyInspector).toBeHidden();
   await seekTimelineByPixels(page, { pixels: DEFAULT_PIXELS_PER_SECOND });
   await expect(time).toContainText("1.000 s");
+  await expect(emptyInspector).toBeHidden();
+  await page.keyboard.press("Escape");
   await expect(emptyInspector).toBeVisible();
 
   // Select the thumbnail locator, then click empty space in the locator row at
@@ -439,13 +441,9 @@ test("drag render markers on the timeline", async ({ page, editor }) => {
   });
   await expectInspectorFields(page, { start: "0", end: "0.033" });
 
-  // Seek to 1 s, which deselects the output, reopen Composition settings, and
-  // switch to a still there, then drag its render frame 0.51 s right onto the
+  // Switch to a still at 1 s, and drag its render frame 0.51 s right onto the
   // nearest frame.
   await seekTimelineByPixels(page, { pixels: secondsToPixels(1) });
-  await page
-    .getByRole("button", { name: "Composition settings", exact: true })
-    .click();
   await page
     .getByTestId("inspector")
     .getByRole("button", { name: "still", exact: true })

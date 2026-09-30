@@ -104,13 +104,7 @@ export function Timeline({
             onClearSelection={onClearSelection}
             onSeek={seek}
           />
-          <TimelineRuler
-            timeline={timeline}
-            onSeek={(time) => {
-              onClearSelection();
-              seek(time);
-            }}
-          />
+          <TimelineRuler timeline={timeline} onSeek={seek} />
           {/* Top layer first, like tracks in a timeline. */}
           {layerInteraction.layers
             .map((layer, index) => ({ layer, index }))

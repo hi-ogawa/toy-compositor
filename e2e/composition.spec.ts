@@ -270,9 +270,8 @@ test("edit the canvas in composition settings and save it", async ({
   await expect(canvas).toHaveCSS("width", "800px");
   await expect(canvas).toHaveCSS("background-color", "rgb(51, 102, 153)");
 
-  // Click the ruler at 1.12 s, step one frame, reopen Composition settings,
-  // which the seek deselected, and edit the render end, and confirm each snaps
-  // to the new 10 fps grid.
+  // Click the ruler at 1.12 s, step one frame, and edit the render end, and
+  // confirm each snaps to the new 10 fps grid.
   const time = page.getByTestId("timeline-time");
   await seekTimelineByPixels(page, {
     pixels: 1.12 * DEFAULT_PIXELS_PER_SECOND,
@@ -280,9 +279,6 @@ test("edit the canvas in composition settings and save it", async ({
   await expect(time).toContainText("1.100 s");
   await page.keyboard.press("ArrowRight");
   await expect(time).toContainText("1.200 s");
-  await page
-    .getByRole("button", { name: "Composition settings", exact: true })
-    .click();
   await commitInspectorField(page, { name: "end", value: "1.12" });
   await expect(getInspectorField(page, { name: "end" })).toHaveValue("1.1");
 
@@ -321,21 +317,21 @@ test("compose a still project at its output time", async ({ page, editor }) => {
 });
 
 test("switch the output between video and still", async ({ page, editor }) => {
-  // Open the synthetic project, seek to 1.5 s, open Composition settings, and
-  // trim the render end so the video range no longer spans every layer.
+  // Open the synthetic project, open Composition settings, and trim the render
+  // end so the video range no longer spans every layer.
   await page.goto(editor.url);
-  await seekTimelineByPixels(page, {
-    pixels: 1.5 * DEFAULT_PIXELS_PER_SECOND,
-  });
-  await expect(page.getByTestId("timeline-time")).toContainText("1.500 s");
   await page
     .getByRole("button", { name: "Composition settings", exact: true })
     .click();
   await commitInspectorField(page, { name: "end", value: "2" });
 
-  // Switch to a still, and confirm it takes the playhead's frame with a single
-  // render marker.
+  // Seek to 1.5 s, switch to a still, and confirm it takes the playhead's
+  // frame with a single render marker.
   const outputType = page.getByRole("group", { name: "Output type" });
+  await seekTimelineByPixels(page, {
+    pixels: 1.5 * DEFAULT_PIXELS_PER_SECOND,
+  });
+  await expect(page.getByTestId("timeline-time")).toContainText("1.500 s");
   await outputType.getByRole("button", { name: "still" }).click();
   await expect(
     outputType.getByRole("button", { name: "still" }),
