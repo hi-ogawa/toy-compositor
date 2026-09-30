@@ -201,6 +201,7 @@ function LayerFields({
       return (
         <>
           <SourceTimingFields layer={layer} time={time} onUpdate={onUpdate} />
+          <HoldFields layer={layer} time={time} onUpdate={onUpdate} />
           <AudioFields layer={layer} time={time} onUpdate={onUpdate} />
           <BoxFields box={layer.box} onCommit={(box) => onUpdate({ box })} />
           <CropFields
@@ -305,6 +306,40 @@ function SourceTimingFields({
         value={layer.out}
         {...time}
         onCommit={(out) => onUpdate({ out })}
+      />
+    </Group>
+  );
+}
+
+/** Seconds a video layer shows its first frame before `start` and its last frame after `out`. */
+function HoldFields({
+  layer,
+  time,
+  onUpdate,
+}: {
+  layer: VideoLayer;
+  time: TimeFieldOptions;
+  onUpdate: LayerUpdate;
+}) {
+  const commit = (key: "before" | "after", value: number) => {
+    const hold = { ...layer.hold, [key]: value || undefined };
+    onUpdate({
+      hold: hold.before || hold.after ? hold : undefined,
+    });
+  };
+  return (
+    <Group title="Hold">
+      <NumberField
+        label="before"
+        value={layer.hold?.before ?? 0}
+        {...time}
+        onCommit={(value) => commit("before", value)}
+      />
+      <NumberField
+        label="after"
+        value={layer.hold?.after ?? 0}
+        {...time}
+        onCommit={(value) => commit("after", value)}
       />
     </Group>
   );

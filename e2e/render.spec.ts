@@ -137,6 +137,68 @@ test("fade audio at the layer's own edges when the output cuts into them", async
   );
 });
 
+test("hold a video layer's first and last frames beyond its source range", async ({}, testInfo) => {
+  // Copy the synthetic sample and keep only its test pattern, playing source
+  // 1s to 2s at 1s and holding its first and last frames for 1s on each side.
+  const directory = testInfo.outputPath("project");
+  await cp("samples/synthetic", directory, { recursive: true });
+  await editJson<Project>(`${directory}/project.json`, (project) => {
+    project.layers = project.layers
+      .filter((layer) => layer.type === "video")
+      .map((layer) => ({
+        ...layer,
+        start: 1,
+        in: 1,
+        out: 2,
+        hold: { before: 1, after: 1 },
+      }));
+  });
+  const output = testInfo.outputPath("hold.mp4");
+  await execFileAsync(process.execPath, [
+    "src/cli.ts",
+    "render",
+    `${directory}/project.json`,
+    output,
+  ]);
+  await testInfo.attach("held render", {
+    path: output,
+    contentType: "video/mp4",
+  });
+
+  // Check that the first second repeats the first played frame, the last
+  // second repeats the last played frame, and the played frames still move.
+  const frames = await readGrayFrames(output);
+  expect(frames).toHaveLength(90);
+  expect(diffFrames(frames[0], frames[30])).toBeLessThan(0.1);
+  expect(diffFrames(frames[29], frames[30])).toBeLessThan(0.1);
+  expect(diffFrames(frames[60], frames[59])).toBeLessThan(0.1);
+  expect(diffFrames(frames[89], frames[59])).toBeLessThan(0.1);
+  expect(diffFrames(frames[30], frames[59])).toBeGreaterThan(1);
+
+  // Render stills inside each hold and at the edge frames it holds, and check
+  // that each held still matches its edge frame exactly.
+  const renderStill = async (time: number) => {
+    const file = `${directory}/still-${time}.json`;
+    await cp(`${directory}/project.json`, file);
+    await editJson<Project>(file, (project) => {
+      project.output = { type: "still", time };
+    });
+    const still = testInfo.outputPath(`still-${time}.png`);
+    await execFileAsync(process.execPath, [
+      "src/cli.ts",
+      "render",
+      file,
+      still,
+    ]);
+    const [frame] = await readGrayFrames(still);
+    return frame;
+  };
+  expect(diffFrames(await renderStill(0.5), await renderStill(1))).toBe(0);
+  expect(diffFrames(await renderStill(2.5), await renderStill(59 / 30))).toBe(
+    0,
+  );
+});
+
 /** RMS level in dB of a 20ms window of a file's audio at a time. */
 async function measureRmsLevel(file: string, { time }: { time: number }) {
   const { stdout } = await execFileAsync("ffmpeg", [
@@ -157,4 +219,39 @@ async function measureRmsLevel(file: string, { time }: { time: number }) {
   ]);
   const levels = [...stdout.matchAll(/RMS_level=(-?[\d.]+)/g)];
   return Number(levels.at(-1)![1]);
+}
+
+const FRAME_WIDTH = 64;
+const FRAME_HEIGHT = 36;
+
+/** Every frame of a file, scaled down to small grayscale pixels. */
+async function readGrayFrames(file: string) {
+  const { stdout } = await execFileAsync(
+    "ffmpeg",
+    [
+      "-v",
+      "error",
+      "-i",
+      file,
+      "-vf",
+      `scale=${FRAME_WIDTH}:${FRAME_HEIGHT},format=gray`,
+      "-f",
+      "rawvideo",
+      "-",
+    ],
+    { encoding: "buffer" },
+  );
+  const size = FRAME_WIDTH * FRAME_HEIGHT;
+  return Array.from({ length: stdout.length / size }, (_, i) =>
+    stdout.subarray(i * size, (i + 1) * size),
+  );
+}
+
+/** Mean absolute difference between two grayscale frames, from 0 to 255. */
+function diffFrames(a: Uint8Array, b: Uint8Array) {
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) {
+    sum += Math.abs(a[i] - b[i]);
+  }
+  return sum / a.length;
 }

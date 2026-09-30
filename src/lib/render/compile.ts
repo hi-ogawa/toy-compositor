@@ -4,6 +4,7 @@ import {
   intersect,
   getLayerRange,
   getOutputRange,
+  getSourceRange,
   type TimeRange,
 } from "../layout.ts";
 import type {
@@ -184,17 +185,22 @@ function compileVideo({
   }
   const video = mediaInfo.video!;
   const fit = fitBox({ source: video, crop: layer.crop, box: layer.box });
+  const read = getSourceRead({ layer, visible, fps: scene.canvas.fps });
+  const sourceVisible = intersect(getSourceRange(layer), scene.range);
   return {
     video: {
       input: buildSeekInput({
         file,
-        seek: getFrameShownAt(video, {
-          time: layer.in + visible.start - layer.start,
-        }),
-        duration: visible.end - visible.start,
+        seek: getFrameShownAt(video, { time: read.time }),
+        duration: read.duration,
       }),
       filters: [
         `fps=${scene.canvas.fps}`,
+        ...(read.before > 0 || read.after > 0
+          ? [
+              `tpad=start_duration=${read.before}:stop_duration=${read.after}:start_mode=clone:stop_mode=clone`,
+            ]
+          : []),
         `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
         ...buildCropFilters(layer.crop),
         `scale=${fit.width}:${fit.height}`,
@@ -203,10 +209,43 @@ function compileVideo({
       y: fit.y,
     },
     audio:
-      scene.withAudio && !layer.muted && mediaInfo.audio
-        ? compileAudioStream({ layer, file, visible, scene })
+      sourceVisible && scene.withAudio && !layer.muted && mediaInfo.audio
+        ? compileAudioStream({ layer, file, visible: sourceVisible, scene })
         : undefined,
   };
+}
+
+/**
+ * Which source frames a video layer's visible range reads, and how long to
+ * clone its first and last read frames before and after them to cover the
+ * held spans. A visible range that lies entirely in a hold reads the single
+ * frame it holds, which is the source range's first frame before it or the
+ * frame shown one output frame before `out` after it.
+ */
+function getSourceRead({
+  layer,
+  visible,
+  fps,
+}: {
+  layer: VideoLayer;
+  visible: TimeRange;
+  fps: number;
+}) {
+  const source = getSourceRange(layer);
+  const frame = 1 / fps;
+  const played = intersect(source, visible);
+  if (played) {
+    return {
+      time: layer.in + played.start - layer.start,
+      duration: played.end - played.start,
+      before: played.start - visible.start,
+      after: visible.end - played.end,
+    };
+  }
+  const padding = Math.max(0, visible.end - visible.start - frame);
+  return visible.end <= source.start
+    ? { time: layer.in, duration: frame, before: padding, after: 0 }
+    : { time: layer.out - frame, duration: frame, before: 0, after: padding };
 }
 
 function compileImage({

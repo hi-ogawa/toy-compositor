@@ -185,4 +185,4 @@ A video layer can keep showing its first frame before `start` and its last frame
 }
 ```
 
-`before` and `after` are durations in seconds, and they compile to `tpad` with `clone` mode. The prototype does not implement this yet.
+`before` and `after` are durations in seconds, and the layer's time range grows by them on each side. The held spans are silent, and they compile to `tpad` with `clone` mode ([compiler](compiler.md#timing-and-frames)).

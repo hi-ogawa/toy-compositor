@@ -10,7 +10,12 @@ import { useState, type ReactNode } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { usePointerGesture } from "../hooks/use-pointer-gesture";
 import type { LayerEditType } from "../lib/layer-edit";
-import { getLayerRange, intersect, type TimeRange } from "../lib/layout";
+import {
+  getLayerRange,
+  getSourceRange,
+  intersect,
+  type TimeRange,
+} from "../lib/layout";
 import type { Layer, Output } from "../lib/project";
 import type {
   DecodedAudio,
@@ -347,6 +352,10 @@ function TimelineLayerLane({
   const visible = intersect(range, timeline.visible);
   const audioLayer =
     layer.type === "video" || layer.type === "audio" ? layer : undefined;
+  // A video layer's held spans have no sound, so its waveform covers only the
+  // source range.
+  const sourceVisible =
+    audioLayer && intersect(getSourceRange(audioLayer), timeline.visible);
   return (
     <TimelineRow
       timeline={timeline}
@@ -381,15 +390,34 @@ function TimelineLayerLane({
                 : LAYER_CLIP_CLASSES[layer.type].border,
             )}
           >
-            {audioLayer && visible && audioSource?.status === "fulfilled" && (
-              <AudioWaveformView
-                audioView={audioSource.value.view}
-                sourceStart={audioLayer.in + visible.start - audioLayer.start}
-                sourceEnd={audioLayer.in + visible.end - audioLayer.start}
-                pixelsPerSecond={timeline.pixelsPerSecond}
-                dimmed={audioLayer.muted ?? false}
-              />
-            )}
+            {audioLayer &&
+              visible &&
+              sourceVisible &&
+              audioSource?.status === "fulfilled" && (
+                <div
+                  className="absolute inset-y-0 overflow-hidden"
+                  style={{
+                    left:
+                      (sourceVisible.start - visible.start) *
+                      timeline.pixelsPerSecond,
+                    width:
+                      (sourceVisible.end - sourceVisible.start) *
+                      timeline.pixelsPerSecond,
+                  }}
+                >
+                  <AudioWaveformView
+                    audioView={audioSource.value.view}
+                    sourceStart={
+                      audioLayer.in + sourceVisible.start - audioLayer.start
+                    }
+                    sourceEnd={
+                      audioLayer.in + sourceVisible.end - audioLayer.start
+                    }
+                    pixelsPerSecond={timeline.pixelsPerSecond}
+                    dimmed={audioLayer.muted ?? false}
+                  />
+                </div>
+              )}
             {/* The lane's header already names the layer, so the clip shows only state. */}
             {(layer.type === "video" || layer.type === "audio") &&
               layer.muted && (

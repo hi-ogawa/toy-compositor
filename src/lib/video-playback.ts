@@ -27,6 +27,7 @@ export class VideoPlayback {
   private readonly transport: AudioContextTransport;
   private readonly element: HTMLVideoElement;
   private layer?: VideoLayer;
+  private fps = 30;
   private mode?: PlaybackMode;
   private readonly unsubscribe: () => void;
   private readonly correctDriftThrottled = throttle(
@@ -49,8 +50,10 @@ export class VideoPlayback {
     element.addEventListener("loadedmetadata", this.resync);
   }
 
-  setLayer({ layer }: { layer: VideoLayer }): void {
+  /** `fps` is the canvas frame rate, which places the last frame a hold shows. */
+  setLayer({ layer, fps }: { layer: VideoLayer; fps: number }): void {
     this.layer = layer;
+    this.fps = fps;
     // A moved layer re-enters its mode instead of being corrected as drift.
     this.mode = undefined;
     this.sync();
@@ -74,9 +77,12 @@ export class VideoPlayback {
     }
     const { position, isPlaying } = this.transport.store.get();
     const expectedTime = layer.in + position - layer.start;
+    // Outside its source range, a layer holds its first frame or the last one
+    // it shows, which the render takes one output frame before `out`.
+    const lastFrameTime = layer.out - 1 / this.fps;
     if (!isPlaying) {
       this.mode = "paused";
-      this.pause(clamp(expectedTime, layer.in, layer.out));
+      this.pause(clamp(expectedTime, layer.in, lastFrameTime));
       return;
     }
 
@@ -103,7 +109,7 @@ export class VideoPlayback {
         break;
       }
       case "after": {
-        this.pause(layer.out);
+        this.pause(lastFrameTime);
         break;
       }
     }
