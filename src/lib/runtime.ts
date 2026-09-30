@@ -193,12 +193,10 @@ export class EditorRuntime {
         this.audioPlaybacks.set(layer.id, playback);
       }
       playback.setLayer({ layer });
-      // A layer keeps its playback when its src changes, so clear a stale buffer.
       const source = audioSources[layer.src];
-      playback.setBuffer({
-        buffer:
-          source?.status === "fulfilled" ? source.value.buffer : undefined,
-      });
+      if (source?.status === "fulfilled") {
+        playback.setBuffer({ buffer: source.value.buffer });
+      }
     }
     for (const [id, playback] of this.audioPlaybacks) {
       if (!heard.has(id)) {
