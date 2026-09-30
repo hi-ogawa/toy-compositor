@@ -9,6 +9,7 @@ import {
 } from "../lib/project";
 import { getProjectPageUrl } from "../lib/routes";
 import type { ProjectEntry, ProjectFolder } from "../lib/server/api";
+import type { DialogTool } from "../lib/server/dialog";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -91,11 +92,7 @@ export function ProjectList() {
  * Register a folder picked in the server's native dialog. Linux dialogs pick
  * either folders or files, so a secondary link picks a project file there.
  */
-function AddFolderDialogButtons({
-  dialog,
-}: {
-  dialog: "zenity" | "osascript";
-}) {
+function AddFolderDialogButtons({ dialog }: { dialog: DialogTool }) {
   const queryClient = useQueryClient();
   const pickMutation = useMutation({
     mutationFn: (kind: "folder" | "file") =>
@@ -105,7 +102,7 @@ function AddFolderDialogButtons({
   });
   return (
     <div className="flex items-center gap-3">
-      {dialog === "zenity" && (
+      {dialog !== "osascript" && (
         <button
           type="button"
           disabled={pickMutation.isPending}

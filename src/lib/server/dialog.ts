@@ -1,21 +1,27 @@
+import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { execFileAsync } from "../../utils/exec.ts";
+import { DBusConnection } from "./dbus.ts";
 
 /**
- * The platform's native picker that the server can open on its desktop:
- * zenity on Linux, which picks either folders or files, and `osascript` on
- * macOS, whose panel picks both.
+ * The platform's native picker that the server can open on its desktop: the
+ * XDG desktop portal on Linux, or zenity where no portal runs, which pick
+ * either folders or files, and `osascript` on macOS, whose panel picks both.
  */
-export type DialogTool = "zenity" | "osascript";
+export type DialogTool = "portal" | "zenity" | "osascript";
 
-export function getDialogTool(): DialogTool | undefined {
+export async function getDialogTool(): Promise<DialogTool | undefined> {
   // e2e cannot operate a native dialog, so it runs the server without one.
   if (process.env.TOY_COMPOSITOR_NO_FOLDER_DIALOG) {
     return;
   }
   switch (process.platform) {
     case "linux": {
+      if (await checkPortal()) {
+        return "portal";
+      }
       // zenity is often not installed, so look for it on PATH.
       const dirs = (process.env.PATH ?? "").split(path.delimiter);
       return dirs.some((dir) => fs.existsSync(path.join(dir, "zenity")))
@@ -37,9 +43,12 @@ export async function pickProjectPath({
 }: {
   kind: "folder" | "file";
 }): Promise<string | undefined> {
-  const tool = getDialogTool();
+  const tool = await getDialogTool();
   if (!tool) {
     throw new Error(`No native dialog on ${process.platform}`);
+  }
+  if (tool === "portal") {
+    return pickWithPortal({ kind });
   }
   const [command, args] =
     tool === "zenity"
@@ -63,6 +72,97 @@ export async function pickProjectPath({
       return undefined;
     }
     throw error;
+  }
+}
+
+const PORTAL = {
+  destination: "org.freedesktop.portal.Desktop",
+  path: "/org/freedesktop/portal/desktop",
+};
+
+// The portal stays available while the server runs, so probe it once. Getting
+// the FileChooser version also starts a D-Bus activated portal.
+let portalCheck: Promise<boolean> | undefined;
+
+function checkPortal(): Promise<boolean> {
+  portalCheck ??= (async () => {
+    const bus = await DBusConnection.connectSession();
+    try {
+      await bus.call({
+        ...PORTAL,
+        interface: "org.freedesktop.DBus.Properties",
+        member: "Get",
+        signature: "ss",
+        body: ["org.freedesktop.portal.FileChooser", "version"],
+      });
+      return true;
+    } finally {
+      bus.close();
+    }
+  })().catch(() => false);
+  return portalCheck;
+}
+
+/**
+ * Open the portal's FileChooser, which answers on a Request object with a
+ * Response signal. The portal closes the dialog when its caller leaves the
+ * bus, so the connection stays open until the response.
+ * https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.FileChooser.html
+ */
+async function pickWithPortal({
+  kind,
+}: {
+  kind: "folder" | "file";
+}): Promise<string | undefined> {
+  const bus = await DBusConnection.connectSession();
+  try {
+    // The request path is derived from the caller and token, so the Response
+    // can be awaited before the call returns it.
+    const token = `toy_compositor_${randomUUID().replaceAll("-", "")}`;
+    const sender = bus.uniqueName.slice(1).replaceAll(".", "_");
+    const response = bus.waitForSignal({
+      path: `${PORTAL.path}/request/${sender}/${token}`,
+      interface: "org.freedesktop.portal.Request",
+      member: "Response",
+    });
+    const options =
+      kind === "folder"
+        ? { directory: { signature: "b", value: true } }
+        : {
+            filters: {
+              signature: "a(sa(us))",
+              value: [["Project files", [[0, "*.json"]]]],
+            },
+          };
+    const [responseBody] = await Promise.all([
+      response,
+      bus.call({
+        ...PORTAL,
+        interface: "org.freedesktop.portal.FileChooser",
+        member: "OpenFile",
+        signature: "ssa{sv}",
+        body: [
+          "",
+          kind === "folder" ? "Add project folder" : "Add project file",
+          { handle_token: { signature: "s", value: token }, ...options },
+        ],
+      }),
+    ]);
+    const [code, results] = responseBody as [number, { uris?: string[] }];
+    switch (code) {
+      case 0: {
+        return fileURLToPath(results.uris![0]);
+      }
+      case 1: {
+        // Cancelled by the user.
+        return;
+      }
+      default: {
+        throw new Error("The file chooser portal failed");
+      }
+    }
+  } finally {
+    bus.close();
   }
 }
 

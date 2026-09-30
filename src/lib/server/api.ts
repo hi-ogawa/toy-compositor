@@ -6,7 +6,7 @@ import { readJson, writeJson } from "../../utils/fs.ts";
 import { getMediaType, type MediaFile } from "../media-file.ts";
 import { probeMediaInfo } from "../media-info.ts";
 import type { MediaInfo, Output, Project } from "../project.ts";
-import { getDialogTool, pickProjectPath } from "./dialog.ts";
+import { type DialogTool, getDialogTool, pickProjectPath } from "./dialog.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 import type { ProjectRegistry } from "./registry.ts";
 
@@ -74,7 +74,7 @@ export type ProjectList = {
   /** False in the static demo, whose one folder is fixed. */
   editable: boolean;
   /** The native dialog the server can open to pick a folder, when it has one. */
-  folderDialog?: "zenity" | "osascript";
+  folderDialog?: DialogTool;
 };
 
 async function handleRpc({
@@ -119,7 +119,7 @@ export function createEditorHandlers({
       return {
         folders: await listProjectFolders(registry),
         editable: true,
-        folderDialog: getDialogTool(),
+        folderDialog: await getDialogTool(),
       };
     },
 
