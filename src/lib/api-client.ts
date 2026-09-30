@@ -1,79 +1,23 @@
-import type { MediaFile } from "./media-file.ts";
-import type { MediaInfo, Output, Project } from "./project.ts";
+import { createRpcProxy } from "./rpc.ts";
+import type { EditorHandlers } from "./server/api.ts";
 
-export type ProjectFile = { file: string; project: Project };
+const rpcClient = createRpcProxy<EditorHandlers>(async (method, params) => {
+  const res = await fetch(`/api/rpc/${method}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params ?? {}),
+  });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return res.json();
+});
 
-/** A project file found under the projects root, as `<project-dir>/<name>.json`. */
-export type ProjectEntry = {
-  path: string;
-  width: number;
-  height: number;
-  output: Output["type"];
-};
-
-export type ProjectList = { root: string; projects: ProjectEntry[] };
-
-/** Client for the editor server's `/api/` routes. */
-export const apiClient = {
-  async listProjects(): Promise<ProjectList> {
-    const res = await fetch("/api/projects");
-    if (!res.ok) {
-      throw new Error(`Failed to list projects: ${await res.text()}`);
-    }
-    return res.json();
-  },
-
-  async loadProject({ path }: { path: string }): Promise<ProjectFile> {
-    const res = await fetch(
-      getApiUrl({ pathname: "/api/project", params: { path } }),
-    );
-    if (!res.ok) {
-      throw new Error(`Failed to load project: ${await res.text()}`);
-    }
-    return { file: path, project: await res.json() };
-  },
-
-  async saveProject({
-    path,
-    project,
-  }: {
-    path: string;
-    project: Project;
-  }): Promise<void> {
-    const res = await fetch(
-      getApiUrl({ pathname: "/api/project", params: { path } }),
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(project),
-      },
-    );
-    if (!res.ok) {
-      throw new Error(`Failed to save project: ${await res.text()}`);
-    }
-  },
-
-  /** Creates a project file, failing if it already exists. */
-  async createProject({
-    path,
-    project,
-  }: {
-    path: string;
-    project: Project;
-  }): Promise<void> {
-    const res = await fetch(
-      getApiUrl({ pathname: "/api/project", params: { path } }),
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(project),
-      },
-    );
-    if (!res.ok) {
-      throw new Error(`Failed to create project: ${await res.text()}`);
-    }
-  },
-
+/**
+ * Client for the raw routes, which media elements and the tab's live stream
+ * point at directly.
+ */
+const rawClient = {
   /**
    * The server resolves a layer source against the project's directory, as the
    * renderer does, so `src` is a file path everywhere.
@@ -85,63 +29,7 @@ export const apiClient = {
     src: string;
     projectPath: string;
   }): string {
-    return getApiUrl({
-      pathname: "/api/media",
-      params: { project: projectPath, src },
-    });
-  },
-
-  async listMediaFiles({
-    projectPath,
-  }: {
-    projectPath: string;
-  }): Promise<MediaFile[]> {
-    const res = await fetch(
-      getApiUrl({
-        pathname: "/api/media-files",
-        params: { project: projectPath },
-      }),
-    );
-    if (!res.ok) {
-      throw new Error(`Failed to list media files: ${await res.text()}`);
-    }
-    return (await res.json()).files;
-  },
-
-  async openMediaFolder({
-    projectPath,
-  }: {
-    projectPath: string;
-  }): Promise<void> {
-    const res = await fetch(
-      getApiUrl({
-        pathname: "/api/open-media-folder",
-        params: { project: projectPath },
-      }),
-      { method: "POST" },
-    );
-    if (!res.ok) {
-      throw new Error(`Failed to open the media folder: ${await res.text()}`);
-    }
-  },
-
-  async loadMediaInfo({
-    src,
-    projectPath,
-  }: {
-    src: string;
-    projectPath: string;
-  }): Promise<MediaInfo> {
-    const res = await fetch(
-      getApiUrl({
-        pathname: "/api/media-info",
-        params: { project: projectPath, src },
-      }),
-    );
-    if (!res.ok) {
-      throw new Error(`Failed to load media info: ${await res.text()}`);
-    }
-    return res.json();
+    return `/api/media?${new URLSearchParams({ project: projectPath, src })}`;
   },
 
   /** Fetches a video or audio source's encoded bytes for decoding its audio. */
@@ -152,20 +40,28 @@ export const apiClient = {
     src: string;
     projectPath: string;
   }): Promise<ArrayBuffer> {
-    const res = await fetch(apiClient.getMediaUrl({ src, projectPath }));
+    const res = await fetch(rawClient.getMediaUrl({ src, projectPath }));
     if (!res.ok) {
       throw new Error(`Failed to load audio data: ${await res.text()}`);
     }
     return res.arrayBuffer();
   },
+
+  /**
+   * Keeps an event stream open for the tab's lifetime, so a server started
+   * with `serve --open` exits after the last tab closes.
+   */
+  openLiveConnection(): void {
+    new EventSource("/api/live");
+  },
 };
 
-function getApiUrl({
-  pathname,
-  params,
-}: {
-  pathname: string;
-  params: Record<string, string>;
-}): string {
-  return `${pathname}?${new URLSearchParams(params)}`;
-}
+/**
+ * Client for the editor server's RPC methods at `/api/rpc/<method>`, plus the
+ * raw routes. The RPC proxy is the prototype, so any method not on
+ * `rawClient` becomes an RPC call.
+ */
+export const apiClient = Object.assign(
+  Object.create(rpcClient) as typeof rpcClient,
+  rawClient,
+);
