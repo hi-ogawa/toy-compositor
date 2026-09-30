@@ -12,11 +12,6 @@ import { openWithDefaultApp } from "./lib/server/open-default.ts";
 import { createProjectRegistry, getConfigDir } from "./lib/server/registry.ts";
 import { checkEditorServer, serveEditor } from "./lib/server/serve.ts";
 
-// The CLI build defines it, and a source run leaves it undefined.
-declare const __BUILD_COMMIT__: string | undefined;
-const buildCommit =
-  typeof __BUILD_COMMIT__ === "undefined" ? "dev" : __BUILD_COMMIT__;
-
 const packageDir = path.dirname(
   fileURLToPath(import.meta.resolve("#package.json")),
 );
@@ -24,7 +19,7 @@ const packageDir = path.dirname(
 const HELP = `\
 Usage:
   toy-compositor --version
-      Print the version and the git commit of this build
+      Print the version
   toy-compositor serve [directory] [--port <port>] [--open]
       Open the editor for the project folders, adding directory to them first.
       --open opens it in the browser, reusing a server already on the port,
@@ -44,7 +39,7 @@ Project format:  ${path.join(packageDir, "docs/project-format.md")}
 Sample project:  ${path.join(packageDir, "samples/synthetic")}
 Folder list:     ${path.join(getConfigDir(), "projects.json")}
 
-Source: ${packageJson.homepage} (report bugs at ${packageJson.bugs})
+Source: ${packageJson.homepage}
 Update: pnpm add -g https://pkg.pr.new/hi-ogawa/toy-compositor@main`;
 
 async function main() {
@@ -59,7 +54,7 @@ async function main() {
     },
   });
   if (values.version) {
-    console.log(`${packageJson.version} (${buildCommit})`);
+    console.log(packageJson.version);
     return;
   }
   const [command, ...args] = positionals;
