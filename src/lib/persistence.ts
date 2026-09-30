@@ -1,28 +1,20 @@
 import type { Project } from "./project.ts";
-import type { EditorLayer, PersistableEditorState } from "./runtime.ts";
+import type { EditorLayer, EditorProject } from "./runtime.ts";
 
-export function serializeEditorState(state: PersistableEditorState): Project {
+export function serializeEditorProject(project: EditorProject): Project {
   return {
-    canvas: state.canvas,
-    output: state.output,
-    layers: state.layers.map(({ id: _id, ...layer }) => layer),
-    locators: state.locators,
-    media: state.media,
+    ...project,
+    layers: project.layers.map(({ id: _id, ...layer }) => layer),
   };
 }
 
 /** Layer ids are assigned on load, because the file is also written by hand and by agents. */
-export function deserializeEditorState(
-  project: Project,
-): PersistableEditorState {
+export function deserializeEditorProject(project: Project): EditorProject {
   return {
-    canvas: project.canvas,
-    output: project.output,
+    ...project,
     layers: project.layers.map((layer): EditorLayer => ({
       ...layer,
       id: crypto.randomUUID(),
     })),
-    locators: project.locators,
-    media: project.media,
   };
 }

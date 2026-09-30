@@ -22,7 +22,7 @@ export function useLayerInteraction({
   state: EditorState;
 }) {
   const [edit, setEdit] = useState<LayerEdit>();
-  const { layers, canvas, media: mediaInfoMap } = state;
+  const { layers, canvas, media: mediaInfoMap } = state.project;
   const getLayer = (id: string) => layers.find((layer) => layer.id === id)!;
 
   function startEdit({ type, id }: { type: LayerEditType; id: string }) {

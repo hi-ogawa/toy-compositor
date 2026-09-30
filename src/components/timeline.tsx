@@ -21,7 +21,7 @@ import type {
   EditorRuntime,
   EditorLayer,
   EditorSelection,
-  PersistableEditorState,
+  EditorProject,
 } from "../lib/runtime";
 import type { PromiseState } from "../utils/promise-state";
 import { AudioWaveformView } from "./audio-waveform";
@@ -43,7 +43,7 @@ export function Timeline({
   timeline: TimelineView;
   layerInteraction: LayerInteraction;
   runtime: EditorRuntime;
-  project: PersistableEditorState;
+  project: EditorProject;
   selection?: EditorSelection;
   playhead: number;
   playing: boolean;

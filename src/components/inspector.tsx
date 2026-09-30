@@ -12,7 +12,7 @@ import type {
 import type {
   EditorRuntime,
   EditorSelection,
-  PersistableEditorState,
+  EditorProject,
 } from "../lib/runtime";
 import { useDraftInput } from "./use-draft-input";
 
@@ -22,7 +22,7 @@ export function Inspector({
   selection,
 }: {
   runtime: EditorRuntime;
-  project: PersistableEditorState;
+  project: EditorProject;
   selection?: EditorSelection;
 }) {
   if (!selection) {

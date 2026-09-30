@@ -67,7 +67,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
   const { selection } = state;
   const previewLayer =
     selection?.type === "layer"
-      ? state.layers.find((layer) => layer.id === selection.id)
+      ? state.project.layers.find((layer) => layer.id === selection.id)
       : undefined;
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-neutral-900 text-neutral-100">
@@ -105,7 +105,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
             }
             main={
               <CompositionPreview
-                project={state}
+                project={state.project}
                 selection={selection}
                 time={state.playhead}
                 runtime={runtime}
@@ -117,7 +117,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
             timeline={timeline}
             layerInteraction={layerInteraction}
             runtime={runtime}
-            project={state}
+            project={state.project}
             selection={selection}
             playhead={state.playhead}
             playing={state.playing}
@@ -128,7 +128,11 @@ export function Editor({ projectPath }: { projectPath: string }) {
           className="w-72 shrink-0 overflow-y-auto border-l border-neutral-700 bg-neutral-800"
           aria-label="Inspector"
         >
-          <Inspector runtime={runtime} project={state} selection={selection} />
+          <Inspector
+            runtime={runtime}
+            project={state.project}
+            selection={selection}
+          />
         </aside>
       </div>
     </div>

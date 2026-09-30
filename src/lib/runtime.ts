@@ -1,10 +1,13 @@
 import { watchPromise, type PromiseState } from "../utils/promise-state.ts";
-import { createStore, shallowEqual } from "../utils/store.ts";
+import { createStore } from "../utils/store.ts";
 import { apiClient, type ProjectFile } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
 import { createAudioView, type AudioView } from "./audio-view.ts";
 import { getContentRange, getOutputRange } from "./layout.ts";
-import { deserializeEditorState, serializeEditorState } from "./persistence.ts";
+import {
+  deserializeEditorProject,
+  serializeEditorProject,
+} from "./persistence.ts";
 import type { Layer, Project } from "./project.ts";
 import { snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
@@ -17,6 +20,9 @@ export type EditorSelection =
 /** A project layer with an id that is stable for the session but never saved. */
 export type EditorLayer = Layer & { id: string };
 
+/** The project as the editor holds it, which is exactly what saving persists. */
+export type EditorProject = Omit<Project, "layers"> & { layers: EditorLayer[] };
+
 export interface DecodedAudio {
   buffer: AudioBuffer;
   view: AudioView;
@@ -25,11 +31,7 @@ export interface DecodedAudio {
 export interface EditorState {
   /** Project file path relative to the projects root, which is also where saves go. */
   file: string;
-  canvas: Project["canvas"];
-  output: Project["output"];
-  layers: EditorLayer[];
-  locators: Project["locators"];
-  media: Project["media"];
+  project: EditorProject;
   /** Follows the transport, on the frame grid whenever playback is stopped. */
   playhead: number;
   playing: boolean;
@@ -38,20 +40,17 @@ export interface EditorState {
   audioSources: Record<string, PromiseState<DecodedAudio>>;
 }
 
-/** What the project file holds, like toy-midi's `PersistableRecorderRuntimeState`. */
-export type PersistableEditorState = Pick<
-  EditorState,
-  "canvas" | "output" | "layers" | "locators" | "media"
->;
+const EMPTY_PROJECT: EditorProject = {
+  canvas: { width: 1920, height: 1080, fps: 30 },
+  output: { type: "video", start: 0, end: 0 },
+  layers: [],
+  media: {},
+};
 
 export class EditorRuntime {
   readonly store = createStore<EditorState>(() => ({
     file: "",
-    canvas: { width: 1920, height: 1080, fps: 30 },
-    output: { type: "video", start: 0, end: 0 },
-    layers: [],
-    locators: undefined,
-    media: {},
+    project: EMPTY_PROJECT,
     playhead: 0,
     playing: false,
     selection: undefined,
@@ -84,34 +83,39 @@ export class EditorRuntime {
   }
 
   seek(time: number): void {
-    const { canvas } = this.store.get();
-    this.transport.seek(Math.max(0, snapToFrame(time, canvas.fps)));
+    const { project } = this.store.get();
+    this.transport.seek(Math.max(0, snapToFrame(time, project.canvas.fps)));
   }
 
   /** Steps the playhead by whole frames. */
   seekFrames(frames: number): void {
-    const { canvas, playhead } = this.store.get();
-    this.seek(playhead + frames / canvas.fps);
+    const { project, playhead } = this.store.get();
+    this.seek(playhead + frames / project.canvas.fps);
   }
 
   updateLayer({ id, update }: { id: string; update: Partial<Layer> }): void {
     this.reschedulePlayback(() => {
-      const { layers } = this.store.get();
+      const { project } = this.store.get();
       this.store.update({
-        layers: layers.map((layer) =>
-          layer.id === id ? ({ ...layer, ...update } as EditorLayer) : layer,
-        ),
+        project: {
+          ...project,
+          layers: project.layers.map((layer) =>
+            layer.id === id ? ({ ...layer, ...update } as EditorLayer) : layer,
+          ),
+        },
       });
       this.syncPlayback();
     });
   }
 
   setCanvas(canvas: Project["canvas"]): void {
-    this.store.update({ canvas });
+    const { project } = this.store.get();
+    this.store.update({ project: { ...project, canvas } });
   }
 
   setOutput(output: Project["output"]): void {
-    this.store.update({ output });
+    const { project } = this.store.get();
+    this.store.update({ project: { ...project, output } });
   }
 
   /**
@@ -119,14 +123,14 @@ export class EditorRuntime {
    * frame, and a video spans every layer so its markers trim inward.
    */
   setOutputType(type: Project["output"]["type"]): void {
-    const { output, canvas, layers, playhead } = this.store.get();
-    if (output.type === type) {
+    const { project, playhead } = this.store.get();
+    if (project.output.type === type) {
       return;
     }
     this.setOutput(
       type === "still"
-        ? { type, time: snapToFrame(playhead, canvas.fps) }
-        : { type, ...getContentRange({ layers }) },
+        ? { type, time: snapToFrame(playhead, project.canvas.fps) }
+        : { type, ...getContentRange(project) },
     );
   }
 
@@ -171,7 +175,8 @@ export class EditorRuntime {
   }
 
   private syncPlayback(): void {
-    const { layers, audioSources } = this.store.get();
+    const { project, audioSources } = this.store.get();
+    const { layers } = project;
     for (const [id, playback] of this.videoPlaybacks) {
       const layer = layers.find((layer) => layer.id === id);
       if (layer?.type === "video") {
@@ -229,13 +234,13 @@ export class EditorRuntime {
   }
 
   serializeProject(): Project {
-    return serializeEditorState(this.store.get());
+    return serializeEditorProject(this.store.get().project);
   }
 
   deserializeProject({ file, project }: ProjectFile): void {
     this.store.update({
       file,
-      ...deserializeEditorState(project),
+      project: deserializeEditorProject(project),
       selection: undefined,
     });
     this.syncPlayback();
@@ -252,15 +257,7 @@ export class EditorRuntime {
 
   subscribePersistableState(listener: () => void): () => void {
     return this.store.subscribeWithSelector({
-      selector: (state) =>
-        ({
-          canvas: state.canvas,
-          output: state.output,
-          layers: state.layers,
-          locators: state.locators,
-          media: state.media,
-        }) satisfies PersistableEditorState,
-      equals: shallowEqual,
+      selector: (state) => state.project,
       listener,
     });
   }

@@ -4,7 +4,7 @@ The editor composes the project in the DOM at one project time. Each visual laye
 
 ## Components
 
-Each component answers one question about the preview, and the preview holds no project state of its own. Inspector edits go through the runtime into the editor state, and the composition re-renders from it, so edits show up immediately without extra wiring. The state keeps the project's fields at its top level, with each layer carrying a session id, and [src/lib/persistence.ts](../src/lib/persistence.ts) assigns the ids on load and drops them on save, like toy-midi's runtime and serialized state.
+Each component answers one question about the preview, and the preview holds no project state of its own. Inspector edits go through the runtime into `state.project`, and the composition re-renders from it, so edits show up immediately without extra wiring. `state.project` is the file's project with a session id on each layer, which [src/lib/persistence.ts](../src/lib/persistence.ts) assigns on load and drops on save, like toy-midi's runtime and serialized state.
 
 ![The editor screen as nested component regions, each with the one question it answers](images/component-tree.svg)
 

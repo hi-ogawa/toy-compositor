@@ -13,16 +13,14 @@ export function createStore<State>(initialize: (get: () => State) => State) {
   const subscribeWithSelector = <Selection>({
     selector,
     listener,
-    equals = Object.is,
   }: {
     selector: (state: State) => Selection;
     listener: () => void;
-    equals?: (left: Selection, right: Selection) => boolean;
   }): (() => void) => {
     let selection = selector(state);
     const storeListener = () => {
       const nextSelection = selector(state);
-      if (equals(selection, nextSelection)) {
+      if (Object.is(selection, nextSelection)) {
         return;
       }
       selection = nextSelection;
@@ -40,15 +38,4 @@ export function createStore<State>(initialize: (get: () => State) => State) {
   };
 
   return { get, subscribe, subscribeWithSelector, update };
-}
-
-export function shallowEqual(left: object, right: object): boolean {
-  const leftRecord = left as Record<string, unknown>;
-  const rightRecord = right as Record<string, unknown>;
-  const leftKeys = Object.keys(leftRecord);
-  const rightKeys = Object.keys(right);
-  return (
-    leftKeys.length === rightKeys.length &&
-    leftKeys.every((key) => Object.is(leftRecord[key], rightRecord[key]))
-  );
 }

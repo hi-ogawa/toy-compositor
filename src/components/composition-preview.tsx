@@ -5,7 +5,7 @@ import type { Layer, Project, TextLayer } from "../lib/project";
 import type {
   EditorRuntime,
   EditorSelection,
-  PersistableEditorState,
+  EditorProject,
 } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
 
@@ -16,7 +16,7 @@ export function CompositionPreview({
   runtime,
   resolveMediaUrl,
 }: {
-  project: PersistableEditorState;
+  project: EditorProject;
   selection?: EditorSelection;
   time: number;
   runtime: EditorRuntime;
