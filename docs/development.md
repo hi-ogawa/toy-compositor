@@ -20,3 +20,5 @@ The dev server works on `.local/projects/`, and `TOY_COMPOSITOR_ROOT` points it 
 ## Static demo
 
 `pnpm dev-demo` runs the editor with no server, over the bundled synthetic sample, and keeps saves in the tab's session storage. It is handy for UI work that needs no real projects or ffprobe. Use `pnpm dev` for anything that reads or writes project files.
+
+`pnpm build-demo` builds the same thing as a static site. Cloudflare deploys it from `main` at https://toy-compositor.hiro18181.workers.dev, and each branch gets a preview whose URL the Cloudflare bot comments on its PR, which is a quick way to try a PR without checking it out.
