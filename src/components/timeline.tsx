@@ -16,7 +16,6 @@ import type {
   DecodedAudio,
   EditorRuntime,
   EditorLayer,
-  EditorSelection,
   EditorProject,
 } from "../lib/runtime";
 import type { PromiseState } from "../utils/promise-state";
@@ -24,7 +23,10 @@ import { AudioWaveformView } from "./audio-waveform";
 import { LayerTypeIcon } from "./layer-type-icon";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
-import type { LayerInteraction } from "./use-layer-interaction";
+import type {
+  EditorSelection,
+  LayerInteraction,
+} from "./use-layer-interaction";
 import type { LocatorInteraction } from "./use-locator-interaction";
 import { TIMELINE_LABEL_WIDTH, type TimelineView } from "./use-timeline";
 
@@ -98,7 +100,7 @@ export function Timeline({
             output={project.output}
             locatorInteraction={locatorInteraction}
             renderSelected={selection?.type === "output"}
-            onRenderSelect={() => runtime.select({ type: "output" })}
+            onRenderSelect={() => layerInteraction.select({ type: "output" })}
             onClearSelection={onClearSelection}
             onSeek={seek}
           />
@@ -129,7 +131,9 @@ export function Timeline({
                 selected={
                   selection?.type === "layer" && selection.id === layer.id
                 }
-                onSelect={() => runtime.select({ type: "layer", id: layer.id })}
+                onSelect={() =>
+                  layerInteraction.select({ type: "layer", id: layer.id })
+                }
               />
             ))}
           {timeline.isVisible(playhead) && (

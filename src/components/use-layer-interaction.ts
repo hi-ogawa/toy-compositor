@@ -4,6 +4,10 @@ import { applyLayerEdit, type LayerEditType } from "../lib/layer-edit";
 import type { Layer } from "../lib/project";
 import type { EditorRuntime, EditorState } from "../lib/runtime";
 
+export type EditorSelection =
+  | { type: "output" }
+  | { type: "layer"; id: string };
+
 type LayerEdit = {
   type: LayerEditType;
   id: string;
@@ -14,20 +18,31 @@ type LayerEdit = {
  * Moves and trims the selected layer on the timeline, like toy-midi's
  * `useRecorderClipInteraction` for a single clip. A drag shows as a draft and
  * commits on release, so playback reschedules once rather than on every move.
+ * It also holds the output selection, because Composition settings is the
+ * other thing the inspector edits.
  */
 export function useLayerInteraction({
   runtime,
   state,
+  onSelect,
 }: {
   runtime: EditorRuntime;
   state: EditorState;
+  /** Only coordinates selection domains by clearing selection in the other domain. */
+  onSelect: () => void;
 }) {
   const [edit, setEdit] = useState<LayerEdit>();
+  const [selection, setSelection] = useState<EditorSelection>();
   const { layers, canvas, media: mediaInfoMap } = state.project;
   const getLayer = (id: string) => layers.find((layer) => layer.id === id)!;
 
+  function select(selection: EditorSelection) {
+    onSelect();
+    setSelection(selection);
+  }
+
   function startEdit({ type, id }: { type: LayerEditType; id: string }) {
-    runtime.select({ type: "layer", id });
+    select({ type: "layer", id });
     setEdit({ type, id, layer: getLayer(id) });
   }
 
@@ -59,7 +74,6 @@ export function useLayerInteraction({
   }
 
   function handleRemoveShortcut(event: KeyboardEvent): boolean {
-    const { selection } = state;
     if (
       selection?.type !== "layer" ||
       edit ||
@@ -71,6 +85,7 @@ export function useLayerInteraction({
       return false;
     }
     runtime.removeLayer(selection.id);
+    setSelection(undefined);
     return true;
   }
 
@@ -81,6 +96,12 @@ export function useLayerInteraction({
         )
       : layers,
     editing: edit !== undefined,
+    selection,
+    select,
+    clear: () => {
+      setEdit(undefined);
+      setSelection(undefined);
+    },
     startEdit,
     updateEdit,
     finishEdit,
