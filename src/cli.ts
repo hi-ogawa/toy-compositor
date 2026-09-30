@@ -11,6 +11,10 @@ import { openWithDefaultApp } from "./lib/server/open-default.ts";
 import { createProjectRegistry, getConfigDir } from "./lib/server/registry.ts";
 import { checkEditorServer, serveEditor } from "./lib/server/serve.ts";
 
+const packageDir = path.dirname(
+  fileURLToPath(import.meta.resolve("#package.json")),
+);
+
 const HELP = `\
 Usage:
   toy-compositor serve [directory] [--port <port>] [--open]
@@ -38,8 +42,8 @@ Getting started:
 
 Rendering needs ffmpeg, ffprobe, and ImageMagick (magick) on PATH.
 
-Format doc: ${fileURLToPath(import.meta.resolve("#project-format"))}
-Sample:     ${path.dirname(fileURLToPath(import.meta.resolve("#sample-project")))}`;
+Format doc: ${path.join(packageDir, "docs/project-format.md")}
+Sample:     ${path.join(packageDir, "samples/synthetic")}`;
 
 async function main() {
   const { positionals, values } = parseArgs({

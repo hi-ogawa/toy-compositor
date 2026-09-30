@@ -12,8 +12,7 @@
   ],
   "type": "module",
   "imports": {
-    "#project-format": "./docs/project-format.md",
-    "#sample-project": "./samples/synthetic/project.json"
+    "#package.json": "./package.json"
   },
   "scripts": {
     "prepare": "vp config",
