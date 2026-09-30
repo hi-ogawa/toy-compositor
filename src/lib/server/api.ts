@@ -163,6 +163,15 @@ export function createEditorHandlers({
       await registry.removeFolder(directory);
     },
 
+    /** Open a registered project folder in the desktop's file manager. */
+    async openProjectFolder({
+      directory,
+    }: {
+      directory: string;
+    }): Promise<void> {
+      await openWithDefaultApp(await registry.resolveFolder(directory));
+    },
+
     async loadProject({
       path: projectPath,
     }: {
