@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { readJson, writeJson } from "../../utils/fs.ts";
+import { readJson } from "../../utils/fs.ts";
 import { HttpError } from "./http.ts";
 
 /**
@@ -19,9 +19,18 @@ export function createProjectRegistry({ configDir }: { configDir: string }) {
     return (await readJson<{ folders: string[] }>(file)).folders;
   }
 
-  async function writeFolders(folders: string[]) {
-    await fs.promises.mkdir(configDir, { recursive: true });
-    await writeJson(file, { folders });
+  // Each change reads the list and writes it back. Doing both synchronously
+  // keeps other requests from running in between and dropping each other's
+  // edits, and the file is small enough that blocking briefly is fine.
+  function updateFolders(update: (folders: string[]) => string[]) {
+    const folders: string[] = fs.existsSync(file)
+      ? JSON.parse(fs.readFileSync(file, "utf-8")).folders
+      : [];
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(
+      file,
+      JSON.stringify({ folders: update(folders) }, null, 2) + "\n",
+    );
   }
 
   return {
@@ -47,17 +56,17 @@ export function createProjectRegistry({ configDir }: { configDir: string }) {
           message: `${target} is not a folder or a project file`,
         });
       }
-      const folders = await readFolders();
-      if (!folders.includes(directory)) {
-        await writeFolders([...folders, directory]);
-      }
+      updateFolders((folders) =>
+        folders.includes(directory) ? folders : [...folders, directory],
+      );
       return directory;
     },
 
     /** Forget a folder without touching its files. */
     async removeFolder(directory: string) {
-      const folders = await readFolders();
-      await writeFolders(folders.filter((folder) => folder !== directory));
+      updateFolders((folders) =>
+        folders.filter((folder) => folder !== directory),
+      );
     },
 
     /** Return `directory` when it is registered, or throw a 403 error. */

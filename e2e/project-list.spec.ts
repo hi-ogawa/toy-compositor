@@ -6,7 +6,7 @@ import {
   clickTimelineButton,
   expectImageLoaded,
   getTestProjectDir,
-  registry,
+  registerFolder,
   test,
 } from "./helper";
 
@@ -104,6 +104,7 @@ test("add a media folder and create a project file in it", async ({
 
 test("add a folder by its project file, and remove folders from the list", async ({
   page,
+  request,
 }, testInfo) => {
   const projectDir = getTestProjectDir(`${testInfo.testId}-copy`);
   const missingDir = getTestProjectDir(`${testInfo.testId}-missing`);
@@ -111,7 +112,7 @@ test("add a folder by its project file, and remove folders from the list", async
   await cp("samples/synthetic", projectDir, { recursive: true });
   await rm(missingDir, { recursive: true, force: true });
   await mkdir(missingDir);
-  await registry.addFolder(missingDir);
+  await registerFolder(request, { directory: missingDir });
   await rm(missingDir, { recursive: true });
 
   // Add a project file's typed path and confirm its folder is listed.
