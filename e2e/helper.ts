@@ -19,10 +19,11 @@ export const test = base.extend<{
     await rm(projectDir, { recursive: true, force: true });
     await cp("samples/synthetic", projectDir, { recursive: true });
     await addProjectFolder(request, projectDir);
+    const projectFile = path.join(projectDir, "project.json");
     await use({
       projectDir,
-      url: getProjectPageUrl({ dir: projectDir, file: "project.json" }),
-      projectFile: path.join(projectDir, "project.json"),
+      url: getProjectPageUrl({ path: projectFile }),
+      projectFile,
     });
   },
 });
@@ -44,14 +45,8 @@ export async function addProjectFolder(
 }
 
 /** The editor page URL for a project file, as the app links to it. */
-export function getProjectPageUrl({
-  dir,
-  file,
-}: {
-  dir: string;
-  file: string;
-}) {
-  return `/?${new URLSearchParams({ project: dir, file })}`;
+export function getProjectPageUrl({ path }: { path: string }) {
+  return `/?${new URLSearchParams({ project: path })}`;
 }
 
 /** Wait until an image element has loaded its source. */

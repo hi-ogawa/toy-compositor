@@ -25,7 +25,7 @@ test("open projects from the start page", async ({ page, editor }) => {
   // Open the thumbnail project from the list.
   await section.getByRole("link", { name: /thumbnail\.json/ }).click();
   await expect(page).toHaveURL(
-    getProjectPageUrl({ dir: projectDir, file: "thumbnail.json" }),
+    getProjectPageUrl({ path: path.join(projectDir, "thumbnail.json") }),
   );
   await expect(page.getByTestId("editor-project-file")).toContainText(
     "thumbnail.json",
@@ -69,7 +69,7 @@ test("add a media folder and create a project file in it", async ({
   await section.getByRole("button", { name: "New project file" }).click();
   await page.getByRole("menuitem", { name: /vertical-video/ }).click();
   await expect(page).toHaveURL(
-    getProjectPageUrl({ dir: projectDir, file: "vertical-video.json" }),
+    getProjectPageUrl({ path: path.join(projectDir, "vertical-video.json") }),
   );
   await expect(page.getByTestId("editor-project-file")).toContainText(
     "vertical-video.json",

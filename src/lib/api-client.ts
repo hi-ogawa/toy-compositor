@@ -16,22 +16,28 @@ const rpcClient = createRpcProxy<EditorHandlers>(async (method, params) => {
 /** Client for the raw media route, which media elements point at directly. */
 const mediaClient = {
   /**
-   * The server resolves a layer source against the project folder, as the
+   * The server resolves a layer source against the project's directory, as the
    * renderer does, so `src` is a file path everywhere.
    */
-  getMediaUrl({ src, dir }: { src: string; dir: string }): string {
-    return `/api/media?${new URLSearchParams({ project: dir, src })}`;
+  getMediaUrl({
+    src,
+    projectPath,
+  }: {
+    src: string;
+    projectPath: string;
+  }): string {
+    return `/api/media?${new URLSearchParams({ project: projectPath, src })}`;
   },
 
   /** Fetches a video or audio source's encoded bytes for decoding its audio. */
   async loadAudioData({
     src,
-    dir,
+    projectPath,
   }: {
     src: string;
-    dir: string;
+    projectPath: string;
   }): Promise<ArrayBuffer> {
-    const res = await fetch(mediaClient.getMediaUrl({ src, dir }));
+    const res = await fetch(mediaClient.getMediaUrl({ src, projectPath }));
     if (!res.ok) {
       throw new Error(`Failed to load audio data: ${await res.text()}`);
     }

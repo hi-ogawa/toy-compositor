@@ -214,7 +214,7 @@ function FolderSection({
         ) : (
           <ul className="space-y-2">
             {folder.files.map((entry) => (
-              <ProjectRow key={entry.file} dir={folder.dir} entry={entry} />
+              <ProjectRow key={entry.path} entry={entry} />
             ))}
           </ul>
         ))}
@@ -225,17 +225,16 @@ function FolderSection({
 /** Create `<folder>/<preset>.json` from a canvas preset, and open it in the editor. */
 function NewProjectFileMenu({ dir }: { dir: string }) {
   const createProjectMutation = useMutation({
-    mutationFn: async (preset: CanvasPreset) =>
-      apiClient.createProject({
-        dir,
-        file: `${preset.name}.json`,
+    mutationFn: async (preset: CanvasPreset) => {
+      const path = `${dir}/${preset.name}.json`;
+      await apiClient.createProject({
+        path,
         project: createEmptyProject(preset),
-      }),
-    onSuccess: (_, preset) => {
-      window.location.href = getProjectPageUrl({
-        dir,
-        file: `${preset.name}.json`,
       });
+      return path;
+    },
+    onSuccess: (path) => {
+      window.location.href = getProjectPageUrl({ path });
     },
   });
   return (
@@ -266,15 +265,15 @@ function NewProjectFileMenu({ dir }: { dir: string }) {
   );
 }
 
-function ProjectRow({ dir, entry }: { dir: string; entry: ProjectEntry }) {
+function ProjectRow({ entry }: { entry: ProjectEntry }) {
   return (
     <li>
       <a
-        href={getProjectPageUrl({ dir, file: entry.file })}
+        href={getProjectPageUrl({ path: entry.path })}
         className="flex h-16 w-full flex-col justify-center rounded-lg border border-neutral-700/60 bg-neutral-800/70 px-4 transition-colors hover:bg-neutral-800"
       >
         <div className="truncate font-mono text-sm font-medium">
-          {entry.file}
+          {entry.path.split(/[\\/]/).at(-1)}
         </div>
         <div className="mt-1 text-xs text-neutral-500">
           {entry.width}x{entry.height} {entry.output}

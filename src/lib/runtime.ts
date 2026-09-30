@@ -36,9 +36,7 @@ export interface DecodedAudio {
 }
 
 export interface EditorState {
-  /** Absolute path of the project folder, which layer sources resolve against. */
-  dir: string;
-  /** Project file name in the folder, which is also where saves go. */
+  /** Absolute project file path, which is also where saves go. */
   file: string;
   project: EditorProject;
   /** Follows the transport, on the frame grid whenever playback is stopped. */
@@ -57,7 +55,6 @@ const EMPTY_PROJECT: EditorProject = {
 
 export class EditorRuntime {
   readonly store = createStore<EditorState>(() => ({
-    dir: "",
     file: "",
     project: EMPTY_PROJECT,
     playhead: 0,
@@ -117,10 +114,10 @@ export class EditorRuntime {
 
   /** Probes and records the file's media info first if the project has none. */
   async addMediaLayer({ src, type }: MediaFile): Promise<void> {
-    const { dir } = this.store.get();
+    const { file } = this.store.get();
     let mediaInfo = this.store.get().project.media[src];
     if (!mediaInfo) {
-      mediaInfo = await apiClient.loadMediaInfo({ src, dir });
+      mediaInfo = await apiClient.loadMediaInfo({ src, projectPath: file });
       const { project } = this.store.get();
       this.store.update({
         project: { ...project, media: { ...project.media, [src]: mediaInfo } },
@@ -296,7 +293,7 @@ export class EditorRuntime {
     const decodeAudio = async (): Promise<DecodedAudio> => {
       const data = await apiClient.loadAudioData({
         src,
-        dir: this.store.get().dir,
+        projectPath: this.store.get().file,
       });
       const buffer = await this.context.decodeAudioData(data);
       return { buffer, view: createAudioView(buffer) };
@@ -314,9 +311,8 @@ export class EditorRuntime {
     return serializeEditorProject(this.store.get().project);
   }
 
-  deserializeProject({ dir, file, project }: ProjectFile): void {
+  deserializeProject({ file, project }: ProjectFile): void {
     this.store.update({
-      dir,
       file,
       project: deserializeEditorProject(project),
       selection: undefined,

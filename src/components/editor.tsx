@@ -2,7 +2,6 @@ import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { isShortcutTextInputTarget, matchKeyboardEvent } from "../lib/keyboard";
 import { EditorRuntime, type EditorLayer } from "../lib/runtime";
-import type { ProjectLocation } from "../lib/server/api";
 import { CollapsibleSplit } from "./collapsible-split";
 import { CompositionPreview } from "./composition-preview";
 import { EditorHeader } from "./editor-header";
@@ -17,13 +16,13 @@ import { useLayerInteraction } from "./use-layer-interaction";
 import { useTimeline } from "./use-timeline";
 import { useWindowEvent } from "./use-window-event";
 
-export function Editor({ location }: { location: ProjectLocation }) {
+export function Editor({ projectPath }: { projectPath: string }) {
   const [runtime] = useState(() => new EditorRuntime());
   const state = useSyncExternalStore(
     runtime.store.subscribe,
     runtime.store.get,
   );
-  const project = useEditorProject({ location, runtime });
+  const project = useEditorProject({ projectPath, runtime });
   const timeline = useTimeline(runtime);
   const layerInteraction = useLayerInteraction({ runtime, state });
   const [sideOpen, setSideOpen] = useState(true);
@@ -95,7 +94,7 @@ export function Editor({ location }: { location: ProjectLocation }) {
               <LibrarySourceTabs
                 layer={selectedLayer}
                 runtime={runtime}
-                dir={location.dir}
+                projectPath={projectPath}
                 resolveMediaUrl={project.resolveMediaUrl}
                 onCollapse={() => setSideOpen(false)}
               />
@@ -151,13 +150,13 @@ export function Editor({ location }: { location: ProjectLocation }) {
 function LibrarySourceTabs({
   layer,
   runtime,
-  dir,
+  projectPath,
   resolveMediaUrl,
   onCollapse,
 }: {
   layer?: EditorLayer;
   runtime: EditorRuntime;
-  dir: string;
+  projectPath: string;
   resolveMediaUrl: (src: string) => string;
   onCollapse: () => void;
 }) {
@@ -217,7 +216,7 @@ function LibrarySourceTabs({
         className="flex min-h-0 flex-1 flex-col"
       >
         {tab === "library" ? (
-          <LibraryPanel runtime={runtime} dir={dir} />
+          <LibraryPanel runtime={runtime} projectPath={projectPath} />
         ) : (
           <MediaPreview layer={layer} resolveMediaUrl={resolveMediaUrl} />
         )}

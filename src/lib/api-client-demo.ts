@@ -12,8 +12,8 @@ export const apiClient: typeof serverApiClient = {
       folders: [
         {
           dir: DEMO_DIR,
-          files: [...projects].map(([file, project]) => ({
-            file,
+          files: [...projects].map(([path, project]) => ({
+            path,
             width: project.canvas.width,
             height: project.canvas.height,
             output: project.output.type,
@@ -35,25 +35,25 @@ export const apiClient: typeof serverApiClient = {
     throw new Error("The demo cannot remove project folders.");
   },
 
-  async loadProject({ dir, file }) {
-    const project = projects.get(file);
+  async loadProject({ path }) {
+    const project = projects.get(path);
     if (!project) {
-      throw new Error(`${file} is not in the demo`);
+      throw new Error(`${path} is not in the demo`);
     }
-    return { dir, file, project: structuredClone(project) };
+    return { file: path, project: structuredClone(project) };
   },
 
   /** Saves last for the browser tab's session. */
-  async saveProject({ file, project }) {
-    writeProject({ file, project });
+  async saveProject({ path, project }) {
+    writeProject({ path, project });
   },
 
   /** Creates last for the browser tab's session. */
-  async createProject({ file, project }) {
-    if (projects.has(file)) {
-      throw new Error(`${file} already exists`);
+  async createProject({ path, project }) {
+    if (projects.has(path)) {
+      throw new Error(`${path} already exists`);
     }
-    writeProject({ file, project });
+    writeProject({ path, project });
   },
 
   /** Every demo project sits beside the sample's `media/`, so `src` is the key. */
@@ -80,8 +80,8 @@ export const apiClient: typeof serverApiClient = {
     return mediaInfo;
   },
 
-  async loadAudioData({ src, dir }) {
-    const res = await fetch(apiClient.getMediaUrl({ src, dir }));
+  async loadAudioData({ src, projectPath }) {
+    const res = await fetch(apiClient.getMediaUrl({ src, projectPath }));
     if (!res.ok) {
       throw new Error(`Failed to load audio data: ${await res.text()}`);
     }
@@ -106,17 +106,19 @@ const sampleProjects = Object.entries(
     eager: true,
     import: "default",
   }),
-).map(([key, project]) => [key.replace("./", ""), project] as const);
+).map(
+  ([key, project]) => [key.replace("./", `${DEMO_DIR}/`), project] as const,
+);
 
 const projects = new Map([
   ...sampleProjects,
   ...Object.entries(writtenProjects),
 ]);
 
-function writeProject({ file, project }: { file: string; project: Project }) {
+function writeProject({ path, project }: { path: string; project: Project }) {
   const copy = structuredClone(project);
-  projects.set(file, copy);
-  writtenProjects[file] = copy;
+  projects.set(path, copy);
+  writtenProjects[path] = copy;
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(writtenProjects));
 }
 

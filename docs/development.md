@@ -13,7 +13,7 @@ pnpm build                           # dist/client/ and dist/server/cli.js
 pnpm dev-demo                        # editor without a server, see below
 ```
 
-The dev server keeps its project folder registry in `.local/config/` and adds each folder in `.local/projects/` at startup. `TOY_COMPOSITOR_CONFIG_DIR` points the dev server or the CLI at another registry, as e2e tests do with `.local/e2e-config/`. Open a project file directly with `?project=<absolute-folder-path>&file=<name>.json`.
+The dev server keeps its project folder registry in `.local/config/` and adds each folder in `.local/projects/` at startup. `TOY_COMPOSITOR_CONFIG_DIR` points the dev server or the CLI at another registry, as e2e tests do with `.local/e2e-config/`. Open a project file directly with `?project=<absolute-path>.json`.
 
 ## Static demo
 

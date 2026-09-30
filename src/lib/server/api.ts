@@ -13,9 +13,8 @@ import type { ProjectRegistry } from "./registry.ts";
 /**
  * Editor API over the registered project folders. A project folder holds its
  * project files at the top level and media next to them, and only files inside
- * a registered folder are served or saved. Folders are named by absolute path
- * and files by paths relative to the folder, so a file path is never encoded
- * as a URL path.
+ * a registered folder are served or saved. Project files are named by
+ * absolute path, so a file path is never encoded as a URL path.
  *
  * - `POST /api/rpc/<method>` calls one of `createEditorHandlers`' methods with
  *   the JSON body as its params, and answers with its JSON result.
@@ -52,14 +51,12 @@ export function createEditorHandler({
 
 export type EditorHandlers = ReturnType<typeof createEditorHandlers>;
 
-/** A project file, named by its folder's absolute path and its name in that folder. */
-export type ProjectLocation = { dir: string; file: string };
+/** A project file and its content, named by the file's absolute path. */
+export type ProjectFile = { file: string; project: Project };
 
-export type ProjectFile = ProjectLocation & { project: Project };
-
-/** A project file in a project folder, as `<name>.json`. */
+/** A project file at the top level of a project folder, by absolute path. */
 export type ProjectEntry = {
-  file: string;
+  path: string;
   width: number;
   height: number;
   output: Output["type"];
@@ -149,39 +146,47 @@ export function createEditorHandlers({
       await registry.removeFolder(dir);
     },
 
-    async loadProject({ dir, file }: ProjectLocation): Promise<ProjectFile> {
-      const projectFile = await resolveProjectFile({ registry, dir, file });
-      if (!fs.existsSync(projectFile)) {
+    async loadProject({
+      path: projectPath,
+    }: {
+      path: string;
+    }): Promise<ProjectFile> {
+      const file = await resolveProjectFile({ registry, projectPath });
+      if (!fs.existsSync(file)) {
         throw new HttpError({ status: 404, message: "Project not found" });
       }
-      return { dir, file, project: await readJson<Project>(projectFile) };
+      return { file: projectPath, project: await readJson<Project>(file) };
     },
 
     async saveProject({
-      dir,
-      file,
+      path: projectPath,
       project,
-    }: ProjectLocation & { project: Project }): Promise<void> {
+    }: {
+      path: string;
+      project: Project;
+    }): Promise<void> {
       await writeJson(
-        await resolveProjectFile({ registry, dir, file }),
+        await resolveProjectFile({ registry, projectPath }),
         project,
       );
     },
 
     /** Creates a project file in its folder, never overwriting an existing one. */
     async createProject({
-      dir,
-      file,
+      path: projectPath,
       project,
-    }: ProjectLocation & { project: Project }): Promise<void> {
-      const projectFile = await resolveProjectFile({ registry, dir, file });
+    }: {
+      path: string;
+      project: Project;
+    }): Promise<void> {
+      const file = await resolveProjectFile({ registry, projectPath });
       try {
-        await writeJson(projectFile, project, { flag: "wx" });
+        await writeJson(file, project, { flag: "wx" });
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === "EEXIST") {
           throw new HttpError({
             status: 409,
-            message: `${path.basename(projectFile)} already exists`,
+            message: `${path.basename(file)} already exists`,
           });
         }
         throw error;
@@ -191,25 +196,27 @@ export function createEditorHandlers({
     /** Probe a layer source into its media info, the entry that the project's `media` keeps for it. */
     async loadMediaInfo({
       src,
-      dir,
+      projectPath,
     }: {
       src: string;
-      dir: string;
+      projectPath: string;
     }): Promise<MediaInfo> {
       return await probeMediaInfo(
-        await resolveMediaFile({ registry, dir, src }),
+        await resolveMediaFile({ registry, projectPath, src }),
       );
     },
 
     /** List the media files in the project's `media/` folder. */
-    async listMediaFiles({ dir }: { dir: string }): Promise<MediaFile[]> {
-      const mediaDir = await resolveMediaFolder({ registry, dir });
-      if (!fs.existsSync(mediaDir)) {
+    async listMediaFiles({
+      projectPath,
+    }: {
+      projectPath: string;
+    }): Promise<MediaFile[]> {
+      const dir = await resolveMediaFolder({ registry, projectPath });
+      if (!fs.existsSync(dir)) {
         return [];
       }
-      const entries = await fs.promises.readdir(mediaDir, {
-        withFileTypes: true,
-      });
+      const entries = await fs.promises.readdir(dir, { withFileTypes: true });
       const files: MediaFile[] = [];
       for (const entry of entries) {
         const type = getMediaType(entry.name);
@@ -221,14 +228,15 @@ export function createEditorHandlers({
     },
 
     /** Open the project's `media/` folder in the desktop's file manager, creating it first if needed. */
-    async openMediaFolder({ dir }: { dir: string }): Promise<void> {
-      const mediaDir = await resolveMediaFolder({ registry, dir });
-      await fs.promises.mkdir(mediaDir, { recursive: true });
+    async openMediaFolder({
+      projectPath,
+    }: {
+      projectPath: string;
+    }): Promise<void> {
+      const dir = await resolveMediaFolder({ registry, projectPath });
+      await fs.promises.mkdir(dir, { recursive: true });
       const opener = process.platform === "darwin" ? "open" : "xdg-open";
-      const child = spawn(opener, [mediaDir], {
-        detached: true,
-        stdio: "ignore",
-      });
+      const child = spawn(opener, [dir], { detached: true, stdio: "ignore" });
       // Rejects when the opener is missing.
       await once(child, "spawn");
       child.unref();
@@ -253,14 +261,14 @@ async function listProjectFolders(registry: ProjectRegistry) {
       const project = await readProject(path.join(dir, name));
       if (project) {
         files.push({
-          file: name,
+          path: path.join(dir, name),
           width: project.canvas.width,
           height: project.canvas.height,
           output: project.output.type,
         });
       }
     }
-    files.sort((a, b) => a.file.localeCompare(b.file));
+    files.sort((a, b) => a.path.localeCompare(b.path));
     folders.push({ dir, files });
   }
   return folders;
@@ -287,7 +295,7 @@ async function handleMedia({
 }) {
   const file = await resolveMediaFile({
     registry,
-    dir: getParam(url, "project"),
+    projectPath: getParam(url, "project"),
     src: getParam(url, "src"),
   });
   return await serveFile({ file, request });
@@ -296,15 +304,15 @@ async function handleMedia({
 /** Resolve `src` against the project folder, as the renderer does. */
 async function resolveMediaFile({
   registry,
-  dir,
+  projectPath,
   src,
 }: {
   registry: ProjectRegistry;
-  dir: string;
+  projectPath: string;
   src: string;
 }) {
   const file = resolveFile({
-    root: await registry.resolveFolder(dir),
+    root: await resolveProjectFolder({ registry, projectPath }),
     paths: [src],
   });
   if (!fs.existsSync(file)) {
@@ -315,37 +323,47 @@ async function resolveMediaFile({
 
 async function resolveMediaFolder({
   registry,
-  dir,
+  projectPath,
 }: {
   registry: ProjectRegistry;
-  dir: string;
+  projectPath: string;
 }) {
   return resolveFile({
-    root: await registry.resolveFolder(dir),
+    root: await resolveProjectFolder({ registry, projectPath }),
     paths: ["media"],
   });
 }
 
-/** Resolve `file` as a `.json` file at the top level of the `dir` project folder. */
+/** Resolve an absolute project file path, which must be a `.json` file in a registered folder. */
 async function resolveProjectFile({
   registry,
-  dir,
-  file,
+  projectPath,
 }: {
   registry: ProjectRegistry;
-  dir: string;
-  file: string;
+  projectPath: string;
 }) {
-  if (path.basename(file) !== file || path.extname(file) !== ".json") {
+  if (path.extname(projectPath) !== ".json") {
     throw new HttpError({
       status: 400,
-      message: "Project file must be <name>.json in the project folder",
+      message: "Project file must be a .json file",
     });
   }
   return resolveFile({
-    root: await registry.resolveFolder(dir),
-    paths: [file],
+    root: await resolveProjectFolder({ registry, projectPath }),
+    paths: [path.basename(projectPath)],
   });
+}
+
+// Project files sit at the top level of their folder, so the file's own
+// directory is the folder to check against the registry.
+async function resolveProjectFolder({
+  registry,
+  projectPath,
+}: {
+  registry: ProjectRegistry;
+  projectPath: string;
+}) {
+  return await registry.resolveFolder(path.dirname(projectPath));
 }
 
 /**

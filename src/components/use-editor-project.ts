@@ -3,27 +3,26 @@ import { useEffect, useRef, useState } from "react";
 import { apiClient } from "../lib/api-client";
 import { validateMedia } from "../lib/project";
 import type { EditorRuntime } from "../lib/runtime";
-import type { ProjectLocation } from "../lib/server/api";
 import { useWindowEvent } from "./use-window-event";
 
 export type SaveStatus = "saved" | "unsaved" | "saving" | "error";
 
 export function useEditorProject({
-  location,
+  projectPath,
   runtime,
 }: {
-  location: ProjectLocation;
+  projectPath: string;
   runtime: EditorRuntime;
 }) {
   const [dirty, setDirty] = useState(false);
   const revisionRef = useRef(0);
 
   const projectQuery = useQuery({
-    queryKey: ["editor-project", location.dir, location.file],
+    queryKey: ["editor-project", projectPath],
     retry: false,
     staleTime: Infinity,
     queryFn: async () => {
-      const projectFile = await apiClient.loadProject(location);
+      const projectFile = await apiClient.loadProject({ path: projectPath });
       validateMedia(projectFile.project);
       runtime.deserializeProject(projectFile);
       return true;
@@ -38,7 +37,7 @@ export function useEditorProject({
       }
       const revision = revisionRef.current;
       await apiClient.saveProject({
-        ...location,
+        path: projectPath,
         project: runtime.serializeProject(),
       });
       return revision;
@@ -77,6 +76,6 @@ export function useEditorProject({
     save: saveMutation.mutate,
     saveStatus,
     resolveMediaUrl: (src: string) =>
-      apiClient.getMediaUrl({ src, dir: location.dir }),
+      apiClient.getMediaUrl({ src, projectPath }),
   };
 }
