@@ -14,7 +14,7 @@ const port = process.env.E2E_PORT
 process.env.E2E_PORT = String(port);
 
 // Config directory for the server's project folder registry, so tests never
-// touch the user's own. Workers inherit it to register folders directly.
+// touch the user's own.
 process.env.TOY_COMPOSITOR_CONFIG_DIR = path.resolve(".local/e2e-config");
 
 const traceEnabled =
