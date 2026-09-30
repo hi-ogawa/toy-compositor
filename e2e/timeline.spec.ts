@@ -345,6 +345,10 @@ test("drag render markers on the timeline", async ({ page, editor }) => {
   await expectInspectorFields(page, { start: "0", end: "2" });
   await expect(page.getByTestId("timeline-time")).toContainText("0.000 s");
 
+  // Click render end without dragging, and confirm it still seeks there.
+  await clickTimelineButton(page, { name: "Render end" });
+  await expect(page.getByTestId("timeline-time")).toContainText("2.000 s");
+
   // Drag render start 3 s right, and confirm it stops one frame before the end.
   await dragBy(page, getMarker("Render start"), {
     deltaX: secondsToPixels(3),
