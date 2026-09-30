@@ -2,12 +2,9 @@ import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
 import { getLayerRange } from "../lib/layout";
 import type { Canvas, Layer, Project, TextLayer } from "../lib/project";
-import type {
-  EditorRuntime,
-  EditorSelection,
-  EditorProject,
-} from "../lib/runtime";
+import type { EditorRuntime, EditorProject } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
+import type { EditorSelection } from "./use-layer-interaction";
 
 export function CompositionPreview({
   project,

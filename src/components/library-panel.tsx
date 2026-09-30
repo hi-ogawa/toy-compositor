@@ -17,9 +17,11 @@ import { useWindowEvent } from "./use-window-event";
 export function LibraryPanel({
   runtime,
   projectPath,
+  onLayerAdd,
 }: {
   runtime: EditorRuntime;
   projectPath: string;
+  onLayerAdd: (id: string) => void;
 }) {
   const filesQuery = useQuery({
     queryKey: ["media-files", projectPath],
@@ -33,6 +35,7 @@ export function LibraryPanel({
   });
   const addMediaMutation = useMutation({
     mutationFn: (file: MediaFile) => runtime.addMediaLayer(file),
+    onSuccess: onLayerAdd,
   });
   const files = filesQuery.data ?? [];
   return (
@@ -74,12 +77,12 @@ export function LibraryPanel({
         <LibraryItem
           type="text"
           label="Text"
-          onAdd={() => runtime.addTextLayer()}
+          onAdd={() => onLayerAdd(runtime.addTextLayer())}
         />
         <LibraryItem
           type="color"
           label="Color"
-          onAdd={() => runtime.addColorLayer()}
+          onAdd={() => onLayerAdd(runtime.addColorLayer())}
         />
       </ul>
     </div>
