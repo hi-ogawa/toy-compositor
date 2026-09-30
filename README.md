@@ -1,13 +1,14 @@
 # toy-compositor
 
-A small video compositor that composes finished media from a JSON project, with a browser editor for adjustments and ffmpeg for rendering.
+A small video editor that keeps each project as a plain JSON file and renders it with ffmpeg. The editor runs in the browser over project folders on your machine, and because a project is readable JSON, a script or an agent can write or change it as easily as the editor can.
+
+The [demo](https://toy-compositor.hiro18181.workers.dev) opens the editor on the bundled sample without a server, keeping edits in the browser tab.
 
 ## Features
 
-- Describe each deliverable as a plain JSON project of video, audio, image, text, and color layers ([project format](docs/project-format.md)).
-- Open project folders from a start page, preview each layer's source media next to the composed project ([editor](docs/editor.md)), and adjust layout in an inspector.
+- Compose video, audio, image, text, and color layers on a fixed canvas, with each deliverable, such as a video and its thumbnail, as its own project file ([project format](docs/project-format.md)).
+- Add layers from a folder's media, move and trim them on a timeline, place them in an inspector, and play the composition with audio ([editor](docs/editor.md)).
 - Render videos and stills through one ffmpeg filter graph ([compiler](docs/compiler.md)).
-- Run it as a `toy-compositor` CLI over the project folders you open.
 
 ## Usage
 
@@ -22,7 +23,7 @@ toy-compositor render <project.json> <output>  # .mp4 or .png
 toy-compositor update-media <project.json...>  # record the media info layers use
 ```
 
-A project folder holds its project files at the top level and its media under `media/`. The start page lists the folders you add, kept in `projects.json` under the user config directory such as `~/.config/toy-compositor/`, and the editor only serves files inside them.
+A project folder holds its project files at the top level and its media under `media/`. The editor only serves files inside the folders you add, so keep a project's media inside its folder.
 
 Rendering needs `ffmpeg`, `ffprobe`, and ImageMagick (`magick`) on PATH.
 
