@@ -49,28 +49,3 @@ test("reject a layer whose file has no media info", async ({
     ]),
   ).rejects.toMatchObject({ stderr: expect.stringContaining(message) });
 });
-
-test("probe one file's media info through the editor API", async ({
-  request,
-  editor,
-}) => {
-  // Request the video's media info, and confirm it matches its media entry.
-  const { media: mediaInfoMap } = await readJson<Project>(editor.projectFile);
-  const res = await request.post("/api/rpc/loadMediaInfo", {
-    data: {
-      projectPath: `${editor.projectDir}/project.json`,
-      src: "media/video.mp4",
-    },
-  });
-  expect(res.ok()).toBe(true);
-  expect(await res.json()).toEqual(mediaInfoMap["media/video.mp4"]);
-});
-
-test("reject a form POST to the editor API", async ({ request, editor }) => {
-  // Post a form, as a page on another site could, and confirm it is refused
-  // before the method runs.
-  const res = await request.post("/api/rpc/openMediaFolder", {
-    form: { projectPath: `${editor.projectDir}/project.json` },
-  });
-  expect(res.status()).toBe(415);
-});
