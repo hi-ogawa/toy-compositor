@@ -36,10 +36,10 @@ export function getTestProjectDir(name: string) {
 /** Register a project folder with the server, as a typed path does. */
 export async function addProjectFolder(
   request: APIRequestContext,
-  dir: string,
+  directory: string,
 ) {
   const res = await request.post("/api/rpc/addProjectFolder", {
-    data: { path: dir },
+    data: { path: directory },
   });
   expect(res.ok()).toBe(true);
 }

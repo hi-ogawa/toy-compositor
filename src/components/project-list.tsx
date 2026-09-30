@@ -69,7 +69,7 @@ export function ProjectList() {
                 <ul className="space-y-4" data-testid="project-list">
                   {query.data.folders.map((folder) => (
                     <FolderSection
-                      key={folder.dir}
+                      key={folder.directory}
                       folder={folder}
                       removable={!!add}
                     />
@@ -172,11 +172,12 @@ function FolderSection({
 }) {
   const queryClient = useQueryClient();
   const removeMutation = useMutation({
-    mutationFn: () => apiClient.removeProjectFolder({ dir: folder.dir }),
+    mutationFn: () =>
+      apiClient.removeProjectFolder({ directory: folder.directory }),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: PROJECT_LIST_QUERY_KEY }),
   });
-  const name = folder.dir.split(/[\\/]/).at(-1)!;
+  const name = folder.directory.split(/[\\/]/).at(-1)!;
   return (
     <li>
       <div className="flex items-center gap-3 px-1 pb-2">
@@ -186,15 +187,15 @@ function FolderSection({
           </h3>
           <p
             className="truncate font-mono text-xs text-neutral-500"
-            title={folder.dir}
+            title={folder.directory}
           >
-            {folder.dir}
+            {folder.directory}
           </p>
         </div>
         {folder.missing ? (
           <span className="text-xs text-orange-300">Missing</span>
         ) : (
-          <NewProjectFileMenu dir={folder.dir} />
+          <NewProjectFileMenu directory={folder.directory} />
         )}
         {removable && (
           <Button
@@ -223,10 +224,10 @@ function FolderSection({
 }
 
 /** Create `<folder>/<preset>.json` from a canvas preset, and open it in the editor. */
-function NewProjectFileMenu({ dir }: { dir: string }) {
+function NewProjectFileMenu({ directory }: { directory: string }) {
   const createProjectMutation = useMutation({
     mutationFn: async (preset: CanvasPreset) => {
-      const path = `${dir}/${preset.name}.json`;
+      const path = `${directory}/${preset.name}.json`;
       await apiClient.createProject({
         path,
         project: createEmptyProject(preset),

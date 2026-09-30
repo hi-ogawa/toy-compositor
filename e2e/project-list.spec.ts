@@ -147,9 +147,9 @@ test("add a folder by its project file, and remove folders from the list", async
 });
 
 /** Locate a registered folder's section on the start page by its path. */
-function getFolderSection(page: Page, dir: string) {
+function getFolderSection(page: Page, directory: string) {
   return page
     .getByTestId("project-list")
     .getByRole("listitem")
-    .filter({ has: page.getByText(dir, { exact: true }) });
+    .filter({ has: page.getByText(directory, { exact: true }) });
 }

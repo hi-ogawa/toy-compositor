@@ -11,7 +11,7 @@ export const apiClient: typeof serverApiClient = {
     return {
       folders: [
         {
-          dir: DEMO_DIR,
+          directory: DEMO_DIRECTORY,
           files: [...projects].map(([path, project]) => ({
             path,
             width: project.canvas.width,
@@ -90,7 +90,7 @@ export const apiClient: typeof serverApiClient = {
 };
 
 // The one project folder, which holds the bundled sample's project files.
-const DEMO_DIR = "synthetic";
+const DEMO_DIRECTORY = "synthetic";
 
 // Saved and created projects are kept in session storage over the bundled
 // sample, because opening a project or going home reloads the page.
@@ -107,7 +107,8 @@ const sampleProjects = Object.entries(
     import: "default",
   }),
 ).map(
-  ([key, project]) => [key.replace("./", `${DEMO_DIR}/`), project] as const,
+  ([key, project]) =>
+    [key.replace("./", `${DEMO_DIRECTORY}/`), project] as const,
 );
 
 const projects = new Map([

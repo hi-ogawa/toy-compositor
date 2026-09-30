@@ -9,8 +9,8 @@ import { serveEditor } from "./lib/server/serve.ts";
 
 const HELP = `\
 Usage:
-  toy-compositor serve [dir] [--port <port>]
-      Open the editor for the project folders, adding dir to them first
+  toy-compositor serve [directory] [--port <port>]
+      Open the editor for the project folders, adding directory to them first
   toy-compositor add <path>
       Add a project folder, given as the folder or a project file inside it
   toy-compositor render <project.json> <output> [--dry-run]

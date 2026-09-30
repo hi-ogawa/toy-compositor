@@ -36,11 +36,11 @@ export function createProjectRegistry({ configDir }: { configDir: string }) {
       const stat = fs.existsSync(resolved)
         ? await fs.promises.stat(resolved)
         : undefined;
-      let dir: string;
+      let directory: string;
       if (stat?.isDirectory()) {
-        dir = resolved;
+        directory = resolved;
       } else if (stat?.isFile() && path.extname(resolved) === ".json") {
-        dir = path.dirname(resolved);
+        directory = path.dirname(resolved);
       } else {
         throw new HttpError({
           status: 400,
@@ -48,27 +48,27 @@ export function createProjectRegistry({ configDir }: { configDir: string }) {
         });
       }
       const folders = await readFolders();
-      if (!folders.includes(dir)) {
-        await writeFolders([...folders, dir]);
+      if (!folders.includes(directory)) {
+        await writeFolders([...folders, directory]);
       }
-      return dir;
+      return directory;
     },
 
     /** Forget a folder without touching its files. */
-    async removeFolder(dir: string) {
+    async removeFolder(directory: string) {
       const folders = await readFolders();
-      await writeFolders(folders.filter((folder) => folder !== dir));
+      await writeFolders(folders.filter((folder) => folder !== directory));
     },
 
-    /** Return `dir` when it is registered, or throw a 403 error. */
-    async resolveFolder(dir: string): Promise<string> {
-      if (!(await readFolders()).includes(dir)) {
+    /** Return `directory` when it is registered, or throw a 403 error. */
+    async resolveFolder(directory: string): Promise<string> {
+      if (!(await readFolders()).includes(directory)) {
         throw new HttpError({
           status: 403,
-          message: `${dir} is not a registered project folder`,
+          message: `${directory} is not a registered project folder`,
         });
       }
-      return dir;
+      return directory;
     },
   };
 }

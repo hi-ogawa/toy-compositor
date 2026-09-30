@@ -64,7 +64,7 @@ export type ProjectEntry = {
 
 /** A registered project folder with its project files, or `missing` when it no longer exists. */
 export type ProjectFolder = {
-  dir: string;
+  directory: string;
   missing?: boolean;
   files: ProjectEntry[];
 };
@@ -142,8 +142,12 @@ export function createEditorHandlers({
     },
 
     /** Forgets a project folder without deleting its files. */
-    async removeProjectFolder({ dir }: { dir: string }): Promise<void> {
-      await registry.removeFolder(dir);
+    async removeProjectFolder({
+      directory,
+    }: {
+      directory: string;
+    }): Promise<void> {
+      await registry.removeFolder(directory);
     },
 
     async loadProject({
@@ -247,21 +251,21 @@ export function createEditorHandlers({
 /** List each registered folder with its top-level `*.json` files that parse as projects. */
 async function listProjectFolders(registry: ProjectRegistry) {
   const folders: ProjectFolder[] = [];
-  for (const dir of await registry.readFolders()) {
-    if (!fs.existsSync(dir)) {
-      folders.push({ dir, missing: true, files: [] });
+  for (const directory of await registry.readFolders()) {
+    if (!fs.existsSync(directory)) {
+      folders.push({ directory, missing: true, files: [] });
       continue;
     }
-    const names = await fs.promises.readdir(dir);
+    const names = await fs.promises.readdir(directory);
     const files: ProjectEntry[] = [];
     for (const name of names) {
       if (!name.endsWith(".json") || name.startsWith(".")) {
         continue;
       }
-      const project = await readProject(path.join(dir, name));
+      const project = await readProject(path.join(directory, name));
       if (project) {
         files.push({
-          path: path.join(dir, name),
+          path: path.join(directory, name),
           width: project.canvas.width,
           height: project.canvas.height,
           output: project.output.type,
@@ -269,7 +273,7 @@ async function listProjectFolders(registry: ProjectRegistry) {
       }
     }
     files.sort((a, b) => a.path.localeCompare(b.path));
-    folders.push({ dir, files });
+    folders.push({ directory, files });
   }
   return folders;
 }
