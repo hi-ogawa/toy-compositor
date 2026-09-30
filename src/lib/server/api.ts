@@ -114,11 +114,11 @@ export function createEditorHandler({
 async function listProjectFolders(registry: ProjectRegistry) {
   const folders: ProjectFolder[] = [];
   for (const dir of await registry.readFolders()) {
-    const names = await fs.promises.readdir(dir).catch(() => undefined);
-    if (!names) {
+    if (!fs.existsSync(dir)) {
       folders.push({ dir, missing: true, files: [] });
       continue;
     }
+    const names = await fs.promises.readdir(dir);
     const files: ProjectEntry[] = [];
     for (const name of names) {
       if (!name.endsWith(".json") || name.startsWith(".")) {

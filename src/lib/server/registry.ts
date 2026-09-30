@@ -33,7 +33,9 @@ export function createProjectRegistry({ configDir }: { configDir: string }) {
      */
     async addFolder(target: string): Promise<string> {
       const resolved = path.resolve(target);
-      const stat = await fs.promises.stat(resolved).catch(() => undefined);
+      const stat = fs.existsSync(resolved)
+        ? await fs.promises.stat(resolved)
+        : undefined;
       let dir: string;
       if (stat?.isDirectory()) {
         dir = resolved;
