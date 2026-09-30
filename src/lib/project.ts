@@ -12,10 +12,7 @@ export type Project = {
 
 export type Locator = { label: string; time: number };
 
-/**
- * What ffprobe reports about a media file, and nothing else, so checking a file
- * later means probing it again and comparing.
- */
+/** What ffprobe reports about a media file, which depends only on its contents. */
 export type MediaInfo = {
   /**
    * The file's source time range, in the presentation timestamps that `in` and

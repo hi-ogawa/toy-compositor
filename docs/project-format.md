@@ -135,7 +135,7 @@ Locators are labeled timeline times, like guides in Kdenlive. They do not affect
 
 ## Media
 
-`media` holds what ffprobe reports about every media file the layers use, keyed by the layers' `src`. The project then describes its media completely, so the editor, the renderer, and scripts read the same facts instead of each probing files on its own. Every `src` a layer uses has an entry.
+`media` holds what ffprobe reports about every media file the layers use, keyed by the layers' `src`. The project then describes its media completely, so the editor, the renderer, and scripts all read the same facts. Every `src` a layer uses has an entry.
 
 ```jsonc
 "media": {
@@ -159,7 +159,7 @@ Locators are labeled timeline times, like guides in Kdenlive. They do not affect
 - `video` is the video stream's size, its own start time, and its frame rate, which the compiler's frame timing counts from. Only files with a video stream have it, including images.
 - `audio` says whether the file has an audio stream, which decides whether a video layer contributes to the mix.
 
-An entry is exactly what probing the file yields, with nothing about when or how it was probed. A file can be checked later by probing it again and comparing, and a copied file still matches. Facts describe a file, not a layer, so layers that share a file share its entry. Each project file carries its own `media`, so variants such as the thumbnail repeat the entries they share and stay self-contained.
+An entry depends only on the file's contents, so a copied file has the same entry. Facts describe a file, not a layer, so layers that share a file share its entry. Each project file carries its own `media`, so variants such as the thumbnail repeat the entries they share and stay self-contained.
 
 `toy-compositor update-media <project.json...>` fills `media` from the files the layers use, replacing what was there, for example after hand-editing layers or replacing a file.
 
