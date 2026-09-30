@@ -1,9 +1,11 @@
-/** Get the start page URL that lists the projects. */
+import type { ProjectLocation } from "./api-client.ts";
+
+/** Get the start page URL that lists the project folders. */
 export function getHomePageUrl(): string {
   return "./";
 }
 
-/** Get the editor page URL that opens a project. */
-export function getProjectPageUrl({ path }: { path: string }): string {
-  return `?${new URLSearchParams({ project: path })}`;
+/** Get the editor page URL that opens a project file. */
+export function getProjectPageUrl({ dir, file }: ProjectLocation): string {
+  return `?${new URLSearchParams({ project: dir, file })}`;
 }

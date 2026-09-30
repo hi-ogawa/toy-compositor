@@ -4,12 +4,15 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 import { updateProjectMedia } from "./lib/media-info.ts";
 import { renderProject } from "./lib/render/render.ts";
-import { DEFAULT_ROOT, serveEditor } from "./lib/server/serve.ts";
+import { createProjectRegistry, getConfigDir } from "./lib/server/registry.ts";
+import { serveEditor } from "./lib/server/serve.ts";
 
 const HELP = `\
 Usage:
-  toy-compositor serve [root] [--port <port>]
-      Open the editor for projects under root (default: ${DEFAULT_ROOT})
+  toy-compositor serve [dir] [--port <port>]
+      Open the editor for the project folders, adding dir to them first
+  toy-compositor add <path>
+      Add a project folder, given as the folder or a project file inside it
   toy-compositor render <project.json> <output> [--dry-run]
       Render a project to a video or still with ffmpeg
   toy-compositor update-media <project.json...>
@@ -34,16 +37,28 @@ async function main() {
           `Editor client not found at ${clientDir}. Run pnpm build first.`,
         );
       }
-      const root = path.resolve(args[0] ?? DEFAULT_ROOT);
+      const registry = createProjectRegistry({ configDir: getConfigDir() });
+      if (args[0]) {
+        console.log(`Added ${await registry.addFolder(args[0])}`);
+      }
       const server = await serveEditor({
-        root,
+        registry,
         port: Number(values.port),
         clientDir,
       });
-      console.log(`Serving projects under ${root}`);
       const url = new URL(server.url!);
       url.hostname = "localhost";
       console.log(`Editor: ${url.href}`);
+      break;
+    }
+    case "add": {
+      if (!args[0]) {
+        console.error(HELP);
+        process.exitCode = 1;
+        return;
+      }
+      const registry = createProjectRegistry({ configDir: getConfigDir() });
+      console.log(`Added ${await registry.addFolder(args[0])}`);
       break;
     }
     case "render": {

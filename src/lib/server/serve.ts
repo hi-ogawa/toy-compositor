@@ -1,31 +1,22 @@
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import { serve } from "srvx";
 import { staticMiddleware } from "srvx/static";
 import { createEditorHandler } from "./api.ts";
-
-export const DEFAULT_ROOT = path.join(
-  os.homedir(),
-  "Documents",
-  "toy-compositor",
-);
+import type { ProjectRegistry } from "./registry.ts";
 
 /**
- * Serve the prebuilt editor client and the editor API over `root` on
- * localhost, with the same `/api/` handler that the dev server mounts.
+ * Serve the prebuilt editor client and the editor API over the registered
+ * project folders on localhost, with the same `/api/` handler that the dev server mounts.
  */
 export async function serveEditor({
-  root,
+  registry,
   port,
   clientDir,
 }: {
-  root: string;
+  registry: ProjectRegistry;
   port: number;
   clientDir: string;
 }) {
-  fs.mkdirSync(root, { recursive: true });
-  const handleApi = createEditorHandler({ root });
+  const handleApi = createEditorHandler({ registry });
   const serveClient = staticMiddleware({ dir: clientDir });
   const server = serve({
     hostname: "localhost",

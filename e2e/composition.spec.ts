@@ -7,6 +7,7 @@ import {
   expectInspectorFields,
   clickTimelineButton,
   getInspectorField,
+  getProjectPageUrl,
   seekTimelineByPixels,
   test,
 } from "./helper";
@@ -144,7 +145,7 @@ test("edit the canvas in composition settings and save it", async ({
 test("compose a still project at its output time", async ({ page, editor }) => {
   // Open the still-output sample and seek its video to the requested thumbnail time.
   await page.goto(
-    `/?${new URLSearchParams({ project: `${editor.projectDir}/thumbnail.json` })}`,
+    getProjectPageUrl({ dir: editor.projectDir, file: "thumbnail.json" }),
   );
   const video = page.getByTestId("composition-canvas").locator("video");
   await expect

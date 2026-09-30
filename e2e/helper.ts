@@ -1,6 +1,7 @@
 import { cp, rm } from "node:fs/promises";
 import path from "node:path";
 import {
+  type APIRequestContext,
   expect,
   type Locator,
   type Page,
@@ -10,22 +11,48 @@ import {
 export const test = base.extend<{
   editor: { projectDir: string; url: string; projectFile: string };
 }>({
-  editor: async ({}, use, testInfo) => {
-    // Copy the synthetic sample into its own project directory under the
-    // server's projects root, so each test saves edits independently. Clear
-    // it first, so files a previous run added do not carry over.
-    const projectDir = testInfo.testId;
-    const projectDirPath = path.resolve(".local/e2e-projects", projectDir);
-    await rm(projectDirPath, { recursive: true, force: true });
-    await cp("samples/synthetic", projectDirPath, { recursive: true });
-    const url = `/?${new URLSearchParams({ project: `${projectDir}/project.json` })}`;
+  editor: async ({ request }, use, testInfo) => {
+    // Copy the synthetic sample into its own project folder and register it,
+    // so each test saves edits independently. Clear it first, so files a
+    // previous run added do not carry over.
+    const projectDir = getTestProjectDir(testInfo.testId);
+    await rm(projectDir, { recursive: true, force: true });
+    await cp("samples/synthetic", projectDir, { recursive: true });
+    await addProjectFolder(request, projectDir);
     await use({
       projectDir,
-      url,
-      projectFile: path.join(projectDirPath, "project.json"),
+      url: getProjectPageUrl({ dir: projectDir, file: "project.json" }),
+      projectFile: path.join(projectDir, "project.json"),
     });
   },
 });
+
+/** The absolute path of a test's own project folder. */
+export function getTestProjectDir(name: string) {
+  return path.resolve(".local/e2e-projects", name);
+}
+
+/** Register a project folder with the server, as a typed path does. */
+export async function addProjectFolder(
+  request: APIRequestContext,
+  dir: string,
+) {
+  const res = await request.post("/api/project-folders", {
+    data: { path: dir },
+  });
+  expect(res.ok()).toBe(true);
+}
+
+/** The editor page URL for a project file, as the app links to it. */
+export function getProjectPageUrl({
+  dir,
+  file,
+}: {
+  dir: string;
+  file: string;
+}) {
+  return `/?${new URLSearchParams({ project: dir, file })}`;
+}
 
 /** Wait until an image element has loaded its source. */
 export async function expectImageLoaded(image: Locator) {

@@ -7,6 +7,7 @@ import { readJson } from "../src/utils/fs.ts";
 import {
   expectInspectorFields,
   getInspectorField,
+  getProjectPageUrl,
   seekTimelineByPixels,
   clickTimelineButton,
   test,
@@ -118,7 +119,7 @@ test("set a new project's output from its first media layer", async ({
 }) => {
   // Write an empty project beside the synthetic media, as a new project
   // starts, and open it.
-  const projectDir = path.dirname(editor.projectFile);
+  const { projectDir } = editor;
   await writeFile(
     path.join(projectDir, "new.json"),
     JSON.stringify({
@@ -129,7 +130,7 @@ test("set a new project's output from its first media layer", async ({
     }),
   );
   await page.goto(
-    `/?${new URLSearchParams({ project: `${editor.projectDir}/new.json` })}`,
+    getProjectPageUrl({ dir: editor.projectDir, file: "new.json" }),
   );
 
   // Add the audio, and confirm the output takes its 3 s range.

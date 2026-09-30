@@ -5,18 +5,21 @@ A small video compositor that composes finished media from a JSON project, with 
 ## Features
 
 - Describe each deliverable as a plain JSON project of video, audio, image, text, and color layers ([project format](docs/project-format.md)).
-- Browse projects on a start page, preview each layer's source media next to the composed project ([editor](docs/editor.md)), and adjust layout in an inspector.
+- Open project folders from a start page, preview each layer's source media next to the composed project ([editor](docs/editor.md)), and adjust layout in an inspector.
 - Render videos and stills through one ffmpeg filter graph ([compiler](docs/compiler.md)).
-- Run it as a `toy-compositor` CLI against a folder of projects.
+- Run it as a `toy-compositor` CLI over the project folders you open.
 
 ## Usage
 
 ```sh
 pnpm add -g https://pkg.pr.new/hi-ogawa/toy-compositor@main
-toy-compositor serve [root]                    # default ~/Documents/toy-compositor
+toy-compositor serve [dir]                     # open the editor, adding dir first
+toy-compositor add <path>                      # add a project folder, or a project file's folder
 toy-compositor render <project.json> <output>  # .mp4 or .png
 toy-compositor update-media <project.json...>  # record the media info layers use
 ```
+
+A project folder holds its project files at the top level and its media under `media/`. The start page lists the folders you add, kept in `projects.json` under the user config directory such as `~/.config/toy-compositor/`, and the editor only serves files inside them.
 
 Rendering needs `ffmpeg`, `ffprobe`, and ImageMagick (`magick`) on PATH.
 

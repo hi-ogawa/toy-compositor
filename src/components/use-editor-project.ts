@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { apiClient } from "../lib/api-client";
+import { apiClient, type ProjectLocation } from "../lib/api-client";
 import { validateMedia } from "../lib/project";
 import type { EditorRuntime } from "../lib/runtime";
 import { useWindowEvent } from "./use-window-event";
@@ -8,21 +8,21 @@ import { useWindowEvent } from "./use-window-event";
 export type SaveStatus = "saved" | "unsaved" | "saving" | "error";
 
 export function useEditorProject({
-  projectPath,
+  location,
   runtime,
 }: {
-  projectPath: string;
+  location: ProjectLocation;
   runtime: EditorRuntime;
 }) {
   const [dirty, setDirty] = useState(false);
   const revisionRef = useRef(0);
 
   const projectQuery = useQuery({
-    queryKey: ["editor-project", projectPath],
+    queryKey: ["editor-project", location.dir, location.file],
     retry: false,
     staleTime: Infinity,
     queryFn: async () => {
-      const projectFile = await apiClient.loadProject({ path: projectPath });
+      const projectFile = await apiClient.loadProject(location);
       validateMedia(projectFile.project);
       runtime.deserializeProject(projectFile);
       return true;
@@ -37,7 +37,7 @@ export function useEditorProject({
       }
       const revision = revisionRef.current;
       await apiClient.saveProject({
-        path: projectPath,
+        ...location,
         project: runtime.serializeProject(),
       });
       return revision;
@@ -76,6 +76,6 @@ export function useEditorProject({
     save: saveMutation.mutate,
     saveStatus,
     resolveMediaUrl: (src: string) =>
-      apiClient.getMediaUrl({ src, projectPath }),
+      apiClient.getMediaUrl({ src, dir: location.dir }),
   };
 }

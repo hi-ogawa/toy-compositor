@@ -40,7 +40,9 @@ export interface DecodedAudio {
 }
 
 export interface EditorState {
-  /** Project file path relative to the projects root, which is also where saves go. */
+  /** Absolute path of the project folder, which layer sources resolve against. */
+  dir: string;
+  /** Project file name in the folder, which is also where saves go. */
   file: string;
   project: EditorProject;
   /** Follows the transport, on the frame grid whenever playback is stopped. */
@@ -59,6 +61,7 @@ const EMPTY_PROJECT: EditorProject = {
 
 export class EditorRuntime {
   readonly store = createStore<EditorState>(() => ({
+    dir: "",
     file: "",
     project: EMPTY_PROJECT,
     playhead: 0,
@@ -122,10 +125,10 @@ export class EditorRuntime {
    * none yet, and the layer's defaults come from it.
    */
   async addMediaLayer({ src, type }: MediaFile): Promise<void> {
-    const { file } = this.store.get();
+    const { dir } = this.store.get();
     let mediaInfo = this.store.get().project.media[src];
     if (!mediaInfo) {
-      mediaInfo = await apiClient.loadMediaInfo({ src, projectPath: file });
+      mediaInfo = await apiClient.loadMediaInfo({ src, dir });
       const { project } = this.store.get();
       this.store.update({
         project: { ...project, media: { ...project.media, [src]: mediaInfo } },
@@ -328,7 +331,7 @@ export class EditorRuntime {
     const decodeAudio = async (): Promise<DecodedAudio> => {
       const data = await apiClient.loadAudioData({
         src,
-        projectPath: this.store.get().file,
+        dir: this.store.get().dir,
       });
       const buffer = await this.context.decodeAudioData(data);
       return { buffer, view: createAudioView(buffer) };
@@ -346,8 +349,9 @@ export class EditorRuntime {
     return serializeEditorProject(this.store.get().project);
   }
 
-  deserializeProject({ file, project }: ProjectFile): void {
+  deserializeProject({ dir, file, project }: ProjectFile): void {
     this.store.update({
+      dir,
       file,
       project: deserializeEditorProject(project),
       selection: undefined,

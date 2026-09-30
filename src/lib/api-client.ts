@@ -1,17 +1,34 @@
 import type { MediaFile } from "./media-file.ts";
 import type { MediaInfo, Project } from "./project.ts";
 
-export type ProjectFile = { file: string; project: Project };
+/** A project file, named by its folder's absolute path and its name in that folder. */
+export type ProjectLocation = { dir: string; file: string };
 
-/** A project file found under the projects root, as `<project-dir>/<name>.json`. */
+export type ProjectFile = ProjectLocation & { project: Project };
+
+/** A project file in a project folder, as `<name>.json`. */
 export type ProjectEntry = {
-  path: string;
+  file: string;
   width: number;
   height: number;
   output: Project["output"]["type"];
 };
 
-export type ProjectList = { root: string; projects: ProjectEntry[] };
+/** A registered project folder with its project files, or `missing` when it no longer exists. */
+export type ProjectFolder = {
+  dir: string;
+  missing?: boolean;
+  files: ProjectEntry[];
+};
+
+/**
+ * The registered project folders. `add` is absent when folders cannot be
+ * added, and names the native dialog that the server can open when it has one.
+ */
+export type ProjectList = {
+  folders: ProjectFolder[];
+  add?: { dialog?: "zenity" | "osascript" };
+};
 
 /** Client for the editor server's `/api/` routes. */
 export const apiClient = {
@@ -23,25 +40,61 @@ export const apiClient = {
     return res.json();
   },
 
-  async loadProject({ path }: { path: string }): Promise<ProjectFile> {
+  /** Registers a folder, or the folder of a project file inside it, by path. */
+  async addProjectFolder({ path }: { path: string }): Promise<void> {
+    const res = await fetch("/api/project-folders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to add project folder: ${await res.text()}`);
+    }
+  },
+
+  /** Registers a folder or project file picked in the server desktop's native dialog. */
+  async pickProjectFolder({
+    kind,
+  }: {
+    kind: "folder" | "file";
+  }): Promise<void> {
     const res = await fetch(
-      getApiUrl({ pathname: "/api/project", params: { path } }),
+      getApiUrl({ pathname: "/api/pick-project-folder", params: { kind } }),
+      { method: "POST" },
+    );
+    if (!res.ok) {
+      throw new Error(`Failed to add project folder: ${await res.text()}`);
+    }
+  },
+
+  /** Forgets a project folder without deleting its files. */
+  async removeProjectFolder({ dir }: { dir: string }): Promise<void> {
+    const res = await fetch(
+      getApiUrl({ pathname: "/api/project-folders", params: { project: dir } }),
+      { method: "DELETE" },
+    );
+    if (!res.ok) {
+      throw new Error(`Failed to remove project folder: ${await res.text()}`);
+    }
+  },
+
+  async loadProject({ dir, file }: ProjectLocation): Promise<ProjectFile> {
+    const res = await fetch(
+      getApiUrl({ pathname: "/api/project", params: { project: dir, file } }),
     );
     if (!res.ok) {
       throw new Error(`Failed to load project: ${await res.text()}`);
     }
-    return { file: path, project: await res.json() };
+    return { dir, file, project: await res.json() };
   },
 
   async saveProject({
-    path,
+    dir,
+    file,
     project,
-  }: {
-    path: string;
-    project: Project;
-  }): Promise<void> {
+  }: ProjectLocation & { project: Project }): Promise<void> {
     const res = await fetch(
-      getApiUrl({ pathname: "/api/project", params: { path } }),
+      getApiUrl({ pathname: "/api/project", params: { project: dir, file } }),
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -55,14 +108,12 @@ export const apiClient = {
 
   /** Creates a project file, failing if it already exists. */
   async createProject({
-    path,
+    dir,
+    file,
     project,
-  }: {
-    path: string;
-    project: Project;
-  }): Promise<void> {
+  }: ProjectLocation & { project: Project }): Promise<void> {
     const res = await fetch(
-      getApiUrl({ pathname: "/api/project", params: { path } }),
+      getApiUrl({ pathname: "/api/project", params: { project: dir, file } }),
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -75,32 +126,22 @@ export const apiClient = {
   },
 
   /**
-   * The server resolves a layer source against the project's directory, as the
+   * The server resolves a layer source against the project folder, as the
    * renderer does, so `src` is a file path everywhere.
    */
-  getMediaUrl({
-    src,
-    projectPath,
-  }: {
-    src: string;
-    projectPath: string;
-  }): string {
+  getMediaUrl({ src, dir }: { src: string; dir: string }): string {
     return getApiUrl({
       pathname: "/api/media",
-      params: { project: projectPath, src },
+      params: { project: dir, src },
     });
   },
 
   /** Lists the media files in the project's `media/` folder. */
-  async listMediaFiles({
-    projectPath,
-  }: {
-    projectPath: string;
-  }): Promise<MediaFile[]> {
+  async listMediaFiles({ dir }: { dir: string }): Promise<MediaFile[]> {
     const res = await fetch(
       getApiUrl({
         pathname: "/api/media-files",
-        params: { project: projectPath },
+        params: { project: dir },
       }),
     );
     if (!res.ok) {
@@ -110,15 +151,11 @@ export const apiClient = {
   },
 
   /** Opens the project's `media/` folder in the server desktop's file manager. */
-  async openMediaFolder({
-    projectPath,
-  }: {
-    projectPath: string;
-  }): Promise<void> {
+  async openMediaFolder({ dir }: { dir: string }): Promise<void> {
     const res = await fetch(
       getApiUrl({
         pathname: "/api/open-media-folder",
-        params: { project: projectPath },
+        params: { project: dir },
       }),
       { method: "POST" },
     );
@@ -130,15 +167,15 @@ export const apiClient = {
   /** Probes a media file on the server into the entry that the project's `media` keeps for it. */
   async loadMediaInfo({
     src,
-    projectPath,
+    dir,
   }: {
     src: string;
-    projectPath: string;
+    dir: string;
   }): Promise<MediaInfo> {
     const res = await fetch(
       getApiUrl({
         pathname: "/api/media-info",
-        params: { project: projectPath, src },
+        params: { project: dir, src },
       }),
     );
     if (!res.ok) {
@@ -150,12 +187,12 @@ export const apiClient = {
   /** Fetches a video or audio source's encoded bytes for decoding its audio. */
   async loadAudioData({
     src,
-    projectPath,
+    dir,
   }: {
     src: string;
-    projectPath: string;
+    dir: string;
   }): Promise<ArrayBuffer> {
-    const res = await fetch(apiClient.getMediaUrl({ src, projectPath }));
+    const res = await fetch(apiClient.getMediaUrl({ src, dir }));
     if (!res.ok) {
       throw new Error(`Failed to load audio data: ${await res.text()}`);
     }

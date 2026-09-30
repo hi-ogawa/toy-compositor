@@ -17,21 +17,21 @@ import { useWindowEvent } from "./use-window-event";
  */
 export function LibraryPanel({
   runtime,
-  projectPath,
+  dir,
 }: {
   runtime: EditorRuntime;
-  projectPath: string;
+  dir: string;
 }) {
   const [highlighted, setHighlighted] = useState<string>();
   const filesQuery = useQuery({
-    queryKey: ["media-files", projectPath],
-    queryFn: () => apiClient.listMediaFiles({ projectPath }),
+    queryKey: ["media-files", dir],
+    queryFn: () => apiClient.listMediaFiles({ dir }),
   });
   // Switching back from the file manager focuses the window without changing
   // page visibility, so refetch on focus to pick up new files.
   useWindowEvent("focus", () => void filesQuery.refetch());
   const openFolderMutation = useMutation({
-    mutationFn: () => apiClient.openMediaFolder({ projectPath }),
+    mutationFn: () => apiClient.openMediaFolder({ dir }),
   });
   const addMediaMutation = useMutation({
     mutationFn: (file: MediaFile) => runtime.addMediaLayer(file),

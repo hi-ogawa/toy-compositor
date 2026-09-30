@@ -1,5 +1,6 @@
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import type { ProjectLocation } from "../lib/api-client";
 import { isShortcutTextInputTarget, matchKeyboardEvent } from "../lib/keyboard";
 import { EditorRuntime, type EditorLayer } from "../lib/runtime";
 import { CollapsibleSplit } from "./collapsible-split";
@@ -16,13 +17,13 @@ import { useLayerInteraction } from "./use-layer-interaction";
 import { useTimeline } from "./use-timeline";
 import { useWindowEvent } from "./use-window-event";
 
-export function Editor({ projectPath }: { projectPath: string }) {
+export function Editor({ location }: { location: ProjectLocation }) {
   const [runtime] = useState(() => new EditorRuntime());
   const state = useSyncExternalStore(
     runtime.store.subscribe,
     runtime.store.get,
   );
-  const project = useEditorProject({ projectPath, runtime });
+  const project = useEditorProject({ location, runtime });
   const timeline = useTimeline(runtime);
   const layerInteraction = useLayerInteraction({ runtime, state });
   const [sideOpen, setSideOpen] = useState(true);
@@ -94,7 +95,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
               <LibrarySourceTabs
                 layer={selectedLayer}
                 runtime={runtime}
-                projectPath={projectPath}
+                dir={location.dir}
                 resolveMediaUrl={project.resolveMediaUrl}
                 onCollapse={() => setSideOpen(false)}
               />
@@ -151,13 +152,13 @@ export function Editor({ projectPath }: { projectPath: string }) {
 function LibrarySourceTabs({
   layer,
   runtime,
-  projectPath,
+  dir,
   resolveMediaUrl,
   onCollapse,
 }: {
   layer?: EditorLayer;
   runtime: EditorRuntime;
-  projectPath: string;
+  dir: string;
   resolveMediaUrl: (src: string) => string;
   onCollapse: () => void;
 }) {
@@ -217,7 +218,7 @@ function LibrarySourceTabs({
         className="flex min-h-0 flex-1 flex-col"
       >
         {tab === "library" ? (
-          <LibraryPanel runtime={runtime} projectPath={projectPath} />
+          <LibraryPanel runtime={runtime} dir={dir} />
         ) : (
           <MediaPreview layer={layer} resolveMediaUrl={resolveMediaUrl} />
         )}
