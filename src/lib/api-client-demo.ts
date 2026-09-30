@@ -20,6 +20,7 @@ export const apiClient: typeof serverApiClient = {
           })),
         },
       ],
+      editable: false,
     };
   },
 

@@ -26,7 +26,6 @@ export function ProjectList() {
     retry: false,
     queryFn: () => apiClient.listProjects(),
   });
-  const add = query.data?.add;
   return (
     <div className="fixed inset-0 overflow-hidden bg-neutral-900">
       {/* Gradient glow */}
@@ -44,9 +43,11 @@ export function ProjectList() {
             <div className="shrink-0 border-b border-neutral-700/70 p-4">
               <div className="flex items-center justify-between gap-4">
                 <h2 className="font-semibold">Projects</h2>
-                {add?.dialog && <AddFolderDialogButtons dialog={add.dialog} />}
+                {query.data?.folderDialog && (
+                  <AddFolderDialogButtons dialog={query.data.folderDialog} />
+                )}
               </div>
-              {add && <AddFolderPathForm />}
+              {query.data?.editable && <AddFolderPathForm />}
             </div>
             <section
               aria-label="Projects"
@@ -71,7 +72,7 @@ export function ProjectList() {
                     <FolderSection
                       key={folder.directory}
                       folder={folder}
-                      removable={!!add}
+                      removable={query.data.editable}
                     />
                   ))}
                 </ul>

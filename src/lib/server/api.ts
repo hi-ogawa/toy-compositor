@@ -69,13 +69,12 @@ export type ProjectFolder = {
   files: ProjectEntry[];
 };
 
-/**
- * The registered project folders. `add` is absent when folders cannot be
- * added, and names the native dialog that the server can open when it has one.
- */
 export type ProjectList = {
   folders: ProjectFolder[];
-  add?: { dialog?: "zenity" | "osascript" };
+  /** False in the static demo, whose one folder is fixed. */
+  editable: boolean;
+  /** The native dialog the server can open to pick a folder, when it has one. */
+  folderDialog?: "zenity" | "osascript";
 };
 
 async function handleRpc({
@@ -117,10 +116,10 @@ export function createEditorHandlers({
 }) {
   return {
     async listProjects(): Promise<ProjectList> {
-      const dialog = getDialogTool();
       return {
         folders: await listProjectFolders(registry),
-        add: dialog ? { dialog } : {},
+        editable: true,
+        folderDialog: getDialogTool(),
       };
     },
 
