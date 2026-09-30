@@ -19,7 +19,7 @@
 
 <rect x="58" y="138" width="150" height="214" rx="6" fill="#f0ebf8" stroke="#6b4fa0"/>
 <text x="70" y="160" font-weight="700">MediaPreview</text>
-<text x="70" y="178" font-size="13" fill="#52625d">#source-monitor</text>
+<text x="70" y="178" font-size="13" fill="#52625d">Source tab</text>
 <text x="70" y="206" font-size="13">raw file of the</text>
 <text x="70" y="222" font-size="13">selected layer</text>
 <text x="70" y="250" font-size="13">native controls,</text>

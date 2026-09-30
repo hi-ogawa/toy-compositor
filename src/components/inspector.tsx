@@ -9,11 +9,14 @@ import type {
   ImageLayer,
   Layer,
   Output,
-  Project,
   TextLayer,
   VideoLayer,
 } from "../lib/project";
-import type { EditorRuntime, EditorSelection } from "../lib/runtime";
+import type {
+  EditorRuntime,
+  EditorSelection,
+  EditorProject,
+} from "../lib/runtime";
 import { cn } from "./ui/utils";
 import { useDraftInput } from "./use-draft-input";
 
@@ -23,7 +26,7 @@ export function Inspector({
   selection,
 }: {
   runtime: EditorRuntime;
-  project: Project;
+  project: EditorProject;
   selection?: EditorSelection;
 }) {
   if (!selection) {
@@ -51,12 +54,13 @@ export function Inspector({
       );
     }
     case "layer": {
-      const { index } = selection;
+      const { id } = selection;
+      const layer = project.layers.find((layer) => layer.id === id)!;
       return (
         <LayerInspector
-          layer={project.layers[index]}
+          layer={layer}
           time={time}
-          onUpdate={(update) => runtime.updateLayer({ index, update })}
+          onUpdate={(update) => runtime.updateLayer({ id, update })}
         />
       );
     }

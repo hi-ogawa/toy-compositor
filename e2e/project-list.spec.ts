@@ -29,10 +29,12 @@ test("open projects from the start page", async ({ page, editor }) => {
     "thumbnail.json",
   );
 
-  // Select the image and confirm its source resolves relative to the project file.
+  // Select the image in the Source tab and confirm its source resolves
+  // relative to the project file.
+  await page.getByRole("tab", { name: "Source" }).click();
   await clickTimelineButton(page, { name: "Label backdrop image" });
   const image = page
-    .locator("#source-monitor")
+    .locator("#side-panel")
     .getByRole("img", { name: "Label backdrop", exact: true });
   await expectImageLoaded(image);
 

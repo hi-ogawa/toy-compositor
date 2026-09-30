@@ -1,9 +1,10 @@
 import { useRef, useState, type ReactNode } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
+import { cn } from "./ui/utils";
 
 /**
- * A resizable side panel beside a main panel. Closing the side leaves `strip`
- * at the same edge, so reopening stays where the panel was.
+ * A resizable side panel beside a main panel. Closing the side hides it and
+ * leaves `strip` at the same edge, so reopening finds the side as it was.
  */
 export function CollapsibleSplit({
   open,
@@ -34,21 +35,19 @@ export function CollapsibleSplit({
   });
   return (
     <div ref={containerRef} className="flex min-h-0 flex-1">
+      <div
+        id={sideId}
+        className={cn("flex min-w-0 shrink-0 flex-col", !open && "hidden")}
+        style={{ width: `${sideShare}%` }}
+      >
+        {side}
+      </div>
       {open ? (
-        <>
-          <div
-            id={sideId}
-            className="flex min-w-0 shrink-0 flex-col"
-            style={{ width: `${sideShare}%` }}
-          >
-            {side}
-          </div>
-          <div
-            ref={dividerRef}
-            title={`Resize ${sideLabel}`}
-            className="relative z-10 w-px shrink-0 touch-none cursor-col-resize bg-neutral-700 after:absolute after:inset-y-0 after:-left-1 after:w-2 hover:bg-neutral-500"
-          />
-        </>
+        <div
+          ref={dividerRef}
+          title={`Resize ${sideLabel}`}
+          className="relative z-10 w-px shrink-0 touch-none cursor-col-resize bg-neutral-700 after:absolute after:inset-y-0 after:-left-1 after:w-2 hover:bg-neutral-500"
+        />
       ) : (
         <div className="flex w-9 shrink-0 flex-col items-center border-r border-neutral-700 bg-neutral-800 py-1">
           {strip}

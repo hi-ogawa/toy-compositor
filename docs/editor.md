@@ -11,7 +11,9 @@ Each component answers one question about the preview, and the preview holds no 
 ```text
 Editor                     editor.tsx               runtime store, selection, playhead
 ├─ CollapsibleSplit        collapsible-split.tsx    side panel width, collapsed strip
-│  ├─ MediaPreview         media-preview.tsx        the selected layer's raw file
+│  ├─ LibrarySourceTabs    editor.tsx               Library or Source tab
+│  │  ├─ LibraryPanel      library-panel.tsx        media files and built-in layers to add
+│  │  └─ MediaPreview      media-preview.tsx        the selected layer's raw file
 │  └─ CompositionPreview   composition-preview.tsx  viewport scale, layers visible at time, audio
 │     └─ PreviewLayer × N                           box to CSS, per-type rendering, outline
 │        └─ CompositionMedia  composition-media.tsx fit and crop by the stored size, video
@@ -66,4 +68,3 @@ EditorRuntime              runtime.ts                source loading, restarts ar
 - The transport publishes the playhead through the editor store, so the editor re-renders on every animation frame while playing, like toy-midi's recorder.
 - A video starts 50 to 90 ms behind the sound right after Play and catches up within a few seconds, because the element takes that long to start.
 - Each video and audio source decodes whole into memory, about 60MB for a 3-minute stereo mix, and a video source is downloaded in full for its audio (#85).
-- Layers are keyed by index, which holds until layers can be added or reordered.
