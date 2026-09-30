@@ -15,7 +15,7 @@ pnpm dev-demo                        # editor as a static site, see below
 
 The editor and CLI run on Node 24 directly. See [samples/README.md](../samples/README.md) for the synthetic and local samples, [e2e.md](e2e.md) for E2E traces on GitHub Actions, and [working-media.md](working-media.md) for preparing camera footage.
 
-The dev server works on `.local/projects/`, and `TOY_COMPOSITOR_ROOT` points it at another projects root.
+The dev server works on `.local/projects/`, and `TOY_COMPOSITOR_ROOT` points it at another projects root. Open a project directly with `?project=<project-dir>/<name>.json`, relative to that root.
 
 ## Static demo
 
