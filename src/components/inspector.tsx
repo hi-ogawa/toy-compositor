@@ -52,12 +52,18 @@ export function Inspector({
     }
     case "layer": {
       const { id } = selection;
-      const layer = project.layers.find((layer) => layer.id === id)!;
+      const index = project.layers.findIndex((layer) => layer.id === id);
+      const layer = project.layers[index]!;
       return (
         <LayerInspector
           layer={layer}
           time={time}
           onUpdate={(update) => runtime.updateLayer({ id, update })}
+          move={{
+            canMoveUp: index < project.layers.length - 1,
+            canMoveDown: index > 0,
+            onMove: (direction) => runtime.moveLayer({ id, direction }),
+          }}
         />
       );
     }
@@ -67,6 +73,12 @@ export function Inspector({
 type TimeFieldOptions = ReturnType<typeof getTimeFieldOptions>;
 
 type LayerUpdate = (update: Partial<Layer>) => void;
+
+interface LayerMoveControls {
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onMove: (direction: "up" | "down") => void;
+}
 
 /** Composition settings: the canvas together with what to render from it. */
 function OutputInspector({
@@ -171,15 +183,32 @@ function LayerInspector({
   layer,
   time,
   onUpdate,
+  move,
 }: {
   layer: Layer;
   time: TimeFieldOptions;
   onUpdate: LayerUpdate;
+  move: LayerMoveControls;
 }) {
   return (
     <div data-testid="inspector">
       <InspectorTitle title={layer.name ?? layer.type} subtitle={layer.type} />
       <div className="flex flex-col gap-4 p-3">
+        <Group title="Stack">
+          {(["up", "down"] as const).map((direction) => (
+            <button
+              key={direction}
+              type="button"
+              disabled={
+                direction === "up" ? !move.canMoveUp : !move.canMoveDown
+              }
+              onClick={() => move.onMove(direction)}
+              className="h-8 rounded border border-neutral-600 bg-neutral-900 text-xs text-neutral-400 outline-none hover:bg-neutral-800 focus-visible:border-ring disabled:pointer-events-none disabled:opacity-50"
+            >
+              Move {direction}
+            </button>
+          ))}
+        </Group>
         <LayerFields layer={layer} time={time} onUpdate={onUpdate} />
       </div>
     </div>
