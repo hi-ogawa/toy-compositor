@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { readJson, writeJson } from "../../utils/fs.ts";
+import { readJson } from "../../utils/fs.ts";
 import { HttpError } from "./http.ts";
 
 /**
@@ -19,20 +19,18 @@ export function createProjectRegistry({ configDir }: { configDir: string }) {
     return (await readJson<{ folders: string[] }>(file)).folders;
   }
 
-  async function writeFolders(folders: string[]) {
-    await fs.promises.mkdir(configDir, { recursive: true });
-    await writeJson(file, { folders });
-  }
-
-  // Each change reads the list and writes it back, so overlapping changes, such
-  // as concurrent requests, would drop each other's edits. Run them in turn.
-  let queue = Promise.resolve();
+  // Each change reads the list and writes it back. Doing both synchronously
+  // keeps other requests from running in between and dropping each other's
+  // edits, and the file is small enough that blocking briefly is fine.
   function updateFolders(update: (folders: string[]) => string[]) {
-    const result = queue.then(async () => {
-      await writeFolders(update(await readFolders()));
-    });
-    queue = result.catch(() => {});
-    return result;
+    const folders: string[] = fs.existsSync(file)
+      ? JSON.parse(fs.readFileSync(file, "utf-8")).folders
+      : [];
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(
+      file,
+      JSON.stringify({ folders: update(folders) }, null, 2) + "\n",
+    );
   }
 
   return {
@@ -58,7 +56,7 @@ export function createProjectRegistry({ configDir }: { configDir: string }) {
           message: `${target} is not a folder or a project file`,
         });
       }
-      await updateFolders((folders) =>
+      updateFolders((folders) =>
         folders.includes(directory) ? folders : [...folders, directory],
       );
       return directory;
@@ -66,7 +64,7 @@ export function createProjectRegistry({ configDir }: { configDir: string }) {
 
     /** Forget a folder without touching its files. */
     async removeFolder(directory: string) {
-      await updateFolders((folders) =>
+      updateFolders((folders) =>
         folders.filter((folder) => folder !== directory),
       );
     },
