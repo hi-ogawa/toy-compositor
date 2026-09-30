@@ -24,10 +24,8 @@ export function Editor({ projectPath }: { projectPath: string }) {
   );
   const project = useEditorProject({ projectPath, runtime });
   const timeline = useTimeline(runtime);
-  const { layerInteraction, locatorInteraction } = useEditorInteraction({
-    runtime,
-    state,
-  });
+  const { layerInteraction, locatorInteraction, clearSelection } =
+    useEditorInteraction({ runtime, state });
   const [sideOpen, setSideOpen] = useState(true);
 
   useEffect(() => {
@@ -50,6 +48,10 @@ export function Editor({ projectPath }: { projectPath: string }) {
     if (layerInteraction.editing && matchKeyboardEvent(event, "Escape")) {
       event.preventDefault();
       layerInteraction.cancelEdit();
+      return;
+    }
+    if (matchKeyboardEvent(event, "Escape") && clearSelection()) {
+      event.preventDefault();
       return;
     }
     if (timeline.handleFrameStepShortcut(event)) {
@@ -147,6 +149,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
             playhead={state.playhead}
             playing={state.playing}
             audioSources={state.audioSources}
+            onClearSelection={clearSelection}
           />
         </main>
         <aside

@@ -40,6 +40,7 @@ export function Timeline({
   playhead,
   playing,
   audioSources,
+  onClearSelection,
 }: {
   timeline: TimelineView;
   layerInteraction: LayerInteraction;
@@ -50,6 +51,7 @@ export function Timeline({
   playhead: number;
   playing: boolean;
   audioSources: Record<string, PromiseState<DecodedAudio>>;
+  onClearSelection: () => void;
 }) {
   const seek = (time: number) => runtime.seek(time);
   return (
@@ -99,6 +101,7 @@ export function Timeline({
             locatorInteraction={locatorInteraction}
             renderSelected={selection?.type === "output"}
             onRenderSelect={() => layerInteraction.select({ type: "output" })}
+            onClearSelection={onClearSelection}
             onSeek={seek}
           />
           <TimelineRuler timeline={timeline} onSeek={seek} />
@@ -202,6 +205,7 @@ function TimelineLocatorRow({
   locatorInteraction,
   renderSelected,
   onRenderSelect,
+  onClearSelection,
   onSeek,
 }: {
   timeline: TimelineView;
@@ -209,6 +213,7 @@ function TimelineLocatorRow({
   locatorInteraction: LocatorInteraction;
   renderSelected: boolean;
   onRenderSelect: () => void;
+  onClearSelection: () => void;
   onSeek: (time: number) => void;
 }) {
   const renderMarkers =
@@ -263,7 +268,7 @@ function TimelineLocatorRow({
         aria-label="Locator row"
         className="absolute inset-0 cursor-crosshair"
         onClick={(event) => {
-          locatorInteraction.select(undefined);
+          onClearSelection();
           onSeek(
             timeline.xToTime(
               event.clientX - event.currentTarget.getBoundingClientRect().left,
