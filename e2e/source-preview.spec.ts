@@ -58,11 +58,11 @@ test("resize and collapse the source panel without changing the project", async 
   expect(resizedWidth).toBeGreaterThan(initialWidth);
 
   // Collapse the side panel to its edge strip, then expand it while preserving
-  // the split, the Source tab, and save status.
+  // the split, the Source tab, the source's seek position, and save status.
   await page
     .getByRole("button", { name: "Collapse side panel", exact: true })
     .click();
-  await expect(source).toHaveCount(0);
+  await expect(source).toBeHidden();
   await page
     .getByRole("button", { name: "Expand side panel", exact: true })
     .click();
@@ -70,7 +70,7 @@ test("resize and collapse the source panel without changing the project", async 
   await expect(source).toBeVisible();
   await expect
     .poll(() => source.evaluate((video: HTMLVideoElement) => video.currentTime))
-    .toBe(0);
+    .toBe(1);
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
     "data-status",
     "saved",

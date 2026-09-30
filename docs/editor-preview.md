@@ -9,7 +9,7 @@ Each component answers one question about the preview, and the preview holds no 
 ![The editor screen as nested component regions, each with the one question it answers](images/component-tree.svg)
 
 ```text
-Editor                     editor.tsx               runtime store, selection, playhead, side panel tab
+Editor                     editor.tsx               runtime store, selection, playhead
 ├─ CollapsibleSplit        collapsible-split.tsx    side panel width, collapsed strip
 │  ├─ LibrarySourceTabs    editor.tsx               Library or Source tab
 │  │  ├─ LibraryPanel      library-panel.tsx        media files and built-in layers to add

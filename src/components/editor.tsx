@@ -26,7 +26,6 @@ export function Editor({ projectPath }: { projectPath: string }) {
   const timeline = useTimeline(runtime);
   const layerInteraction = useLayerInteraction({ runtime, state });
   const [sideOpen, setSideOpen] = useState(true);
-  const [sideTab, setSideTab] = useState<LibrarySourceTab>("library");
 
   useEffect(() => {
     document.title = state.file
@@ -93,12 +92,10 @@ export function Editor({ projectPath }: { projectPath: string }) {
             sideLabel="side panel"
             side={
               <LibrarySourceTabs
-                tab={sideTab}
                 layer={selectedLayer}
                 runtime={runtime}
                 projectPath={projectPath}
                 resolveMediaUrl={project.resolveMediaUrl}
-                onTabChange={setSideTab}
                 onCollapse={() => setSideOpen(false)}
               />
             }
@@ -152,22 +149,19 @@ export function Editor({ projectPath }: { projectPath: string }) {
 
 /** The Library tab to add layers from, and the Source tab for the selected layer's file. */
 function LibrarySourceTabs({
-  tab,
   layer,
   runtime,
   projectPath,
   resolveMediaUrl,
-  onTabChange,
   onCollapse,
 }: {
-  tab: LibrarySourceTab;
   layer?: EditorLayer;
   runtime: EditorRuntime;
   projectPath: string;
   resolveMediaUrl: (src: string) => string;
-  onTabChange: (tab: LibrarySourceTab) => void;
   onCollapse: () => void;
 }) {
+  const [tab, setTab] = useState<LibrarySourceTab>("library");
   return (
     <>
       <div className="flex h-7 shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 pl-1 pr-3 text-xs">
@@ -191,7 +185,7 @@ function LibrarySourceTabs({
                   ? "border-sky-400 text-neutral-100"
                   : "border-transparent text-neutral-400 hover:text-neutral-100",
               )}
-              onClick={() => onTabChange(id)}
+              onClick={() => setTab(id)}
             >
               {label}
             </button>
