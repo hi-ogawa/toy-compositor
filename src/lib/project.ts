@@ -31,6 +31,30 @@ export type MediaInfo = {
   audio: boolean;
 };
 
+/**
+ * Check that every file-backed layer has media info for its `src`, and that
+ * video and image layers' files have a video stream, so consumers can read
+ * `media` without checking. It does not compare the facts with the files.
+ */
+export function validateMedia(project: Project): void {
+  for (const layer of project.layers) {
+    if (!("src" in layer)) {
+      continue;
+    }
+    const label = `${layer.type} layer "${layer.name ?? layer.type}" (${layer.src})`;
+    // A project file from before `media` has none at all.
+    const mediaInfo = project.media?.[layer.src];
+    if (!mediaInfo) {
+      throw new Error(`${label} has no media info, run update-media`);
+    }
+    if (layer.type !== "audio" && !mediaInfo.video) {
+      throw new Error(
+        `${label} has no video stream, use a file with video or run update-media if the file changed`,
+      );
+    }
+  }
+}
+
 /** Canvas presets for new projects, named as their first project file. */
 export const CANVAS_PRESETS = [
   { name: "horizontal-video", width: 1920, height: 1080 },

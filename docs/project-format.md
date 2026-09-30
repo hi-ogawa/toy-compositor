@@ -135,7 +135,7 @@ Locators are labeled timeline times, like guides in Kdenlive. They do not affect
 
 ## Media
 
-`media` holds what ffprobe reports about every media file the layers use, keyed by the layers' `src`. The project then describes its media completely, so the editor, the renderer, and scripts all read the same facts. Every `src` a layer uses has an entry.
+`media` holds what ffprobe reports about every media file the layers use, keyed by the layers' `src`. The project then describes its media completely, so the editor, the renderer, and scripts all read the same facts. Every `src` a layer uses has an entry, and video and image layers' entries have `video`. The editor and the renderer check this when they load a project and name the layer and the fix if it fails.
 
 ```jsonc
 "media": {
