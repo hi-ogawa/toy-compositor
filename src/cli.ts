@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { installDesktopEntry } from "./lib/desktop-entry.ts";
 import { updateProjectMedia } from "./lib/media-info.ts";
@@ -9,6 +10,10 @@ import { createLiveConnections } from "./lib/server/live.ts";
 import { openWithDefaultApp } from "./lib/server/open-default.ts";
 import { createProjectRegistry, getConfigDir } from "./lib/server/registry.ts";
 import { checkEditorServer, serveEditor } from "./lib/server/serve.ts";
+
+const packageDir = path.dirname(
+  fileURLToPath(import.meta.resolve("#package.json")),
+);
 
 const HELP = `\
 Usage:
@@ -23,7 +28,13 @@ Usage:
   toy-compositor render <project.json> <output> [--dry-run]
       Render a project to a video or still with ffmpeg
   toy-compositor update-media <project.json...>
-      Record media info for the files that layers use in each project`;
+      Record media info for the files that layers use in each project,
+      which the editor and renderer need before they accept it
+
+Getting started: ${path.join(packageDir, "docs/getting-started.md")}
+Project format:  ${path.join(packageDir, "docs/project-format.md")}
+Sample project:  ${path.join(packageDir, "samples/synthetic")}
+Folder list:     ${path.join(getConfigDir(), "projects.json")}`;
 
 async function main() {
   const { positionals, values } = parseArgs({
