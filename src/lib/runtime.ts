@@ -181,8 +181,6 @@ export class EditorRuntime {
       }
     }
 
-    // Every video and audio layer gets a playback, and `muted` only decides
-    // whether it schedules sound.
     const heard = new Set<string>();
     for (const layer of layers) {
       if (layer.type !== "video" && layer.type !== "audio") {
@@ -195,8 +193,7 @@ export class EditorRuntime {
         this.audioPlaybacks.set(layer.id, playback);
       }
       playback.setLayer({ layer });
-      // A rejected source, such as a video file without an audio stream,
-      // contributes nothing, as in the render.
+      // A layer keeps its playback when its src changes, so clear a stale buffer.
       const source = audioSources[layer.src];
       playback.setBuffer({
         buffer:
