@@ -12,13 +12,10 @@ import type {
   TextLayer,
   VideoLayer,
 } from "../lib/project";
-import type {
-  EditorRuntime,
-  EditorSelection,
-  EditorProject,
-} from "../lib/runtime";
+import type { EditorRuntime, EditorProject } from "../lib/runtime";
 import { cn } from "./ui/utils";
 import { useDraftInput } from "./use-draft-input";
+import type { EditorSelection } from "./use-layer-interaction";
 
 export function Inspector({
   runtime,

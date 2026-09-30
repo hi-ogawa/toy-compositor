@@ -11,9 +11,8 @@ import { MediaPreview } from "./media-preview";
 import { Timeline } from "./timeline";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
+import { useEditorInteraction } from "./use-editor-interaction";
 import { useEditorProject } from "./use-editor-project";
-import { useLayerInteraction } from "./use-layer-interaction";
-import { useLocatorInteraction } from "./use-locator-interaction";
 import { useTimeline } from "./use-timeline";
 import { useWindowEvent } from "./use-window-event";
 
@@ -25,8 +24,10 @@ export function Editor({ projectPath }: { projectPath: string }) {
   );
   const project = useEditorProject({ projectPath, runtime });
   const timeline = useTimeline(runtime);
-  const layerInteraction = useLayerInteraction({ runtime, state });
-  const locatorInteraction = useLocatorInteraction({ runtime, state });
+  const { layerInteraction, locatorInteraction } = useEditorInteraction({
+    runtime,
+    state,
+  });
   const [sideOpen, setSideOpen] = useState(true);
 
   useEffect(() => {
@@ -80,7 +81,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
     return null;
   }
 
-  const { selection } = state;
+  const { selection } = layerInteraction;
   const selectedLayer =
     selection?.type === "layer"
       ? state.project.layers.find((layer) => layer.id === selection.id)
@@ -92,7 +93,9 @@ export function Editor({ projectPath }: { projectPath: string }) {
         saveStatus={project.saveStatus}
         compositionSettingsSelected={selection?.type === "output"}
         onSave={() => project.save()}
-        onCompositionSettingsSelect={() => runtime.select({ type: "output" })}
+        onCompositionSettingsSelect={() =>
+          layerInteraction.select({ type: "output" })
+        }
       />
       <div className="flex min-h-0 flex-1">
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -106,6 +109,9 @@ export function Editor({ projectPath }: { projectPath: string }) {
                 runtime={runtime}
                 projectPath={projectPath}
                 resolveMediaUrl={project.resolveMediaUrl}
+                onLayerAdd={(id) =>
+                  layerInteraction.select({ type: "layer", id })
+                }
                 onCollapse={() => setSideOpen(false)}
               />
             }
@@ -163,12 +169,14 @@ function LibrarySourceTabs({
   runtime,
   projectPath,
   resolveMediaUrl,
+  onLayerAdd,
   onCollapse,
 }: {
   layer?: EditorLayer;
   runtime: EditorRuntime;
   projectPath: string;
   resolveMediaUrl: (src: string) => string;
+  onLayerAdd: (id: string) => void;
   onCollapse: () => void;
 }) {
   const [tab, setTab] = useState<LibrarySourceTab>("library");
@@ -227,7 +235,11 @@ function LibrarySourceTabs({
         className="flex min-h-0 flex-1 flex-col"
       >
         {tab === "library" ? (
-          <LibraryPanel runtime={runtime} projectPath={projectPath} />
+          <LibraryPanel
+            runtime={runtime}
+            projectPath={projectPath}
+            onLayerAdd={onLayerAdd}
+          />
         ) : (
           <MediaPreview layer={layer} resolveMediaUrl={resolveMediaUrl} />
         )}

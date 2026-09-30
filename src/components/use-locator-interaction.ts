@@ -14,23 +14,20 @@ export type RenderMarkerType = "start" | "end" | "time";
 export function useLocatorInteraction({
   runtime,
   state,
+  onSelect,
 }: {
   runtime: EditorRuntime;
   state: EditorState;
+  /** Only coordinates selection domains by clearing selection in the other domain. */
+  onSelect: () => void;
 }) {
   const [selectedId, setSelectedId] = useState<string>();
   const { project, playhead } = state;
   const { fps } = project.canvas;
 
-  // Layer and output selection live in the runtime, so a selection there
-  // takes over from the locator selection kept here.
-  if (state.selection && selectedId !== undefined) {
-    setSelectedId(undefined);
-  }
-
   function select(id: string | undefined) {
     if (id !== undefined) {
-      runtime.select(undefined);
+      onSelect();
     }
     setSelectedId(id);
   }
