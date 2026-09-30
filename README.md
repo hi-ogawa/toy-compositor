@@ -16,10 +16,6 @@ pnpm add -g https://pkg.pr.new/hi-ogawa/toy-compositor@main
 toy-compositor --help
 ```
 
-The help lists the commands and a getting-started walkthrough, and points to the [project format](docs/project-format.md) and the [synthetic sample](samples/synthetic) bundled in the installed package.
-
-A project folder holds its project files at the top level and its media under `media/`. The start page lists the folders you add, kept in `projects.json` under the user config directory such as `~/.config/toy-compositor/`, and the editor only serves files inside them.
-
 ## Development
 
 ```sh
