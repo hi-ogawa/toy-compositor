@@ -19,4 +19,4 @@ The dev server works on `.local/projects/`, and `TOY_COMPOSITOR_ROOT` points it 
 
 ## Static demo
 
-`pnpm dev-demo` and `pnpm build-demo` run the same editor over a fake server API: [src/lib/api-client-demo.ts](../src/lib/api-client-demo.ts) stands in for [src/lib/api-client.ts](../src/lib/api-client.ts) and answers from the bundled synthetic sample, and saves stay in the tab's session storage. It needs no projects root or ffprobe, and Cloudflare deploys it from `main` at https://toy-compositor.hiro18181.workers.dev, with a preview for each branch that the Cloudflare bot links on its PR. Anything that depends on real files or the server still needs `pnpm dev`.
+`pnpm dev-demo` and `pnpm build-demo` run the same editor over a fake server API that answers from the bundled synthetic sample, and saves stay in the tab's session storage. It needs no projects root or ffprobe, and Cloudflare deploys it from `main` at https://toy-compositor.hiro18181.workers.dev, with a preview for each branch that the Cloudflare bot links on its PR. Anything that depends on real files or the server still needs `pnpm dev`.
