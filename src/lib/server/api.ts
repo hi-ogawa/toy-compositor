@@ -15,8 +15,8 @@ import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
  *   creates a new one.
  * - `GET /api/media?project=&src=` serves a layer source resolved against the
  *   project's directory, as the renderer does, with range requests.
- * - `GET /api/media-info?project=&src=` probes a layer source into the entry
- *   that the project's `media` keeps for it.
+ * - `GET /api/media-info?project=&src=` probes a layer source into its media
+ *   info, the entry that the project's `media` keeps for it.
  */
 export function createEditorHandler({ root }: { root: string }) {
   return async (request: Request): Promise<Response> => {

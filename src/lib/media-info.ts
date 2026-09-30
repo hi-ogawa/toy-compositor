@@ -4,21 +4,21 @@ import { readJson, writeJson } from "../utils/fs.ts";
 import type { Project, MediaInfo } from "./project.ts";
 
 /**
- * Probe every media file a project file's layers use and write the facts into
- * its `media`, replacing what was there.
+ * Probe every media file a project file's layers use and write their media info
+ * into the project's `media`, replacing what was there.
  */
 export async function updateProjectMedia(projectFile: string) {
   const project = await readJson<Project>(projectFile);
   const projectDir = path.dirname(path.resolve(projectFile));
-  const media: Project["media"] = {};
+  const mediaInfoMap: Project["media"] = {};
   for (const layer of project.layers) {
-    if ("src" in layer && !media[layer.src]) {
-      media[layer.src] = await probeMediaInfo(
+    if ("src" in layer && !mediaInfoMap[layer.src]) {
+      mediaInfoMap[layer.src] = await probeMediaInfo(
         path.resolve(projectDir, layer.src),
       );
     }
   }
-  await writeJson(projectFile, { ...project, media });
+  await writeJson(projectFile, { ...project, media: mediaInfoMap });
 }
 
 /** Read a media file's time range, video size and frame timing, and whether it has audio. */

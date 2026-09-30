@@ -20,9 +20,9 @@ import type {
 import type { Resolved } from "./resolve.ts";
 
 /**
- * Compile a project, with its media facts from `media` and its resolved text
- * images, into the ffmpeg inputs, filter graph,
- * and output options, without any I/O. The caller adds the output file.
+ * Compile a project, with the media info it carries and its resolved text
+ * images, into the ffmpeg inputs, filter graph, and output options, without
+ * any I/O. The caller adds the output file.
  * Each layer compiles on its own into the streams it contributes, and then one
  * graph overlays the visual streams on a solid canvas in layer order and mixes
  * the audio streams.
@@ -49,7 +49,7 @@ export function compile({
       layer,
       index: i,
       projectDir,
-      media: project.media,
+      mediaInfoMap: project.media,
       resolved,
       scene,
     }),
@@ -116,19 +116,19 @@ type AudioStream = {
   filters: string[];
 };
 
-/** Look up the files and media facts a layer needs, and compile it by type. */
+/** Look up the files and media info a layer needs, and compile it by type. */
 function compileLayer({
   layer,
   index,
   projectDir,
-  media,
+  mediaInfoMap,
   resolved,
   scene,
 }: {
   layer: Layer;
   index: number;
   projectDir: string;
-  media: Project["media"];
+  mediaInfoMap: Project["media"];
   resolved: Resolved;
   scene: Scene;
 }): LayerStreams {
@@ -137,7 +137,7 @@ function compileLayer({
       return compileVideo({
         layer,
         file: path.resolve(projectDir, layer.src),
-        mediaInfo: media[layer.src],
+        mediaInfo: mediaInfoMap[layer.src],
         scene,
       });
     }
@@ -145,7 +145,7 @@ function compileLayer({
       return compileImage({
         layer,
         file: path.resolve(projectDir, layer.src),
-        mediaInfo: media[layer.src],
+        mediaInfo: mediaInfoMap[layer.src],
         scene,
       });
     }

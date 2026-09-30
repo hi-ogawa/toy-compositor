@@ -3,7 +3,7 @@ import { fitBox } from "../lib/layout";
 import type { ImageLayer, MediaInfo, VideoLayer } from "../lib/project";
 import type { EditorRuntime } from "../lib/runtime";
 
-/** Fit the cropped source into its canvas box, by the size its `media` entry records. */
+/** Fit the cropped source into its canvas box, by the size its media info records. */
 export function CompositionMedia({
   layer,
   mediaInfo,

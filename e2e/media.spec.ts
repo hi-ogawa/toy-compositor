@@ -6,7 +6,7 @@ import { test } from "./helper";
 
 test("update a project's media info", async ({ editor }) => {
   // Remove the media from a copy of the synthetic project.
-  const { media } = await readJson<Project>(editor.projectFile);
+  const { media: mediaInfoMap } = await readJson<Project>(editor.projectFile);
   await editJson<Partial<Project>>(editor.projectFile, (project) => {
     delete project.media;
   });
@@ -17,7 +17,9 @@ test("update a project's media info", async ({ editor }) => {
     "update-media",
     editor.projectFile,
   ]);
-  expect((await readJson<Project>(editor.projectFile)).media).toEqual(media);
+  expect((await readJson<Project>(editor.projectFile)).media).toEqual(
+    mediaInfoMap,
+  );
 });
 
 test("probe one file's media info through the editor API", async ({
@@ -25,7 +27,7 @@ test("probe one file's media info through the editor API", async ({
   editor,
 }) => {
   // Request the video's media info, and confirm it matches its media entry.
-  const { media } = await readJson<Project>(editor.projectFile);
+  const { media: mediaInfoMap } = await readJson<Project>(editor.projectFile);
   const res = await request.get("/api/media-info", {
     params: {
       project: `${editor.projectDir}/project.json`,
@@ -33,5 +35,5 @@ test("probe one file's media info through the editor API", async ({
     },
   });
   expect(res.ok()).toBe(true);
-  expect(await res.json()).toEqual(media["media/video.mp4"]);
+  expect(await res.json()).toEqual(mediaInfoMap["media/video.mp4"]);
 });

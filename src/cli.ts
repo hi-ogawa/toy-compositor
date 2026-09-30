@@ -13,7 +13,7 @@ Usage:
   toy-compositor render <project.json> <output> [--dry-run]
       Render a project to a video or still with ffmpeg
   toy-compositor update-media <project.json...>
-      Probe the media files that layers use into each project's media`;
+      Record media info for the files that layers use in each project`;
 
 async function main() {
   const { positionals, values } = parseArgs({
