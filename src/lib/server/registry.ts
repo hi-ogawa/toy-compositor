@@ -24,6 +24,17 @@ export function createProjectRegistry({ configDir }: { configDir: string }) {
     await writeJson(file, { folders });
   }
 
+  // Each change reads the list and writes it back, so overlapping changes, such
+  // as concurrent requests, would drop each other's edits. Run them in turn.
+  let queue = Promise.resolve();
+  function updateFolders(update: (folders: string[]) => string[]) {
+    const result = queue.then(async () => {
+      await writeFolders(update(await readFolders()));
+    });
+    queue = result.catch(() => {});
+    return result;
+  }
+
   return {
     readFolders,
 
@@ -47,17 +58,17 @@ export function createProjectRegistry({ configDir }: { configDir: string }) {
           message: `${target} is not a folder or a project file`,
         });
       }
-      const folders = await readFolders();
-      if (!folders.includes(directory)) {
-        await writeFolders([...folders, directory]);
-      }
+      await updateFolders((folders) =>
+        folders.includes(directory) ? folders : [...folders, directory],
+      );
       return directory;
     },
 
     /** Forget a folder without touching its files. */
     async removeFolder(directory: string) {
-      const folders = await readFolders();
-      await writeFolders(folders.filter((folder) => folder !== directory));
+      await updateFolders((folders) =>
+        folders.filter((folder) => folder !== directory),
+      );
     },
 
     /** Return `directory` when it is registered, or throw a 403 error. */
