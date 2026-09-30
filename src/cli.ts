@@ -3,7 +3,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import packageJson from "#package.json" with { type: "json" };
 import { installDesktopEntry } from "./lib/desktop-entry.ts";
 import { updateProjectMedia } from "./lib/media-info.ts";
 import { renderProject } from "./lib/render/render.ts";
@@ -18,8 +17,6 @@ const packageDir = path.dirname(
 
 const HELP = `\
 Usage:
-  toy-compositor --version
-      Print the version
   toy-compositor serve [directory] [--port <port>] [--open]
       Open the editor for the project folders, adding directory to them first.
       --open opens it in the browser, reusing a server already on the port,
@@ -39,7 +36,7 @@ Project format:  ${path.join(packageDir, "docs/project-format.md")}
 Sample project:  ${path.join(packageDir, "samples/synthetic")}
 Folder list:     ${path.join(getConfigDir(), "projects.json")}
 
-Source: ${packageJson.homepage}
+Source: https://github.com/hi-ogawa/toy-compositor
 Update: pnpm add -g https://pkg.pr.new/hi-ogawa/toy-compositor@main`;
 
 async function main() {
@@ -50,13 +47,8 @@ async function main() {
       open: { type: "boolean" },
       "dry-run": { type: "boolean" },
       help: { type: "boolean", short: "h" },
-      version: { type: "boolean", short: "v" },
     },
   });
-  if (values.version) {
-    console.log(packageJson.version);
-    return;
-  }
   const [command, ...args] = positionals;
   switch (command) {
     case "serve": {
