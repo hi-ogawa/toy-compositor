@@ -34,7 +34,10 @@ Usage:
 Getting started: ${path.join(packageDir, "docs/getting-started.md")}
 Project format:  ${path.join(packageDir, "docs/project-format.md")}
 Sample project:  ${path.join(packageDir, "samples/synthetic")}
-Folder list:     ${path.join(getConfigDir(), "projects.json")}`;
+Folder list:     ${path.join(getConfigDir(), "projects.json")}
+
+Source: https://github.com/hi-ogawa/toy-compositor
+Update: pnpm add -g https://pkg.pr.new/hi-ogawa/toy-compositor@main`;
 
 async function main() {
   const { positionals, values } = parseArgs({

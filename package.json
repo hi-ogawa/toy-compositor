@@ -1,6 +1,12 @@
 {
   "name": "toy-compositor",
   "version": "0.0.0",
+  "description": "A small video editor that keeps each project as a plain JSON file and renders it with ffmpeg",
+  "homepage": "https://github.com/hi-ogawa/toy-compositor",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hi-ogawa/toy-compositor.git"
+  },
   "bin": {
     "toy-compositor": "./dist/server/cli.js"
   },
