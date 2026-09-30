@@ -1,7 +1,10 @@
+import { spawn } from "node:child_process";
+import { once } from "node:events";
 import fs from "node:fs";
 import path from "node:path";
 import { readJson, writeJson } from "../../utils/fs.ts";
 import type { ProjectEntry } from "../api-client.ts";
+import { getMediaType, type MediaFile } from "../media-file.ts";
 import { probeMediaInfo } from "../media-info.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 
@@ -17,6 +20,9 @@ import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
  *   project's directory, as the renderer does, with range requests.
  * - `GET /api/media-info?project=&src=` probes a layer source into its media
  *   info, the entry that the project's `media` keeps for it.
+ * - `GET /api/media-files?project=` lists the media files in the project's
+ *   `media/` folder, and `POST /api/open-media-folder?project=` opens that
+ *   folder in the desktop's file manager, creating it first if needed.
  */
 export function createEditorHandler({ root }: { root: string }) {
   return async (request: Request): Promise<Response> => {
@@ -46,6 +52,13 @@ export function createEditorHandler({ root }: { root: string }) {
           return Response.json(
             await probeMediaInfo(resolveMediaFile({ root, url })),
           );
+        }
+        case "GET /api/media-files": {
+          return Response.json({ files: await listMediaFiles({ root, url }) });
+        }
+        case "POST /api/open-media-folder": {
+          await openMediaFolder({ root, url });
+          return Response.json({});
         }
         default: {
           return new Response(undefined, { status: 404 });
@@ -189,6 +202,43 @@ function resolveMediaFile({ root, url }: { root: string; url: URL }) {
     throw new HttpError({ status: 404, message: "Media not found" });
   }
   return file;
+}
+
+/** List files with a media extension in the project's `media/` folder, which may not exist yet. */
+async function listMediaFiles({ root, url }: { root: string; url: URL }) {
+  const dir = resolveMediaFolder({ root, url });
+  const entries = await fs.promises
+    .readdir(dir, { withFileTypes: true })
+    .catch(() => []);
+  const files: MediaFile[] = [];
+  for (const entry of entries) {
+    const type = getMediaType(entry.name);
+    if (entry.isFile() && !entry.name.startsWith(".") && type) {
+      files.push({ path: `media/${entry.name}`, type });
+    }
+  }
+  return files.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+/**
+ * Open the project's `media/` folder with the platform's opener, which only
+ * reaches the user when the browser runs on the server's desktop.
+ */
+async function openMediaFolder({ root, url }: { root: string; url: URL }) {
+  const dir = resolveMediaFolder({ root, url });
+  await fs.promises.mkdir(dir, { recursive: true });
+  const opener = process.platform === "darwin" ? "open" : "xdg-open";
+  const child = spawn(opener, [dir], { detached: true, stdio: "ignore" });
+  // Rejects when the opener is missing, instead of crashing the server.
+  await once(child, "spawn");
+  child.unref();
+}
+
+function resolveMediaFolder({ root, url }: { root: string; url: URL }) {
+  return resolveFile({
+    root,
+    paths: [path.dirname(getParam(url, "project")), "media"],
+  });
 }
 
 /**

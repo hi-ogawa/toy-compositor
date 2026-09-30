@@ -1,4 +1,4 @@
-import { MonitorPlayIcon } from "lucide-react";
+import { PanelLeftOpenIcon } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { isShortcutTextInputTarget, matchKeyboardEvent } from "../lib/keyboard";
 import { EditorRuntime } from "../lib/runtime";
@@ -6,7 +6,7 @@ import { CollapsibleSplit } from "./collapsible-split";
 import { CompositionPreview } from "./composition-preview";
 import { EditorHeader } from "./editor-header";
 import { Inspector } from "./inspector";
-import { MediaPreview } from "./media-preview";
+import { SidePanel, type SideTab } from "./side-panel";
 import { Timeline } from "./timeline";
 import { Button } from "./ui/button";
 import { useEditorProject } from "./use-editor-project";
@@ -23,7 +23,8 @@ export function Editor({ projectPath }: { projectPath: string }) {
   const project = useEditorProject({ projectPath, runtime });
   const timeline = useTimeline(runtime);
   const layerInteraction = useLayerInteraction({ runtime, state });
-  const [sourceOpen, setSourceOpen] = useState(true);
+  const [sideOpen, setSideOpen] = useState(true);
+  const [sideTab, setSideTab] = useState<SideTab>("library");
 
   useEffect(() => {
     document.title = state.file
@@ -65,7 +66,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
   }
 
   const { selection } = state;
-  const previewLayer =
+  const selectedLayer =
     selection?.type === "layer"
       ? state.project.layers.find((layer) => layer.id === selection.id)
       : undefined;
@@ -81,26 +82,30 @@ export function Editor({ projectPath }: { projectPath: string }) {
       <div className="flex min-h-0 flex-1">
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">
           <CollapsibleSplit
-            open={sourceOpen}
-            sideId="source-monitor"
-            sideLabel="source panel"
+            open={sideOpen}
+            sideId="side-panel"
+            sideLabel="side panel"
             side={
-              <MediaPreview
-                layer={previewLayer}
+              <SidePanel
+                tab={sideTab}
+                layer={selectedLayer}
+                runtime={runtime}
+                projectPath={projectPath}
                 resolveMediaUrl={project.resolveMediaUrl}
-                onCollapse={() => setSourceOpen(false)}
+                onTabChange={setSideTab}
+                onCollapse={() => setSideOpen(false)}
               />
             }
             strip={
               <Button
-                aria-label="Expand source panel"
-                title="Source"
+                aria-label="Expand side panel"
+                title="Library and Source"
                 aria-expanded={false}
-                aria-controls="source-monitor"
+                aria-controls="side-panel"
                 className="size-7 text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100"
-                onClick={() => setSourceOpen(true)}
+                onClick={() => setSideOpen(true)}
               >
-                <MonitorPlayIcon className="size-4" />
+                <PanelLeftOpenIcon className="size-4" />
               </Button>
             }
             main={
