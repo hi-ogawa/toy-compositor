@@ -8,18 +8,13 @@ import {
   createMediaLayer,
   createTextLayer,
 } from "./layer-defaults.ts";
-import {
-  getContentRange,
-  getLayerRange,
-  getOutputRange,
-  type Range,
-} from "./layout.ts";
+import { getContentRange, getOutputRange, type TimeRange } from "./layout.ts";
 import type { MediaFile } from "./media-file.ts";
 import {
   deserializeEditorProject,
   serializeEditorProject,
 } from "./persistence.ts";
-import type { Layer, Project } from "./project.ts";
+import type { Canvas, Layer, Output, Project } from "./project.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
 import { VideoPlayback } from "./video-playback.ts";
@@ -119,11 +114,7 @@ export class EditorRuntime {
     });
   }
 
-  /**
-   * Adds a layer for a file in `media/` on top of the stack. The file's entry
-   * in the project's `media` is probed and recorded first if the project has
-   * none yet, and the layer's defaults come from it.
-   */
+  /** Probes and records the file's media info first if the project has none. */
   async addMediaLayer({ src, type }: MediaFile): Promise<void> {
     const { dir } = this.store.get();
     let mediaInfo = this.store.get().project.media[src];
@@ -158,7 +149,6 @@ export class EditorRuntime {
     this.insertLayer(createColorLayer({ range: this.getNewStillRange() }));
   }
 
-  /** Removes a layer, clearing the selection if it was the selected one. */
   removeLayer(id: string): void {
     this.reschedulePlayback(() => {
       const { project, selection } = this.store.get();
@@ -176,12 +166,12 @@ export class EditorRuntime {
     });
   }
 
-  setCanvas(canvas: Project["canvas"]): void {
+  setCanvas(canvas: Canvas): void {
     const { project } = this.store.get();
     this.store.update({ project: { ...project, canvas } });
   }
 
-  setOutput(output: Project["output"]): void {
+  setOutput(output: Output): void {
     const { project } = this.store.get();
     this.store.update({ project: { ...project, output } });
   }
@@ -190,7 +180,7 @@ export class EditorRuntime {
    * Switches between video and still output. A still takes the playhead's
    * frame, and a video spans every layer so its markers trim inward.
    */
-  setOutputType(type: Project["output"]["type"]): void {
+  setOutputType(type: Output["type"]): void {
     const { project, playhead } = this.store.get();
     if (project.output.type === type) {
       return;
@@ -228,53 +218,24 @@ export class EditorRuntime {
     };
   }
 
-  /**
-   * Puts a new layer on top and selects it. The first video or audio layer of
-   * a project without an output range also sets the output to its own range,
-   * so a new project renders something right away.
-   */
   private insertLayer(layer: Layer): void {
     const id = crypto.randomUUID();
     this.reschedulePlayback(() => {
       const { project } = this.store.get();
-      const { output } = project;
-      const range = getLayerRange(layer);
       this.store.update({
-        project: {
-          ...project,
-          layers: [...project.layers, { ...layer, id }],
-          output:
-            (layer.type === "video" || layer.type === "audio") &&
-            output.type === "video" &&
-            output.end <= output.start
-              ? { ...output, ...range, end: roundToMillisecond(range.end) }
-              : output,
-        },
+        project: { ...project, layers: [...project.layers, { ...layer, id }] },
         selection: { type: "layer", id },
       });
       this.syncPlayback();
     });
-    if (
-      (layer.type === "video" || layer.type === "audio") &&
-      !this.store.get().audioSources[layer.src]
-    ) {
+    if (layer.type === "video" || layer.type === "audio") {
       this.loadAudio(layer.src);
     }
   }
 
-  /**
-   * An image, text, or color layer spans the output, which also covers
-   * variants inside it, such as the thumbnail. Without an output range yet, it
-   * lasts five seconds from the playhead.
-   */
-  private getNewStillRange(): Range {
-    const { project, playhead } = this.store.get();
-    const output = getOutputRange(project);
-    if (output.end > output.start) {
-      return { start: output.start, end: roundToMillisecond(output.end) };
-    }
-    const start = snapToFrame(playhead, project.canvas.fps);
-    return { start, end: start + 5 };
+  private getNewStillRange(): TimeRange {
+    const output = getOutputRange(this.store.get().project);
+    return { start: output.start, end: roundToMillisecond(output.end) };
   }
 
   /**
@@ -328,6 +289,9 @@ export class EditorRuntime {
 
   /** Starts decoding a source, and syncs playback once its buffer arrives. */
   private loadAudio(src: string): void {
+    if (this.store.get().audioSources[src]) {
+      return;
+    }
     const decodeAudio = async (): Promise<DecodedAudio> => {
       const data = await apiClient.loadAudioData({
         src,

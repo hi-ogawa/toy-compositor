@@ -1,21 +1,14 @@
-import { fitBox, type Range } from "./layout.ts";
+import { fitBox, type TimeRange } from "./layout.ts";
 import type { MediaType } from "./media-file.ts";
 import type {
+  Canvas,
   ColorLayer,
   Layer,
   MediaInfo,
-  Project,
   TextLayer,
 } from "./project.ts";
 
-type Canvas = Project["canvas"];
-
-/**
- * A layer for a media file, named after the file. A video or audio layer plays
- * its whole source range from `start`, and an image spans `stillRange`. Video
- * and images fit inside the canvas at their own aspect ratio, so the box is the
- * visible area.
- */
+/** Video and images fit inside the canvas, so the box is the visible area. */
 export function createMediaLayer({
   src,
   type,
@@ -29,7 +22,7 @@ export function createMediaLayer({
   mediaInfo: MediaInfo;
   canvas: Canvas;
   start: number;
-  stillRange: Range;
+  stillRange: TimeRange;
 }): Layer {
   const name = src
     .split("/")
@@ -70,13 +63,12 @@ export function createMediaLayer({
   }
 }
 
-/** A white centered caption across the middle of the canvas. */
 export function createTextLayer({
   canvas,
   range,
 }: {
   canvas: Canvas;
-  range: Range;
+  range: TimeRange;
 }): TextLayer {
   return {
     type: "text",
@@ -93,7 +85,6 @@ export function createTextLayer({
   };
 }
 
-/** A half-transparent black fill over the whole canvas, like a dim under a title. */
-export function createColorLayer({ range }: { range: Range }): ColorLayer {
+export function createColorLayer({ range }: { range: TimeRange }): ColorLayer {
   return { type: "color", color: "#000000", opacity: 0.5, ...range };
 }

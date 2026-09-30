@@ -58,7 +58,6 @@ export function useLayerInteraction({
     });
   }
 
-  /** Removes the selected layer on Delete or Backspace, except during a drag. */
   function handleRemoveShortcut(event: KeyboardEvent): boolean {
     const { selection } = state;
     if (

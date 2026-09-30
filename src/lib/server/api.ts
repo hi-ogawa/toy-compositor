@@ -238,7 +238,6 @@ async function resolveMediaFile({
   return file;
 }
 
-/** List files with a media extension in the project's `media/` folder, which may not exist yet. */
 async function listMediaFiles({
   registry,
   url,
@@ -247,9 +246,10 @@ async function listMediaFiles({
   url: URL;
 }) {
   const dir = await resolveMediaFolder({ registry, url });
-  const entries = await fs.promises
-    .readdir(dir, { withFileTypes: true })
-    .catch(() => []);
+  if (!fs.existsSync(dir)) {
+    return [];
+  }
+  const entries = await fs.promises.readdir(dir, { withFileTypes: true });
   const files: MediaFile[] = [];
   for (const entry of entries) {
     const type = getMediaType(entry.name);
@@ -260,10 +260,6 @@ async function listMediaFiles({
   return files.sort((a, b) => a.src.localeCompare(b.src));
 }
 
-/**
- * Open the project's `media/` folder with the platform's opener on the
- * server's desktop, creating it first if needed.
- */
 async function openMediaFolder({
   registry,
   url,

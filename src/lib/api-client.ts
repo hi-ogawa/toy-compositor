@@ -1,5 +1,5 @@
 import type { MediaFile } from "./media-file.ts";
-import type { MediaInfo, Project } from "./project.ts";
+import type { MediaInfo, Output, Project } from "./project.ts";
 
 /** A project file, named by its folder's absolute path and its name in that folder. */
 export type ProjectLocation = { dir: string; file: string };
@@ -11,7 +11,7 @@ export type ProjectEntry = {
   file: string;
   width: number;
   height: number;
-  output: Project["output"]["type"];
+  output: Output["type"];
 };
 
 /** A registered project folder with its project files, or `missing` when it no longer exists. */
@@ -136,7 +136,6 @@ export const apiClient = {
     });
   },
 
-  /** Lists the media files in the project's `media/` folder. */
   async listMediaFiles({ dir }: { dir: string }): Promise<MediaFile[]> {
     const res = await fetch(
       getApiUrl({
@@ -150,7 +149,6 @@ export const apiClient = {
     return (await res.json()).files;
   },
 
-  /** Opens the project's `media/` folder in the server desktop's file manager. */
   async openMediaFolder({ dir }: { dir: string }): Promise<void> {
     const res = await fetch(
       getApiUrl({
@@ -164,7 +162,6 @@ export const apiClient = {
     }
   },
 
-  /** Probes a media file on the server into the entry that the project's `media` keeps for it. */
   async loadMediaInfo({
     src,
     dir,

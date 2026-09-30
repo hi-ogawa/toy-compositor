@@ -135,7 +135,6 @@ const mediaUrls = new Map(
 
 // The static demo has no server to probe media, so it looks files up in the
 // samples' own media info.
-const sampleMediaInfoMap: Record<string, MediaInfo> = Object.assign(
-  {},
-  ...sampleProjects.map(([, project]) => project.media),
+const sampleMediaInfoMap: Record<string, MediaInfo> = Object.fromEntries(
+  sampleProjects.flatMap(([, project]) => Object.entries(project.media)),
 );

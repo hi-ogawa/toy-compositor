@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import type { Layer } from "../lib/project";
 
-/** Marks a layer type by icon, in timeline lanes and Library rows. */
 export function LayerTypeIcon({ type }: { type: Layer["type"] }) {
   const Icon = LAYER_TYPE_ICONS[type];
   return (
