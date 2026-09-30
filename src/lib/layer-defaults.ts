@@ -1,14 +1,12 @@
-import { fitBox, type Range } from "./layout.ts";
+import { fitBox, type TimeRange } from "./layout.ts";
 import type { MediaType } from "./media-file.ts";
 import type {
+  Canvas,
   ColorLayer,
   Layer,
   MediaInfo,
-  Project,
   TextLayer,
 } from "./project.ts";
-
-type Canvas = Project["canvas"];
 
 /**
  * A layer for a media file, named after the file. A video or audio layer plays
@@ -29,7 +27,7 @@ export function createMediaLayer({
   mediaInfo: MediaInfo;
   canvas: Canvas;
   start: number;
-  stillRange: Range;
+  stillRange: TimeRange;
 }): Layer {
   const name = src
     .split("/")
@@ -76,7 +74,7 @@ export function createTextLayer({
   range,
 }: {
   canvas: Canvas;
-  range: Range;
+  range: TimeRange;
 }): TextLayer {
   return {
     type: "text",
@@ -94,6 +92,6 @@ export function createTextLayer({
 }
 
 /** A half-transparent black fill over the whole canvas, like a dim under a title. */
-export function createColorLayer({ range }: { range: Range }): ColorLayer {
+export function createColorLayer({ range }: { range: TimeRange }): ColorLayer {
   return { type: "color", color: "#000000", opacity: 0.5, ...range };
 }

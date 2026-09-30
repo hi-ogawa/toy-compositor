@@ -12,7 +12,7 @@ import {
   getContentRange,
   getLayerRange,
   getOutputRange,
-  type Range,
+  type TimeRange,
 } from "./layout.ts";
 import type { MediaFile } from "./media-file.ts";
 import {
@@ -264,7 +264,7 @@ export class EditorRuntime {
    * variants inside it, such as the thumbnail. Without an output range yet, it
    * lasts five seconds from the playhead.
    */
-  private getNewStillRange(): Range {
+  private getNewStillRange(): TimeRange {
     const { project, playhead } = this.store.get();
     const output = getOutputRange(project);
     if (output.end > output.start) {
