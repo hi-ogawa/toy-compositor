@@ -34,7 +34,7 @@ export type EditorLocator = Locator & { id: string };
 /** The project as the editor holds it, which saves without the layer and locator ids. */
 export type EditorProject = Omit<Project, "layers" | "locators"> & {
   layers: EditorLayer[];
-  locators?: EditorLocator[];
+  locators: EditorLocator[];
 };
 
 export interface DecodedAudio {
@@ -57,6 +57,7 @@ const EMPTY_PROJECT: EditorProject = {
   canvas: { width: 1920, height: 1080, fps: 30 },
   output: { type: "video", start: 0, end: 0 },
   layers: [],
+  locators: [],
   media: {},
 };
 
@@ -200,7 +201,7 @@ export class EditorRuntime {
   /** Appends a numbered locator, like toy-midi's `addLocator`, and returns its id. */
   addLocator(time: number): string {
     const { project } = this.store.get();
-    const locators = project.locators ?? [];
+    const { locators } = project;
     const locator = {
       id: crypto.randomUUID(),
       label: createNumberedName({
@@ -226,7 +227,7 @@ export class EditorRuntime {
     this.store.update({
       project: {
         ...project,
-        locators: project.locators?.map((locator) =>
+        locators: project.locators.map((locator) =>
           locator.id === id ? { ...locator, ...update } : locator,
         ),
       },
@@ -238,7 +239,7 @@ export class EditorRuntime {
     this.store.update({
       project: {
         ...project,
-        locators: project.locators?.filter((locator) => locator.id !== id),
+        locators: project.locators.filter((locator) => locator.id !== id),
       },
     });
   }

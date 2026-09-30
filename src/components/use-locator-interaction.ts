@@ -73,7 +73,7 @@ export function useLocatorInteraction({
   }
 
   return {
-    locators: project.locators ?? [],
+    locators: project.locators,
     selectedId,
     select,
     add,
