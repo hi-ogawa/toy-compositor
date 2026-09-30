@@ -33,7 +33,6 @@ export function EditorHeader({
 }) {
   return (
     <header className="flex h-[53px] shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-4 shadow-sm">
-      <EditorSaveButton status={saveStatus} onSave={onSave} />
       <span
         className="max-w-[320px] truncate font-mono text-sm text-neutral-300"
         title={file}
@@ -41,7 +40,7 @@ export function EditorHeader({
       >
         {file}
       </span>
-      <div className="h-5 w-px bg-neutral-600" />
+      <EditorSaveButton status={saveStatus} onSave={onSave} />
       <div className="flex-1" />
       <Button
         aria-label="Composition settings"
