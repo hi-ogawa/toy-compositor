@@ -212,13 +212,15 @@ function TimelineLocatorRow({
       ? [
           {
             type: "start" as const,
-            label: "Render start",
+            name: "Render start",
+            label: "Start",
             time: output.start,
             labelSide: "after" as const,
           },
           {
             type: "end" as const,
-            label: "Render end",
+            name: "Render end",
+            label: "End",
             time: output.end,
             labelSide: "before" as const,
           },
@@ -226,7 +228,8 @@ function TimelineLocatorRow({
       : [
           {
             type: "time" as const,
-            label: "Render frame",
+            name: "Render frame",
+            label: "Frame",
             time: output.time,
             labelSide: "after" as const,
           },
@@ -268,7 +271,8 @@ function TimelineLocatorRow({
         .filter((marker) => timeline.isVisible(marker.time))
         .map((marker) => (
           <LocatorMarker
-            key={marker.label}
+            key={marker.type}
+            name={marker.name}
             label={marker.label}
             time={marker.time}
             left={timeline.timeToX(marker.time)}
@@ -288,6 +292,7 @@ function TimelineLocatorRow({
         .map((locator) => (
           <LocatorMarker
             key={locator.id}
+            name={locator.label}
             label={locator.label}
             time={locator.time}
             left={timeline.timeToX(locator.time)}
@@ -552,6 +557,7 @@ function getTimelineGridBackground(
 }
 
 function LocatorMarker({
+  name,
   label,
   time,
   left,
@@ -564,6 +570,8 @@ function LocatorMarker({
   onMove,
   onRename,
 }: {
+  /** Render markers show a short label, and their color says they render. */
+  name: string;
   label: string;
   time: number;
   left: number;
@@ -618,9 +626,9 @@ function LocatorMarker({
       <button
         ref={dragRef}
         type="button"
-        aria-label={label}
+        aria-label={name}
         aria-pressed={selected}
-        title={`${label} · ${time.toFixed(3)} s\nDrag to move${onRename ? " · Delete to remove" : ""}`}
+        title={`${name} · ${time.toFixed(3)} s\nDrag to move${onRename ? " · Delete to remove" : ""}`}
         className={cn(
           "group relative flex h-full touch-none items-center outline-none hover:text-sky-200 focus-visible:ring-1 focus-visible:ring-sky-300",
           labelSide === "before" ? "pr-4" : "pl-4",
