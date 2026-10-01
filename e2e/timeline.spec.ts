@@ -194,6 +194,60 @@ test("scroll and zoom the timeline with the wheel", async ({
   await expect(time).toContainText("3.500 s");
 });
 
+test("resize the timeline and its layer lanes", async ({ page, editor }) => {
+  // Open the synthetic project and confirm the Locators and Layers rows have
+  // matching heights.
+  await page.goto(editor.url);
+  const timeline = page.getByTestId("editor-timeline");
+  const locatorRow = timeline.getByRole("button", {
+    name: "Locator row",
+    exact: true,
+  });
+  const ruler = timeline.getByRole("button", {
+    name: "Timeline ruler",
+    exact: true,
+  });
+  expect((await ruler.boundingBox())!.height).toBe(
+    (await locatorRow.boundingBox())!.height,
+  );
+
+  // Drag the top border upward and confirm the timeline takes more of the
+  // editor without changing the project.
+  const initialTimelineHeight = (await timeline.boundingBox())!.height;
+  await dragBy(page, page.getByTitle("Resize timeline"), { deltaY: -80 });
+  expect((await timeline.boundingBox())!.height).toBeGreaterThan(
+    initialTimelineHeight,
+  );
+
+  // Drag a layer's bottom edge and confirm only that lane grows.
+  const video = page.getByTestId("timeline-layer-0");
+  const audio = page.getByTestId("timeline-layer-1");
+  const initialVideoHeight = (await video.boundingBox())!.height;
+  const initialAudioHeight = (await audio.boundingBox())!.height;
+  await dragBy(page, page.getByTestId("timeline-layer-0-resize"), {
+    deltaY: 100,
+  });
+  expect((await video.boundingBox())!.height).toBeGreaterThan(
+    initialVideoHeight,
+  );
+  expect((await audio.boundingBox())!.height).toBe(initialAudioHeight);
+
+  // Shrink the panel, scroll its lanes, and confirm both header rows stay
+  // pinned at the top of the scrolling area.
+  await dragBy(page, page.getByTitle("Resize timeline"), { deltaY: 200 });
+  const locatorY = (await locatorRow.boundingBox())!.y;
+  const rulerY = (await ruler.boundingBox())!.y;
+  await page
+    .getByTestId("timeline-scroll-area")
+    .evaluate((element) => (element.scrollTop = 120));
+  expect((await locatorRow.boundingBox())!.y).toBe(locatorY);
+  expect((await ruler.boundingBox())!.y).toBe(rulerY);
+  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
+});
+
 test("play the composition and step by frames", async ({ page, editor }) => {
   // Open the synthetic project, where the video starts at 0.
   await page.goto(editor.url);
