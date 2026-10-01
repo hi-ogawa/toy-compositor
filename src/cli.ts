@@ -9,7 +9,11 @@ import { renderProject } from "./lib/render/render.ts";
 import { createLiveConnections } from "./lib/server/live.ts";
 import { openWithDefaultApp } from "./lib/server/open-default.ts";
 import { createProjectRegistry, getConfigDir } from "./lib/server/registry.ts";
-import { checkEditorServer, serveEditor } from "./lib/server/serve.ts";
+import {
+  checkEditorServer,
+  type EditorServer,
+  serveEditor,
+} from "./lib/server/serve.ts";
 
 const packageDir = path.dirname(
   fileURLToPath(import.meta.resolve("#package.json")),
@@ -126,7 +130,7 @@ async function runServe({
   }
   const url = `http://localhost:${port}/`;
   const live = createLiveConnections();
-  let server: Awaited<ReturnType<typeof serveEditor>>;
+  let server: EditorServer;
   try {
     server = await serveEditor({ registry, live, port, clientDir });
   } catch (error) {
