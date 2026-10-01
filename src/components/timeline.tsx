@@ -54,6 +54,7 @@ export function Timeline({
   onClearSelection: () => void;
 }) {
   const seek = (time: number) => runtime.seek(time);
+  const renderMarkers = getRenderMarkers(project.output);
   return (
     <section
       className="flex h-80 shrink-0 flex-col border-t border-neutral-700 text-sm"
@@ -97,7 +98,7 @@ export function Timeline({
         <div className="relative">
           <TimelineLocatorRow
             timeline={timeline}
-            output={project.output}
+            renderMarkers={renderMarkers}
             locatorInteraction={locatorInteraction}
             renderSelected={selection?.type === "output"}
             onRenderSelect={() => layerInteraction.select({ type: "output" })}
@@ -130,6 +131,18 @@ export function Timeline({
                 }
               />
             ))}
+          {renderMarkers
+            .filter((marker) => timeline.isVisible(marker.time))
+            .map((marker) => (
+              <div
+                key={marker.type}
+                className="pointer-events-none absolute bottom-0 top-7 z-[5] w-px bg-primary/40"
+                data-testid={`timeline-render-guide-${marker.type}`}
+                style={{
+                  left: TIMELINE_LABEL_WIDTH + timeline.timeToX(marker.time),
+                }}
+              />
+            ))}
           {timeline.isVisible(playhead) && (
             <div
               className="pointer-events-none absolute inset-y-0 z-10 w-px bg-sky-400"
@@ -144,6 +157,37 @@ export function Timeline({
     </section>
   );
 }
+
+function getRenderMarkers(output: Output) {
+  return output.type === "video"
+    ? [
+        {
+          type: "start" as const,
+          name: "Render start",
+          label: "Start",
+          time: output.start,
+          labelSide: "after" as const,
+        },
+        {
+          type: "end" as const,
+          name: "Render end",
+          label: "End",
+          time: output.end,
+          labelSide: "before" as const,
+        },
+      ]
+    : [
+        {
+          type: "time" as const,
+          name: "Render frame",
+          label: "Frame",
+          time: output.time,
+          labelSide: "after" as const,
+        },
+      ];
+}
+
+type RenderMarker = ReturnType<typeof getRenderMarkers>[number];
 
 function TimelineRuler({
   timeline,
@@ -201,7 +245,7 @@ function TimelineRuler({
 /** Render boundaries from the output, followed by the project's own locators. */
 function TimelineLocatorRow({
   timeline,
-  output,
+  renderMarkers,
   locatorInteraction,
   renderSelected,
   onRenderSelect,
@@ -209,40 +253,13 @@ function TimelineLocatorRow({
   onSeek,
 }: {
   timeline: TimelineView;
-  output: Output;
+  renderMarkers: RenderMarker[];
   locatorInteraction: LocatorInteraction;
   renderSelected: boolean;
   onRenderSelect: () => void;
   onClearSelection: () => void;
   onSeek: (time: number) => void;
 }) {
-  const renderMarkers =
-    output.type === "video"
-      ? [
-          {
-            type: "start" as const,
-            name: "Render start",
-            label: "Start",
-            time: output.start,
-            labelSide: "after" as const,
-          },
-          {
-            type: "end" as const,
-            name: "Render end",
-            label: "End",
-            time: output.end,
-            labelSide: "before" as const,
-          },
-        ]
-      : [
-          {
-            type: "time" as const,
-            name: "Render frame",
-            label: "Frame",
-            time: output.time,
-            labelSide: "after" as const,
-          },
-        ];
   return (
     <TimelineRow
       timeline={timeline}

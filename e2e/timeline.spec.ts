@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { TIMELINE_LABEL_WIDTH } from "../src/components/use-timeline.ts";
 import type { Project } from "../src/lib/project.ts";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
 import { readJson } from "../src/utils/fs.ts";
@@ -160,6 +161,7 @@ test("scroll and zoom the timeline with the wheel", async ({
   const ruler = page
     .getByTestId("editor-timeline")
     .getByRole("button", { name: "Timeline ruler", exact: true });
+  const renderEndGuide = page.getByTestId("timeline-render-guide-end");
   const box = (await ruler.boundingBox())!;
   const y = box.y + box.height / 2;
   const pointerX = 0.5 * DEFAULT_PIXELS_PER_SECOND;
@@ -173,6 +175,10 @@ test("scroll and zoom the timeline with the wheel", async ({
   const scrollX = 1 * DEFAULT_PIXELS_PER_SECOND;
   await page.mouse.wheel(0, scrollX);
   await expect(ruler.locator("span").first()).toHaveText("1");
+  await expect(renderEndGuide).toHaveCSS(
+    "left",
+    `${TIMELINE_LABEL_WIDTH + 2 * DEFAULT_PIXELS_PER_SECOND}px`,
+  );
   await seekTimelineByPixels(page, { pixels: pointerX });
   await expect(time).toContainText("1.500 s");
 
@@ -186,6 +192,10 @@ test("scroll and zoom the timeline with the wheel", async ({
   await page.mouse.wheel(0, -100);
   await page.keyboard.up("Control");
   await expect(ruler.locator("span").first()).toHaveText("2");
+  await expect(renderEndGuide).toHaveCSS(
+    "left",
+    `${TIMELINE_LABEL_WIDTH + zoomAnchorX + 0.5 * zoomedPixelsPerSecond}px`,
+  );
   await seekTimelineByPixels(page, { pixels: zoomAnchorX });
   await expect(time).toContainText("2.500 s");
   await seekTimelineByPixels(page, {
@@ -406,12 +416,20 @@ test("drag render markers on the timeline", async ({ page, editor }) => {
     page
       .getByTestId("editor-timeline")
       .getByRole("button", { name, exact: true });
+  const renderEndGuide = page.getByTestId("timeline-render-guide-end");
 
-  // Drag render end 1 s left, and confirm it selects the output and moves the
-  // end without seeking.
+  // Drag render end 1 s left, and confirm its guide follows before release.
   await dragBy(page, getMarker("Render end"), {
     deltaX: secondsToPixels(-1),
+    release: false,
   });
+  await expect(renderEndGuide).toHaveCSS(
+    "left",
+    `${TIMELINE_LABEL_WIDTH + 2 * DEFAULT_PIXELS_PER_SECOND}px`,
+  );
+  await page.mouse.up();
+
+  // Confirm the drag selects the output and moves the end without seeking.
   await expectInspectorFields(page, { start: "0", end: "2" });
   await expect(page.getByTestId("timeline-time")).toContainText("0.000 s");
 
@@ -440,9 +458,16 @@ test("drag render markers on the timeline", async ({ page, editor }) => {
     .getByTestId("inspector")
     .getByRole("button", { name: "still", exact: true })
     .click();
+  await expect(page.getByTestId("timeline-render-guide-start")).toHaveCount(0);
+  await expect(page.getByTestId("timeline-render-guide-end")).toHaveCount(0);
+  const renderFrameGuide = page.getByTestId("timeline-render-guide-time");
   await dragBy(page, getMarker("Render frame"), {
     deltaX: secondsToPixels(0.51),
   });
+  await expect(renderFrameGuide).toHaveCSS(
+    "left",
+    `${TIMELINE_LABEL_WIDTH + 1.5 * DEFAULT_PIXELS_PER_SECOND}px`,
+  );
   await expectInspectorFields(page, { time: "1.5" });
 
   // Save and confirm the output reaches the project file.
