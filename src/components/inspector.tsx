@@ -71,7 +71,11 @@ export function Inspector({
   }
 }
 
-type TimeFieldOptions = ReturnType<typeof getTimeFieldOptions>;
+interface TimeFieldOptions {
+  step: number;
+  min: number;
+  round: (value: number) => number;
+}
 
 type LayerUpdate = (update: Partial<Layer>) => void;
 
@@ -642,7 +646,7 @@ const PIXEL_FIELD = { step: 1, round: Math.round };
  * the rest of the format. Arrow keys step by one frame, and times never go
  * below 0.
  */
-function getTimeFieldOptions(fps: number) {
+function getTimeFieldOptions(fps: number): TimeFieldOptions {
   return {
     step: 1 / fps,
     min: 0,

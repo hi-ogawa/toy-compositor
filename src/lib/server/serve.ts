@@ -4,8 +4,6 @@ import { createEditorHandler, SERVER_NAME } from "./api.ts";
 import type { LiveConnections } from "./live.ts";
 import type { ProjectRegistry } from "./registry.ts";
 
-export type EditorServer = Awaited<ReturnType<typeof serveEditor>>;
-
 /**
  * Serve the prebuilt editor client and the editor API over the registered
  * project folders on localhost, with the same `/api/` handler that the dev server mounts.

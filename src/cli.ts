@@ -3,17 +3,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import type { Server } from "srvx";
 import { installDesktopEntry } from "./lib/desktop-entry.ts";
 import { updateProjectMedia } from "./lib/media-info.ts";
 import { renderProject } from "./lib/render/render.ts";
 import { createLiveConnections } from "./lib/server/live.ts";
 import { openWithDefaultApp } from "./lib/server/open-default.ts";
 import { createProjectRegistry, getConfigDir } from "./lib/server/registry.ts";
-import {
-  checkEditorServer,
-  type EditorServer,
-  serveEditor,
-} from "./lib/server/serve.ts";
+import { checkEditorServer, serveEditor } from "./lib/server/serve.ts";
 
 const packageDir = path.dirname(
   fileURLToPath(import.meta.resolve("#package.json")),
@@ -130,7 +127,7 @@ async function runServe({
   }
   const url = `http://localhost:${port}/`;
   const live = createLiveConnections();
-  let server: EditorServer;
+  let server: Server;
   try {
     server = await serveEditor({ registry, live, port, clientDir });
   } catch (error) {
