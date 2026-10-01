@@ -8,6 +8,7 @@ export function AudioWaveformView({
   sourceEnd,
   pixelsPerSecond,
   dimmed,
+  testId = "timeline-waveform",
 }: {
   audioView: AudioView;
   /** Source time at the left edge of the parent, in seconds. */
@@ -17,6 +18,7 @@ export function AudioWaveformView({
   pixelsPerSecond: number;
   /** Drawn faintly when the layer's audio does not reach the mix. */
   dimmed: boolean;
+  testId?: string;
 }) {
   // Expand culling to source-anchored 256 px windows. Small scrolls keep the
   // same query and SVG bounds, and the parent clips the excess waveform.
@@ -44,7 +46,7 @@ export function AudioWaveformView({
 
   return (
     <svg
-      data-testid="timeline-waveform"
+      data-testid={testId}
       data-dimmed={dimmed || undefined}
       className={cn("pointer-events-none absolute", dimmed && "opacity-40")}
       style={{

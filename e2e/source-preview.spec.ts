@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test";
 import {
+  commitInspectorField,
   dragBy,
   expectImageLoaded,
   seekVideo,
@@ -22,10 +23,12 @@ test("preview synthetic sources", async ({ page, editor }) => {
   await clickTimelineButton(page, { name: "Test pattern video" });
   await expect(page.locator("#side-panel video")).toBeVisible();
 
-  // Switch to audio and confirm its preview replaces the video player.
+  // Switch to audio and confirm its waveform player replaces the video player.
   await clickTimelineButton(page, { name: "Tone 660 Hz audio" });
   await expect(page.locator("#side-panel video")).toHaveCount(0);
-  await expect(page.locator("#side-panel audio")).toBeVisible();
+  await expect(page.locator("#side-panel audio")).toBeHidden();
+  await expect(page.getByTestId("source-waveform")).toBeVisible();
+  await expect(page.getByTestId("source-selected-range")).toBeVisible();
 
   // Select the image and confirm it loads without making the project dirty.
   await clickTimelineButton(page, { name: "Label backdrop image" });
@@ -75,4 +78,59 @@ test("resize and collapse the source panel without changing the project", async 
     "data-status",
     "saved",
   );
+});
+
+test("seek source audio and keep its playback separate from the composition", async ({
+  page,
+  editor,
+}) => {
+  // Open the audio source player and wait for its shared decoded waveform.
+  await page.goto(editor.url);
+  await page.getByRole("tab", { name: "Source" }).click();
+  await clickTimelineButton(page, { name: "Tone 660 Hz audio" });
+  await expect(page.getByTestId("source-waveform")).toBeVisible();
+  const audio = page.locator("#side-panel audio");
+
+  // Trim the selected layer and confirm its source interval shades the waveform.
+  await commitInspectorField(page, { name: "in", value: "0.6" });
+  await commitInspectorField(page, { name: "out", value: "2.4" });
+  const selectedRange = page.getByTestId("source-selected-range");
+  await expect
+    .poll(() => selectedRange.evaluate((element) => element.style.left))
+    .toBe("20%");
+  await expect
+    .poll(() => selectedRange.evaluate((element) => element.style.width))
+    .toBe("60%");
+
+  // Click halfway through the waveform and confirm the hidden media element seeks.
+  const waveform = page.getByRole("button", { name: "Seek source audio" });
+  const bounds = (await waveform.boundingBox())!;
+  await page.mouse.click(
+    bounds.x + bounds.width / 2,
+    bounds.y + bounds.height / 2,
+  );
+  await expect
+    .poll(() =>
+      audio.evaluate((element: HTMLAudioElement) => element.currentTime),
+    )
+    .toBeCloseTo(1.5, 1);
+
+  // Start composition playback, then start the source and confirm it takes over.
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Pause", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Play source audio" }).click();
+  await expect(
+    page.getByRole("button", { name: "Play", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Pause source audio" }),
+  ).toBeVisible();
+
+  // Restart the composition and confirm it pauses source playback in reverse.
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Play source audio" }),
+  ).toBeVisible();
 });

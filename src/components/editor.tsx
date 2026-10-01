@@ -244,7 +244,17 @@ function LibrarySourceTabs({
             onLayerAdd={onLayerAdd}
           />
         ) : (
-          <MediaPreview layer={layer} resolveMediaUrl={resolveMediaUrl} />
+          <MediaPreview
+            layer={layer}
+            runtime={runtime}
+            audioSource={
+              layer?.type === "audio"
+                ? runtime.store.get().audioSources[layer.src]
+                : undefined
+            }
+            compositionPlaying={runtime.store.get().playing}
+            resolveMediaUrl={resolveMediaUrl}
+          />
         )}
       </div>
     </>
