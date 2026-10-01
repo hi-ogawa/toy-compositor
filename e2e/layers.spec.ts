@@ -173,3 +173,87 @@ test("remove the selected layer", async ({ page, editor }) => {
     "Label backdrop",
   ]);
 });
+
+test("move the selected layer up and down in the stack", async ({
+  page,
+  editor,
+}) => {
+  // Open the synthetic project, whose stack from the bottom is the video, the
+  // audio, the image, and the title text, and select the image.
+  await page.goto(editor.url);
+  const regions = page
+    .getByTestId("editor-timeline")
+    .getByRole("button", { name: /^Select .* region$/ });
+  const expectLaneOrder = (names: string[]) =>
+    expect
+      .poll(() =>
+        regions.evaluateAll((elements) =>
+          elements.map((element) => element.getAttribute("aria-label")),
+        ),
+      )
+      .toEqual(names.map((name) => `Select ${name} region`));
+  await expectLaneOrder([
+    "Title",
+    "Label backdrop",
+    "Tone 660 Hz",
+    "Test pattern",
+  ]);
+  await clickTimelineButton(page, { name: "Label backdrop image" });
+  const moveUp = page.getByRole("button", { name: "Move up", exact: true });
+  const moveDown = page.getByRole("button", { name: "Move down", exact: true });
+
+  // Move it up, and confirm it takes the top lane and draws above the title
+  // while staying selected, with nothing left above it.
+  await moveUp.click();
+  await expectLaneOrder([
+    "Label backdrop",
+    "Title",
+    "Tone 660 Hz",
+    "Test pattern",
+  ]);
+  const top = page.getByTestId("composition-layer-3");
+  await expect(top.getByRole("img", { name: "Label backdrop" })).toBeVisible();
+  await expect(top.getByLabel("Selected layer outline")).toBeVisible();
+  await expect(page.getByTestId("composition-layer-2")).toHaveText(
+    "Synthetic sample",
+  );
+  await expect(moveUp).toBeDisabled();
+
+  // Move it down twice to just above the video, and confirm the inspector
+  // still shows it.
+  await moveDown.click();
+  await moveDown.click();
+  await expectLaneOrder([
+    "Title",
+    "Tone 660 Hz",
+    "Label backdrop",
+    "Test pattern",
+  ]);
+  await expectInspectorFields(page, { start: "0", end: "3", x: "420" });
+
+  // Move it to the bottom, and confirm nothing is left below it.
+  await moveDown.click();
+  await expectLaneOrder([
+    "Title",
+    "Tone 660 Hz",
+    "Test pattern",
+    "Label backdrop",
+  ]);
+  await expect(moveDown).toBeDisabled();
+
+  // Save and confirm the file keeps the new order.
+  await page.getByTestId("editor-save-button").click();
+  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
+  const project = await readJson<{ layers: { name: string }[] }>(
+    editor.projectFile,
+  );
+  expect(project.layers.map((layer) => layer.name)).toEqual([
+    "Label backdrop",
+    "Test pattern",
+    "Tone 660 Hz",
+    "Title",
+  ]);
+});

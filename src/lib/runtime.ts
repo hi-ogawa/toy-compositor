@@ -164,6 +164,22 @@ export class EditorRuntime {
     });
   }
 
+  /** Swaps a layer with its neighbor, where "up" is toward the top of the stack. */
+  moveLayer({ id, direction }: { id: string; direction: "up" | "down" }): void {
+    const { layers } = this.store.get().project;
+    const index = layers.findIndex((layer) => layer.id === id);
+    const target = direction === "up" ? index + 1 : index - 1;
+    if (index === -1 || target < 0 || target >= layers.length) {
+      return;
+    }
+    this.reschedulePlayback(() => {
+      const { project } = this.store.get();
+      const next = project.layers.slice();
+      [next[index], next[target]] = [next[target]!, next[index]!];
+      this.store.update({ project: { ...project, layers: next } });
+    });
+  }
+
   setCanvas(canvas: Canvas): void {
     const { project } = this.store.get();
     this.store.update({ project: { ...project, canvas } });
