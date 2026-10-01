@@ -93,7 +93,6 @@ export async function dragBy(
   return await test.step(
     `Drag by ${deltaX}px horizontally and ${deltaY}px vertically${release ? "" : " without releasing"}`,
     async () => {
-      await locator.scrollIntoViewIfNeeded();
       const bounds = await locator.boundingBox();
       expect(bounds).not.toBeNull();
       const x = bounds!.x + bounds!.width / 2;
