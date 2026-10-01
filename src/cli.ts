@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import type { Server } from "srvx";
 import { installDesktopEntry } from "./lib/desktop-entry.ts";
 import { updateProjectMedia } from "./lib/media-info.ts";
 import { renderProject } from "./lib/render/render.ts";
@@ -126,7 +127,7 @@ async function runServe({
   }
   const url = `http://localhost:${port}/`;
   const live = createLiveConnections();
-  let server: Awaited<ReturnType<typeof serveEditor>>;
+  let server: Server;
   try {
     server = await serveEditor({ registry, live, port, clientDir });
   } catch (error) {

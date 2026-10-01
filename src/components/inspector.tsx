@@ -71,8 +71,6 @@ export function Inspector({
   }
 }
 
-type TimeFieldOptions = ReturnType<typeof getTimeFieldOptions>;
-
 type LayerUpdate = (update: Partial<Layer>) => void;
 
 interface LayerMoveControls {
@@ -637,12 +635,18 @@ function CropFields({
 
 const PIXEL_FIELD = { step: 1, round: Math.round };
 
+interface TimeFieldOptions {
+  step: number;
+  min: number;
+  round: (value: number) => number;
+}
+
 /**
  * Times snap to the project's frame grid and are stored in milliseconds, like
  * the rest of the format. Arrow keys step by one frame, and times never go
  * below 0.
  */
-function getTimeFieldOptions(fps: number) {
+function getTimeFieldOptions(fps: number): TimeFieldOptions {
   return {
     step: 1 / fps,
     min: 0,
