@@ -4,6 +4,8 @@ import path from "node:path";
 import { readJson } from "../../utils/fs.ts";
 import { HttpError } from "./http.ts";
 
+export type ProjectRegistry = ReturnType<typeof createProjectRegistry>;
+
 /**
  * The project folders that the user opened, by absolute path, kept in
  * `projects.json` under the config directory. It is read on every call, so a
@@ -81,8 +83,6 @@ export function createProjectRegistry({ configDir }: { configDir: string }) {
     },
   };
 }
-
-export type ProjectRegistry = ReturnType<typeof createProjectRegistry>;
 
 /**
  * The user's config directory for toy-compositor, following the platform's
