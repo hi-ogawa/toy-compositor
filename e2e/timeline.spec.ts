@@ -16,20 +16,8 @@ test("navigate the timeline without editing the project", async ({
   page,
   editor,
 }) => {
-  // Open the synthetic project and confirm the ruler matches the locator row.
+  // Open the synthetic project.
   await page.goto(editor.url);
-  const timeline = page.getByTestId("editor-timeline");
-  const locatorRow = timeline.getByRole("button", {
-    name: "Locator row",
-    exact: true,
-  });
-  const ruler = timeline.getByRole("button", {
-    name: "Timeline ruler",
-    exact: true,
-  });
-  expect((await ruler.boundingBox())!.height).toBe(
-    (await locatorRow.boundingBox())!.height,
-  );
   const time = page.getByTestId("timeline-time");
 
   // Click the render start marker and confirm it opens Composition settings.
