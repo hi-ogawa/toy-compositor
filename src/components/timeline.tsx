@@ -164,7 +164,7 @@ function TimelineRuler({
   return (
     <TimelineRow
       timeline={timeline}
-      className="h-10"
+      className="h-7"
       subdivisions={false}
       label={
         <span className="px-3 text-xs font-semibold text-muted-foreground">
