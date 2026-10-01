@@ -18,6 +18,7 @@ import type {
   EditorLayer,
   EditorProject,
 } from "../lib/runtime";
+import { clamp } from "../utils/math";
 import type { PromiseState } from "../utils/promise-state";
 import { AudioWaveformView } from "./audio-waveform";
 import { LayerTypeIcon } from "./layer-type-icon";
@@ -69,12 +70,10 @@ export function Timeline({
     },
     onMove: (_event, { data, deltaY }) =>
       setHeight(
-        Math.max(
+        clamp(
+          data.height - deltaY,
           MIN_TIMELINE_HEIGHT,
-          Math.min(
-            data.editorHeight - MIN_MONITOR_HEIGHT,
-            data.height - deltaY,
-          ),
+          data.editorHeight - MIN_MONITOR_HEIGHT,
         ),
       ),
   });
