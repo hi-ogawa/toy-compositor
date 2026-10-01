@@ -5,6 +5,7 @@ import { EditorRuntime, type EditorLayer } from "../lib/runtime";
 import { CollapsibleSplit } from "./collapsible-split";
 import { CompositionPreview } from "./composition-preview";
 import { EditorHeader } from "./editor-header";
+import { EditorHelp } from "./editor-help";
 import { Inspector } from "./inspector";
 import { LibraryPanel } from "./library-panel";
 import { MediaPreview } from "./media-preview";
@@ -27,6 +28,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
   const { layerInteraction, locatorInteraction, clearSelection } =
     useEditorInteraction({ runtime, state });
   const [sideOpen, setSideOpen] = useState(true);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   useEffect(() => {
     document.title = state.file
@@ -98,6 +100,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
         onCompositionSettingsSelect={() =>
           layerInteraction.select({ type: "output" })
         }
+        onHelpOpen={() => setIsHelpOpen(true)}
       />
       <div className="flex min-h-0 flex-1">
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -163,6 +166,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
           />
         </aside>
       </div>
+      <EditorHelp isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
     </div>
   );
 }
