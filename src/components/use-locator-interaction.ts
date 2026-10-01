@@ -7,6 +7,8 @@ import { clamp } from "../utils/math";
 
 export type RenderMarkerType = "start" | "end" | "time";
 
+export type LocatorInteraction = ReturnType<typeof useLocatorInteraction>;
+
 /**
  * Moves apply to the project as they drag, without a draft like layer edits
  * keep, because neither locators nor the output reschedule playback.
@@ -75,8 +77,6 @@ export function useLocatorInteraction({
     moveRenderMarker,
   };
 }
-
-export type LocatorInteraction = ReturnType<typeof useLocatorInteraction>;
 
 function getMovedOutput(
   output: Output,
