@@ -6,7 +6,7 @@ import {
   PlusIcon,
   VolumeXIcon,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { usePointerGesture } from "../hooks/use-pointer-gesture";
 import type { LayerEditType } from "../lib/layer-edit";
@@ -29,6 +29,10 @@ import type {
 } from "./use-layer-interaction";
 import type { LocatorInteraction } from "./use-locator-interaction";
 import { TIMELINE_LABEL_WIDTH, type TimelineView } from "./use-timeline";
+
+const DEFAULT_TIMELINE_HEIGHT = 320;
+const MIN_TIMELINE_HEIGHT = 160;
+const MIN_MONITOR_HEIGHT = 160;
 
 export function Timeline({
   timeline,
@@ -53,13 +57,41 @@ export function Timeline({
   audioSources: Record<string, PromiseState<DecodedAudio>>;
   onClearSelection: () => void;
 }) {
+  const [height, setHeight] = useState(DEFAULT_TIMELINE_HEIGHT);
+  const containerRef = useRef<HTMLElement>(null);
+  const resizeRef = usePointerDrag({
+    onStart: (event) => {
+      event.preventDefault();
+      return {
+        height,
+        editorHeight: containerRef.current!.parentElement!.clientHeight,
+      };
+    },
+    onMove: (_event, { data, deltaY }) =>
+      setHeight(
+        Math.max(
+          MIN_TIMELINE_HEIGHT,
+          Math.min(
+            data.editorHeight - MIN_MONITOR_HEIGHT,
+            data.height - deltaY,
+          ),
+        ),
+      ),
+  });
   const seek = (time: number) => runtime.seek(time);
   return (
     <section
-      className="flex h-80 shrink-0 flex-col border-t border-neutral-700 text-sm"
+      ref={containerRef}
+      className="relative flex shrink-0 flex-col border-t border-neutral-700 text-sm"
       data-testid="editor-timeline"
       aria-label="Timeline"
+      style={{ height }}
     >
+      <div
+        ref={resizeRef}
+        title="Resize timeline"
+        className="absolute inset-x-0 top-0 z-40 h-px cursor-ns-resize touch-none bg-neutral-700 after:absolute after:inset-x-0 after:-top-1 after:h-2 hover:bg-neutral-500"
+      />
       <div className="flex h-10 shrink-0 items-center gap-3 border-b border-neutral-700 bg-neutral-800 px-3 text-xs">
         <h2 className="shrink-0 font-semibold">Timeline</h2>
         <Button
