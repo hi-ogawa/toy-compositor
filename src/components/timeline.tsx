@@ -6,7 +6,7 @@ import {
   PlusIcon,
   VolumeXIcon,
 } from "lucide-react";
-import { useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { usePointerGesture } from "../hooks/use-pointer-gesture";
 import type { LayerEditType } from "../lib/layer-edit";
@@ -59,13 +59,14 @@ export function Timeline({
   onClearSelection: () => void;
 }) {
   const [height, setHeight] = useState(DEFAULT_TIMELINE_HEIGHT);
-  const containerRef = useRef<HTMLElement>(null);
   const resizeRef = usePointerDrag({
     onStart: (event) => {
       event.preventDefault();
+      const timelineElement = (event.currentTarget as HTMLElement)
+        .parentElement!;
       return {
         height,
-        editorHeight: containerRef.current!.parentElement!.clientHeight,
+        editorHeight: timelineElement.parentElement!.clientHeight,
       };
     },
     onMove: (_event, { data, deltaY }) =>
@@ -81,7 +82,6 @@ export function Timeline({
   const renderMarkers = getRenderMarkers(project.output);
   return (
     <section
-      ref={containerRef}
       className="relative flex shrink-0 flex-col border-t border-neutral-700 text-sm"
       data-testid="editor-timeline"
       aria-label="Timeline"
