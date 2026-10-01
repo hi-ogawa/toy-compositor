@@ -140,7 +140,7 @@ export function Timeline({
               .map((marker) => (
                 <div
                   key={marker.type}
-                  className="absolute bottom-0 top-7 z-[5] w-px bg-primary/40"
+                  className="absolute bottom-0 top-7 z-[5] w-px bg-primary/60"
                   data-testid={`timeline-render-guide-${marker.type}`}
                   style={{ left: timeline.timeToX(marker.time) }}
                 />
