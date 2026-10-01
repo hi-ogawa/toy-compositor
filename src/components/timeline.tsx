@@ -131,27 +131,28 @@ export function Timeline({
                 }
               />
             ))}
-          {renderMarkers
-            .filter((marker) => timeline.isVisible(marker.time))
-            .map((marker) => (
+          <div
+            className="pointer-events-none absolute inset-y-0 right-0"
+            style={{ left: TIMELINE_LABEL_WIDTH }}
+          >
+            {renderMarkers
+              .filter((marker) => timeline.isVisible(marker.time))
+              .map((marker) => (
+                <div
+                  key={marker.type}
+                  className="absolute bottom-0 top-7 z-[5] w-px bg-primary/40"
+                  data-testid={`timeline-render-guide-${marker.type}`}
+                  style={{ left: timeline.timeToX(marker.time) }}
+                />
+              ))}
+            {timeline.isVisible(playhead) && (
               <div
-                key={marker.type}
-                className="pointer-events-none absolute bottom-0 top-7 z-[5] w-px bg-primary/40"
-                data-testid={`timeline-render-guide-${marker.type}`}
-                style={{
-                  left: TIMELINE_LABEL_WIDTH + timeline.timeToX(marker.time),
-                }}
+                className="absolute inset-y-0 z-10 w-px bg-sky-400"
+                data-testid="timeline-playhead"
+                style={{ left: timeline.timeToX(playhead) }}
               />
-            ))}
-          {timeline.isVisible(playhead) && (
-            <div
-              className="pointer-events-none absolute inset-y-0 z-10 w-px bg-sky-400"
-              data-testid="timeline-playhead"
-              style={{
-                left: TIMELINE_LABEL_WIDTH + timeline.timeToX(playhead),
-              }}
-            />
-          )}
+            )}
+          </div>
         </div>
       </div>
     </section>
