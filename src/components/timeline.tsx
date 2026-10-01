@@ -159,36 +159,42 @@ export function Timeline({
   );
 }
 
-function getRenderMarkers(output: Output) {
+type RenderMarker = {
+  type: "start" | "end" | "time";
+  name: string;
+  label: string;
+  time: number;
+  labelSide: "before" | "after";
+};
+
+function getRenderMarkers(output: Output): RenderMarker[] {
   return output.type === "video"
     ? [
         {
-          type: "start" as const,
+          type: "start",
           name: "Render start",
           label: "Start",
           time: output.start,
-          labelSide: "after" as const,
+          labelSide: "after",
         },
         {
-          type: "end" as const,
+          type: "end",
           name: "Render end",
           label: "End",
           time: output.end,
-          labelSide: "before" as const,
+          labelSide: "before",
         },
       ]
     : [
         {
-          type: "time" as const,
+          type: "time",
           name: "Render frame",
           label: "Frame",
           time: output.time,
-          labelSide: "after" as const,
+          labelSide: "after",
         },
       ];
 }
-
-type RenderMarker = ReturnType<typeof getRenderMarkers>[number];
 
 function TimelineRuler({
   timeline,
