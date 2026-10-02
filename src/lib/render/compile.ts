@@ -196,7 +196,8 @@ function compileVideo({
       }),
       filters: [
         `fps=${scene.canvas.fps}`,
-        ...buildPlaceFilters(frames, scene),
+        buildTrimFilter(frames.count),
+        buildPlaceFilter(frames.first, scene),
         ...buildCropFilters(layer.crop),
         `scale=${fit.width}:${fit.height}`,
       ],
@@ -241,7 +242,8 @@ function compileImage({
       filters: [
         ...buildCropFilters(layer.crop),
         `scale=${fit.width}:${fit.height}`,
-        ...buildPlaceFilters(frames, scene),
+        buildTrimFilter(frames.count),
+        buildPlaceFilter(frames.first, scene),
       ],
       x: fit.x,
       y: fit.y,
@@ -270,7 +272,10 @@ function compileText({
         fps: scene.canvas.fps,
         duration: getReadDuration(frames, scene),
       }),
-      filters: buildPlaceFilters(frames, scene),
+      filters: [
+        buildTrimFilter(frames.count),
+        buildPlaceFilter(frames.first, scene),
+      ],
       // The stroked copy pads the PNG by half the outline width, so shift it back up.
       x: layer.box.x,
       y: layer.box.y - Math.round((layer.outline?.width ?? 0) / 2),
@@ -302,7 +307,8 @@ function compileColor({
       filters: [
         `color=c=${layer.color}@${layer.opacity ?? 1}:s=${box.width}x${box.height}:r=${canvas.fps}:d=${getReadDuration(frames, scene)}`,
         "format=rgba",
-        ...buildPlaceFilters(frames, scene),
+        buildTrimFilter(frames.count),
+        buildPlaceFilter(frames.first, scene),
       ],
       x: box.x,
       y: box.y,
@@ -490,15 +496,16 @@ function getReadDuration(frames: OutputFrames, scene: Scene) {
 }
 
 /**
- * Cut a stream at the canvas frame rate to a layer's frame count, then place it
- * on its first output frame. ffmpeg would otherwise end it by its own rounding
- * of the read duration, and setpts truncates, so the offset is rounded.
+ * Cut a stream at the canvas frame rate to a layer's frame count, because
+ * ffmpeg would otherwise end it by its own rounding of the read duration.
  */
-function buildPlaceFilters(frames: OutputFrames, scene: Scene) {
-  return [
-    `trim=end_frame=${frames.count}`,
-    `setpts=PTS-STARTPTS+round(${frames.first / scene.canvas.fps}/TB)`,
-  ];
+function buildTrimFilter(count: number) {
+  return `trim=end_frame=${count}`;
+}
+
+/** Place a stream on its first output frame, rounding because setpts truncates. */
+function buildPlaceFilter(first: number, scene: Scene) {
+  return `setpts=PTS-STARTPTS+round(${first / scene.canvas.fps}/TB)`;
 }
 
 function buildCropFilters(crop?: Crop) {
