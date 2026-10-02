@@ -1,10 +1,15 @@
 #!/usr/bin/env node
+import { spawn } from "node:child_process";
+import { once } from "node:events";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import type { Server } from "srvx";
-import { installDesktopEntry } from "./lib/desktop-entry.ts";
+import {
+  getDesktopEntryFile,
+  installDesktopEntry,
+} from "./lib/desktop-entry.ts";
 import { updateProjectMedia } from "./lib/media-info.ts";
 import { renderProject } from "./lib/render/render.ts";
 import { createLiveConnections } from "./lib/server/live.ts";
@@ -15,11 +20,13 @@ import {
   serveEditor,
   stopEditorServer,
 } from "./lib/server/serve.ts";
-import { UPGRADE_SOURCE, upgradeGlobalInstall } from "./lib/upgrade.ts";
+import { execFileAsync } from "./utils/exec.ts";
 
 const packageDir = path.dirname(
   fileURLToPath(import.meta.resolve("#package.json")),
 );
+
+const UPGRADE_SOURCE = "https://pkg.pr.new/hi-ogawa/toy-compositor@main";
 
 const HELP = `\
 Usage:
@@ -189,6 +196,28 @@ async function runServe({
     await live.waitForLastClose({ graceMs: 3000 });
     console.log("Closing after the last editor tab closed");
     await server.close(true);
+  }
+}
+
+/**
+ * Install the package from `source` globally with pnpm, and rewrite the
+ * desktop entry if one is installed. The entry names the package's CLI by its
+ * versioned path, so the newly installed CLI writes it again.
+ */
+async function upgradeGlobalInstall(source: string) {
+  await runCommand("pnpm", ["add", "-g", source]);
+  if (fs.existsSync(getDesktopEntryFile())) {
+    const { stdout } = await execFileAsync("pnpm", ["bin", "-g"]);
+    const cli = path.join(stdout.trim(), "toy-compositor");
+    await runCommand(cli, ["install-desktop"]);
+  }
+}
+
+async function runCommand(command: string, args: string[]) {
+  const child = spawn(command, args, { stdio: "inherit" });
+  const [code] = await once(child, "close");
+  if (code !== 0) {
+    throw new Error(`${command} ${args.join(" ")} exited with code ${code}`);
   }
 }
 
