@@ -38,12 +38,12 @@ Usage:
       Stop the running editor server, leaving another process on the port alone
   toy-compositor status [--port <port>]
       Show whether the editor server is running
+  toy-compositor install-desktop
+      Add an app launcher entry that runs serve --open (Linux)
   toy-compositor upgrade [source]
       Install the latest build globally with pnpm, or the build from source,
       update the app launcher entry, and stop the running editor server,
       so the next launch uses the new build
-  toy-compositor install-desktop
-      Add an app launcher entry that runs serve --open (Linux)
   toy-compositor add <path>
       Add a project folder, given as the folder or a project file inside it
   toy-compositor render <project.json> <output> [--dry-run]
@@ -97,15 +97,6 @@ async function main() {
       );
       break;
     }
-    case "upgrade": {
-      await upgradeGlobalInstall(args[0] ?? UPGRADE_SOURCE);
-      if (await stopEditorServer(Number(values.port))) {
-        console.log(
-          "Stopped the running editor. Launch it again to use the new build.",
-        );
-      }
-      break;
-    }
     case "install-desktop": {
       const iconFile = path.join(getClientDir(), "icon.svg");
       const entryFile = await installDesktopEntry({
@@ -113,6 +104,15 @@ async function main() {
         iconFile,
       });
       console.log(`Installed ${entryFile}`);
+      break;
+    }
+    case "upgrade": {
+      await upgradeGlobalInstall(args[0] ?? UPGRADE_SOURCE);
+      if (await stopEditorServer(Number(values.port))) {
+        console.log(
+          "Stopped the running editor. Launch it again to use the new build.",
+        );
+      }
       break;
     }
     case "add": {
