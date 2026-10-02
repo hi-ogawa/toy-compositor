@@ -137,6 +137,34 @@ test("fade audio at the layer's own edges when the output cuts into them", async
   );
 });
 
+test("place a layer on the output frame nearest its start", async ({}, testInfo) => {
+  // Copy the synthetic sample and keep only its test pattern, starting at
+  // 1.033s, which is frame 31 at 30fps rounded to milliseconds, for 1s.
+  const directory = testInfo.outputPath("project");
+  await cp("samples/synthetic", directory, { recursive: true });
+  await editJson<Project>(`${directory}/project.json`, (project) => {
+    project.layers = project.layers
+      .filter((layer) => layer.type === "video")
+      .map((layer) => ({ ...layer, start: 1.033, in: 0, out: 1 }));
+  });
+  const output = testInfo.outputPath("placed.mp4");
+  await execFileAsync(process.execPath, [
+    "src/cli.ts",
+    "render",
+    `${directory}/project.json`,
+    output,
+  ]);
+
+  // Check that the pattern covers frames 31 through 60 and the canvas shows
+  // on either side, rather than the start truncating to frame 30.
+  const frames = await readGrayFrames(output);
+  const canvas = new Uint8Array(FRAME_WIDTH * FRAME_HEIGHT);
+  expect(diffFrames(frames[30], canvas)).toBeLessThan(1);
+  expect(diffFrames(frames[31], canvas)).toBeGreaterThan(10);
+  expect(diffFrames(frames[60], canvas)).toBeGreaterThan(10);
+  expect(diffFrames(frames[61], canvas)).toBeLessThan(1);
+});
+
 /** RMS level in dB of a 20ms window of a file's audio at a time. */
 async function measureRmsLevel(file: string, { time }: { time: number }) {
   const { stdout } = await execFileAsync("ffmpeg", [
@@ -157,4 +185,39 @@ async function measureRmsLevel(file: string, { time }: { time: number }) {
   ]);
   const levels = [...stdout.matchAll(/RMS_level=(-?[\d.]+)/g)];
   return Number(levels.at(-1)![1]);
+}
+
+const FRAME_WIDTH = 64;
+const FRAME_HEIGHT = 36;
+
+/** Every frame of a file, scaled down to small grayscale pixels. */
+async function readGrayFrames(file: string) {
+  const { stdout } = await execFileAsync(
+    "ffmpeg",
+    [
+      "-v",
+      "error",
+      "-i",
+      file,
+      "-vf",
+      `scale=${FRAME_WIDTH}:${FRAME_HEIGHT},format=gray`,
+      "-f",
+      "rawvideo",
+      "-",
+    ],
+    { encoding: "buffer" },
+  );
+  const size = FRAME_WIDTH * FRAME_HEIGHT;
+  return Array.from({ length: stdout.length / size }, (_, i) =>
+    stdout.subarray(i * size, (i + 1) * size),
+  );
+}
+
+/** Mean absolute difference between two grayscale frames, from 0 to 255. */
+function diffFrames(a: Uint8Array, b: Uint8Array) {
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) {
+    sum += Math.abs(a[i] - b[i]);
+  }
+  return sum / a.length;
 }

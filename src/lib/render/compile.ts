@@ -195,7 +195,7 @@ function compileVideo({
       }),
       filters: [
         `fps=${scene.canvas.fps}`,
-        `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
+        buildPlaceFilter(visible.start - scene.range.start),
         ...buildCropFilters(layer.crop),
         `scale=${fit.width}:${fit.height}`,
       ],
@@ -239,7 +239,7 @@ function compileImage({
       filters: [
         ...buildCropFilters(layer.crop),
         `scale=${fit.width}:${fit.height}`,
-        `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
+        buildPlaceFilter(visible.start - scene.range.start),
       ],
       x: fit.x,
       y: fit.y,
@@ -267,7 +267,7 @@ function compileText({
         fps: scene.canvas.fps,
         duration: visible.end - visible.start,
       }),
-      filters: [`setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`],
+      filters: [buildPlaceFilter(visible.start - scene.range.start)],
       // The stroked copy pads the PNG by half the outline width, so shift it back up.
       x: layer.box.x,
       y: layer.box.y - Math.round((layer.outline?.width ?? 0) / 2),
@@ -298,7 +298,7 @@ function compileColor({
       filters: [
         `color=c=${layer.color}@${layer.opacity ?? 1}:s=${box.width}x${box.height}:r=${canvas.fps}:d=${visible.end - visible.start}`,
         "format=rgba",
-        `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
+        buildPlaceFilter(visible.start - scene.range.start),
       ],
       x: box.x,
       y: box.y,
@@ -456,6 +456,16 @@ function buildStillInput({
     "-i",
     file,
   ];
+}
+
+/**
+ * Place a stream on the output timeline at the output frame nearest its
+ * offset. setpts truncates to whole time base units, and a millisecond-rounded
+ * frame time such as 1.033 s for frame 31 at 30 fps sits just below its frame,
+ * so the offset is rounded rather than truncated.
+ */
+function buildPlaceFilter(offset: number) {
+  return `setpts=PTS-STARTPTS+round(${offset}/TB)`;
 }
 
 function buildCropFilters(crop?: Crop) {

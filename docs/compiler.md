@@ -14,6 +14,7 @@ pnpm render <project.json> <output> --dry-run   # print the command only
 
 - The project file's numbers are the timing truth. Offsets are set on waveforms, which are exact data, and playback only confirms them, so preview drift never shifts the final render. This avoids the Kdenlive problem where preview and render disagreed and timeline positions had to be compensated by guesswork.
 - Source time is a presentation timestamp, including a stream's start offset, and the frame shown at a source time is the frame whose timestamp is nearest to it. Every renderer and the editor preview must pick frames this way, because project times are rounded to milliseconds and source frames often sit off the project's frame grid, so a looser rule makes renderers disagree by one frame.
+- Timeline time resolves to the output frame nearest to it, so a layer starts on the output frame nearest its start and ends before the one nearest its end. Editor times sit on output frames up to millisecond rounding, and the nearest-frame rule keeps a time such as 1.033 s on frame 31 at 30 fps rather than truncating it to frame 30.
 - The ffmpeg render is the truth for exact frames. The DOM preview draws the same layout within 1px ([Remotion comparison](https://github.com/hi-ogawa/toy-compositor/tree/e315663/research/remotion)), which is enough for placing layers, but a paused seek may land one frame off the nearest-frame rule, so frame choices such as the thumbnail are checked on a render.
 - The editor plays and decodes source media in the browser, so browser codec support such as HEVC matters there, and constant frame rate working files from ingest cover that case.
 - Variable frame rate phone footage is normalized to constant frame rate working files at ingest, which matches the existing manual pre-transcode. The working files also use a one-second keyframe interval so the editor can seek quickly ([working media](working-media.md)).
@@ -75,9 +76,9 @@ In ffmpeg terms, the cut is input options and the rest is a filter chain. The sy
 ```
 
 ```text
-[0:v]fps=30,setpts=PTS-STARTPTS+0/TB,scale=640:360[v0]
-     │      │                        └ fit to its box
-     │      └ restart timestamps at 0, then shift by the offset from the output start (0 s here)
+[0:v]fps=30,setpts=PTS-STARTPTS+round(0/TB),scale=640:360[v0]
+     │      │                               └ fit to its box
+     │      └ restart timestamps at 0, then shift to the output frame nearest the offset from the output start (0 s here)
      └ resample to the canvas frame rate
 ```
 
@@ -102,7 +103,7 @@ The ffmpeg building blocks behind the table:
 | Match the canvas frame rate               | `fps=<fps>`                                                                                                                                                  |
 | Crop, then fit to the box                 | `crop=iw*<w>:ih*<h>:iw*<left>:ih*<top>`, `scale=<width>:<height>`                                                                                            |
 | Generate a solid fill, as a source filter | `color=c=<color>@<opacity>:s=<width>x<height>:r=<fps>:d=<duration>`, `format=rgba`                                                                           |
-| Place on the output timeline              | `setpts=PTS-STARTPTS+<offset>/TB`                                                                                                                            |
+| Place on the output timeline              | `setpts=PTS-STARTPTS+round(<offset>/TB)`                                                                                                                     |
 | Normalize, fade, cut, and place sound     | `aformat=sample_rates=48000:channel_layouts=stereo`, `afade=t=in` and `afade=t=out`, `atrim=start=<cut>`, `asetpts=PTS-STARTPTS`, `adelay=delays=<ms>:all=1` |
 
 ## Stack Pictures, Mix Sounds
@@ -128,14 +129,14 @@ The same graph as ffmpeg text, wrapped and annotated for reading, with paths sho
 
 ```text
 color=c=#000000:s=640x360:r=30:d=3[canvas];                             canvas
-[0:v]fps=30,setpts=PTS-STARTPTS+0/TB,scale=640:360[v0];                 layer 0 picture
+[0:v]fps=30,setpts=PTS-STARTPTS+round(0/TB),scale=640:360[v0];          layer 0 picture
 [canvas][v0]overlay=x=0:y=0:eof_action=pass[over0];                     stack on the canvas
 [1:a]aformat=sample_rates=48000:channel_layouts=stereo,
      afade=t=in:st=0:d=0.2,afade=t=out:st=2.5:d=0.5,
      adelay=delays=0:all=1[a1];                                          layer 1 sound
-[2:v]scale=160:90,setpts=PTS-STARTPTS+0/TB[v2];                         layer 2 picture
+[2:v]scale=160:90,setpts=PTS-STARTPTS+round(0/TB)[v2];                  layer 2 picture
 [over0][v2]overlay=x=420:y=240:eof_action=pass[over2];                  stack on the result so far
-[3:v]setpts=PTS-STARTPTS+0/TB[v3];                                      layer 3 picture
+[3:v]setpts=PTS-STARTPTS+round(0/TB)[v3];                               layer 3 picture
 [over2][v3]overlay=x=420:y=259:eof_action=pass[over3];                  stack on top
 [over3]format=yuv420p[vout];                                            output picture
 [a1]amix=inputs=1:normalize=0:duration=longest,apad,atrim=0:3[aout]     output sound
