@@ -1,6 +1,6 @@
 import path from "node:path";
 import {
-  fitBox,
+  placeMedia,
   intersect,
   getLayerRange,
   getOutputRange,
@@ -183,7 +183,11 @@ function compileVideo({
     return {};
   }
   const video = mediaInfo.video!;
-  const fit = fitBox({ source: video, crop: layer.crop, box: layer.box });
+  const placed = placeMedia({
+    source: video,
+    crop: layer.crop,
+    transform: layer.transform,
+  });
   return {
     video: {
       input: buildSeekInput({
@@ -197,10 +201,10 @@ function compileVideo({
         `fps=${scene.canvas.fps}`,
         `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
         ...buildCropFilters(layer.crop),
-        `scale=${fit.width}:${fit.height}`,
+        `scale=${placed.width}:${placed.height}`,
       ],
-      x: fit.x,
-      y: fit.y,
+      x: placed.x,
+      y: placed.y,
     },
     audio:
       scene.withAudio && !layer.muted && mediaInfo.audio
@@ -224,10 +228,10 @@ function compileImage({
   if (!visible) {
     return {};
   }
-  const fit = fitBox({
+  const placed = placeMedia({
     source: mediaInfo.video!,
     crop: layer.crop,
-    box: layer.box,
+    transform: layer.transform,
   });
   return {
     video: {
@@ -238,11 +242,11 @@ function compileImage({
       }),
       filters: [
         ...buildCropFilters(layer.crop),
-        `scale=${fit.width}:${fit.height}`,
+        `scale=${placed.width}:${placed.height}`,
         `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
       ],
-      x: fit.x,
-      y: fit.y,
+      x: placed.x,
+      y: placed.y,
     },
   };
 }

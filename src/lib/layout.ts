@@ -1,4 +1,4 @@
-import type { Box, Crop, Layer, Project } from "./project.ts";
+import type { Box, Crop, Layer, Project, Transform } from "./project.ts";
 
 export type TimeRange = { start: number; end: number };
 
@@ -35,26 +35,59 @@ export function intersect(a: TimeRange, b: TimeRange): TimeRange | undefined {
   return end > start ? { start, end } : undefined;
 }
 
-/** Scale the cropped source to fit inside the box, keeping its aspect ratio, centered. */
-export function fitBox({
+type Size = { width: number; height: number };
+
+/**
+ * Place the cropped source on the canvas: scaled by the transform and centered
+ * on its position. The size rounds to even pixels for the encoder's chroma
+ * subsampling, and anything outside the canvas is clipped later.
+ */
+export function placeMedia({
   source,
-  crop = {},
-  box,
+  crop,
+  transform,
 }: {
-  source: { width: number; height: number };
+  source: Size;
   crop?: Crop;
-  box: Box;
-}) {
-  const cw = source.width * (1 - (crop.left ?? 0) - (crop.right ?? 0));
-  const ch = source.height * (1 - (crop.top ?? 0) - (crop.bottom ?? 0));
-  const scale = Math.min(box.width / cw, box.height / ch);
-  const width = roundToEven(cw * scale);
-  const height = roundToEven(ch * scale);
+  transform: Transform;
+}): Box {
+  const cropped = getCroppedSize({ source, crop });
+  const width = roundToEven(cropped.width * transform.scale);
+  const height = roundToEven(cropped.height * transform.scale);
   return {
     width,
     height,
-    x: Math.round(box.x + (box.width - width) / 2),
-    y: Math.round(box.y + (box.height - height) / 2),
+    x: Math.round(transform.x - width / 2),
+    y: Math.round(transform.y - height / 2),
+  };
+}
+
+/** Center the source on the canvas at the largest scale that keeps it inside. */
+export function fitCanvas({
+  source,
+  canvas,
+}: {
+  source: Size;
+  canvas: Size;
+}): Transform {
+  return {
+    x: canvas.width / 2,
+    y: canvas.height / 2,
+    scale: Math.min(canvas.width / source.width, canvas.height / source.height),
+  };
+}
+
+/** The source's size in its own pixels after removing each cropped edge. */
+export function getCroppedSize({
+  source,
+  crop = {},
+}: {
+  source: Size;
+  crop?: Crop;
+}): Size {
+  return {
+    width: source.width * (1 - (crop.left ?? 0) - (crop.right ?? 0)),
+    height: source.height * (1 - (crop.top ?? 0) - (crop.bottom ?? 0)),
   };
 }
 

@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
-import { getLayerRange } from "../lib/layout";
+import { getLayerRange, placeMedia } from "../lib/layout";
 import type { Canvas, Layer, Project, TextLayer } from "../lib/project";
 import type { EditorRuntime, EditorProject } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
@@ -116,15 +116,7 @@ function PreviewLayer({
   mediaInfoMap: Project["media"];
   resolveMediaUrl: (src: string) => string;
 }) {
-  const box: TextLayer["box"] & { height?: number } =
-    layer.type === "color"
-      ? (layer.box ?? {
-          x: 0,
-          y: 0,
-          width: canvas.width,
-          height: canvas.height,
-        })
-      : layer.box;
+  const box = getPreviewBox({ layer, canvas, mediaInfoMap });
   const style: CSSProperties = {
     position: "absolute",
     left: box.x,
@@ -164,6 +156,36 @@ function PreviewLayer({
       )}
     </div>
   );
+}
+
+/** The layer's rectangle in canvas pixels. Text has no height, because its lines decide it. */
+function getPreviewBox({
+  layer,
+  canvas,
+  mediaInfoMap,
+}: {
+  layer: Exclude<Layer, { type: "audio" }>;
+  canvas: Canvas;
+  mediaInfoMap: Project["media"];
+}): TextLayer["box"] & { height?: number } {
+  switch (layer.type) {
+    case "video":
+    case "image": {
+      return placeMedia({
+        source: mediaInfoMap[layer.src].video!,
+        crop: layer.crop,
+        transform: layer.transform,
+      });
+    }
+    case "text": {
+      return layer.box;
+    }
+    case "color": {
+      return (
+        layer.box ?? { x: 0, y: 0, width: canvas.width, height: canvas.height }
+      );
+    }
+  }
 }
 
 function getTextStyle(layer: TextLayer): CSSProperties {

@@ -38,8 +38,9 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     start: "1",
     in: "0",
     out: "3",
-    x: "0",
-    y: "0",
+    "position x": "0",
+    "position y": "0",
+    "scale %": "200",
     width: "640",
     height: "360",
   });
@@ -99,13 +100,13 @@ test("add layers from the Library tab", async ({ page, editor }) => {
       start: 1,
       in: 0,
       out: 3,
-      box: { x: 0, y: 0, width: 640, height: 360 },
+      transform: { x: 320, y: 180, scale: 2 },
     },
     {
       name: "image",
       type: "image",
       src: "media/image.png",
-      box: { x: 0, y: 0, width: 640, height: 360 },
+      transform: { x: 320, y: 180, scale: 4 },
       start: 0,
       end: 3,
     },
@@ -229,7 +230,11 @@ test("move the selected layer up and down in the stack", async ({
     "Label backdrop",
     "Test pattern",
   ]);
-  await expectInspectorFields(page, { start: "0", end: "3", x: "420" });
+  await expectInspectorFields(page, {
+    start: "0",
+    end: "3",
+    "position x": "180",
+  });
 
   // Move it to the bottom, and confirm nothing is left below it.
   await moveDown.click();

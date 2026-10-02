@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { matchKeyboardEvent } from "../lib/keyboard";
+import { getCroppedSize, placeMedia } from "../lib/layout";
 import type {
   Canvas,
   AudioLayer,
@@ -8,8 +9,10 @@ import type {
   Crop,
   ImageLayer,
   Layer,
+  MediaInfo,
   Output,
   TextLayer,
+  Transform,
   VideoLayer,
 } from "../lib/project";
 import type { EditorRuntime, EditorProject } from "../lib/runtime";
@@ -58,6 +61,7 @@ export function Inspector({
         <LayerInspector
           layer={layer}
           canvas={project.canvas}
+          media={project.media}
           time={time}
           onUpdate={(update) => runtime.updateLayer({ id, update })}
           move={{
@@ -181,12 +185,14 @@ function OutputInspector({
 function LayerInspector({
   layer,
   canvas,
+  media,
   time,
   onUpdate,
   move,
 }: {
   layer: Layer;
   canvas: Canvas;
+  media: Record<string, MediaInfo>;
   time: TimeFieldOptions;
   onUpdate: LayerUpdate;
   move: LayerMoveControls;
@@ -219,6 +225,7 @@ function LayerInspector({
         <LayerFields
           layer={layer}
           canvas={canvas}
+          media={media}
           time={time}
           onUpdate={onUpdate}
         />
@@ -231,11 +238,13 @@ function LayerInspector({
 function LayerFields({
   layer,
   canvas,
+  media,
   time,
   onUpdate,
 }: {
   layer: Layer;
   canvas: Canvas;
+  media: Record<string, MediaInfo>;
   time: TimeFieldOptions;
   onUpdate: LayerUpdate;
 }) {
@@ -245,7 +254,13 @@ function LayerFields({
         <>
           <SourceTimingFields layer={layer} time={time} onUpdate={onUpdate} />
           <AudioFields layer={layer} time={time} onUpdate={onUpdate} />
-          <BoxFields box={layer.box} onCommit={(box) => onUpdate({ box })} />
+          <TransformFields
+            transform={layer.transform}
+            source={media[layer.src].video!}
+            crop={layer.crop}
+            canvas={canvas}
+            onCommit={(transform) => onUpdate({ transform })}
+          />
           <CropFields
             crop={layer.crop}
             onCommit={(crop) => onUpdate({ crop })}
@@ -265,7 +280,13 @@ function LayerFields({
       return (
         <>
           <RangeTimingFields layer={layer} time={time} onUpdate={onUpdate} />
-          <BoxFields box={layer.box} onCommit={(box) => onUpdate({ box })} />
+          <TransformFields
+            transform={layer.transform}
+            source={media[layer.src].video!}
+            crop={layer.crop}
+            canvas={canvas}
+            onCommit={(transform) => onUpdate({ transform })}
+          />
           <CropFields
             crop={layer.crop}
             onCommit={(crop) => onUpdate({ crop })}
@@ -540,6 +561,67 @@ function TextFields({
         />
       </Group>
     </>
+  );
+}
+
+/**
+ * Position is the source center as an offset from the canvas center. Scale,
+ * width, and height are linked views of the one stored scale, so editing any of
+ * them rescales the source around its center.
+ */
+function TransformFields({
+  transform,
+  source,
+  crop,
+  canvas,
+  onCommit,
+}: {
+  transform: Transform;
+  source: { width: number; height: number };
+  crop?: Crop;
+  canvas: Canvas;
+  onCommit: (transform: Transform) => void;
+}) {
+  const center = { x: canvas.width / 2, y: canvas.height / 2 };
+  const placed = placeMedia({ source, crop, transform });
+  const cropped = getCroppedSize({ source, crop });
+  const commitScale = (scale: number) =>
+    onCommit({ ...transform, scale: roundTo(scale, 1e-6) });
+  return (
+    <Group title="Transform">
+      {(["x", "y"] as const).map((key) => (
+        <NumberField
+          key={key}
+          label={`position ${key}`}
+          value={transform[key] - center[key]}
+          {...PIXEL_FIELD}
+          onCommit={(offset) =>
+            onCommit({ ...transform, [key]: center[key] + offset })
+          }
+        />
+      ))}
+      <NumberField
+        label="scale %"
+        value={roundTo(transform.scale * 100, 0.01)}
+        step={1}
+        min={1}
+        round={(value) => roundTo(value, 0.01)}
+        onCommit={(percent) => commitScale(percent / 100)}
+      />
+      <div />
+      {/* Placed sizes round to even pixels, so arrow keys step by two. */}
+      {(["width", "height"] as const).map((key) => (
+        <NumberField
+          key={key}
+          label={key}
+          value={placed[key]}
+          step={2}
+          min={2}
+          round={Math.round}
+          onCommit={(size) => commitScale(size / cropped[key])}
+        />
+      ))}
+    </Group>
   );
 }
 

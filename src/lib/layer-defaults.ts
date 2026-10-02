@@ -1,4 +1,4 @@
-import { fitBox, type TimeRange } from "./layout.ts";
+import { fitCanvas, type TimeRange } from "./layout.ts";
 import type { MediaType } from "./media-file.ts";
 import type {
   Canvas,
@@ -8,7 +8,7 @@ import type {
   TextLayer,
 } from "./project.ts";
 
-/** Video and images fit inside the canvas, so the box is the visible area. */
+/** Video and images start fitted inside the canvas, centered. */
 export function createMediaLayer({
   src,
   type,
@@ -28,7 +28,6 @@ export function createMediaLayer({
     .split("/")
     .pop()!
     .replace(/\.[^.]+$/, "");
-  const canvasBox = { x: 0, y: 0, width: canvas.width, height: canvas.height };
   switch (type) {
     case "video": {
       return {
@@ -38,7 +37,7 @@ export function createMediaLayer({
         start,
         in: mediaInfo.start,
         out: mediaInfo.end,
-        box: fitBox({ source: mediaInfo.video!, box: canvasBox }),
+        transform: fitCanvas({ source: mediaInfo.video!, canvas }),
       };
     }
     case "audio": {
@@ -56,7 +55,7 @@ export function createMediaLayer({
         name,
         type,
         src,
-        box: fitBox({ source: mediaInfo.video!, box: canvasBox }),
+        transform: fitCanvas({ source: mediaInfo.video!, canvas }),
         ...stillRange,
       };
     }

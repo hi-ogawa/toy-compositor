@@ -17,11 +17,10 @@
       "start": 0,
       "in": 0,
       "out": 3,
-      "box": {
-        "x": 0,
-        "y": 0,
-        "width": 640,
-        "height": 360
+      "transform": {
+        "x": 320,
+        "y": 180,
+        "scale": 2
       },
       "muted": true
     },
@@ -41,11 +40,10 @@
       "src": "media/image.png",
       "start": 0,
       "end": 3,
-      "box": {
-        "x": 420,
-        "y": 240,
-        "width": 160,
-        "height": 90
+      "transform": {
+        "x": 500,
+        "y": 285,
+        "scale": 1
       }
     },
     {

@@ -48,7 +48,7 @@ Every layer can have an optional `name`, such as `"camera"`, `"score"`, or `"mix
   "start": 7.967,
   "in": 0,
   "out": 189.499,
-  "box": { "x": 0, "y": 0, "width": 1920, "height": 1080 },
+  "transform": { "x": 960, "y": 540, "scale": 1.1 },
   "crop": { "left": 0.013, "top": 0.0065 },
   "muted": true,
 }
@@ -80,7 +80,7 @@ A video layer carries its file's audio, like a clip in Kdenlive, and the audio i
   "src": "media/mv-thumbnail.jpg",
   "start": 23.7,
   "end": 188.633,
-  "box": { "x": 960, "y": 540, "width": 960, "height": 540 },
+  "transform": { "x": 1440, "y": 810, "scale": 0.5 },
 }
 ```
 
@@ -163,11 +163,13 @@ An entry depends only on the file's contents, so a copied file has the same entr
 
 `toy-compositor update-media <project.json...>` fills `media` from the files the layers use, replacing what was there, for example after hand-editing layers or replacing a file.
 
-## Box and crop
+## Transform and crop
 
-`box` is where a visual layer goes on the canvas. The source is scaled to fit inside the box while keeping its aspect ratio and is centered in it, which matches Kdenlive's `qtblend` rect with distortion off. Anything outside the canvas is clipped.
+`transform` is where a video or image layer goes on the canvas. `x` and `y` are where the center of the cropped source goes, in canvas pixels, not its top-left corner, and `scale` multiplies the source's own size, keeping its aspect ratio. Scaling therefore stays centered, and a camera at `{ "x": 960, "y": 540, "scale": 1.1 }` on a 1920×1080 canvas zooms in by 10% around the middle. The placed size rounds to even pixels. Anything outside the canvas is clipped, so a layer can be larger than the canvas or partly off it.
 
-`crop` removes a fraction of the source from each edge before fitting, with each side defaulting to 0.
+`crop` removes a fraction of the source from each edge before the transform, with each side defaulting to 0. The center is the center of what remains.
+
+Text and color layers use `box` instead, which places them directly: text by its left, top, and width, and a color fill as the rectangle it covers.
 
 ## Hold
 
@@ -182,7 +184,7 @@ A video layer can keep showing its first frame before `start` and its last frame
   "start": 23.7,
   "in": 0,
   "out": 160,
-  "box": { "x": 781, "y": 473, "width": 1152, "height": 648 },
+  "transform": { "x": 1357, "y": 797, "scale": 0.6 },
   "hold": { "before": 5, "after": 10 },
 }
 ```

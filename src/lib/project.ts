@@ -105,6 +105,9 @@ type LayerBase = { name?: string };
 
 export type Box = { x: number; y: number; width: number; height: number };
 
+/** Where a media layer's cropped source goes: its center in canvas pixels, at a uniform scale. */
+export type Transform = { x: number; y: number; scale: number };
+
 export type Crop = {
   left?: number;
   right?: number;
@@ -118,7 +121,7 @@ export type VideoLayer = LayerBase & {
   start: number;
   in: number;
   out: number;
-  box: Box;
+  transform: Transform;
   crop?: Crop;
   muted?: boolean;
   fadeIn?: number;
@@ -139,7 +142,7 @@ export type AudioLayer = LayerBase & {
 export type ImageLayer = LayerBase & {
   type: "image";
   src: string;
-  box: Box;
+  transform: Transform;
   crop?: Crop;
   start: number;
   end: number;
