@@ -12,7 +12,7 @@ import { usePointerGesture } from "../hooks/use-pointer-gesture";
 import type { LayerEditType } from "../lib/layer-edit";
 import {
   getLayerRange,
-  getSourceRange,
+  getPictureRange,
   intersect,
   type TimeRange,
 } from "../lib/layout";
@@ -358,13 +358,10 @@ function TimelineLayerLane({
       layerInteraction.finishEdit(pixelsToSeconds(deltaX)),
     onCancel: layerInteraction.cancelEdit,
   });
+  const picture = getPictureRange(layer);
   const visible = intersect(range, timeline.visible);
   const audioLayer =
     layer.type === "video" || layer.type === "audio" ? layer : undefined;
-  // A video layer's held spans have no sound, so its waveform covers only the
-  // source range.
-  const sourceVisible =
-    audioLayer && intersect(getSourceRange(audioLayer), timeline.visible);
   return (
     <TimelineRow
       timeline={timeline}
@@ -382,6 +379,16 @@ function TimelineLayerLane({
         </button>
       }
     >
+      <TimelineHoldSpan
+        timeline={timeline}
+        range={{ start: picture.start, end: range.start }}
+        testId={`timeline-layer-${index}-hold-before`}
+      />
+      <TimelineHoldSpan
+        timeline={timeline}
+        range={{ start: range.end, end: picture.end }}
+        testId={`timeline-layer-${index}-hold-after`}
+      />
       {region && (
         <div className="absolute inset-y-1" style={region}>
           <button
@@ -399,34 +406,15 @@ function TimelineLayerLane({
                 : LAYER_CLIP_CLASSES[layer.type].border,
             )}
           >
-            {audioLayer &&
-              visible &&
-              sourceVisible &&
-              audioSource?.status === "fulfilled" && (
-                <div
-                  className="absolute inset-y-0 overflow-hidden"
-                  style={{
-                    left:
-                      (sourceVisible.start - visible.start) *
-                      timeline.pixelsPerSecond,
-                    width:
-                      (sourceVisible.end - sourceVisible.start) *
-                      timeline.pixelsPerSecond,
-                  }}
-                >
-                  <AudioWaveformView
-                    audioView={audioSource.value.view}
-                    sourceStart={
-                      audioLayer.in + sourceVisible.start - audioLayer.start
-                    }
-                    sourceEnd={
-                      audioLayer.in + sourceVisible.end - audioLayer.start
-                    }
-                    pixelsPerSecond={timeline.pixelsPerSecond}
-                    dimmed={audioLayer.muted ?? false}
-                  />
-                </div>
-              )}
+            {audioLayer && visible && audioSource?.status === "fulfilled" && (
+              <AudioWaveformView
+                audioView={audioSource.value.view}
+                sourceStart={audioLayer.in + visible.start - audioLayer.start}
+                sourceEnd={audioLayer.in + visible.end - audioLayer.start}
+                pixelsPerSecond={timeline.pixelsPerSecond}
+                dimmed={audioLayer.muted ?? false}
+              />
+            )}
             {/* The lane's header already names the layer, so the clip shows only state. */}
             {(layer.type === "video" || layer.type === "audio") &&
               layer.muted && (
@@ -466,6 +454,33 @@ function TimelineLayerLane({
         </div>
       )}
     </TimelineRow>
+  );
+}
+
+/**
+ * A span where a video layer holds its first or last frame, drawn beside its
+ * region. The hold is edited in the inspector, so the span takes no pointer
+ * input.
+ */
+function TimelineHoldSpan({
+  timeline,
+  range,
+  testId,
+}: {
+  timeline: TimelineView;
+  range: TimeRange;
+  testId: string;
+}) {
+  const style = timeline.rangeStyle(range);
+  return (
+    style && (
+      <div
+        title={`hold ${range.start.toFixed(3)}–${range.end.toFixed(3)} s`}
+        data-testid={testId}
+        className="pointer-events-none absolute inset-y-2 rounded-sm border border-dashed border-blue-400/50 bg-blue-400/10"
+        style={style}
+      />
+    )
   );
 }
 

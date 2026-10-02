@@ -1,11 +1,4 @@
-import type {
-  AudioLayer,
-  Box,
-  Crop,
-  Layer,
-  Project,
-  VideoLayer,
-} from "./project.ts";
+import type { Box, Crop, Layer, Project } from "./project.ts";
 
 export type TimeRange = { start: number; end: number };
 
@@ -28,28 +21,28 @@ export function getContentRange(project: Project): TimeRange {
   };
 }
 
-/**
- * Timeline span of a layer, from its source range for video and audio, and
- * including the frames a video layer holds beyond it.
- */
+/** Timeline span of a layer, from its source range for video and audio. */
 export function getLayerRange(layer: Layer): TimeRange {
   if (layer.type === "video" || layer.type === "audio") {
-    const source = getSourceRange(layer);
-    const hold = getHold(layer);
-    return { start: source.start - hold.before, end: source.end + hold.after };
+    return { start: layer.start, end: layer.start + layer.out - layer.in };
   }
   return { start: layer.start, end: layer.end };
 }
 
-/** Timeline span over which a video or audio layer plays its source range. */
-export function getSourceRange(layer: VideoLayer | AudioLayer): TimeRange {
-  return { start: layer.start, end: layer.start + layer.out - layer.in };
-}
-
-/** Seconds a layer holds its first and last frames, which only video layers do. */
-export function getHold(layer: Layer): { before: number; after: number } {
-  const hold = layer.type === "video" ? layer.hold : undefined;
-  return { before: hold?.before ?? 0, after: hold?.after ?? 0 };
+/**
+ * Timeline span over which a layer shows a picture, which for a video layer
+ * extends its layer range by the first and last frames it holds. Only drawing
+ * the picture reads the hold, so editing and sound keep the layer range.
+ */
+export function getPictureRange(layer: Layer): TimeRange {
+  const range = getLayerRange(layer);
+  if (layer.type !== "video" || !layer.hold) {
+    return range;
+  }
+  return {
+    start: range.start - (layer.hold.before ?? 0),
+    end: range.end + (layer.hold.after ?? 0),
+  };
 }
 
 export function intersect(a: TimeRange, b: TimeRange): TimeRange | undefined {

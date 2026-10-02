@@ -63,7 +63,7 @@ Layers and inputs are not one to one. A color layer has no input, a video layer 
 
 Every layer is compiled on its own, into at most one picture stream and one sound stream. A layer does not need to know which other layers exist.
 
-First, a layer is cut to the part that falls inside the output range. A video or audio layer spans from its `start` for the length of its source range, and a video layer's hold extends that span on both sides. An image, text, or color layer spans from `start` to `end`. A layer with no visible part contributes nothing.
+First, a layer is cut to the part that falls inside the output range. A video or audio layer spans from its `start` for the length of its source range, and a video layer's picture extends by its hold on both sides. An image, text, or color layer spans from `start` to `end`. A layer with no visible part contributes nothing.
 
 ![Three layers against a four-second output range, where only the parts inside the range become streams, each placed by its offset from the output start](images/layer-timing.svg)
 

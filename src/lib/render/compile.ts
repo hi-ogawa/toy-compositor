@@ -4,7 +4,7 @@ import {
   intersect,
   getLayerRange,
   getOutputRange,
-  getSourceRange,
+  getPictureRange,
   type TimeRange,
 } from "../layout.ts";
 import type {
@@ -179,14 +179,15 @@ function compileVideo({
   mediaInfo: MediaInfo;
   scene: Scene;
 }): LayerStreams {
-  const visible = intersect(getLayerRange(layer), scene.range);
+  const visible = intersect(getPictureRange(layer), scene.range);
   if (!visible) {
     return {};
   }
   const video = mediaInfo.video!;
   const fit = fitBox({ source: video, crop: layer.crop, box: layer.box });
   const read = getSourceRead({ layer, visible, fps: scene.canvas.fps });
-  const sourceVisible = intersect(getSourceRange(layer), scene.range);
+  // The held spans are silent, so sound covers only the layer range.
+  const audible = intersect(getLayerRange(layer), scene.range);
   return {
     video: {
       input: buildSeekInput({
@@ -209,16 +210,16 @@ function compileVideo({
       y: fit.y,
     },
     audio:
-      sourceVisible && scene.withAudio && !layer.muted && mediaInfo.audio
-        ? compileAudioStream({ layer, file, visible: sourceVisible, scene })
+      audible && scene.withAudio && !layer.muted && mediaInfo.audio
+        ? compileAudioStream({ layer, file, visible: audible, scene })
         : undefined,
   };
 }
 
 /**
- * Which source frames a video layer's visible range reads, and how long to
- * clone its first and last read frames before and after them to cover the
- * held spans. A visible range that lies entirely in a hold reads the single
+ * Which source frames a video layer's visible picture range reads, and how
+ * long to clone its first and last read frames before and after them to cover
+ * the held spans. A visible range that lies entirely in a hold reads the single
  * frame it holds, which is the source range's first frame before it or the
  * frame shown one output frame before `out` after it.
  */
@@ -231,7 +232,7 @@ function getSourceRead({
   visible: TimeRange;
   fps: number;
 }) {
-  const source = getSourceRange(layer);
+  const source = getLayerRange(layer);
   const frame = 1 / fps;
   const played = intersect(source, visible);
   if (played) {

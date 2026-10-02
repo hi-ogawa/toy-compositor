@@ -1,5 +1,5 @@
 import { clamp } from "../utils/math.ts";
-import { getSourceRange } from "./layout.ts";
+import { getLayerRange } from "./layout.ts";
 import type { AudioLayer, VideoLayer } from "./project.ts";
 import type {
   AudioContextTransport,
@@ -44,7 +44,7 @@ export class AudioBufferPlayback implements TransportParticipant {
       return;
     }
     const { contextTime, position } = this.transport.playbackAnchor!;
-    const range = getSourceRange(layer);
+    const range = getLayerRange(layer);
     const from = Math.max(position, range.start);
     if (from >= range.end) {
       return;
@@ -99,7 +99,7 @@ function getGainAt({
   layer: VideoLayer | AudioLayer;
   time: number;
 }): number {
-  const range = getSourceRange(layer);
+  const range = getLayerRange(layer);
   const fadeIn = layer.fadeIn ? (time - range.start) / layer.fadeIn : Infinity;
   const fadeOut = layer.fadeOut ? (range.end - time) / layer.fadeOut : Infinity;
   return clamp(Math.min(fadeIn, fadeOut), 0, 1);
