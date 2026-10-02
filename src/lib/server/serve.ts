@@ -23,9 +23,11 @@ export async function serveEditor({
   const handleApi = createEditorHandler({
     registry,
     live,
-    // Close after the stop reply is written. Closing all connections ends the
-    // tabs' live streams, which would otherwise keep the server open.
-    stop: () => setTimeout(() => server.close(true)),
+    // Close once the stop reply's response closes, so the reply reaches the
+    // CLI. Closing all connections ends the tabs' live streams, which would
+    // otherwise keep the server open.
+    stop: (request) =>
+      request.runtime?.node?.res?.once("close", () => server.close(true)),
   });
   const serveClient = staticMiddleware({ dir: clientDir });
   const server = serve({

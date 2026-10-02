@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import type { ServerRequest } from "srvx";
 import { readJson, writeJson } from "../../utils/fs.ts";
 import { getMediaType, type MediaFile } from "../media-file.ts";
 import { probeMediaInfo } from "../media-info.ts";
@@ -30,10 +31,10 @@ export function createEditorHandler({
 }: {
   registry: ProjectRegistry;
   live: LiveConnections;
-  stop?: () => void;
+  stop?: (request: ServerRequest) => void;
 }) {
   const handlers = createEditorHandlers({ registry });
-  return async (request: Request): Promise<Response> => {
+  return async (request: ServerRequest): Promise<Response> => {
     try {
       const url = new URL(request.url);
       const method = url.pathname.match(/^\/api\/rpc\/(\w+)$/)?.[1];
@@ -55,7 +56,7 @@ export function createEditorHandler({
           if (!stop) {
             return new Response(undefined, { status: 404 });
           }
-          stop();
+          stop(request);
           return new Response(undefined, { status: 204 });
         }
         default: {
