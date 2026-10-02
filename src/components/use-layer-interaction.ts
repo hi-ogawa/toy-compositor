@@ -14,6 +14,8 @@ type LayerEdit = {
   layer: Layer;
 };
 
+export type LayerInteraction = ReturnType<typeof useLayerInteraction>;
+
 /**
  * Moves and trims the selected layer on the timeline, like toy-midi's
  * `useRecorderClipInteraction` for a single clip. A drag shows as a draft and
@@ -109,5 +111,3 @@ export function useLayerInteraction({
     handleRemoveShortcut,
   };
 }
-
-export type LayerInteraction = ReturnType<typeof useLayerInteraction>;

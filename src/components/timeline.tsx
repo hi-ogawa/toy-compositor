@@ -23,6 +23,7 @@ import type {
   EditorLayer,
   EditorProject,
 } from "../lib/runtime";
+import { clamp } from "../utils/math";
 import type { PromiseState } from "../utils/promise-state";
 import { AudioWaveformView } from "./audio-waveform";
 import { LayerTypeIcon } from "./layer-type-icon";
@@ -34,6 +35,10 @@ import type {
 } from "./use-layer-interaction";
 import type { LocatorInteraction } from "./use-locator-interaction";
 import { TIMELINE_LABEL_WIDTH, type TimelineView } from "./use-timeline";
+
+const DEFAULT_TIMELINE_HEIGHT = 320;
+const MIN_TIMELINE_HEIGHT = 160;
+const MIN_MONITOR_HEIGHT = 160;
 
 export function Timeline({
   timeline,
@@ -58,13 +63,40 @@ export function Timeline({
   audioSources: Record<string, PromiseState<DecodedAudio>>;
   onClearSelection: () => void;
 }) {
+  const [height, setHeight] = useState(DEFAULT_TIMELINE_HEIGHT);
+  const resizeRef = usePointerDrag({
+    onStart: (event) => {
+      event.preventDefault();
+      const timelineElement = (event.currentTarget as HTMLElement)
+        .parentElement!;
+      return {
+        height,
+        editorHeight: timelineElement.parentElement!.clientHeight,
+      };
+    },
+    onMove: (_event, { data, deltaY }) =>
+      setHeight(
+        clamp(
+          data.height - deltaY,
+          MIN_TIMELINE_HEIGHT,
+          data.editorHeight - MIN_MONITOR_HEIGHT,
+        ),
+      ),
+  });
   const seek = (time: number) => runtime.seek(time);
+  const renderMarkers = getRenderMarkers(project.output);
   return (
     <section
-      className="flex h-80 shrink-0 flex-col border-t border-neutral-700 text-sm"
+      className="relative flex shrink-0 flex-col border-t border-neutral-700 text-sm"
       data-testid="editor-timeline"
       aria-label="Timeline"
+      style={{ height }}
     >
+      <div
+        ref={resizeRef}
+        title="Resize timeline"
+        className="absolute inset-x-0 top-0 z-40 h-px cursor-ns-resize touch-none bg-neutral-700 after:absolute after:inset-x-0 after:-top-1 after:h-2 hover:bg-neutral-500"
+      />
       <div className="flex h-10 shrink-0 items-center gap-3 border-b border-neutral-700 bg-neutral-800 px-3 text-xs">
         <h2 className="shrink-0 font-semibold">Timeline</h2>
         <Button
@@ -102,7 +134,7 @@ export function Timeline({
         <div className="relative">
           <TimelineLocatorRow
             timeline={timeline}
-            output={project.output}
+            renderMarkers={renderMarkers}
             locatorInteraction={locatorInteraction}
             renderSelected={selection?.type === "output"}
             onRenderSelect={() => layerInteraction.select({ type: "output" })}
@@ -135,19 +167,69 @@ export function Timeline({
                 }
               />
             ))}
-          {timeline.isVisible(playhead) && (
-            <div
-              className="pointer-events-none absolute inset-y-0 z-10 w-px bg-sky-400"
-              data-testid="timeline-playhead"
-              style={{
-                left: TIMELINE_LABEL_WIDTH + timeline.timeToX(playhead),
-              }}
-            />
-          )}
+          <div
+            className="pointer-events-none absolute inset-y-0 right-0"
+            style={{ left: TIMELINE_LABEL_WIDTH }}
+          >
+            {renderMarkers
+              .filter((marker) => timeline.isVisible(marker.time))
+              .map((marker) => (
+                <div
+                  key={marker.type}
+                  className="absolute bottom-0 top-7 z-[5] w-px bg-primary/60"
+                  data-testid={`timeline-render-guide-${marker.type}`}
+                  style={{ left: timeline.timeToX(marker.time) }}
+                />
+              ))}
+            {timeline.isVisible(playhead) && (
+              <div
+                className="absolute inset-y-0 z-10 w-px bg-sky-400"
+                data-testid="timeline-playhead"
+                style={{ left: timeline.timeToX(playhead) }}
+              />
+            )}
+          </div>
         </div>
       </div>
     </section>
   );
+}
+
+type RenderMarker = {
+  type: "start" | "end" | "time";
+  name: string;
+  label: string;
+  time: number;
+  labelSide: "before" | "after";
+};
+
+function getRenderMarkers(output: Output): RenderMarker[] {
+  return output.type === "video"
+    ? [
+        {
+          type: "start",
+          name: "Render start",
+          label: "Start",
+          time: output.start,
+          labelSide: "after",
+        },
+        {
+          type: "end",
+          name: "Render end",
+          label: "End",
+          time: output.end,
+          labelSide: "before",
+        },
+      ]
+    : [
+        {
+          type: "time",
+          name: "Render frame",
+          label: "Frame",
+          time: output.time,
+          labelSide: "after",
+        },
+      ];
 }
 
 function TimelineRuler({
@@ -169,7 +251,7 @@ function TimelineRuler({
   return (
     <TimelineRow
       timeline={timeline}
-      className="h-10"
+      className="h-7"
       subdivisions={false}
       label={
         <span className="px-3 text-xs font-semibold text-muted-foreground">
@@ -206,7 +288,7 @@ function TimelineRuler({
 /** Render boundaries from the output, followed by the project's own locators. */
 function TimelineLocatorRow({
   timeline,
-  output,
+  renderMarkers,
   locatorInteraction,
   renderSelected,
   onRenderSelect,
@@ -214,40 +296,13 @@ function TimelineLocatorRow({
   onSeek,
 }: {
   timeline: TimelineView;
-  output: Output;
+  renderMarkers: RenderMarker[];
   locatorInteraction: LocatorInteraction;
   renderSelected: boolean;
   onRenderSelect: () => void;
   onClearSelection: () => void;
   onSeek: (time: number) => void;
 }) {
-  const renderMarkers =
-    output.type === "video"
-      ? [
-          {
-            type: "start" as const,
-            name: "Render start",
-            label: "Start",
-            time: output.start,
-            labelSide: "after" as const,
-          },
-          {
-            type: "end" as const,
-            name: "Render end",
-            label: "End",
-            time: output.end,
-            labelSide: "before" as const,
-          },
-        ]
-      : [
-          {
-            type: "time" as const,
-            name: "Render frame",
-            label: "Frame",
-            time: output.time,
-            labelSide: "after" as const,
-          },
-        ];
   return (
     <TimelineRow
       timeline={timeline}

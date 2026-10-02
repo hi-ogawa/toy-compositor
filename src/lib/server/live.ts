@@ -1,3 +1,5 @@
+export type LiveConnections = ReturnType<typeof createLiveConnections>;
+
 /**
  * The editor tabs' live connections. Each open tab, the start page or the
  * editor, holds one `GET /api/live` event stream, so the server knows when the
@@ -56,5 +58,3 @@ export function createLiveConnections() {
     },
   };
 }
-
-export type LiveConnections = ReturnType<typeof createLiveConnections>;
