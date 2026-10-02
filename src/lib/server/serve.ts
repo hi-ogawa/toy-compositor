@@ -1,4 +1,3 @@
-import { setTimeout as sleep } from "node:timers/promises";
 import { serve } from "srvx";
 import { staticMiddleware } from "srvx/static";
 import { createEditorHandler, SERVER_NAME } from "./api.ts";
@@ -23,11 +22,13 @@ export async function serveEditor({
   const handleApi = createEditorHandler({
     registry,
     live,
-    // Close once the stop reply's response closes, so the reply reaches the
-    // CLI. Closing all connections ends the tabs' live streams, which would
-    // otherwise keep the server open.
-    stop: (request) =>
-      request.runtime?.node?.res?.once("close", () => server.close(true)),
+    // Stop listening before the reply, so the port is free once the CLI has
+    // it. Then close all connections once the reply is sent, which ends the
+    // tabs' live streams that would otherwise keep the server open.
+    stop: (request) => {
+      void server.close();
+      request.runtime?.node?.res?.once("close", () => server.close(true));
+    },
   });
   const serveClient = staticMiddleware({ dir: clientDir });
   const server = serve({
@@ -67,7 +68,7 @@ function isLocalHost(host: string | null) {
 }
 
 /**
- * Stop the editor server on `port` and wait until it no longer answers.
+ * Stop the editor server on `port`, which frees the port before it replies.
  * Resolve to false when no editor server, but possibly another process, was
  * on the port, which is left alone.
  */
@@ -83,13 +84,7 @@ export async function stopEditorServer(port: number): Promise<boolean> {
       `The editor server on port ${port} cannot be stopped (${res.status})`,
     );
   }
-  for (let i = 0; i < 50; i++) {
-    if (!(await checkEditorServer(port))) {
-      return true;
-    }
-    await sleep(100);
-  }
-  throw new Error(`The editor server on port ${port} did not stop`);
+  return true;
 }
 
 /** Whether an editor server, rather than another process, answers on `port`. */
