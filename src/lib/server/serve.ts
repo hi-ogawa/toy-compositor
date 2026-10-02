@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from "node:timers/promises";
 import { serve } from "srvx";
 import { staticMiddleware } from "srvx/static";
 import { createEditorHandler, SERVER_NAME } from "./api.ts";
@@ -22,13 +23,11 @@ export async function serveEditor({
   const handleApi = createEditorHandler({
     registry,
     live,
-    // Stop listening before the reply, so the port is free once the CLI has
-    // it. Then close all connections once the reply is sent, which ends the
-    // tabs' live streams that would otherwise keep the server open.
-    stop: (request) => {
-      void server.close();
-      request.runtime?.node?.res?.once("close", () => server.close(true));
-    },
+    // Close once the stop reply's response closes, so the reply reaches the
+    // CLI. Closing all connections ends the tabs' live streams, which would
+    // otherwise keep the server open.
+    stop: (request) =>
+      request.runtime?.node?.res?.once("close", () => server.close(true)),
   });
   const serveClient = staticMiddleware({ dir: clientDir });
   const server = serve({
@@ -68,7 +67,7 @@ function isLocalHost(host: string | null) {
 }
 
 /**
- * Stop the editor server on `port`, which frees the port before it replies.
+ * Stop the editor server on `port` and wait until it no longer answers.
  * Resolve to false when no editor server, but possibly another process, was
  * on the port, which is left alone.
  */
@@ -84,7 +83,20 @@ export async function stopEditorServer(port: number): Promise<boolean> {
       `The editor server on port ${port} cannot be stopped (${res.status})`,
     );
   }
-  return true;
+  // The server closes right after sending the reply, so in practice the first
+  // check already finds it gone. Retry for a second in case it lags.
+  for (let i = 0; i < 10; i++) {
+    if (!(await checkEditorServer(port))) {
+      return true;
+    }
+    if (i === 0) {
+      console.log(`Waiting for the editor server on port ${port} to stop`);
+    }
+    await sleep(100);
+  }
+  throw new Error(
+    `The editor server on port ${port} still answers 1s after the stop request`,
+  );
 }
 
 /** Whether an editor server, rather than another process, answers on `port`. */
