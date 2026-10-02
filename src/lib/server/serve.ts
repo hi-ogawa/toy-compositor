@@ -31,6 +31,14 @@ export async function serveEditor({
       if (!isLocalHost(request.headers.get("host"))) {
         return new Response("Forbidden host", { status: 403 });
       }
+      // A page on another site can still send a request that needs no
+      // preflight, such as a form POST, to localhost. The browser marks it
+      // with that site's origin, while the editor's own pages send none or
+      // this server's.
+      const origin = request.headers.get("origin");
+      if (origin && origin !== `http://${request.headers.get("host")}`) {
+        return new Response("Forbidden origin", { status: 403 });
+      }
       if (new URL(request.url).pathname.startsWith("/api/")) {
         return handleApi(request);
       }
