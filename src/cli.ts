@@ -27,10 +27,10 @@ Usage:
       Open the editor for the project folders, adding directory to them first.
       --open opens it in the browser, reusing a server already on the port,
       and exits shortly after the last editor tab closes
-  toy-compositor status [--port <port>]
-      Show whether the editor server is running
   toy-compositor stop [--port <port>]
       Stop the running editor server, leaving another process on the port alone
+  toy-compositor status [--port <port>]
+      Show whether the editor server is running
   toy-compositor upgrade [source]
       Install the latest build globally with pnpm, or the build from source,
       update the app launcher entry, and stop the running editor server,
@@ -72,20 +72,20 @@ async function main() {
       });
       break;
     }
-    case "status": {
-      const port = Number(values.port);
-      console.log(
-        (await checkEditorServer(port))
-          ? `Editor running at http://localhost:${port}/`
-          : `No editor running on port ${port}`,
-      );
-      break;
-    }
     case "stop": {
       const port = Number(values.port);
       console.log(
         (await stopEditorServer(port))
           ? `Stopped the editor on port ${port}`
+          : `No editor running on port ${port}`,
+      );
+      break;
+    }
+    case "status": {
+      const port = Number(values.port);
+      console.log(
+        (await checkEditorServer(port))
+          ? `Editor running at http://localhost:${port}/`
           : `No editor running on port ${port}`,
       );
       break;
