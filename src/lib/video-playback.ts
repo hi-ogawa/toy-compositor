@@ -1,5 +1,6 @@
 import { clamp } from "../utils/math.ts";
 import { throttle } from "../utils/timing.ts";
+import { getLastFrameTime } from "./layout.ts";
 import type { VideoLayer } from "./project.ts";
 import type { AudioContextTransport } from "./transport.ts";
 
@@ -50,7 +51,7 @@ export class VideoPlayback {
     element.addEventListener("loadedmetadata", this.resync);
   }
 
-  /** `fps` is the canvas frame rate, which places the last frame a hold shows. */
+  /** `fps` is the canvas frame rate, which places a layer's last output frame. */
   setLayer({ layer, fps }: { layer: VideoLayer; fps: number }): void {
     this.layer = layer;
     this.fps = fps;
@@ -77,9 +78,9 @@ export class VideoPlayback {
     }
     const { position, isPlaying } = this.transport.store.get();
     const expectedTime = layer.in + position - layer.start;
-    // Outside its source range, a layer holds its first frame or the last one
-    // it shows, which the render takes one output frame before `out`.
-    const lastFrameTime = layer.out - 1 / this.fps;
+    // Outside its source range, a layer holds its first frame or the one it
+    // shows on its last output frame.
+    const lastFrameTime = getLastFrameTime(layer, { fps: this.fps });
     if (!isPlaying) {
       this.mode = "paused";
       this.pause(clamp(expectedTime, layer.in, lastFrameTime));

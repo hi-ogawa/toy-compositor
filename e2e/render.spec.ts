@@ -137,15 +137,16 @@ test("fade audio at the layer's own edges when the output cuts into them", async
   );
 });
 
-test("place a layer on the output frame nearest its start", async ({}, testInfo) => {
+test("cover the output frames nearest a layer's start and end", async ({}, testInfo) => {
   // Copy the synthetic sample and keep only its test pattern, starting at
-  // 1.033s, which is frame 31 at 30fps rounded to milliseconds, for 1s.
+  // 1.033s, which is frame 31 at 30fps rounded to milliseconds, and playing
+  // 0.936s, so it ends at 1.969s, nearest frame 59.
   const directory = testInfo.outputPath("project");
   await cp("samples/synthetic", directory, { recursive: true });
   await editJson<Project>(`${directory}/project.json`, (project) => {
     project.layers = project.layers
       .filter((layer) => layer.type === "video")
-      .map((layer) => ({ ...layer, start: 1.033, in: 0, out: 1 }));
+      .map((layer) => ({ ...layer, start: 1.033, in: 0, out: 0.936 }));
   });
   const output = testInfo.outputPath("placed.mp4");
   await execFileAsync(process.execPath, [
@@ -155,14 +156,15 @@ test("place a layer on the output frame nearest its start", async ({}, testInfo)
     output,
   ]);
 
-  // Check that the pattern covers frames 31 through 60 and the canvas shows
-  // on either side, rather than the start truncating to frame 30.
+  // Check that the pattern covers frames 31 through 58 and the canvas shows
+  // on either side, rather than the start truncating to frame 30 or ffmpeg
+  // rounding the 28.08-frame duration up to 29 frames.
   const frames = await readGrayFrames(output);
   const canvas = new Uint8Array(FRAME_WIDTH * FRAME_HEIGHT);
   expect(diffFrames(frames[30], canvas)).toBeLessThan(1);
   expect(diffFrames(frames[31], canvas)).toBeGreaterThan(10);
-  expect(diffFrames(frames[60], canvas)).toBeGreaterThan(10);
-  expect(diffFrames(frames[61], canvas)).toBeLessThan(1);
+  expect(diffFrames(frames[58], canvas)).toBeGreaterThan(10);
+  expect(diffFrames(frames[59], canvas)).toBeLessThan(1);
 });
 
 test("hold a video layer's first and last frames beyond its source range", async ({}, testInfo) => {
@@ -222,6 +224,47 @@ test("hold a video layer's first and last frames beyond its source range", async
     return frame;
   };
   expect(diffFrames(await renderStill(0.5), await renderStill(1))).toBe(0);
+  expect(diffFrames(await renderStill(2.5), await renderStill(59 / 30))).toBe(
+    0,
+  );
+});
+
+test("hold the frame a layer shows on its last output frame when its edges are off the frame grid", async ({}, testInfo) => {
+  // Copy the synthetic sample and keep only its test pattern, playing source
+  // 1s to 1.97s at 1.015s and holding its last frame for 1s. It ends at
+  // 1.985s, nearest frame 60, so its last output frame is 59.
+  const directory = testInfo.outputPath("project");
+  await cp("samples/synthetic", directory, { recursive: true });
+  await editJson<Project>(`${directory}/project.json`, (project) => {
+    project.layers = project.layers
+      .filter((layer) => layer.type === "video")
+      .map((layer) => ({
+        ...layer,
+        start: 1.015,
+        in: 1,
+        out: 1.97,
+        hold: { after: 1 },
+      }));
+  });
+
+  // Render a still inside the hold and one on frame 59, and check that the
+  // hold shows exactly that frame.
+  const renderStill = async (time: number) => {
+    const file = `${directory}/still-${time}.json`;
+    await cp(`${directory}/project.json`, file);
+    await editJson<Project>(file, (project) => {
+      project.output = { type: "still", time };
+    });
+    const still = testInfo.outputPath(`still-${time}.png`);
+    await execFileAsync(process.execPath, [
+      "src/cli.ts",
+      "render",
+      file,
+      still,
+    ]);
+    const [frame] = await readGrayFrames(still);
+    return frame;
+  };
   expect(diffFrames(await renderStill(2.5), await renderStill(59 / 30))).toBe(
     0,
   );

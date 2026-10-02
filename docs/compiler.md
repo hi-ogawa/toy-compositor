@@ -14,8 +14,8 @@ pnpm render <project.json> <output> --dry-run   # print the command only
 
 - The project file's numbers are the timing truth. Offsets are set on waveforms, which are exact data, and playback only confirms them, so preview drift never shifts the final render. This avoids the Kdenlive problem where preview and render disagreed and timeline positions had to be compensated by guesswork.
 - Source time is a presentation timestamp, including a stream's start offset, and the frame shown at a source time is the frame whose timestamp is nearest to it. Every renderer and the editor preview must pick frames this way, because project times are rounded to milliseconds and source frames often sit off the project's frame grid, so a looser rule makes renderers disagree by one frame.
-- Timeline time resolves to the output frame nearest to it, so a layer starts on the output frame nearest its start and ends before the one nearest its end. Editor times sit on output frames up to millisecond rounding, and the nearest-frame rule keeps a time such as 1.033 s on frame 31 at 30 fps rather than truncating it to frame 30.
-- A video layer's [hold](project-format.md#hold) shows the source range's first frame before it and its last frame after it. The last frame is the frame shown one output frame before `out`, because that is the last output frame the source range covers, so the held frame never comes from beyond `out`. Audio is not held, so the held spans are silent.
+- Timeline time resolves to the output frame nearest to it, so a layer's picture starts on the output frame nearest its start and ends before the one nearest its end. Editor times sit on output frames up to millisecond rounding, and the nearest-frame rule keeps a time such as 1.033 s on frame 31 at 30 fps rather than truncating it to frame 30.
+- A video layer's [hold](project-format.md#hold) shows what the layer shows on its first output frame before it and what it shows on its last output frame after it, so the held frames need no frame rule of their own. Audio is not held, so the held spans are silent.
 - The ffmpeg render is the truth for exact frames. The DOM preview draws the same layout within 1px ([Remotion comparison](https://github.com/hi-ogawa/toy-compositor/tree/e315663/research/remotion)), which is enough for placing layers, but a paused seek may land one frame off the nearest-frame rule, so frame choices such as the thumbnail are checked on a render.
 - The editor plays and decodes source media in the browser, so browser codec support such as HEVC matters there, and constant frame rate working files from ingest cover that case.
 - Variable frame rate phone footage is normalized to constant frame rate working files at ingest, which matches the existing manual pre-transcode. The working files also use a one-second keyframe interval so the editor can seek quickly ([working media](working-media.md)).
@@ -55,7 +55,7 @@ The project maps onto those parts like this:
 | Color layer         | A chain that starts with a `color=` source filter, with no input                                                     |
 | Audio layer         | One input and a chain                                                                                                |
 | Layer order         | The order of the `overlay` filters                                                                                   |
-| Output range        | Each input's `-ss` and `-t`, each chain's `setpts` offset, and the canvas duration                                   |
+| Output range        | Each input's `-ss` and `-t`, each chain's `trim` frame count and `setpts` offset, and the canvas duration            |
 | Video or still      | The output options                                                                                                   |
 
 Layers and inputs are not one to one. A color layer has no input, a video layer with sound has two, and a layer outside the output range has none. Only the filter graph connects everything.
@@ -68,18 +68,19 @@ First, a layer is cut to the part that falls inside the output range. A video or
 
 ![Three layers against a four-second output range, where only the parts inside the range become streams, each placed by its offset from the output start](images/layer-timing.svg)
 
-Each stream is trimmed to that visible part when ffmpeg reads the input, then shifted by its offset from the output start. For a video layer, trimming means seeking the source to the matching source time. Because project times are rounded to milliseconds, the seek targets the source frame nearest to that time rather than the first frame after it. A held video layer reads only the source frames inside the visible part and clones its first and last frames over the held spans, and a visible part that lies entirely in a hold reads the one frame it holds.
+Each stream is trimmed to that visible part when ffmpeg reads the input, then shifted by its offset from the output start. A picture stream covers the output frames from the one nearest the visible part's start to the one before the one nearest its end, so ffmpeg reads one frame past the visible part, and the stream is cut to that many frames and placed on its first frame. For a video layer, trimming means seeking the source to the matching source time. Because project times are rounded to milliseconds, the seek targets the source frame nearest to that time rather than the first frame after it. A held video layer reads only the source frames inside the visible part and clones its first and last frames over the held spans, and a visible part that lies entirely in a hold reads the one frame it holds.
 
 In ffmpeg terms, the cut is input options and the rest is a filter chain. The synthetic sample's video layer covers the whole three-second output and fills the 640×360 canvas:
 
 ```sh
--ss 0.000000 -t 3.000000 -i media/video.mp4   # seek to the source time, read the visible duration
+-ss 0.000000 -t 3.033333 -i media/video.mp4   # seek to the source time, read one frame past the visible duration
 ```
 
 ```text
-[0:v]fps=30,setpts=PTS-STARTPTS+round(0/TB),scale=640:360[v0]
-     │      │                               └ fit to its box
-     │      └ restart timestamps at 0, then shift to the output frame nearest the offset from the output start (0 s here)
+[0:v]fps=30,trim=end_frame=90,setpts=PTS-STARTPTS+round(0/TB),scale=640:360[v0]
+     │      │                  │                               └ fit to its box
+     │      │                  └ restart timestamps at 0, then shift to its first output frame (frame 0 here)
+     │      └ cut to the output frames it covers (90 here)
      └ resample to the canvas frame rate
 ```
 
@@ -102,10 +103,10 @@ The ffmpeg building blocks behind the table:
 | Read only the visible part of a source    | input options `-ss <source time> -t <duration>`                                                                                                              |
 | Repeat an image or text PNG               | input options `-loop 1 -framerate <fps> -t <duration>`                                                                                                       |
 | Match the canvas frame rate               | `fps=<fps>`                                                                                                                                                  |
-| Hold the first and last frames            | `tpad=start_duration=<before>:stop_duration=<after>:start_mode=clone:stop_mode=clone`                                                                        |
+| Hold the first and last frames            | `tpad=start=<frames>:stop=<frames>:start_mode=clone:stop_mode=clone`                                                                                         |
 | Crop, then fit to the box                 | `crop=iw*<w>:ih*<h>:iw*<left>:ih*<top>`, `scale=<width>:<height>`                                                                                            |
 | Generate a solid fill, as a source filter | `color=c=<color>@<opacity>:s=<width>x<height>:r=<fps>:d=<duration>`, `format=rgba`                                                                           |
-| Place on the output timeline              | `setpts=PTS-STARTPTS+round(<offset>/TB)`                                                                                                                     |
+| Cut to its frames and place them          | `trim=end_frame=<frames>`, `setpts=PTS-STARTPTS+round(<offset>/TB)`                                                                                          |
 | Normalize, fade, cut, and place sound     | `aformat=sample_rates=48000:channel_layouts=stereo`, `afade=t=in` and `afade=t=out`, `atrim=start=<cut>`, `asetpts=PTS-STARTPTS`, `adelay=delays=<ms>:all=1` |
 
 ## Stack Pictures, Mix Sounds
@@ -123,22 +124,23 @@ A chain can read more than one stream when its filter takes more than one input.
 The same graph as ffmpeg text, wrapped and annotated for reading, with paths shortened:
 
 ```sh
--ss 0.000000 -t 3.000000 -i media/video.mp4          # input 0, layer 0 video
+-ss 0.000000 -t 3.033333 -i media/video.mp4          # input 0, layer 0 video
 -ss 0.000000 -t 3.000000 -i media/audio.wav          # input 1, layer 1 audio
--loop 1 -framerate 30 -t 3.000 -i media/image.png    # input 2, layer 2 image
--loop 1 -framerate 30 -t 3.000 -i .text/out.mp4/3.png  # input 3, layer 3 text
+-loop 1 -framerate 30 -t 3.033 -i media/image.png    # input 2, layer 2 image
+-loop 1 -framerate 30 -t 3.033 -i .text/out.mp4/3.png  # input 3, layer 3 text
 ```
 
 ```text
 color=c=#000000:s=640x360:r=30:d=3[canvas];                             canvas
-[0:v]fps=30,setpts=PTS-STARTPTS+round(0/TB),scale=640:360[v0];          layer 0 picture
+[0:v]fps=30,trim=end_frame=90,setpts=PTS-STARTPTS+round(0/TB),
+     scale=640:360[v0];                                                 layer 0 picture
 [canvas][v0]overlay=x=0:y=0:eof_action=pass[over0];                     stack on the canvas
 [1:a]aformat=sample_rates=48000:channel_layouts=stereo,
      afade=t=in:st=0:d=0.2,afade=t=out:st=2.5:d=0.5,
      adelay=delays=0:all=1[a1];                                          layer 1 sound
-[2:v]scale=160:90,setpts=PTS-STARTPTS+round(0/TB)[v2];                  layer 2 picture
+[2:v]scale=160:90,trim=end_frame=90,setpts=PTS-STARTPTS+round(0/TB)[v2]; layer 2 picture
 [over0][v2]overlay=x=420:y=240:eof_action=pass[over2];                  stack on the result so far
-[3:v]setpts=PTS-STARTPTS+round(0/TB)[v3];                               layer 3 picture
+[3:v]trim=end_frame=90,setpts=PTS-STARTPTS+round(0/TB)[v3];             layer 3 picture
 [over2][v3]overlay=x=420:y=259:eof_action=pass[over3];                  stack on top
 [over3]format=yuv420p[vout];                                            output picture
 [a1]amix=inputs=1:normalize=0:duration=longest,apad,atrim=0:3[aout]     output sound
@@ -154,10 +156,10 @@ The video layer is muted, so it adds no sound. `eof_action=pass` is what lets lo
 
 A project whose `output` is a still renders the same graph over a single frame. The output range becomes one frame long starting at the still's time, no layer contributes sound, and ffmpeg writes one image file instead of encoding a video. A thumbnail therefore only decodes each source around its time, however long the source is.
 
-For the synthetic thumbnail at 1.5 seconds, the video input reads one frame's worth, starting a tenth of a frame before frame 45 so ffmpeg's seek lands on it, and the output writes a single PNG:
+For the synthetic thumbnail at 1.5 seconds, the video input reads the one frame it shows plus one more, starting a tenth of a frame before frame 45 so ffmpeg's seek lands on it, and the output writes a single PNG:
 
 ```sh
--ss 1.496667 -t 0.033333 -i media/video.mp4
+-ss 1.496667 -t 0.066667 -i media/video.mp4
 -map [vout] -frames:v 1 -update 1 thumbnail.png
 ```
 
