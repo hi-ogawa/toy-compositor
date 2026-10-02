@@ -40,7 +40,7 @@ Usage:
       Show whether the editor server is running
   toy-compositor install-desktop
       Add an app launcher entry that runs serve --open (Linux)
-  toy-compositor upgrade [source]
+  toy-compositor upgrade [source] [--port <port>]
       Install the latest build globally with pnpm, or the build from source,
       update the app launcher entry, and stop the running editor server,
       so the next launch uses the new build
