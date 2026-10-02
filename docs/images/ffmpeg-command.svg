@@ -25,7 +25,7 @@
 <text x="42" y="272" fill="#52625d">input 2 → [2:v]</text>
 <rect x="262" y="102" width="286" height="226" rx="7" fill="#ffffff" stroke="#2f6fb0" stroke-width="1.5"/>
 <text x="276" y="128"><tspan fill="#8a5a00">color=…</tspan><tspan fill="#2f6fb0">[canvas]</tspan>;</text>
-<text x="276" y="154"><tspan fill="#2f6fb0">[0:v]</tspan>fps=30,setpts=…,scale=…<tspan fill="#2f6fb0">[v0]</tspan>;</text>
+<text x="276" y="154"><tspan fill="#2f6fb0">[0:v]</tspan>fps=30,trim=…,setpts=…,…<tspan fill="#2f6fb0">[v0]</tspan>;</text>
 <text x="276" y="180"><tspan fill="#2f6fb0">[canvas][v0]</tspan>overlay=…<tspan fill="#2f6fb0">[over0]</tspan>;</text>
 <text x="276" y="206"><tspan fill="#2f6fb0">[1:a]</tspan>aformat=…,afade=…<tspan fill="#2f6fb0">[a1]</tspan>;</text>
 <text x="276" y="232">…</text>

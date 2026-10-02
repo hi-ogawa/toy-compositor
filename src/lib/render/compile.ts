@@ -179,7 +179,8 @@ function compileVideo({
   scene: Scene;
 }): LayerStreams {
   const visible = intersect(getLayerRange(layer), scene.range);
-  if (!visible) {
+  const frames = visible && getOutputFrames({ visible, scene });
+  if (!visible || !frames) {
     return {};
   }
   const video = mediaInfo.video!;
@@ -191,11 +192,11 @@ function compileVideo({
         seek: getFrameShownAt(video, {
           time: layer.in + visible.start - layer.start,
         }),
-        duration: visible.end - visible.start,
+        duration: getReadDuration(frames, scene),
       }),
       filters: [
         `fps=${scene.canvas.fps}`,
-        buildPlaceFilter(visible.start - scene.range.start),
+        ...buildPlaceFilters(frames, scene),
         ...buildCropFilters(layer.crop),
         `scale=${fit.width}:${fit.height}`,
       ],
@@ -221,7 +222,8 @@ function compileImage({
   scene: Scene;
 }): LayerStreams {
   const visible = intersect(getLayerRange(layer), scene.range);
-  if (!visible) {
+  const frames = visible && getOutputFrames({ visible, scene });
+  if (!frames) {
     return {};
   }
   const fit = fitBox({
@@ -234,12 +236,12 @@ function compileImage({
       input: buildStillInput({
         file,
         fps: scene.canvas.fps,
-        duration: visible.end - visible.start,
+        duration: getReadDuration(frames, scene),
       }),
       filters: [
         ...buildCropFilters(layer.crop),
         `scale=${fit.width}:${fit.height}`,
-        buildPlaceFilter(visible.start - scene.range.start),
+        ...buildPlaceFilters(frames, scene),
       ],
       x: fit.x,
       y: fit.y,
@@ -257,7 +259,8 @@ function compileText({
   scene: Scene;
 }): LayerStreams {
   const visible = intersect(getLayerRange(layer), scene.range);
-  if (!visible) {
+  const frames = visible && getOutputFrames({ visible, scene });
+  if (!frames) {
     return {};
   }
   return {
@@ -265,9 +268,9 @@ function compileText({
       input: buildStillInput({
         file,
         fps: scene.canvas.fps,
-        duration: visible.end - visible.start,
+        duration: getReadDuration(frames, scene),
       }),
-      filters: [buildPlaceFilter(visible.start - scene.range.start)],
+      filters: buildPlaceFilters(frames, scene),
       // The stroked copy pads the PNG by half the outline width, so shift it back up.
       x: layer.box.x,
       y: layer.box.y - Math.round((layer.outline?.width ?? 0) / 2),
@@ -283,7 +286,8 @@ function compileColor({
   scene: Scene;
 }): LayerStreams {
   const visible = intersect(getLayerRange(layer), scene.range);
-  if (!visible) {
+  const frames = visible && getOutputFrames({ visible, scene });
+  if (!frames) {
     return {};
   }
   const { canvas } = scene;
@@ -296,9 +300,9 @@ function compileColor({
   return {
     video: {
       filters: [
-        `color=c=${layer.color}@${layer.opacity ?? 1}:s=${box.width}x${box.height}:r=${canvas.fps}:d=${visible.end - visible.start}`,
+        `color=c=${layer.color}@${layer.opacity ?? 1}:s=${box.width}x${box.height}:r=${canvas.fps}:d=${getReadDuration(frames, scene)}`,
         "format=rgba",
-        buildPlaceFilter(visible.start - scene.range.start),
+        ...buildPlaceFilters(frames, scene),
       ],
       x: box.x,
       y: box.y,
@@ -458,14 +462,43 @@ function buildStillInput({
   ];
 }
 
+/** A visual layer's output frames, counted from the output start. */
+type OutputFrames = { first: number; count: number };
+
 /**
- * Place a stream on the output timeline at the output frame nearest its
- * offset. setpts truncates to whole time base units, and a millisecond-rounded
- * frame time such as 1.033 s for frame 31 at 30 fps sits just below its frame,
- * so the offset is rounded rather than truncated.
+ * The output frames a visible range covers, from the frame nearest its start
+ * to the one before the frame nearest its end, or nothing when it covers none.
+ * Rounding both edges on the output frame grid keeps a millisecond-rounded
+ * frame time such as 1.033 s on frame 31 at 30 fps.
  */
-function buildPlaceFilter(offset: number) {
-  return `setpts=PTS-STARTPTS+round(${offset}/TB)`;
+function getOutputFrames({
+  visible,
+  scene,
+}: {
+  visible: TimeRange;
+  scene: Scene;
+}): OutputFrames | undefined {
+  const { fps } = scene.canvas;
+  const first = Math.round((visible.start - scene.range.start) * fps);
+  const end = Math.round((visible.end - scene.range.start) * fps);
+  return end > first ? { first, count: end - first } : undefined;
+}
+
+/** Read one frame beyond a layer's frames, so the trim, not the read, ends it. */
+function getReadDuration(frames: OutputFrames, scene: Scene) {
+  return (frames.count + 1) / scene.canvas.fps;
+}
+
+/**
+ * Cut a stream at the canvas frame rate to a layer's frame count, then place it
+ * on its first output frame. ffmpeg would otherwise end it by its own rounding
+ * of the read duration, and setpts truncates, so the offset is rounded.
+ */
+function buildPlaceFilters(frames: OutputFrames, scene: Scene) {
+  return [
+    `trim=end_frame=${frames.count}`,
+    `setpts=PTS-STARTPTS+round(${frames.first / scene.canvas.fps}/TB)`,
+  ];
 }
 
 function buildCropFilters(crop?: Crop) {
