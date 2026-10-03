@@ -1,8 +1,10 @@
 import type { Box, ColorLayer, Layer, Project } from "./project.ts";
 
 /** A project file as saved, which may have an older format's shape. */
-export type SavedProject = Omit<Project, "layers" | "media"> & {
+export type SavedProject = Omit<Project, "layers" | "locators" | "media"> & {
   layers: SavedLayer[];
+  // Missing in projects saved before locators.
+  locators?: Project["locators"];
   // Missing in projects saved before media info, filled by update-media.
   media?: Project["media"];
 };
@@ -59,6 +61,7 @@ export function migrateProject(project: SavedProject): {
   const migrated: Project = {
     ...project,
     layers,
+    locators: project.locators ?? [],
     // Validation only lets a project without `media` through when no layer
     // uses a file, so it has none to record.
     media: project.media ?? {},

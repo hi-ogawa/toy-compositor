@@ -399,7 +399,7 @@ function deserializeEditorProject(project: Project): EditorProject {
       ...layer,
       id: crypto.randomUUID(),
     })),
-    locators: (project.locators ?? []).map((locator): EditorLocator => ({
+    locators: project.locators.map((locator): EditorLocator => ({
       ...locator,
       id: crypto.randomUUID(),
     })),

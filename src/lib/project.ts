@@ -3,7 +3,7 @@ export type Project = {
   canvas: Canvas;
   output: Output;
   layers: Layer[];
-  locators?: Locator[];
+  locators: Locator[];
   /** Facts about every media file a layer uses, keyed by the layers' `src`. */
   media: Record<string, MediaInfo>;
 };
