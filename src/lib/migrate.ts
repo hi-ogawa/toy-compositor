@@ -148,7 +148,7 @@ function convertFitBox({
   crop?: Crop;
 }): Transform {
   const source = mediaInfo.video!;
-  const cropped = getCroppedSize({ source, crop });
+  const cropped = getCroppedSize({ size: source, crop });
   const scale = Math.min(
     box.width / cropped.width,
     box.height / cropped.height,

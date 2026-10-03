@@ -1,5 +1,5 @@
 import { useCallback, useState, type CSSProperties } from "react";
-import { getCroppedSize, placeMedia } from "../lib/layout";
+import { getCroppedSize, getVisibleBox } from "../lib/layout";
 import type { ImageLayer, MediaInfo, VideoLayer } from "../lib/project";
 import type { EditorRuntime } from "../lib/runtime";
 
@@ -21,16 +21,16 @@ export function CompositionMedia({
 
   const video = mediaInfo.video!;
   const crop = layer.crop ?? {};
-  const placed = placeMedia({
-    source: video,
+  const visible = getVisibleBox({
+    size: video,
     crop,
     transform: layer.transform,
   });
   // The wrapper is the visible cropped rectangle, and the media inside keeps
   // its uncropped size at the same scale, shifted by the left and top crop.
-  const cropped = getCroppedSize({ source: video, crop });
-  const scaleX = placed.width / cropped.width;
-  const scaleY = placed.height / cropped.height;
+  const cropped = getCroppedSize({ size: video, crop });
+  const scaleX = visible.width / cropped.width;
+  const scaleY = visible.height / cropped.height;
   const mediaStyle: CSSProperties = {
     position: "absolute",
     maxWidth: "none",
@@ -45,7 +45,7 @@ export function CompositionMedia({
         <p
           role="alert"
           className="absolute bg-black p-2 text-sm text-destructive"
-          style={{ left: placed.x, top: placed.y }}
+          style={{ left: visible.x, top: visible.y }}
         >
           Could not load {layer.src}.
         </p>
@@ -53,10 +53,10 @@ export function CompositionMedia({
       <div
         className="absolute overflow-hidden"
         style={{
-          left: placed.x,
-          top: placed.y,
-          width: placed.width,
-          height: placed.height,
+          left: visible.x,
+          top: visible.y,
+          width: visible.width,
+          height: visible.height,
         }}
       >
         {layer.type === "video" ? (

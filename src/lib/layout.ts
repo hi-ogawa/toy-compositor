@@ -50,82 +50,80 @@ export function intersect(a: TimeRange, b: TimeRange): TimeRange | undefined {
 type Size = { width: number; height: number };
 
 /**
- * Place the visible part of the source on the canvas. The transform scales the
- * whole source and puts its top-left corner at its position, and the crop then
- * hides edges without moving the rest. The size rounds to even pixels for the
- * encoder's chroma subsampling, and anything outside the canvas is clipped later.
+ * The visible part of a crop on the canvas. The transform scales the whole size
+ * and puts its top-left corner at its position, and the crop then hides edges
+ * without moving the rest. The size rounds to even pixels for the encoder's
+ * chroma subsampling, and anything outside the canvas is clipped later.
  */
-export function placeMedia({
-  source,
+export function getVisibleBox({
+  size,
   crop = {},
   transform,
 }: {
-  source: Size;
+  size: Size;
   crop?: Crop;
   transform: Transform;
 }): Box {
-  const cropped = getCroppedSize({ source, crop });
+  const cropped = getCroppedSize({ size, crop });
   return {
     width: roundToEven(cropped.width * transform.scale),
     height: roundToEven(cropped.height * transform.scale),
     x: Math.round(
-      transform.x + (crop.left ?? 0) * source.width * transform.scale,
+      transform.x + (crop.left ?? 0) * size.width * transform.scale,
     ),
     y: Math.round(
-      transform.y + (crop.top ?? 0) * source.height * transform.scale,
+      transform.y + (crop.top ?? 0) * size.height * transform.scale,
     ),
   };
 }
 
-/** Center the source on the canvas at the largest scale that keeps it inside. */
-export function fitCanvas({
-  source,
+/** Center the size on the canvas at the largest scale that keeps it inside. */
+export function fitTransform({
+  size,
   canvas,
 }: {
-  source: Size;
+  size: Size;
   canvas: Size;
 }): Transform {
   const scale = Math.min(
-    canvas.width / source.width,
-    canvas.height / source.height,
+    canvas.width / size.width,
+    canvas.height / size.height,
   );
   return {
-    x: Math.round((canvas.width - source.width * scale) / 2),
-    y: Math.round((canvas.height - source.height * scale) / 2),
+    x: Math.round((canvas.width - size.width * scale) / 2),
+    y: Math.round((canvas.height - size.height * scale) / 2),
     scale,
   };
 }
 
-/** Change the scale around the center of the scaled source, so it stays in place. */
-export function rescaleMedia({
-  source,
+/** Change the scale around the center of the scaled size, so it stays in place. */
+export function scaleTransform({
+  size,
   transform,
   scale,
 }: {
-  source: Size;
+  size: Size;
   transform: Transform;
   scale: number;
 }): Transform {
   return {
-    x: Math.round(transform.x + (source.width * (transform.scale - scale)) / 2),
-    y: Math.round(
-      transform.y + (source.height * (transform.scale - scale)) / 2,
-    ),
+    x: Math.round(transform.x + (size.width * (transform.scale - scale)) / 2),
+    y: Math.round(transform.y + (size.height * (transform.scale - scale)) / 2),
     scale,
   };
 }
 
-/** The source's size in its own pixels after removing each cropped edge. */
+/** The size after removing each cropped edge. */
 export function getCroppedSize({
-  source,
+  size,
   crop = {},
 }: {
-  source: Size;
+  size: Size;
   crop?: Crop;
 }): Size {
   return {
-    width: source.width * (1 - (crop.left ?? 0) - (crop.right ?? 0)),
-    height: source.height * (1 - (crop.top ?? 0) - (crop.bottom ?? 0)),
+    width: size.width * (1 - (crop.left ?? 0) - (crop.right ?? 0)),
+    height: size.height * (1 - (crop.top ?? 0) - (crop.bottom ?? 0)),
   };
 }
 

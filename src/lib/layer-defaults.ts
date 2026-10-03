@@ -1,4 +1,4 @@
-import { fitCanvas, type TimeRange } from "./layout.ts";
+import { fitTransform, type TimeRange } from "./layout.ts";
 import type { MediaType } from "./media-file.ts";
 import type {
   Canvas,
@@ -37,7 +37,7 @@ export function createMediaLayer({
         start,
         in: mediaInfo.start,
         out: mediaInfo.end,
-        transform: fitCanvas({ source: mediaInfo.video!, canvas }),
+        transform: fitTransform({ size: mediaInfo.video!, canvas }),
       };
     }
     case "audio": {
@@ -55,7 +55,7 @@ export function createMediaLayer({
         name,
         type,
         src,
-        transform: fitCanvas({ source: mediaInfo.video!, canvas }),
+        transform: fitTransform({ size: mediaInfo.video!, canvas }),
         ...stillRange,
       };
     }

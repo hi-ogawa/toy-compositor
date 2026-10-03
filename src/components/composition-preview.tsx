@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
-import { getPictureRange, placeMedia } from "../lib/layout";
+import { getPictureRange, getVisibleBox } from "../lib/layout";
 import type { Box, Layer, Project, TextLayer } from "../lib/project";
 import type { EditorRuntime, EditorProject } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
@@ -165,8 +165,8 @@ function getPreviewBox({
   switch (layer.type) {
     case "video":
     case "image": {
-      return placeMedia({
-        source: mediaInfoMap[layer.src].video!,
+      return getVisibleBox({
+        size: mediaInfoMap[layer.src].video!,
         crop: layer.crop,
         transform: layer.transform,
       });

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { matchKeyboardEvent } from "../lib/keyboard";
-import { rescaleMedia } from "../lib/layout";
+import { scaleTransform } from "../lib/layout";
 import type {
   Canvas,
   AudioLayer,
@@ -588,7 +588,9 @@ function TransformFields({
   onCommit: (transform: Transform) => void;
 }) {
   const commitScale = (scale: number) =>
-    onCommit(rescaleMedia({ source, transform, scale: roundTo(scale, 1e-6) }));
+    onCommit(
+      scaleTransform({ size: source, transform, scale: roundTo(scale, 1e-6) }),
+    );
   return (
     <Group title="Transform">
       {(["x", "y"] as const).map((key) => (

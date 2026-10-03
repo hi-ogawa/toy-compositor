@@ -1,6 +1,6 @@
 import path from "node:path";
 import {
-  placeMedia,
+  getVisibleBox,
   intersect,
   getLayerRange,
   getOutputRange,
@@ -184,8 +184,8 @@ function compileVideo({
     return {};
   }
   const video = mediaInfo.video!;
-  const placed = placeMedia({
-    source: video,
+  const box = getVisibleBox({
+    size: video,
     crop: layer.crop,
     transform: layer.transform,
   });
@@ -208,10 +208,10 @@ function compileVideo({
           : []),
         `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
         ...buildCropFilters(layer.crop),
-        `scale=${placed.width}:${placed.height}`,
+        `scale=${box.width}:${box.height}`,
       ],
-      x: placed.x,
-      y: placed.y,
+      x: box.x,
+      y: box.y,
     },
     audio:
       audible && scene.withAudio && !layer.muted && mediaInfo.audio
@@ -284,8 +284,8 @@ function compileImage({
   if (!visible) {
     return {};
   }
-  const placed = placeMedia({
-    source: mediaInfo.video!,
+  const box = getVisibleBox({
+    size: mediaInfo.video!,
     crop: layer.crop,
     transform: layer.transform,
   });
@@ -298,11 +298,11 @@ function compileImage({
       }),
       filters: [
         ...buildCropFilters(layer.crop),
-        `scale=${placed.width}:${placed.height}`,
+        `scale=${box.width}:${box.height}`,
         `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
       ],
-      x: placed.x,
-      y: placed.y,
+      x: box.x,
+      y: box.y,
     },
   };
 }

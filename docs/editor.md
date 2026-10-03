@@ -1,6 +1,6 @@
 # Editor
 
-The editor composes the project in the DOM at one project time. Each visual layer is an absolutely positioned `<video>`, `<img>`, or div, placed in canvas pixels inside a canvas-sized div, and the whole canvas is CSS-scaled to fit the monitor. The preview shares layout math with the [compiler](compiler.md) (`placeMedia` and `getOutputRange` in [src/lib/layout.ts](../src/lib/layout.ts)), but not its rendering, so it differs from the render in the places listed [below](#differences-from-the-render).
+The editor composes the project in the DOM at one project time. Each visual layer is an absolutely positioned `<video>`, `<img>`, or div, placed in canvas pixels inside a canvas-sized div, and the whole canvas is CSS-scaled to fit the monitor. The preview shares layout math with the [compiler](compiler.md) (`getVisibleBox` and `getOutputRange` in [src/lib/layout.ts](../src/lib/layout.ts)), but not its rendering, so it differs from the render in the places listed [below](#differences-from-the-render).
 
 ## Components
 
@@ -30,7 +30,7 @@ Layers use the project's numbers directly as CSS pixels inside a canvas div of `
 
 ![Layers are placed in canvas pixels, the canvas is scaled once, and media is cropped by a clipping wrapper](images/coordinate-spaces.svg)
 
-Video and image layers go through the compiler's `placeMedia`, which returns the visible cropped rectangle that `layer.transform` places. The DOM cannot crop an element directly, so a wrapper div with `overflow: hidden` is that rectangle, and the media element inside keeps its uncropped size at the same scale, shifted by the left and top crop. The source's size comes from the project's `media`, the same number the compiler scales with, so the layout is right before the media loads.
+Video and image layers go through the compiler's `getVisibleBox`, which returns the visible cropped rectangle that `layer.transform` places. The DOM cannot crop an element directly, so a wrapper div with `overflow: hidden` is that rectangle, and the media element inside keeps its uncropped size at the same scale, shifted by the left and top crop. The source's size comes from the project's `media`, the same number the compiler scales with, so the layout is right before the media loads.
 
 ## Pick Layers and Frames by Time
 
