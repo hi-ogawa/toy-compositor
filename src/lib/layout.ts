@@ -76,7 +76,7 @@ export function getVisibleBox({
 }
 
 /** Center the size on the canvas at the largest scale that keeps it inside. */
-export function getFittedTransform({
+export function getFitTransform({
   size,
   canvas,
 }: {
