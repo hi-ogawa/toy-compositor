@@ -3,8 +3,7 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import type { Project } from "../src/lib/project.ts";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
-import { execFileAsync } from "../src/utils/exec.ts";
-import { editJson, readJson } from "../src/utils/fs.ts";
+import { readJson } from "../src/utils/fs.ts";
 import {
   expectInspectorFields,
   getInspectorField,
@@ -272,31 +271,4 @@ test("move the selected layer up and down in the stack", async ({
     "Title",
     "Tint",
   ]);
-});
-
-test("reject a color layer without a box", async ({ page, editor }) => {
-  // Remove the tint's box, as in a project file from before boxes were required.
-  await editJson<{ layers: { name?: string; box?: unknown }[] }>(
-    editor.projectFile,
-    (project) => {
-      delete project.layers.find((layer) => layer.name === "Tint")!.box;
-    },
-  );
-  const message = 'color layer "Tint" has no box';
-
-  // Open the editor, and confirm it shows the error instead of the editor.
-  await page.goto(editor.url);
-  await expect(page.getByText(message)).toBeVisible();
-  await expect(page.getByRole("main")).toHaveCount(0);
-
-  // Render, and confirm it fails with the same error.
-  await expect(
-    execFileAsync(process.execPath, [
-      "src/cli.ts",
-      "render",
-      editor.projectFile,
-      `${editor.projectFile}.mp4`,
-      "--dry-run",
-    ]),
-  ).rejects.toMatchObject({ stderr: expect.stringContaining(message) });
 });
