@@ -3,7 +3,7 @@ import { once } from "node:events";
 import fs from "node:fs";
 import path from "node:path";
 import { readJson, writeJson } from "../../utils/fs.ts";
-import { validateAndMigrateProject, type SavedProject } from "../migrate.ts";
+import { migrateAndValidateProject, type SavedProject } from "../migrate.ts";
 import { compile } from "./compile.ts";
 import { resolveProject } from "./resolve.ts";
 
@@ -17,7 +17,7 @@ export async function renderProject({
   outFile: string;
   dryRun?: boolean;
 }) {
-  const { project, changes } = await validateAndMigrateProject(
+  const { project, changes } = await migrateAndValidateProject(
     await readJson<SavedProject>(projectFile),
   );
   if (changes.length > 0) {

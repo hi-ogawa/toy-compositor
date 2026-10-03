@@ -79,11 +79,10 @@ type SavedTextLayer = Omit<TextLayer, "box" | "align" | "font"> & {
 export type MigrateProjectResult = { project: Project; changes: string[] };
 
 /**
- * Migrate a project to the current shape, then validate it, the reverse of the
- * name's order. Migration never reads `media`, so it runs first, and validation
- * only reads the current shape.
+ * Migrate a project to the current shape, then validate it. Migration never
+ * reads `media`, so it runs first, and validation only reads the current shape.
  */
-export async function validateAndMigrateProject(project: SavedProject) {
+export async function migrateAndValidateProject(project: SavedProject) {
   const migrated = await migrateProject(project);
   validateProject(migrated.project);
   return migrated;
