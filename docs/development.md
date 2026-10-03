@@ -6,7 +6,7 @@ uv sync                              # Python tools under tools/ for comparing r
 pnpm setup-sample samples/synthetic  # copy a sample into .local/projects/
 pnpm dev                             # editor with the folders in .local/projects/
 pnpm render <project.json> <output>  # render from source
-pnpm update-media <project.json...>  # record the media info layers use
+pnpm update-media <project.json...>  # record the media info clips use
 pnpm lint-check                      # format, lint, and typecheck
 pnpm test-e2e                        # against the built CLI, E2E_SERVER=dev for the dev server
 pnpm build                           # dist/client/ and dist/server/cli.js

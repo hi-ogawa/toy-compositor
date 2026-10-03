@@ -4,7 +4,7 @@ export type Project = {
   output: Output;
   layers: Layer[];
   locators: Locator[];
-  /** Facts about every media file a layer uses, keyed by the layers' `src`. */
+  /** Facts about every media file a clip uses, keyed by the clips' `src`. */
   media: Record<string, MediaInfo>;
 };
 
@@ -70,14 +70,13 @@ export function createEmptyProject(preset: CanvasPreset): Project {
   };
 }
 
-export type Layer =
-  | VideoLayer
-  | AudioLayer
-  | ImageLayer
-  | TextLayer
-  | ColorLayer;
+/**
+ * A lane in the stack, like a track in a video editor, holding clips sorted by
+ * `start` whose picture ranges do not overlap.
+ */
+export type Layer = { name: string; muted?: boolean; clips: Clip[] };
 
-type LayerBase = { name: string };
+export type Clip = VideoClip | AudioClip | ImageClip | TextClip | ColorClip;
 
 export type Box = { x: number; y: number; width: number; height: number };
 
@@ -88,7 +87,7 @@ export type Crop = {
   bottom?: number;
 };
 
-export type VideoLayer = LayerBase & {
+export type VideoClip = {
   type: "video";
   src: string;
   start: number;
@@ -96,13 +95,12 @@ export type VideoLayer = LayerBase & {
   out: number;
   box: Box;
   crop?: Crop;
-  muted?: boolean;
   fadeIn?: number;
   fadeOut?: number;
   hold?: { before?: number; after?: number };
 };
 
-export type AudioLayer = LayerBase & {
+export type AudioClip = {
   type: "audio";
   src: string;
   start: number;
@@ -110,10 +108,9 @@ export type AudioLayer = LayerBase & {
   out: number;
   fadeIn?: number;
   fadeOut?: number;
-  muted?: boolean;
 };
 
-export type ImageLayer = LayerBase & {
+export type ImageClip = {
   type: "image";
   src: string;
   box: Box;
@@ -122,7 +119,7 @@ export type ImageLayer = LayerBase & {
   end: number;
 };
 
-export type TextLayer = LayerBase & {
+export type TextClip = {
   type: "text";
   text: string;
   box: Box;
@@ -134,7 +131,7 @@ export type TextLayer = LayerBase & {
   end: number;
 };
 
-export type ColorLayer = LayerBase & {
+export type ColorClip = {
   type: "color";
   color: string;
   opacity?: number;

@@ -117,7 +117,9 @@ test("fade audio at the layer's own edges when the output cuts into them", async
   const directory = testInfo.outputPath("project");
   await cp("samples/synthetic", directory, { recursive: true });
   await editJson<Project>(`${directory}/project.json`, (project) => {
-    project.layers = project.layers.filter((layer) => layer.type === "audio");
+    project.layers = project.layers.filter(
+      (layer) => layer.clips[0]!.type === "audio",
+    );
     project.output = { type: "video", start: 0.1, end: 2.8 };
   });
   const output = testInfo.outputPath("cut.mp4");
@@ -148,13 +150,16 @@ test("hold a video layer's first and last frames beyond its source range", async
   await cp("samples/synthetic", directory, { recursive: true });
   await editJson<Project>(`${directory}/project.json`, (project) => {
     project.layers = project.layers
-      .filter((layer) => layer.type === "video")
+      .filter((layer) => layer.clips[0]!.type === "video")
       .map((layer) => ({
         ...layer,
-        start: 1,
-        in: 1,
-        out: 2,
-        hold: { before: 1, after: 1 },
+        clips: layer.clips.map((clip) => ({
+          ...clip,
+          start: 1,
+          in: 1,
+          out: 2,
+          hold: { before: 1, after: 1 },
+        })),
       }));
   });
   const output = testInfo.outputPath("hold.mp4");
@@ -199,6 +204,47 @@ test("hold a video layer's first and last frames beyond its source range", async
   };
   expect(diffFrames(await renderStill(0.5), frames[0])).toBeLessThan(1);
   expect(diffFrames(await renderStill(2.5), frames.at(-1)!)).toBeLessThan(1);
+});
+
+test("render a layer's adjacent clips like the one clip they split", async ({}, testInfo) => {
+  // Copy the synthetic sample and keep only its test pattern, then render it
+  // once as it is and once split at 1.5 s into two clips on its layer.
+  const directory = testInfo.outputPath("project");
+  await cp("samples/synthetic", directory, { recursive: true });
+  const render = async (name: string, split: boolean) => {
+    const file = `${directory}/${name}.json`;
+    await cp(`${directory}/project.json`, file);
+    await editJson<Project>(file, (project) => {
+      project.layers = project.layers.filter(
+        (layer) => layer.clips[0]!.type === "video",
+      );
+      const [layer] = project.layers;
+      const clip = layer!.clips[0]!;
+      if (split && clip.type === "video") {
+        layer!.clips = [
+          { ...clip, out: 1.5 },
+          { ...clip, start: 1.5, in: 1.5 },
+        ];
+      }
+    });
+    const output = testInfo.outputPath(`${name}.mp4`);
+    await execFileAsync(process.execPath, [
+      "src/cli.ts",
+      "render",
+      file,
+      output,
+    ]);
+    return readGrayFrames(output);
+  };
+  const whole = await render("whole", false);
+  const split = await render("split", true);
+
+  // Check that the split render has the same frames, so the two clips cover
+  // every frame once, within the video encode's loss.
+  expect(split).toHaveLength(whole.length);
+  for (const [i, frame] of split.entries()) {
+    expect(diffFrames(frame, whole[i]!)).toBeLessThan(1);
+  }
 });
 
 /** RMS level in dB of a 20ms window of a file's audio at a time. */

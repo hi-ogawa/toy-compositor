@@ -22,16 +22,13 @@ test("update a project's media info", async ({ editor }) => {
   );
 });
 
-test("reject a layer whose file has no media info", async ({
-  page,
-  editor,
-}) => {
-  // Remove the image's entry, as if the layer was added without update-media.
+test("reject a clip whose file has no media info", async ({ page, editor }) => {
+  // Remove the image's entry, as if the clip was added without update-media.
   await editJson<Project>(editor.projectFile, (project) => {
     delete project.media["media/image.png"];
   });
   const message =
-    'image layer "Label backdrop" (media/image.png) has no media info, run update-media';
+    'image clip in layer "Label backdrop" (media/image.png) has no media info, run update-media';
 
   // Open the editor, and confirm it shows the error instead of the editor.
   await page.goto(editor.url);

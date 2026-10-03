@@ -6,10 +6,10 @@ import {
   TypeIcon,
   type LucideIcon,
 } from "lucide-react";
-import type { Layer } from "../lib/project";
+import type { Clip } from "../lib/project";
 
-export function LayerTypeIcon({ type }: { type: Layer["type"] }) {
-  const Icon = LAYER_TYPE_ICONS[type];
+export function ClipTypeIcon({ type }: { type: Clip["type"] }) {
+  const Icon = CLIP_TYPE_ICONS[type];
   return (
     <Icon
       role="img"
@@ -21,7 +21,7 @@ export function LayerTypeIcon({ type }: { type: Layer["type"] }) {
   );
 }
 
-const LAYER_TYPE_ICONS: Record<Layer["type"], LucideIcon> = {
+const CLIP_TYPE_ICONS: Record<Clip["type"], LucideIcon> = {
   video: FilmIcon,
   audio: AudioLinesIcon,
   image: ImageIcon,

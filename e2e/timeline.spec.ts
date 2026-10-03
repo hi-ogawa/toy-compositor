@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import type { Project } from "../src/lib/project.ts";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
-import { readJson } from "../src/utils/fs.ts";
+import { editJson, readJson } from "../src/utils/fs.ts";
 import {
   dragBy,
   expectInspectorFields,
@@ -85,7 +85,7 @@ test("clear the selection with Escape or the locator row", async ({
   const emptyInspector = page
     .getByRole("complementary", { name: "Inspector" })
     .getByText("Select composition settings or a layer.");
-  const video = page.getByTestId("timeline-layer-0");
+  const video = page.getByTestId("timeline-layer-0-clip-0");
   const thumbnail = page
     .getByTestId("editor-timeline")
     .getByRole("button", { name: "thumbnail", exact: true });
@@ -249,10 +249,10 @@ test("draw audio waveforms in lanes", async ({ page, editor }) => {
   // and the muted video draws its own audio dimmed.
   await page.goto(editor.url);
   const videoWaveform = page
-    .getByTestId("timeline-layer-0")
+    .getByTestId("timeline-layer-0-clip-0")
     .getByTestId("timeline-waveform");
   const audioWaveform = page
-    .getByTestId("timeline-layer-1")
+    .getByTestId("timeline-layer-1-clip-0")
     .getByTestId("timeline-waveform");
   await expect(audioWaveform).toBeVisible();
   await expect(audioWaveform).not.toHaveAttribute("data-dimmed");
@@ -273,9 +273,9 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
   await page.goto(editor.url);
   const secondsToPixels = (seconds: number) =>
     seconds * DEFAULT_PIXELS_PER_SECOND;
-  const video = page.getByTestId("timeline-layer-0");
-  const videoTrimStart = page.getByTestId("timeline-layer-0-trim-start");
-  const videoTrimEnd = page.getByTestId("timeline-layer-0-trim-end");
+  const video = page.getByTestId("timeline-layer-0-clip-0");
+  const videoTrimStart = page.getByTestId("timeline-layer-0-clip-0-trim-start");
+  const videoTrimEnd = page.getByTestId("timeline-layer-0-clip-0-trim-end");
 
   // Drag the video region 1 s right, a little off the frame grid, and confirm
   // it selects the layer and moves its start to the nearest frame.
@@ -299,7 +299,7 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
   await expectInspectorFields(page, { start: "1", in: "0", out: "3" });
 
   // Drag the image region 0.5 s right, and confirm its end moves with it.
-  const image = page.getByTestId("timeline-layer-2");
+  const image = page.getByTestId("timeline-layer-2-clip-0");
   await dragBy(page, image, { deltaX: secondsToPixels(0.5) });
   await expectInspectorFields(page, { start: "0.5", end: "3.5" });
 
@@ -308,7 +308,7 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
   await expectInspectorFields(page, { start: "0", end: "3" });
 
   // Trim the image's end 1 s earlier, which changes only its end.
-  await dragBy(page, page.getByTestId("timeline-layer-2-trim-end"), {
+  await dragBy(page, page.getByTestId("timeline-layer-2-clip-0-trim-end"), {
     deltaX: secondsToPixels(-1),
   });
   await expectInspectorFields(page, { start: "0", end: "2" });
@@ -343,10 +343,66 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
   );
   expect(await readJson(editor.projectFile)).toMatchObject({
     layers: [
-      { start: 1, in: 0, out: 3 },
-      { start: 0, in: 0, out: 3 },
-      { start: 0, end: 2 },
-      { start: 0, end: 3 },
+      { clips: [{ start: 1, in: 0, out: 3 }] },
+      { clips: [{ start: 0, in: 0, out: 3 }] },
+      { clips: [{ start: 0, end: 2 }] },
+      { clips: [{ start: 0, end: 3 }] },
+      {},
+    ],
+  });
+});
+
+test("move and trim a clip between its neighbors", async ({ page, editor }) => {
+  // Split the test pattern into clips playing 0 to 1 s and 2 to 3 s of its
+  // source in place, then open the project, and confirm the lane draws both.
+  await editJson<Project>(editor.projectFile, (project) => {
+    const layer = project.layers[0]!;
+    const clip = layer.clips[0]!;
+    if (clip.type === "video") {
+      layer.clips = [
+        { ...clip, out: 1 },
+        { ...clip, start: 2, in: 2 },
+      ];
+    }
+  });
+  await page.goto(editor.url);
+  const secondsToPixels = (seconds: number) =>
+    seconds * DEFAULT_PIXELS_PER_SECOND;
+  const first = page.getByTestId("timeline-layer-0-clip-0");
+  const second = page.getByTestId("timeline-layer-0-clip-1");
+  await expect(first).toBeVisible();
+  await expect(second).toBeVisible();
+
+  // Trim the first clip's end 1.5 s later, and confirm it stops at the second
+  // clip's start, then trim it back 0.5 s.
+  const firstTrimEnd = page.getByTestId("timeline-layer-0-clip-0-trim-end");
+  await dragBy(page, firstTrimEnd, { deltaX: secondsToPixels(1.5) });
+  await expectInspectorFields(page, { start: "0", in: "0", out: "2" });
+  await dragBy(page, firstTrimEnd, { deltaX: secondsToPixels(-0.5) });
+  await expectInspectorFields(page, { start: "0", in: "0", out: "1.5" });
+
+  // Drag the second clip 1 s left, and confirm it stops at the first clip's
+  // end.
+  await dragBy(page, second, { deltaX: secondsToPixels(-1) });
+  await expectInspectorFields(page, { start: "1.5", in: "2", out: "3" });
+
+  // Save and confirm both clips reach the project file in order.
+  await page.getByTestId("editor-save-button").click();
+  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
+  expect(await readJson(editor.projectFile)).toMatchObject({
+    layers: [
+      {
+        clips: [
+          { start: 0, in: 0, out: 1.5 },
+          { start: 1.5, in: 2, out: 3 },
+        ],
+      },
+      {},
+      {},
+      {},
       {},
     ],
   });
@@ -385,7 +441,7 @@ test("add, move, rename, and delete locators", async ({ page, editor }) => {
   await expect(getMarker("shorts")).toHaveAttribute("aria-pressed", "false");
   await page.keyboard.press("Delete");
   await expect(getMarker("thumbnail")).toHaveCount(0);
-  await expect(page.getByTestId("timeline-layer-0")).toBeVisible();
+  await expect(page.getByTestId("timeline-layer-0-clip-0")).toBeVisible();
 
   // Save and confirm the locators reach the project file.
   await page.getByTestId("editor-save-button").click();

@@ -8,21 +8,26 @@ import { test } from "./helper";
 test("read and migrate an older project file", async ({ page, editor }) => {
   const readProject = () => readJson<SavedProject>(editor.projectFile);
 
-  // Remove the image's name, the tint's box, and the title's box height, as in
-  // a project file from before layers required a name, color layers required a
-  // box, and text layers stored a height. The image then gets the editor's
-  // numbered name, the tint covered the canvas, and the title's box followed
-  // its lines, which is the height the sample stores.
+  // Flatten every layer into its one clip, and remove the image's name, the
+  // tint's box, and the title's box height, as in a project file from before
+  // layers held clips, layers required a name, color layers required a box,
+  // and text layers stored a height. The image then gets the editor's numbered
+  // name, the tint covered the canvas, and the title's box followed its lines,
+  // which is the height the sample stores.
   const project = await readJson<Project>(editor.projectFile);
   const migratedProject = {
     ...project,
     layers: project.layers.map((layer) => {
-      switch (layer.type) {
+      const clip = layer.clips[0]!;
+      switch (clip.type) {
         case "image": {
           return { ...layer, name: "Image 1" };
         }
         case "color": {
-          return { ...layer, box: { x: 0, y: 0, width: 640, height: 360 } };
+          return {
+            ...layer,
+            clips: [{ ...clip, box: { x: 0, y: 0, width: 640, height: 360 } }],
+          };
         }
         default: {
           return layer;
@@ -32,22 +37,36 @@ test("read and migrate an older project file", async ({ page, editor }) => {
   };
   const removeFields = () =>
     editJson<SavedProject>(editor.projectFile, (savedProject) => {
-      for (const layer of savedProject.layers) {
-        if (layer.type === "image") {
-          delete layer.name;
+      savedProject.layers = project.layers.map(({ clips, ...layer }) => {
+        const clip = clips[0]!;
+        switch (clip.type) {
+          case "image": {
+            const { name: _name, ...rest } = layer;
+            return { ...rest, ...clip };
+          }
+          case "color": {
+            const { box: _box, ...rest } = clip;
+            return { ...layer, ...rest };
+          }
+          case "text": {
+            const { height: _height, ...box } = clip.box;
+            return { ...layer, ...clip, box };
+          }
+          default: {
+            return { ...layer, ...clip };
+          }
         }
-        if (layer.type === "color") {
-          delete layer.box;
-        }
-        if (layer.type === "text") {
-          delete layer.box.height;
-        }
-      }
+      });
     });
   const changes = [
+    'layer "Test pattern" has no clips',
+    'layer "Tone 660 Hz" has no clips',
     'image layer "Image 1" has no name',
-    'color layer "Tint" has no box',
-    'text layer "Title" has no box height',
+    'layer "Image 1" has no clips',
+    'layer "Title" has no clips',
+    'text clip in layer "Title" has no box height',
+    'layer "Tint" has no clips',
+    'color clip in layer "Tint" has no box',
   ];
   await removeFields();
   const savedProject = await readProject();
@@ -97,4 +116,35 @@ test("read and migrate an older project file", async ({ page, editor }) => {
     editor.projectFile,
     "--check",
   ]);
+});
+
+test("reject a layer whose clips overlap", async ({ page, editor }) => {
+  // Split the test pattern into clips that butt at 1 s, but hold the first
+  // clip's last frame for 0.5 s, so its picture overlaps the second clip.
+  await editJson<Project>(editor.projectFile, (project) => {
+    const layer = project.layers[0]!;
+    const clip = layer.clips[0]!;
+    if (clip.type === "video") {
+      layer.clips = [
+        { ...clip, out: 1, hold: { after: 0.5 } },
+        { ...clip, start: 1, in: 1 },
+      ];
+    }
+  });
+  const message = 'layer "Test pattern" has clips overlapping at 1 s';
+
+  // Open the editor, and confirm it shows the error instead of the editor.
+  await page.goto(editor.url);
+  await expect(page.getByText(message)).toBeVisible();
+  await expect(page.getByRole("main")).toHaveCount(0);
+
+  // Check it, and confirm it fails with the same error.
+  await expect(
+    execFileAsync(process.execPath, [
+      "src/cli.ts",
+      "migrate",
+      editor.projectFile,
+      "--check",
+    ]),
+  ).rejects.toMatchObject({ stderr: expect.stringContaining(message) });
 });

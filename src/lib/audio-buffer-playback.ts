@@ -1,22 +1,24 @@
 import { clamp } from "../utils/math.ts";
-import { getLayerRange } from "./layout.ts";
-import type { AudioLayer, VideoLayer } from "./project.ts";
+import { getClipRange } from "./layout.ts";
+import type { AudioClip, VideoClip } from "./project.ts";
 import type {
   AudioContextTransport,
   TransportParticipant,
 } from "./transport.ts";
 
 /**
- * Plays one layer's decoded audio on the transport's clock, like toy-midi's
+ * Plays one clip's decoded audio on the transport's clock, like toy-midi's
  * `AudioBufferPlayback`, so it stays sample-aligned with the playhead instead of
- * being steered like a media element. A layer is heard wherever its own range
- * covers the playhead, and its fades are gain automation at the range edges.
+ * being steered like a media element. A clip is heard wherever its own range
+ * covers the playhead unless its layer is muted, and its fades are gain
+ * automation at the range edges.
  */
 export class AudioBufferPlayback implements TransportParticipant {
   private readonly transport: AudioContextTransport;
   private readonly gain: GainNode;
   private readonly unregister: () => void;
-  private layer?: VideoLayer | AudioLayer;
+  private clip?: VideoClip | AudioClip;
+  private muted = false;
   private buffer?: AudioBuffer;
   private source?: AudioBufferSourceNode;
 
@@ -28,8 +30,16 @@ export class AudioBufferPlayback implements TransportParticipant {
   }
 
   /** Takes effect at the next transport start, like toy-midi's `setSource`. */
-  setLayer({ layer }: { layer: VideoLayer | AudioLayer }): void {
-    this.layer = layer;
+  setClip({
+    clip,
+    muted,
+  }: {
+    clip: VideoClip | AudioClip;
+    /** Whether the clip's layer is muted. */
+    muted: boolean;
+  }): void {
+    this.clip = clip;
+    this.muted = muted;
   }
 
   /** Takes effect at the next transport start, like toy-midi's `setSource`. */
@@ -37,14 +47,14 @@ export class AudioBufferPlayback implements TransportParticipant {
     this.buffer = buffer;
   }
 
-  /** Schedules the rest of the layer from the transport's playback anchor. */
+  /** Schedules the rest of the clip from the transport's playback anchor. */
   start(): void {
-    const { layer, buffer } = this;
-    if (!layer || !buffer || layer.muted) {
+    const { clip, buffer } = this;
+    if (!clip || !buffer || this.muted) {
       return;
     }
     const { contextTime, position } = this.transport.playbackAnchor!;
-    const range = getLayerRange(layer);
+    const range = getClipRange(clip);
     const from = Math.max(position, range.start);
     if (from >= range.end) {
       return;
@@ -56,23 +66,20 @@ export class AudioBufferPlayback implements TransportParticipant {
     source.connect(this.gain);
     source.start(
       toContextTime(from),
-      layer.in + from - layer.start,
+      clip.in + from - clip.start,
       range.end - from,
     );
     this.source = source;
 
     const gain = this.gain.gain;
-    gain.setValueAtTime(getGainAt({ layer, time: from }), toContextTime(from));
-    if (layer.fadeIn && from < range.start + layer.fadeIn) {
-      gain.linearRampToValueAtTime(
-        1,
-        toContextTime(range.start + layer.fadeIn),
-      );
+    gain.setValueAtTime(getGainAt({ clip, time: from }), toContextTime(from));
+    if (clip.fadeIn && from < range.start + clip.fadeIn) {
+      gain.linearRampToValueAtTime(1, toContextTime(range.start + clip.fadeIn));
     }
-    if (layer.fadeOut) {
-      const fadeStart = Math.max(from, range.end - layer.fadeOut);
+    if (clip.fadeOut) {
+      const fadeStart = Math.max(from, range.end - clip.fadeOut);
       gain.setValueAtTime(
-        getGainAt({ layer, time: fadeStart }),
+        getGainAt({ clip, time: fadeStart }),
         toContextTime(fadeStart),
       );
       gain.linearRampToValueAtTime(0, toContextTime(range.end));
@@ -93,14 +100,14 @@ export class AudioBufferPlayback implements TransportParticipant {
 }
 
 function getGainAt({
-  layer,
+  clip,
   time,
 }: {
-  layer: VideoLayer | AudioLayer;
+  clip: VideoClip | AudioClip;
   time: number;
 }): number {
-  const range = getLayerRange(layer);
-  const fadeIn = layer.fadeIn ? (time - range.start) / layer.fadeIn : Infinity;
-  const fadeOut = layer.fadeOut ? (range.end - time) / layer.fadeOut : Infinity;
+  const range = getClipRange(clip);
+  const fadeIn = clip.fadeIn ? (time - range.start) / clip.fadeIn : Infinity;
+  const fadeOut = clip.fadeOut ? (range.end - time) / clip.fadeOut : Infinity;
   return clamp(Math.min(fadeIn, fadeOut), 0, 1);
 }

@@ -1,7 +1,7 @@
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { isShortcutTextInputTarget, matchKeyboardEvent } from "../lib/keyboard";
-import { EditorRuntime, type EditorLayer } from "../lib/runtime";
+import { EditorRuntime, findClip, type ClipLocation } from "../lib/runtime";
 import { CollapsibleSplit } from "./collapsible-split";
 import { CompositionPreview } from "./composition-preview";
 import { EditorHeader } from "./editor-header";
@@ -84,9 +84,9 @@ export function Editor({ projectPath }: { projectPath: string }) {
   }
 
   const { selection } = layerInteraction;
-  const selectedLayer =
-    selection?.type === "layer"
-      ? state.project.layers.find((layer) => layer.id === selection.id)
+  const selectedClip =
+    selection?.type === "clip"
+      ? findClip(state.project.layers, selection.id)
       : undefined;
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-neutral-900 text-neutral-100">
@@ -107,12 +107,12 @@ export function Editor({ projectPath }: { projectPath: string }) {
             sideLabel="side panel"
             side={
               <LibrarySourceTabs
-                layer={selectedLayer}
+                selected={selectedClip}
                 runtime={runtime}
                 projectPath={projectPath}
                 resolveMediaUrl={project.resolveMediaUrl}
-                onLayerAdd={(id) =>
-                  layerInteraction.select({ type: "layer", id })
+                onLayerAdd={(clipId) =>
+                  layerInteraction.select({ type: "clip", id: clipId })
                 }
                 onCollapse={() => setSideOpen(false)}
               />
@@ -168,20 +168,22 @@ export function Editor({ projectPath }: { projectPath: string }) {
 }
 
 function LibrarySourceTabs({
-  layer,
+  selected,
   runtime,
   projectPath,
   resolveMediaUrl,
   onLayerAdd,
   onCollapse,
 }: {
-  layer?: EditorLayer;
+  selected?: ClipLocation;
   runtime: EditorRuntime;
   projectPath: string;
   resolveMediaUrl: (src: string) => string;
-  onLayerAdd: (id: string) => void;
+  /** Receives the id of the new layer's clip. */
+  onLayerAdd: (clipId: string) => void;
   onCollapse: () => void;
 }) {
+  const clip = selected?.clip;
   const [tab, setTab] = useState<LibrarySourceTab>("library");
   return (
     <>
@@ -212,12 +214,12 @@ function LibrarySourceTabs({
             </button>
           ))}
         </div>
-        {tab === "source" && layer && "src" in layer && (
+        {tab === "source" && clip && "src" in clip && (
           <span
             className="truncate font-mono text-[10px] text-neutral-400"
-            title={layer.src}
+            title={clip.src}
           >
-            {layer.src}
+            {clip.src}
           </span>
         )}
         <Button
@@ -244,7 +246,7 @@ function LibrarySourceTabs({
             onLayerAdd={onLayerAdd}
           />
         ) : (
-          <MediaPreview layer={layer} resolveMediaUrl={resolveMediaUrl} />
+          <MediaPreview selected={selected} resolveMediaUrl={resolveMediaUrl} />
         )}
       </div>
     </>

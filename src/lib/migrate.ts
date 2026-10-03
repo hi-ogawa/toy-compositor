@@ -1,6 +1,16 @@
 import { createLayerName } from "./layer-defaults.ts";
-import type { Box, ColorLayer, Layer, Project, TextLayer } from "./project.ts";
+import { getPictureRange } from "./layout.ts";
+import type {
+  Box,
+  Canvas,
+  Clip,
+  ColorClip,
+  Layer,
+  Project,
+  TextClip,
+} from "./project.ts";
 import { measureTextHeight } from "./render/text.ts";
+import { roundToMillisecond } from "./timeline.ts";
 
 export type SavedProject = Omit<Project, "layers" | "locators" | "media"> & {
   layers: SavedLayer[];
@@ -10,22 +20,30 @@ export type SavedProject = Omit<Project, "layers" | "locators" | "media"> & {
   media?: Project["media"];
 };
 
-type SavedLayer = WithOptionalName<
-  Exclude<Layer, ColorLayer | TextLayer> | SavedColorLayer | SavedTextLayer
->;
+type SavedLayer = SavedFlatLayer | SavedClipsLayer;
 
-// Missing in projects saved before layer names were required.
-type WithOptionalName<T> = T extends unknown
-  ? Omit<T, "name"> & { name?: string }
+type SavedClipsLayer = Omit<Layer, "clips"> & { clips: SavedClip[] };
+
+// Saved before layers held clips, with the layer's one clip on the layer itself.
+type SavedFlatLayer = WithFlatLayerFields<SavedClip>;
+
+type WithFlatLayerFields<T> = T extends unknown
+  ? // Missing name in projects saved before layer names were required.
+    T & { name?: string; muted?: boolean }
   : never;
 
-type SavedColorLayer = Omit<ColorLayer, "box"> & {
-  // Missing in projects saved before a color layer's box was required.
+type SavedClip =
+  | Exclude<Clip, ColorClip | TextClip>
+  | SavedColorClip
+  | SavedTextClip;
+
+type SavedColorClip = Omit<ColorClip, "box"> & {
+  // Missing in projects saved before a color clip's box was required.
   box?: Box;
 };
 
-type SavedTextLayer = Omit<TextLayer, "box"> & {
-  // Missing height in projects saved before a text layer's box had one.
+type SavedTextClip = Omit<TextClip, "box"> & {
+  // Missing height in projects saved before a text clip's box had one.
   box: Omit<Box, "height"> & { height?: number };
 };
 
@@ -43,57 +61,67 @@ export async function validateAndMigrateProject(project: SavedProject) {
  */
 function validateProject(project: SavedProject): void {
   for (const layer of project.layers) {
-    if (!("src" in layer)) {
-      continue;
+    const clips = getSavedClips(layer);
+    const layerLabel = `layer "${layer.name ?? clips[0]!.type}"`;
+    for (const clip of clips) {
+      if (!("src" in clip)) {
+        continue;
+      }
+      const label = `${clip.type} clip in ${layerLabel} (${clip.src})`;
+      const mediaInfo = project.media?.[clip.src];
+      if (!mediaInfo) {
+        throw new Error(`${label} has no media info, run update-media`);
+      }
+      if (clip.type !== "audio" && !mediaInfo.video) {
+        throw new Error(
+          `${label} has no video stream, use a file with video or run update-media if the file changed`,
+        );
+      }
     }
-    const label = `${layer.type} layer "${layer.name ?? layer.type}" (${layer.src})`;
-    const mediaInfo = project.media?.[layer.src];
-    if (!mediaInfo) {
-      throw new Error(`${label} has no media info, run update-media`);
-    }
-    if (layer.type !== "audio" && !mediaInfo.video) {
-      throw new Error(
-        `${label} has no video stream, use a file with video or run update-media if the file changed`,
-      );
+    // A hold only fills a gap, so pictures must not overlap either.
+    for (const [i, clip] of clips.entries()) {
+      const previous = clips[i - 1];
+      if (!previous) {
+        continue;
+      }
+      if (clip.start < previous.start) {
+        throw new Error(`${layerLabel} has clips out of order by start`);
+      }
+      const start = roundToMillisecond(getPictureRange(clip).start);
+      if (roundToMillisecond(getPictureRange(previous).end) > start) {
+        throw new Error(`${layerLabel} has clips overlapping at ${start} s`);
+      }
     }
   }
 }
 
+/**
+ * Normalize each layer to the clips shape first, then migrate each clip's
+ * fields, so a field migration works whichever shape the file started in.
+ */
 async function migrateProject(
   project: SavedProject,
 ): Promise<MigrateProjectResult> {
   const changes: string[] = [];
   const layers: Layer[] = [];
   for (const savedLayer of project.layers) {
-    const name =
-      savedLayer.name ?? createLayerName({ layers, type: savedLayer.type });
-    const layer = { ...savedLayer, name };
-    const label = `${layer.type} layer "${name}"`;
-    if (savedLayer.name === undefined) {
-      changes.push(`${label} has no name`);
-    }
-    if (layer.type === "color") {
-      if (!layer.box) {
-        changes.push(`${label} has no box`);
-      }
-      const { width, height } = project.canvas;
-      layers.push({
-        ...layer,
-        box: layer.box ?? { x: 0, y: 0, width, height },
-      });
-      continue;
-    }
-    if (layer.type === "text") {
-      let { height } = layer.box;
-      if (height === undefined) {
-        // The box followed the lines, which rendered at their natural height.
-        changes.push(`${label} has no box height`);
-        height = await measureTextHeight(layer);
-      }
-      layers.push({ ...layer, box: { ...layer.box, height } });
-      continue;
-    }
-    layers.push(layer);
+    const { name, muted, clips } = normalizeLayer(savedLayer, {
+      layers,
+      changes,
+    });
+    layers.push({
+      name,
+      ...(muted !== undefined && { muted }),
+      clips: await Promise.all(
+        clips.map((clip) =>
+          migrateClip(clip, {
+            label: `${clip.type} clip in layer "${name}"`,
+            canvas: project.canvas,
+            changes,
+          }),
+        ),
+      ),
+    });
   }
   const migrated: Project = {
     ...project,
@@ -102,4 +130,64 @@ async function migrateProject(
     media: project.media ?? {},
   };
   return { project: migrated, changes };
+}
+
+/** A flat layer becomes a layer with its one clip, which is lossless. */
+function normalizeLayer(
+  savedLayer: SavedLayer,
+  {
+    layers,
+    changes,
+  }: {
+    /** The layers before it, which a missing name is numbered among. */
+    layers: Layer[];
+    changes: string[];
+  },
+): SavedClipsLayer {
+  if ("clips" in savedLayer) {
+    return savedLayer;
+  }
+  const { name: savedName, muted, ...clip } = savedLayer;
+  const name = savedName ?? createLayerName({ layers, type: clip.type });
+  if (savedName === undefined) {
+    changes.push(`${clip.type} layer "${name}" has no name`);
+  }
+  changes.push(`layer "${name}" has no clips`);
+  return { name, ...(muted !== undefined && { muted }), clips: [clip] };
+}
+
+async function migrateClip(
+  clip: SavedClip,
+  {
+    label,
+    canvas,
+    changes,
+  }: { label: string; canvas: Canvas; changes: string[] },
+): Promise<Clip> {
+  switch (clip.type) {
+    case "color": {
+      if (!clip.box) {
+        changes.push(`${label} has no box`);
+      }
+      const { width, height } = canvas;
+      return { ...clip, box: clip.box ?? { x: 0, y: 0, width, height } };
+    }
+    case "text": {
+      let { height } = clip.box;
+      if (height === undefined) {
+        // The box followed the lines, which rendered at their natural height.
+        changes.push(`${label} has no box height`);
+        height = await measureTextHeight(clip);
+      }
+      return { ...clip, box: { ...clip.box, height } };
+    }
+    default: {
+      return clip;
+    }
+  }
+}
+
+/** A saved layer's clips, whichever shape it was saved in. */
+export function getSavedClips(layer: SavedLayer): SavedClip[] {
+  return "clips" in layer ? layer.clips : [layer];
 }

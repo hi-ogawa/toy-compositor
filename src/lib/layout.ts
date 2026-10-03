@@ -1,4 +1,13 @@
-import type { Box, Crop, Layer, Project } from "./project.ts";
+import type {
+  AudioClip,
+  Box,
+  ColorClip,
+  Crop,
+  ImageClip,
+  Project,
+  TextClip,
+  VideoClip,
+} from "./project.ts";
 
 export type TimeRange = { start: number; end: number };
 
@@ -9,35 +18,43 @@ export function getOutputRange(project: Project): TimeRange {
     : { start: output.time, end: output.time + 1 / canvas.fps };
 }
 
-/** Timeline span covering every layer, from the earliest start to the latest end. */
+/** Timeline span covering every clip, from the earliest start to the latest end. */
 export function getContentRange(project: Project): TimeRange {
-  if (project.layers.length === 0) {
+  const ranges = project.layers.flatMap((layer) =>
+    layer.clips.map(getClipRange),
+  );
+  if (ranges.length === 0) {
     return { start: 0, end: 0 };
   }
-  const ranges = project.layers.map(getLayerRange);
   return {
     start: Math.min(...ranges.map((range) => range.start)),
     end: Math.max(...ranges.map((range) => range.end)),
   };
 }
 
-/** Timeline span of a layer, from its source range for video and audio. */
-export function getLayerRange(layer: Layer): TimeRange {
-  if (layer.type === "video" || layer.type === "audio") {
-    return { start: layer.start, end: layer.start + layer.out - layer.in };
+/** The fields that place a clip in time, which a saved clip has before migrating too. */
+type ClipTiming =
+  | Pick<VideoClip, "type" | "start" | "in" | "out" | "hold">
+  | Pick<AudioClip, "type" | "start" | "in" | "out">
+  | Pick<ImageClip | TextClip | ColorClip, "type" | "start" | "end">;
+
+/** Timeline span of a clip, from its source range for video and audio. */
+export function getClipRange(clip: ClipTiming): TimeRange {
+  if (clip.type === "video" || clip.type === "audio") {
+    return { start: clip.start, end: clip.start + clip.out - clip.in };
   }
-  return { start: layer.start, end: layer.end };
+  return { start: clip.start, end: clip.end };
 }
 
-/** Timeline span of a layer's picture, extended by a video layer's hold. */
-export function getPictureRange(layer: Layer): TimeRange {
-  const range = getLayerRange(layer);
-  if (layer.type !== "video" || !layer.hold) {
+/** Timeline span of a clip's picture, extended by a video clip's hold. */
+export function getPictureRange(clip: ClipTiming): TimeRange {
+  const range = getClipRange(clip);
+  if (clip.type !== "video" || !clip.hold) {
     return range;
   }
   return {
-    start: range.start - (layer.hold.before ?? 0),
-    end: range.end + (layer.hold.after ?? 0),
+    start: range.start - (clip.hold.before ?? 0),
+    end: range.end + (clip.hold.after ?? 0),
   };
 }
 
