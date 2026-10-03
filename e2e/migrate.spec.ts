@@ -33,7 +33,7 @@ test("read and migrate a color layer without a box", async ({
     "--dry-run",
   ]);
 
-  // Check it, and confirm the check fails without writing.
+  // Check it, and confirm it reports the tint and fails without writing.
   await expect(
     execFileAsync(process.execPath, [
       "src/cli.ts",
@@ -41,7 +41,9 @@ test("read and migrate a color layer without a box", async ({
       editor.projectFile,
       "--check",
     ]),
-  ).rejects.toThrow();
+  ).rejects.toMatchObject({
+    stdout: expect.stringContaining('color layer "Tint" has no box'),
+  });
   expect(await readJson<SavedProject>(editor.projectFile)).toEqual(
     savedProject,
   );
