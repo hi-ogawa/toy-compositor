@@ -89,6 +89,28 @@ export async function migrateAndValidateProject(project: SavedProject) {
 }
 
 /**
+ * Reject what loading cannot fix from the file alone, which needs update-media
+ * or a different file. So far this only checks each layer's media info.
+ */
+function validateProject(project: Project): void {
+  for (const layer of project.layers) {
+    if (!("src" in layer)) {
+      continue;
+    }
+    const label = `${layer.type} layer "${layer.name}" (${layer.src})`;
+    const mediaInfo = project.media[layer.src];
+    if (!mediaInfo) {
+      throw new Error(`${label} has no media info, run update-media`);
+    }
+    if (layer.type !== "audio" && !mediaInfo.video) {
+      throw new Error(
+        `${label} has no video stream, use a file with video or run update-media if the file changed`,
+      );
+    }
+  }
+}
+
+/**
  * Bring a project to the current shape by filling what older files lack. It
  * does not read `media` or check it, so update-media also runs it on a project
  * whose media info is missing.
@@ -151,28 +173,6 @@ export async function migrateProject(
     media: project.media ?? {},
   };
   return { project: migrated, changes };
-}
-
-/**
- * Reject what loading cannot fix from the file alone, which needs update-media
- * or a different file. So far this only checks each layer's media info.
- */
-function validateProject(project: Project): void {
-  for (const layer of project.layers) {
-    if (!("src" in layer)) {
-      continue;
-    }
-    const label = `${layer.type} layer "${layer.name}" (${layer.src})`;
-    const mediaInfo = project.media[layer.src];
-    if (!mediaInfo) {
-      throw new Error(`${label} has no media info, run update-media`);
-    }
-    if (layer.type !== "audio" && !mediaInfo.video) {
-      throw new Error(
-        `${label} has no video stream, use a file with video or run update-media if the file changed`,
-      );
-    }
-  }
 }
 
 /**
