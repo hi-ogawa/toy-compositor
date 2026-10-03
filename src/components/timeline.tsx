@@ -6,7 +6,7 @@ import {
   PlusIcon,
   VolumeXIcon,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { usePointerGesture } from "../hooks/use-pointer-gesture";
 import type { LayerEditType } from "../lib/layer-edit";
@@ -39,6 +39,9 @@ import { TIMELINE_LABEL_WIDTH, type TimelineView } from "./use-timeline";
 const DEFAULT_TIMELINE_HEIGHT = 320;
 const MIN_TIMELINE_HEIGHT = 160;
 const MIN_MONITOR_HEIGHT = 160;
+const DEFAULT_LANE_HEIGHT = 72;
+const MIN_LANE_HEIGHT = DEFAULT_LANE_HEIGHT;
+const MAX_LANE_HEIGHT = 300;
 
 export function Timeline({
   timeline,
@@ -64,6 +67,7 @@ export function Timeline({
   onClearSelection: () => void;
 }) {
   const [height, setHeight] = useState(DEFAULT_TIMELINE_HEIGHT);
+  const [laneHeights, setLaneHeights] = useState<Record<string, number>>({});
   const resizeRef = usePointerDrag({
     onStart: (event) => {
       event.preventDefault();
@@ -124,7 +128,10 @@ export function Timeline({
           {playhead.toFixed(3)} s
         </span>
       </div>
-      <div className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+      <div
+        className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
+        data-testid="timeline-scroll-area"
+      >
         {/* Measures the graph width and receives wheel scrolling and zoom. */}
         <div
           ref={timeline.viewportRef}
@@ -161,6 +168,13 @@ export function Timeline({
                 }
                 selected={
                   selection?.type === "layer" && selection.id === layer.id
+                }
+                height={laneHeights[layer.id] ?? DEFAULT_LANE_HEIGHT}
+                onHeightChange={(height) =>
+                  setLaneHeights((current) => ({
+                    ...current,
+                    [layer.id]: clamp(height, MIN_LANE_HEIGHT, MAX_LANE_HEIGHT),
+                  }))
                 }
                 onSelect={() =>
                   layerInteraction.select({ type: "layer", id: layer.id })
@@ -251,7 +265,7 @@ function TimelineRuler({
   return (
     <TimelineRow
       timeline={timeline}
-      className="h-7"
+      className="sticky top-7 z-30 h-7 bg-neutral-900"
       subdivisions={false}
       label={
         <span className="px-3 text-xs font-semibold text-muted-foreground">
@@ -306,7 +320,7 @@ function TimelineLocatorRow({
   return (
     <TimelineRow
       timeline={timeline}
-      className="h-7"
+      className="sticky top-0 z-30 h-7 bg-neutral-900"
       subdivisions={false}
       label={
         <div className="flex w-full items-center justify-between px-3 text-xs font-semibold text-muted-foreground">
@@ -387,6 +401,8 @@ function TimelineLayerLane({
   range,
   audioSource,
   selected,
+  height,
+  onHeightChange,
   onSelect,
 }: {
   timeline: TimelineView;
@@ -397,6 +413,8 @@ function TimelineLayerLane({
   range: TimeRange;
   audioSource?: PromiseState<DecodedAudio>;
   selected: boolean;
+  height: number;
+  onHeightChange: (height: number) => void;
   onSelect: () => void;
 }) {
   const name = layer.name ?? layer.type;
@@ -417,10 +435,19 @@ function TimelineLayerLane({
   const visible = intersect(range, timeline.visible);
   const audioLayer =
     layer.type === "video" || layer.type === "audio" ? layer : undefined;
+  const resizeRef = usePointerDrag({
+    onStart: (event) => {
+      event.preventDefault();
+      return height;
+    },
+    onMove: (_event, { data: startHeight, deltaY }) =>
+      onHeightChange(startHeight + deltaY),
+  });
   return (
     <TimelineRow
       timeline={timeline}
-      className="h-12"
+      className="relative"
+      style={{ height }}
       subdivisions
       label={
         <button
@@ -508,6 +535,12 @@ function TimelineLayerLane({
           )}
         </div>
       )}
+      <div
+        ref={resizeRef}
+        data-testid={`timeline-layer-${index}-resize`}
+        title={`Resize ${name}`}
+        className="absolute inset-x-0 bottom-0 z-30 h-px cursor-ns-resize touch-none border-b border-neutral-700 after:absolute after:inset-x-0 after:-top-1 after:h-2"
+      />
     </TimelineRow>
   );
 }
@@ -601,19 +634,24 @@ const LAYER_CLIP_CLASSES: Record<
 function TimelineRow({
   timeline,
   className,
+  style,
   subdivisions,
   label,
   children,
 }: {
   timeline: TimelineView;
   className: string;
+  style?: CSSProperties;
   /** Header rows show only the labelled ticks, so they stay quieter than lanes. */
   subdivisions: boolean;
   label: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <div className={cn("flex border-b border-border/50", className)}>
+    <div
+      className={cn("flex shrink-0 border-b border-border/50", className)}
+      style={style}
+    >
       <div
         className="flex shrink-0 items-center border-r"
         style={{ width: TIMELINE_LABEL_WIDTH }}
