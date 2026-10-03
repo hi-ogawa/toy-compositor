@@ -2,8 +2,6 @@
 
 A project is one JSON file that describes one deliverable: a canvas, an output, which is a video range or a still frame, and a stack of layers. Variants of a cover, such as the horizontal video and its thumbnail, are separate project files, and each one is self-contained.
 
-Two programs read a project and follow this format. The [renderer](compiler.md) builds the finished video or image with ffmpeg and ImageMagick, and the [editor](editor.md) shows a preview in the browser. They share the layout math in [src/lib/layout.ts](../src/lib/layout.ts), and the preview differs from the render only in [a few places](editor.md#differences-from-the-render).
-
 ```jsonc
 {
   "canvas": {
