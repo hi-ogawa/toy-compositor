@@ -1,6 +1,6 @@
 # ffmpeg compiler
 
-The renderer in [src/lib/render](../src/lib/render) turns a project file ([project-format.md](project-format.md)) into one ffmpeg command and runs it.
+The renderer in [src/lib/render](../src/lib/render) is the exact implementation of the spec in [project-format.md](project-format.md). It turns a project file into one ffmpeg command and runs it, and its output is the deliverable.
 
 ```sh
 pnpm setup-sample samples/synthetic
@@ -11,8 +11,7 @@ pnpm render <project.json> <output> --dry-run   # print the command only
 ## Timing and Frames
 
 - The project file's numbers are the timing truth. Offsets are set on waveforms, which are exact data, and playback only confirms them, so preview drift never shifts the final render.
-- Source time is a presentation timestamp, including a stream's start offset, and the frame shown at a source time is the frame whose timestamp is nearest to it. Every renderer and the editor preview must pick frames this way, because project times are rounded to milliseconds and source frames often sit off the project's frame grid, so a looser rule makes renderers disagree by one frame.
-- The ffmpeg render is the truth for exact frames. The [editor](editor.md) preview shares the layout math, which is enough for placing layers, but a paused seek may land one frame off the nearest-frame rule, so frame choices such as the thumbnail are checked on a render.
+- The render picks frames by the spec's [nearest-frame rule](project-format.md#time) exactly, while the [editor](editor.md) preview may land one frame off it, so frame choices such as the thumbnail are checked on a render.
 - A video layer's [hold](project-format.md#hold) clones the first frame the layer reads before it and the last frame it reads after it. Audio is not held, so the held spans are silent.
 - Camera footage is pre-processed outside toy-compositor to a constant frame rate, a browser-playable codec, and a one-second keyframe interval, so the compiler can assume evenly spaced frames and the editor can play and seek it ([pre-processing](preprocessing.md)).
 

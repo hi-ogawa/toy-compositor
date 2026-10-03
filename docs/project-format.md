@@ -2,6 +2,8 @@
 
 A project is one JSON file that describes one deliverable: a canvas, an output, which is a video range or a still frame, and a stack of layers. Variants of a cover, such as the horizontal video and its thumbnail, are separate project files, and each one is self-contained.
 
+This doc is the spec for what a project's fields mean. Two implementations render it. The [render](compiler.md) (ffmpeg and ImageMagick) implements it exactly and produces the deliverable. The [editor](editor.md) preview (DOM and CSS) implements it best-effort, and its deviations are listed there. [src/lib/layout.ts](../src/lib/layout.ts) is the shared reference code for the spec's geometry and time ranges.
+
 ```jsonc
 {
   "canvas": {
@@ -26,7 +28,7 @@ A project is one JSON file that describes one deliverable: a canvas, an output, 
 
 ## Time
 
-All times are seconds. Timeline times (`start`, `end`, `output.*`) are positions on the project timeline. Source times (`in`, `out`) are positions in a media file, measured as presentation timestamps including the stream's start offset. The frame shown at a source time is the frame whose timestamp is nearest to it, because millisecond times rarely land exactly on a frame.
+All times are seconds. Timeline times (`start`, `end`, `output.*`) are positions on the project timeline. Source times (`in`, `out`) are positions in a media file, measured as presentation timestamps including the stream's start offset. The frame shown at a source time is the frame whose timestamp is nearest to it. Every implementation picks frames this way, because project times are rounded to milliseconds and source frames often sit off the project's frame grid, so a looser rule makes implementations disagree by one frame.
 
 A video or audio layer plays its source from `in` to `out`, starting at timeline position `start`, which is the usual clip model of video editors. The source's alignment against the timeline is therefore `start - in`, the timeline position of source time 0, and it is not stored on its own. Changing `start` moves the layer with its source. Changing `in` alone shifts the source against the timeline, so trimming a layer's start moves `start` and `in` by the same amount, which keeps the alignment.
 
