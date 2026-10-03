@@ -78,34 +78,23 @@ type SavedTextLayer = Omit<TextLayer, "box" | "align" | "font"> & {
 /** A project in the current shape, and what changed to get there. */
 export type MigrateProjectResult = { project: Project; changes: string[] };
 
+/**
+ * Migrate a project to the current shape, then validate it, the reverse of the
+ * name's order. Migration never reads `media`, so it runs first, and validation
+ * only reads the current shape.
+ */
 export async function validateAndMigrateProject(project: SavedProject) {
-  validateProject(project);
-  return migrateProject(project);
+  const migrated = await migrateProject(project);
+  validateProject(migrated.project);
+  return migrated;
 }
 
 /**
- * Reject what loading cannot fix from the file alone, which needs update-media
- * or a different file.
+ * Bring a project to the current shape by filling what older files lack. It
+ * does not read `media` or check it, so update-media also runs it on a project
+ * whose media info is missing.
  */
-function validateProject(project: SavedProject): void {
-  for (const layer of project.layers) {
-    if (!("src" in layer)) {
-      continue;
-    }
-    const label = `${layer.type} layer "${layer.name ?? layer.type}" (${layer.src})`;
-    const mediaInfo = project.media?.[layer.src];
-    if (!mediaInfo) {
-      throw new Error(`${label} has no media info, run update-media`);
-    }
-    if (layer.type !== "audio" && !mediaInfo.video) {
-      throw new Error(
-        `${label} has no video stream, use a file with video or run update-media if the file changed`,
-      );
-    }
-  }
-}
-
-async function migrateProject(
+export async function migrateProject(
   project: SavedProject,
 ): Promise<MigrateProjectResult> {
   const changes: string[] = [];
@@ -163,6 +152,28 @@ async function migrateProject(
     media: project.media ?? {},
   };
   return { project: migrated, changes };
+}
+
+/**
+ * Reject what loading cannot fix from the file alone, which needs update-media
+ * or a different file. So far this only checks each layer's media info.
+ */
+function validateProject(project: Project): void {
+  for (const layer of project.layers) {
+    if (!("src" in layer)) {
+      continue;
+    }
+    const label = `${layer.type} layer "${layer.name}" (${layer.src})`;
+    const mediaInfo = project.media[layer.src];
+    if (!mediaInfo) {
+      throw new Error(`${label} has no media info, run update-media`);
+    }
+    if (layer.type !== "audio" && !mediaInfo.video) {
+      throw new Error(
+        `${label} has no video stream, use a file with video or run update-media if the file changed`,
+      );
+    }
+  }
 }
 
 /**
