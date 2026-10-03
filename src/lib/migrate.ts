@@ -15,6 +15,9 @@ type SavedColorLayer = Omit<ColorLayer, "box"> & {
   box?: Box;
 };
 
+/** A project in the current shape, and what changed to get there. */
+export type ProjectMigration = { project: Project; changes: string[] };
+
 export function validateAndMigrateProject(project: SavedProject) {
   validateProject(project);
   return migrateProject(project);
@@ -42,10 +45,7 @@ function validateProject(project: SavedProject): void {
   }
 }
 
-function migrateProject(project: SavedProject): {
-  project: Project;
-  changes: string[];
-} {
+function migrateProject(project: SavedProject): ProjectMigration {
   const changes: string[] = [];
   const layers = project.layers.map((layer): Layer => {
     const label = `${layer.type} layer "${layer.name ?? layer.type}"`;

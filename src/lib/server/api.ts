@@ -5,7 +5,11 @@ import { readJson, writeJson } from "../../utils/fs.ts";
 import type { Result } from "../../utils/result.ts";
 import { getMediaType, type MediaFile } from "../media-file.ts";
 import { probeMediaInfo } from "../media-info.ts";
-import { validateAndMigrateProject, type SavedProject } from "../migrate.ts";
+import {
+  validateAndMigrateProject,
+  type ProjectMigration,
+  type SavedProject,
+} from "../migrate.ts";
 import type { MediaInfo, Output, Project } from "../project.ts";
 import { getDialogTool, pickProjectPath } from "./dialog.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
@@ -198,7 +202,7 @@ export function createEditorHandlers({
         throw new HttpError({ status: 404, message: "Project not found" });
       }
       const savedProject = await readJson<SavedProject>(file);
-      let migrated: { project: Project; changes: string[] };
+      let migrated: ProjectMigration;
       try {
         migrated = validateAndMigrateProject(savedProject);
       } catch (error) {
