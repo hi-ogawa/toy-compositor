@@ -1,5 +1,3 @@
-import { migrateProject } from "./migrate.ts";
-
 /** See docs/project-format.md */
 export type Project = {
   canvas: Canvas;
@@ -46,13 +44,20 @@ export type VideoInfo = {
 };
 
 /**
- * Check what consumers read without checking: every file-backed layer has
- * media info for its `src`, video and image layers' files have a video stream,
- * and no layer has an older format's shape. It does not compare the facts with
- * the files.
+ * Check what consumers read without checking: every color layer has a box,
+ * every file-backed layer has media info for its `src`, and video and image
+ * layers' files have a video stream. It does not compare the facts with the
+ * files.
  */
 export function validateProject(project: Project): void {
   for (const layer of project.layers) {
+    // Every format change changes the shape, so a file in an older format
+    // fails a check on the current shape, and the message names migrate.
+    if (layer.type === "color" && !layer.box) {
+      throw new Error(
+        `color layer "${layer.name ?? layer.type}" has no box, run migrate`,
+      );
+    }
     if (!("src" in layer)) {
       continue;
     }
@@ -67,11 +72,6 @@ export function validateProject(project: Project): void {
         `${label} has no video stream, use a file with video or run update-media if the file changed`,
       );
     }
-  }
-  // Fixups may read media info, so an older shape is reported after it.
-  const [change] = migrateProject(project).changes;
-  if (change) {
-    throw new Error(`${change}, run migrate`);
   }
 }
 

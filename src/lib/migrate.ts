@@ -1,3 +1,4 @@
+import { readJson, writeJson } from "../utils/fs.ts";
 import type { Layer, Project } from "./project.ts";
 
 /** A rewrite of one older layer shape into the next one. */
@@ -27,10 +28,24 @@ const LAYER_FIXUPS: LayerFixup[] = [
 ];
 
 /**
- * Rewrite a project from older formats to the current one, and describe each
- * layer change, such as `color layer "Tint" has no box`.
+ * Rewrite a project file from older formats to the current one, or with
+ * `check`, leave it as is. Return a description of each layer change, such as
+ * `color layer "Tint" has no box`.
  */
-export function migrateProject(project: Project): {
+export async function migrateProjectFile(
+  projectFile: string,
+  { check }: { check?: boolean },
+) {
+  const { project, changes } = migrateProject(
+    await readJson<Project>(projectFile),
+  );
+  if (changes.length > 0 && !check) {
+    await writeJson(projectFile, project);
+  }
+  return changes;
+}
+
+function migrateProject(project: Project): {
   project: Project;
   changes: string[];
 } {
