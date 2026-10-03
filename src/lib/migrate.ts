@@ -32,12 +32,9 @@ type SavedLayer = SavedFlatLayer | SavedClipsLayer;
 type SavedClipsLayer = Omit<Layer, "clips"> & { clips: SavedClip[] };
 
 // Saved before layers held clips, with the layer's one clip on the layer itself.
-type SavedFlatLayer = WithFlatLayerFields<SavedClip>;
-
-type WithFlatLayerFields<T> = T extends unknown
-  ? // Missing name in projects saved before layer names were required.
-    T & { name?: string; muted?: boolean }
-  : never;
+// Missing name before layer names were required, and muted before neutral
+// values were.
+type SavedFlatLayer = SavedClip & { name?: string; muted?: boolean };
 
 type SavedClip =
   | SavedVideoClip
