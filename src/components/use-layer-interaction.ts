@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { applyClipEdit, getClipGap, type ClipEditType } from "../lib/clip-edit";
+import { applyClipEdit, type ClipEditType } from "../lib/clip-edit";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import type { Clip } from "../lib/project";
 import { findClip, type EditorRuntime, type EditorState } from "../lib/runtime";
@@ -46,13 +46,11 @@ export function useLayerInteraction({
   }
 
   function getEditedClip(edit: ClipEdit, delta: number): Clip {
-    const { layer, clip, clipIndex } = findClip(layers, edit.id)!;
-    return applyClipEdit(clip, {
+    return applyClipEdit(findClip(layers, edit.id)!.clip, {
       type: edit.type,
       delta,
       fps: canvas.fps,
       mediaInfoMap,
-      gap: getClipGap({ clips: layer.clips, index: clipIndex }),
     });
   }
 

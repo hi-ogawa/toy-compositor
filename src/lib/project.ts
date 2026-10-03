@@ -71,8 +71,8 @@ export function createEmptyProject(preset: CanvasPreset): Project {
 }
 
 /**
- * A lane in the stack, like a track in a video editor, holding clips sorted by
- * `start` whose picture ranges do not overlap.
+ * A lane in the stack, like a track in a video editor, holding clips. The
+ * editor only creates layers with one clip so far.
  */
 export type Layer = { name: string; muted?: boolean; clips: Clip[] };
 

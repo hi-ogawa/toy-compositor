@@ -1,13 +1,4 @@
-import type {
-  AudioClip,
-  Box,
-  ColorClip,
-  Crop,
-  ImageClip,
-  Project,
-  TextClip,
-  VideoClip,
-} from "./project.ts";
+import type { Box, Clip, Crop, Project } from "./project.ts";
 
 export type TimeRange = { start: number; end: number };
 
@@ -32,14 +23,8 @@ export function getContentRange(project: Project): TimeRange {
   };
 }
 
-/** The fields that place a clip in time, which a saved clip has before migrating too. */
-type ClipTiming =
-  | Pick<VideoClip, "type" | "start" | "in" | "out" | "hold">
-  | Pick<AudioClip, "type" | "start" | "in" | "out">
-  | Pick<ImageClip | TextClip | ColorClip, "type" | "start" | "end">;
-
 /** Timeline span of a clip, from its source range for video and audio. */
-export function getClipRange(clip: ClipTiming): TimeRange {
+export function getClipRange(clip: Clip): TimeRange {
   if (clip.type === "video" || clip.type === "audio") {
     return { start: clip.start, end: clip.start + clip.out - clip.in };
   }
@@ -47,7 +32,7 @@ export function getClipRange(clip: ClipTiming): TimeRange {
 }
 
 /** Timeline span of a clip's picture, extended by a video clip's hold. */
-export function getPictureRange(clip: ClipTiming): TimeRange {
+export function getPictureRange(clip: Clip): TimeRange {
   const range = getClipRange(clip);
   if (clip.type !== "video" || !clip.hold) {
     return range;

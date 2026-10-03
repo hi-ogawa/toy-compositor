@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import type { Project } from "../src/lib/project.ts";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
-import { editJson, readJson } from "../src/utils/fs.ts";
+import { readJson } from "../src/utils/fs.ts";
 import {
   dragBy,
   expectInspectorFields,
@@ -347,62 +347,6 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
       { clips: [{ start: 0, in: 0, out: 3 }] },
       { clips: [{ start: 0, end: 2 }] },
       { clips: [{ start: 0, end: 3 }] },
-      {},
-    ],
-  });
-});
-
-test("move and trim a clip between its neighbors", async ({ page, editor }) => {
-  // Split the test pattern into clips playing 0 to 1 s and 2 to 3 s of its
-  // source in place, then open the project, and confirm the lane draws both.
-  await editJson<Project>(editor.projectFile, (project) => {
-    const layer = project.layers[0]!;
-    const clip = layer.clips[0]!;
-    if (clip.type === "video") {
-      layer.clips = [
-        { ...clip, out: 1 },
-        { ...clip, start: 2, in: 2 },
-      ];
-    }
-  });
-  await page.goto(editor.url);
-  const secondsToPixels = (seconds: number) =>
-    seconds * DEFAULT_PIXELS_PER_SECOND;
-  const first = page.getByTestId("timeline-layer-0-clip-0");
-  const second = page.getByTestId("timeline-layer-0-clip-1");
-  await expect(first).toBeVisible();
-  await expect(second).toBeVisible();
-
-  // Trim the first clip's end 1.5 s later, and confirm it stops at the second
-  // clip's start, then trim it back 0.5 s.
-  const firstTrimEnd = page.getByTestId("timeline-layer-0-clip-0-trim-end");
-  await dragBy(page, firstTrimEnd, { deltaX: secondsToPixels(1.5) });
-  await expectInspectorFields(page, { start: "0", in: "0", out: "2" });
-  await dragBy(page, firstTrimEnd, { deltaX: secondsToPixels(-0.5) });
-  await expectInspectorFields(page, { start: "0", in: "0", out: "1.5" });
-
-  // Drag the second clip 1 s left, and confirm it stops at the first clip's
-  // end.
-  await dragBy(page, second, { deltaX: secondsToPixels(-1) });
-  await expectInspectorFields(page, { start: "1.5", in: "2", out: "3" });
-
-  // Save and confirm both clips reach the project file in order.
-  await page.getByTestId("editor-save-button").click();
-  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
-    "data-status",
-    "saved",
-  );
-  expect(await readJson(editor.projectFile)).toMatchObject({
-    layers: [
-      {
-        clips: [
-          { start: 0, in: 0, out: 1.5 },
-          { start: 1.5, in: 2, out: 3 },
-        ],
-      },
-      {},
-      {},
-      {},
       {},
     ],
   });

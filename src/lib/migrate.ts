@@ -1,5 +1,4 @@
 import { createLayerName } from "./layer-defaults.ts";
-import { getPictureRange } from "./layout.ts";
 import type {
   Box,
   Canvas,
@@ -10,7 +9,6 @@ import type {
   TextClip,
 } from "./project.ts";
 import { measureTextHeight } from "./render/text.ts";
-import { roundToMillisecond } from "./timeline.ts";
 
 export type SavedProject = Omit<Project, "layers" | "locators" | "media"> & {
   layers: SavedLayer[];
@@ -78,20 +76,8 @@ function validateProject(project: SavedProject): void {
         );
       }
     }
-    // A hold only fills a gap, so pictures must not overlap either.
-    for (const [i, clip] of clips.entries()) {
-      const previous = clips[i - 1];
-      if (!previous) {
-        continue;
-      }
-      if (clip.start < previous.start) {
-        throw new Error(`${layerLabel} has clips out of order by start`);
-      }
-      const start = roundToMillisecond(getPictureRange(clip).start);
-      if (roundToMillisecond(getPictureRange(previous).end) > start) {
-        throw new Error(`${layerLabel} has clips overlapping at ${start} s`);
-      }
-    }
+    // TODO(multi-clip): Reject clips out of order by `start` or whose
+    // picture ranges overlap, once the editor can put several clips on a layer.
   }
 }
 

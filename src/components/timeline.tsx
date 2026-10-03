@@ -389,7 +389,9 @@ function TimelineLayerLane({
   selectedClipId?: string;
 }) {
   const { name } = layer;
-  const types = [...new Set(layer.clips.map((clip) => clip.type))];
+  // TODO(multi-clip): The label stands for the layer's first clip, which is
+  // its only one until the editor can put several clips on a layer.
+  const [firstClip] = layer.clips;
   return (
     <TimelineRow
       timeline={timeline}
@@ -401,15 +403,11 @@ function TimelineLayerLane({
           title={name}
           className="flex h-full w-full items-center justify-between gap-2 px-3 text-left hover:bg-neutral-800/60"
           onClick={() =>
-            layerInteraction.select({ type: "clip", id: layer.clips[0]!.id })
+            layerInteraction.select({ type: "clip", id: firstClip!.id })
           }
         >
           <span className="truncate text-xs font-semibold">{name}</span>
-          <span className="flex shrink-0 gap-1">
-            {types.map((type) => (
-              <ClipTypeIcon key={type} type={type} />
-            ))}
-          </span>
+          <ClipTypeIcon type={firstClip!.type} />
         </button>
       }
     >
@@ -609,8 +607,9 @@ function ClipTrimHandle({
       data-testid={testId}
       className={cn(
         "absolute inset-y-0 z-20 w-1.5 cursor-ew-resize touch-none after:absolute after:inset-y-0 after:w-0.5 after:bg-transparent hover:after:bg-white/50",
-        // Inside the region, so clips that butt each keep their own edge.
-        type === "trim-start" ? "left-0 after:left-0" : "right-0 after:right-0",
+        type === "trim-start"
+          ? "-left-[3px] after:left-[3px]"
+          : "-right-[3px] after:right-[3px]",
       )}
     />
   );

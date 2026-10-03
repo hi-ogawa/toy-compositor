@@ -104,7 +104,7 @@ The ffmpeg building blocks behind the table:
 
 ## Stack Pictures, Mix Sounds
 
-Once every clip has its streams, one pass joins them into a single filter graph. The picture chain starts from a solid canvas covering the whole output. Each picture is overlaid on the result so far at its position, in layer order, so later layers sit on top. A layer's clips are overlaid one after another at the layer's position, and because they never overlap, their order within the layer does not change the picture. Clips are not concatenated per layer, which would need transparent gap fill and matching size, rate, and pixel format across clips. When a picture stream ends before the output does, the layers below show through. Every sound goes into one mix, which is padded or trimmed to the output length.
+Once every clip has its streams, one pass joins them into a single filter graph. The picture chain starts from a solid canvas covering the whole output. Each picture is overlaid on the result so far at its position, in layer order, so later layers sit on top. A layer's clips are overlaid one after another at the layer's position. When a picture stream ends before the output does, the layers below show through. Every sound goes into one mix, which is padded or trimmed to the output length.
 
 This pass is the only place that knows how streams are numbered and connected. The per-clip step only says what a clip contributes, which keeps each clip type readable on its own. To see the actual graph for a project, run the render with `--dry-run`.
 

@@ -117,34 +117,3 @@ test("read and migrate an older project file", async ({ page, editor }) => {
     "--check",
   ]);
 });
-
-test("reject a layer whose clips overlap", async ({ page, editor }) => {
-  // Split the test pattern into clips that butt at 1 s, but hold the first
-  // clip's last frame for 0.5 s, so its picture overlaps the second clip.
-  await editJson<Project>(editor.projectFile, (project) => {
-    const layer = project.layers[0]!;
-    const clip = layer.clips[0]!;
-    if (clip.type === "video") {
-      layer.clips = [
-        { ...clip, out: 1, hold: { after: 0.5 } },
-        { ...clip, start: 1, in: 1 },
-      ];
-    }
-  });
-  const message = 'layer "Test pattern" has clips overlapping at 1 s';
-
-  // Open the editor, and confirm it shows the error instead of the editor.
-  await page.goto(editor.url);
-  await expect(page.getByText(message)).toBeVisible();
-  await expect(page.getByRole("main")).toHaveCount(0);
-
-  // Check it, and confirm it fails with the same error.
-  await expect(
-    execFileAsync(process.execPath, [
-      "src/cli.ts",
-      "migrate",
-      editor.projectFile,
-      "--check",
-    ]),
-  ).rejects.toMatchObject({ stderr: expect.stringContaining(message) });
-});

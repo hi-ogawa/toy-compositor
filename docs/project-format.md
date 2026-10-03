@@ -53,7 +53,7 @@ Layers stack in list order over the canvas `background`, so later layers sit on 
 
 Every layer has a `name`, such as `"camera"`, `"score"`, or `"mix"`. Names do not affect rendering. They label layers in the editor and let scripts find a layer by its role instead of its position in the list. `muted` leaves the sound of every clip on the layer out of the mix.
 
-A layer's clips are sorted by `start`, and their pictures, including any [hold](#hold), do not overlap, so at most one clip of a layer shows at a time. A layer can mix clip types. The editor and the renderer reject a file whose clips are out of order or overlap.
+A layer can mix clip types. The editor only creates layers with one clip so far.
 
 ## Clips
 
@@ -203,4 +203,4 @@ A video clip can keep showing its first frame before `start` and its last frame 
 }
 ```
 
-`before` and `after` are durations in seconds. They extend only the clip's picture, so its timing stays its source range and the held spans are silent. A hold only fills a gap between clips on its layer and never covers the next clip.
+`before` and `after` are durations in seconds. They extend only the clip's picture, so its timing stays its source range and the held spans are silent.
