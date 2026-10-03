@@ -16,11 +16,12 @@ type SavedColorLayer = Omit<ColorLayer, "box"> & {
   box?: Box;
 };
 
-/**
- * Check what migrating cannot fill in, which needs a command that reads the
- * media files.
- */
-export function validateProject(project: SavedProject): void {
+export function loadSavedProject(project: SavedProject) {
+  validateProject(project);
+  return migrateProject(project);
+}
+
+function validateProject(project: SavedProject): void {
   for (const layer of project.layers) {
     if (!("src" in layer)) {
       continue;
@@ -38,11 +39,9 @@ export function validateProject(project: SavedProject): void {
   }
 }
 
-/**
- * Bring a project from older formats to the current one, in the order the
- * format changed, and describe each layer change.
- */
-export function migrateProject(project: SavedProject): {
+// Fixups go in the order the format changed, so each sees the shape from
+// before its own change.
+function migrateProject(project: SavedProject): {
   project: Project;
   changes: string[];
 } {
