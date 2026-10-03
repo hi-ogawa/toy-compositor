@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { apiClient } from "../lib/api-client";
 import type { EditorRuntime } from "../lib/runtime";
 import { useWindowEvent } from "./use-window-event";
@@ -26,6 +27,12 @@ export function useEditorProject({
         throw new Error(result.error);
       }
       runtime.deserializeProject(result.value);
+      const { changes } = result.value;
+      if (changes.length > 0) {
+        toast.info("Migrated the project file", {
+          description: changes.join(", "),
+        });
+      }
       return true;
     },
   });
