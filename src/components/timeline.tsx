@@ -27,6 +27,7 @@ import type {
 import { clamp } from "../utils/math";
 import type { PromiseState } from "../utils/promise-state";
 import { AudioWaveformView } from "./audio-waveform";
+import { ClipTypeIcon } from "./clip-type-icon";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import type {
@@ -501,14 +502,17 @@ function TimelineClip({
                 dimmed={muted}
               />
             )}
-            {/* The lane's header already names the layer, so the clip shows only state. */}
-            {audioClip && muted && (
-              <VolumeXIcon
-                role="img"
-                aria-label="muted"
-                className="absolute left-1 top-1 size-3.5"
-              />
-            )}
+            {/* The lane's header already names the layer, so the clip shows its type and state. */}
+            <div className="absolute left-1 top-1 flex gap-1">
+              <ClipTypeIcon type={clip.type} />
+              {audioClip && muted && (
+                <VolumeXIcon
+                  role="img"
+                  aria-label="muted"
+                  className="size-3.5"
+                />
+              )}
+            </div>
             {audioSource?.status === "pending" && (
               <LoaderCircleIcon
                 role="img"
