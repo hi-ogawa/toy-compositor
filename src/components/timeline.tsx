@@ -10,7 +10,12 @@ import { useState, type ReactNode } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { usePointerGesture } from "../hooks/use-pointer-gesture";
 import type { LayerEditType } from "../lib/layer-edit";
-import { getLayerRange, intersect, type TimeRange } from "../lib/layout";
+import {
+  getLayerRange,
+  getPictureRange,
+  intersect,
+  type TimeRange,
+} from "../lib/layout";
 import type { Layer, Output } from "../lib/project";
 import type {
   DecodedAudio,
@@ -408,6 +413,7 @@ function TimelineLayerLane({
       layerInteraction.finishEdit(pixelsToSeconds(deltaX)),
     onCancel: layerInteraction.cancelEdit,
   });
+  const picture = getPictureRange(layer);
   const visible = intersect(range, timeline.visible);
   const audioLayer =
     layer.type === "video" || layer.type === "audio" ? layer : undefined;
@@ -428,6 +434,16 @@ function TimelineLayerLane({
         </button>
       }
     >
+      <TimelineHoldSpan
+        timeline={timeline}
+        range={{ start: picture.start, end: range.start }}
+        testId={`timeline-layer-${index}-hold-before`}
+      />
+      <TimelineHoldSpan
+        timeline={timeline}
+        range={{ start: range.end, end: picture.end }}
+        testId={`timeline-layer-${index}-hold-after`}
+      />
       {region && (
         <div className="absolute inset-y-1" style={region}>
           <button
@@ -493,6 +509,33 @@ function TimelineLayerLane({
         </div>
       )}
     </TimelineRow>
+  );
+}
+
+/**
+ * A span where a video layer holds its first or last frame, drawn beside its
+ * region. The hold is edited in the inspector, so the span takes no pointer
+ * input.
+ */
+function TimelineHoldSpan({
+  timeline,
+  range,
+  testId,
+}: {
+  timeline: TimelineView;
+  range: TimeRange;
+  testId: string;
+}) {
+  const style = timeline.rangeStyle(range);
+  return (
+    style && (
+      <div
+        title={`hold ${range.start.toFixed(3)}–${range.end.toFixed(3)} s`}
+        data-testid={testId}
+        className="pointer-events-none absolute inset-y-2 rounded-sm border border-dashed border-blue-400/50 bg-blue-400/10"
+        style={style}
+      />
+    )
   );
 }
 

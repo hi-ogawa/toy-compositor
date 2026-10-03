@@ -29,6 +29,22 @@ export function getLayerRange(layer: Layer): TimeRange {
   return { start: layer.start, end: layer.end };
 }
 
+/**
+ * Timeline span over which a layer shows a picture, which for a video layer
+ * extends its layer range by the first and last frames it holds. Only drawing
+ * the picture reads the hold, so editing and sound keep the layer range.
+ */
+export function getPictureRange(layer: Layer): TimeRange {
+  const range = getLayerRange(layer);
+  if (layer.type !== "video" || !layer.hold) {
+    return range;
+  }
+  return {
+    start: range.start - (layer.hold.before ?? 0),
+    end: range.end + (layer.hold.after ?? 0),
+  };
+}
+
 export function intersect(a: TimeRange, b: TimeRange): TimeRange | undefined {
   const start = Math.max(a.start, b.start);
   const end = Math.min(a.end, b.end);

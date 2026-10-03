@@ -360,3 +360,58 @@ test("switch the output between video and still", async ({ page, editor }) => {
     output: { type: "still", time: 1.5 },
   });
 });
+
+test("hold a video layer's first and last frames in the preview", async ({
+  page,
+  editor,
+}) => {
+  // Open the synthetic project, start the test pattern at 1 s, and confirm
+  // it hides at the output start.
+  await page.goto(editor.url);
+  const video = page.getByTestId("composition-canvas").locator("video");
+  const readVideoTime = () =>
+    video.evaluate((element: HTMLVideoElement) => element.currentTime);
+  await clickTimelineButton(page, { name: "Test pattern video" });
+  await commitInspectorField(page, { name: "start", value: "1" });
+  await expect(video).toBeHidden();
+
+  // Hold its first frame for 1 s, and confirm the preview shows that frame at
+  // the output start and the lane draws the hold beside the unchanged region.
+  await commitInspectorField(page, { name: "before", value: "1" });
+  await expect(video).toBeVisible();
+  await expect.poll(readVideoTime).toBeCloseTo(0);
+  const lane = page.getByTestId("timeline-layer-0");
+  await expect(lane).toHaveAttribute("title", "1.000–4.000 s");
+  await expect(
+    page.getByTestId("timeline-layer-0-hold-before"),
+  ).toHaveAttribute("title", "hold 0.000–1.000 s");
+
+  // Shorten its source range to 1 s and hold its last frame for 1 s, then seek
+  // into that hold and confirm the preview stays at the source range's end.
+  await commitInspectorField(page, { name: "out", value: "1" });
+  await commitInspectorField(page, { name: "after", value: "1" });
+  await expect(lane).toHaveAttribute("title", "1.000–2.000 s");
+  await expect(page.getByTestId("timeline-layer-0-hold-after")).toHaveAttribute(
+    "title",
+    "hold 2.000–3.000 s",
+  );
+  await seekTimelineByPixels(page, {
+    pixels: 2.5 * DEFAULT_PIXELS_PER_SECOND,
+  });
+  await expect(page.getByTestId("timeline-time")).toContainText("2.500 s");
+  await expect(video).toBeVisible();
+  await expect.poll(readVideoTime).toBeCloseTo(1);
+
+  // Save and confirm the hold reaches the project file.
+  const save = page.getByTestId("editor-save-button");
+  await save.click();
+  await expect(save).toHaveAttribute("data-status", "saved");
+  expect(await readJson(editor.projectFile)).toMatchObject({
+    layers: [
+      { start: 1, in: 0, out: 1, hold: { before: 1, after: 1 } },
+      {},
+      {},
+      {},
+    ],
+  });
+});

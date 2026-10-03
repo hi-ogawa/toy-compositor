@@ -4,6 +4,7 @@ import {
   intersect,
   getLayerRange,
   getOutputRange,
+  getPictureRange,
   type TimeRange,
 } from "../layout.ts";
 import type {
@@ -178,23 +179,29 @@ function compileVideo({
   mediaInfo: MediaInfo;
   scene: Scene;
 }): LayerStreams {
-  const visible = intersect(getLayerRange(layer), scene.range);
+  const visible = intersect(getPictureRange(layer), scene.range);
   if (!visible) {
     return {};
   }
   const video = mediaInfo.video!;
   const fit = fitBox({ source: video, crop: layer.crop, box: layer.box });
+  const read = getSourceRead({ layer, visible, scene });
+  // The held spans are silent, so sound covers only the layer range.
+  const audible = intersect(getLayerRange(layer), scene.range);
   return {
     video: {
       input: buildSeekInput({
         file,
-        seek: getFrameShownAt(video, {
-          time: layer.in + visible.start - layer.start,
-        }),
-        duration: visible.end - visible.start,
+        seek: getFrameShownAt(video, { time: read.time }),
+        duration: read.duration,
       }),
       filters: [
         `fps=${scene.canvas.fps}`,
+        ...(read.before > 0 || read.after > 0
+          ? [
+              `tpad=start_duration=${read.before}:stop_duration=${read.after}:start_mode=clone:stop_mode=clone`,
+            ]
+          : []),
         `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
         ...buildCropFilters(layer.crop),
         `scale=${fit.width}:${fit.height}`,
@@ -203,10 +210,41 @@ function compileVideo({
       y: fit.y,
     },
     audio:
-      scene.withAudio && !layer.muted && mediaInfo.audio
-        ? compileAudioStream({ layer, file, visible, scene })
+      audible && scene.withAudio && !layer.muted && mediaInfo.audio
+        ? compileAudioStream({ layer, file, visible: audible, scene })
         : undefined,
   };
+}
+
+/**
+ * Which source span a video layer reads for its visible part, and how many
+ * seconds to clone its first and last frames over the held spans. A visible
+ * part that lies entirely in a hold reads one frame at the edge it holds.
+ */
+function getSourceRead({
+  layer,
+  visible,
+  scene,
+}: {
+  layer: VideoLayer;
+  visible: TimeRange;
+  scene: Scene;
+}) {
+  const range = getLayerRange(layer);
+  const played = intersect(range, visible);
+  if (played) {
+    return {
+      time: layer.in + played.start - layer.start,
+      duration: played.end - played.start,
+      before: played.start - visible.start,
+      after: visible.end - played.end,
+    };
+  }
+  const frame = 1 / scene.canvas.fps;
+  const held = visible.end - visible.start - frame;
+  return visible.end <= range.start
+    ? { time: layer.in, duration: frame, before: held, after: 0 }
+    : { time: layer.out - frame, duration: frame, before: 0, after: held };
 }
 
 function compileImage({

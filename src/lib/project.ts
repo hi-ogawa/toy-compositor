@@ -123,6 +123,8 @@ export type VideoLayer = LayerBase & {
   muted?: boolean;
   fadeIn?: number;
   fadeOut?: number;
+  /** Seconds to show the first frame before `start` and the last frame after the source range. */
+  hold?: { before?: number; after?: number };
 };
 
 export type AudioLayer = LayerBase & {
