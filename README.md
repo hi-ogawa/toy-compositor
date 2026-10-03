@@ -24,6 +24,7 @@ toy-compositor upgrade [source]                # install a new build, rewrite th
 toy-compositor add <path>                      # add a project folder, or a project file's folder
 toy-compositor render <project.json> <output>  # .mp4 or .png
 toy-compositor update-media <project.json...>  # record the media info layers use
+toy-compositor migrate <project.json...>       # rewrite projects from an older format
 ```
 
 See [getting started](docs/getting-started.md) for project folders and going from media to a render. Rendering needs `ffmpeg`, `ffprobe`, and ImageMagick (`magick`) on PATH.

@@ -12,6 +12,8 @@ import {
   installDesktopEntry,
 } from "./lib/desktop-entry.ts";
 import { updateProjectMedia } from "./lib/media-info.ts";
+import { migrateProject } from "./lib/migrate.ts";
+import type { Project } from "./lib/project.ts";
 import { renderProject } from "./lib/render/render.ts";
 import { createLiveConnections } from "./lib/server/live.ts";
 import { openWithDefaultApp } from "./lib/server/open-default.ts";
@@ -22,6 +24,7 @@ import {
   stopEditorServer,
 } from "./lib/server/serve.ts";
 import { execFileAsync } from "./utils/exec.ts";
+import { readJson, writeJson } from "./utils/fs.ts";
 
 const packageDir = path.dirname(
   fileURLToPath(import.meta.resolve("#package.json")),
@@ -52,6 +55,10 @@ Usage:
   toy-compositor update-media <project.json...>
       Record media info for the files that layers use in each project,
       which the editor and renderer need before they accept it
+  toy-compositor migrate <project.json...> [--check]
+      Rewrite each project from an older format to the current one.
+      --check lists what would change without writing, and exits non-zero
+      if anything would
 
 Getting started: ${path.join(packageDir, "docs/getting-started.md")}
 Project format:  ${path.join(packageDir, "docs/project-format.md")}
@@ -67,6 +74,7 @@ async function main() {
       port: { type: "string", default: "5190" },
       open: { type: "boolean" },
       "dry-run": { type: "boolean" },
+      check: { type: "boolean" },
       help: { type: "boolean", short: "h" },
     },
   });
@@ -144,6 +152,22 @@ async function main() {
       }
       for (const projectFile of args) {
         await updateProjectMedia(projectFile);
+      }
+      break;
+    }
+    case "migrate": {
+      if (args.length === 0) {
+        console.error(HELP);
+        process.exitCode = 1;
+        return;
+      }
+      for (const projectFile of args) {
+        const changed = await migrateProjectFile(projectFile, {
+          check: values.check,
+        });
+        if (changed && values.check) {
+          process.exitCode = 1;
+        }
       }
       break;
     }
@@ -231,6 +255,30 @@ async function runCommand(
   if (code !== 0) {
     throw new Error(`${command} ${args.join(" ")} exited with code ${code}`);
   }
+}
+
+/**
+ * Rewrite a project file from older formats and print the changed layers, or
+ * with `check`, only print them. Return whether anything changed.
+ */
+async function migrateProjectFile(
+  projectFile: string,
+  { check }: { check?: boolean },
+) {
+  const { project, changes } = migrateProject(
+    await readJson<Project>(projectFile),
+  );
+  if (changes.length === 0) {
+    return false;
+  }
+  console.log(`${check ? "Would migrate" : "Migrated"} ${projectFile}`);
+  for (const change of changes) {
+    console.log(`  ${change}`);
+  }
+  if (!check) {
+    await writeJson(projectFile, project);
+  }
+  return true;
 }
 
 // The build places the client next to the bundled CLI.

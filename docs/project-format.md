@@ -191,3 +191,9 @@ A video layer can keep showing its first frame before `start` and its last frame
 ```
 
 `before` and `after` are durations in seconds. They extend only the layer's picture, so its timing stays its source range and the held spans are silent.
+
+## Older formats
+
+The editor and the renderer read only the current format and reject a project with an older shape, naming `toy-compositor migrate <project.json...>`. That command rewrites each file in place with the editor's JSON formatting and prints the layers it changed, and `--check` only lists them, exiting non-zero if anything would change. Missing media is reported before an older shape.
+
+The format has no version number, so an older project is recognized by its shape alone. A format change must therefore change the shape, such as renaming or adding a field, and never only the meaning of an existing field, or `migrate` could not tell the old file apart from a current one.
