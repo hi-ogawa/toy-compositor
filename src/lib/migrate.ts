@@ -208,10 +208,12 @@ async function migrateClip(
   switch (clip.type) {
     case "video": {
       const { box, ...filled } = fillDefaults(clip, NEUTRAL_VALUES.video);
-      const transform = migrateTransform(
-        { ...filled, box },
-        { label, media, changes },
-      );
+      const transform = migrateTransform({
+        clip: { ...filled, box },
+        label,
+        media,
+        changes,
+      });
       return { ...filled, transform };
     }
     case "audio": {
@@ -219,10 +221,12 @@ async function migrateClip(
     }
     case "image": {
       const { box, ...filled } = fillDefaults(clip, NEUTRAL_VALUES.image);
-      const transform = migrateTransform(
-        { ...filled, box },
-        { label, media, changes },
-      );
+      const transform = migrateTransform({
+        clip: { ...filled, box },
+        label,
+        media,
+        changes,
+      });
       return { ...filled, transform };
     }
     case "color": {
@@ -251,14 +255,17 @@ async function migrateClip(
  * A media clip's transform, converted from a fit box when the clip has one: the
  * transform that places the visible part where the fit put it.
  */
-function migrateTransform(
-  clip: { src: string; crop: Crop } & SavedPlacement,
-  {
-    label,
-    media,
-    changes,
-  }: { label: string; media: SavedProject["media"]; changes: string[] },
-): Transform {
+function migrateTransform({
+  clip,
+  label,
+  media,
+  changes,
+}: {
+  clip: { src: string; crop: Crop } & SavedPlacement;
+  label: string;
+  media: SavedProject["media"];
+  changes: string[];
+}): Transform {
   if (clip.transform) {
     return clip.transform;
   }
