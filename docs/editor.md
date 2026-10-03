@@ -15,7 +15,7 @@ Editor                     editor.tsx               runtime store, selection, pl
 │  │  ├─ LibraryPanel      library-panel.tsx        media files and built-in layers to add
 │  │  └─ MediaPreview      media-preview.tsx        the selected clip's raw file
 │  └─ CompositionPreview   composition-preview.tsx  viewport scale, clips visible at time, audio
-│     └─ PreviewClip × N                            placed box to CSS, per-type rendering, outline
+│     └─ PreviewClip × N                            box to CSS, per-type rendering, outline
 │        └─ CompositionMedia  composition-media.tsx transform and crop by the stored size, video
 ├─ Timeline                timeline.tsx             selection, seeking the playhead
 │  └─ AudioWaveformView    audio-waveform.tsx       a lane's audio peaks at the timeline scale

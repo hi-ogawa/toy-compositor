@@ -126,8 +126,8 @@ function validateProject(project: Project): void {
 
 /**
  * Bring a project to the current shape by filling what older files lack. It
- * reads `media` only to convert a fit box, which needs the source size, so
- * update-media probes the files before running it. Each layer is normalized to the clips shape
+ * reads `media` only for a fit box's source size and does not check it, so
+ * update-media also runs it on a project whose media info is missing. Each layer is normalized to the clips shape
  * first, and then each clip's fields are migrated, so a field migration works
  * whichever shape the file started in.
  */
@@ -262,13 +262,11 @@ function migrateTransform(
     return clip.transform;
   }
   changes.push(`${label} has a fit box instead of a transform`);
-  const size = media?.[clip.src]?.video;
-  if (!size) {
-    throw new Error(
-      `${label} has a fit box but no media info, run update-media`,
-    );
-  }
-  return convertFitBox({ box: clip.box!, size, crop: clip.crop });
+  return convertFitBox({
+    box: clip.box!,
+    size: media![clip.src].video!,
+    crop: clip.crop,
+  });
 }
 
 /**

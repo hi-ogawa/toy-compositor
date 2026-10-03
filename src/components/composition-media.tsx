@@ -1,5 +1,5 @@
 import { useCallback, useState, type CSSProperties } from "react";
-import { getCroppedSize, getVisibleBox } from "../lib/layout";
+import { getVisibleBox } from "../lib/layout";
 import type { ImageClip, MediaInfo, VideoClip } from "../lib/project";
 import type { EditorRuntime } from "../lib/runtime";
 
@@ -29,18 +29,17 @@ export function CompositionMedia({
     crop,
     transform: clip.transform,
   });
-  // The wrapper is the visible cropped rectangle, and the media inside keeps
-  // its uncropped size at the same scale, shifted by the left and top crop.
-  const cropped = getCroppedSize({ size: video, crop });
-  const scaleX = visible.width / cropped.width;
-  const scaleY = visible.height / cropped.height;
   const mediaStyle: CSSProperties = {
     position: "absolute",
     maxWidth: "none",
-    width: video.width * scaleX,
-    height: video.height * scaleY,
-    left: -crop.left * video.width * scaleX,
-    top: -crop.top * video.height * scaleY,
+    width:
+      (video.width * visible.width) /
+      (video.width * (1 - crop.left - crop.right)),
+    height:
+      (video.height * visible.height) /
+      (video.height * (1 - crop.top - crop.bottom)),
+    left: (-crop.left * visible.width) / (1 - crop.left - crop.right),
+    top: (-crop.top * visible.height) / (1 - crop.top - crop.bottom),
   };
   return (
     <>
