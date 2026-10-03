@@ -95,22 +95,24 @@ export function getFitTransform({
 }
 
 /**
- * Change the scale while the center of a region of the source, such as what
- * the crop leaves, stays where it is on the canvas.
+ * Change the scale while the center of what the crop leaves stays where it is
+ * on the canvas.
  */
 export function getRescaledTransform({
-  region,
+  size,
+  crop,
   transform,
   scale,
 }: {
-  /** In source pixels. */
-  region: Box;
+  size: Size;
+  crop: Crop;
   transform: Transform;
   scale: number;
 }): Transform {
+  const cropped = getCroppedBox({ size, crop });
   const center = {
-    x: region.x + region.width / 2,
-    y: region.y + region.height / 2,
+    x: cropped.x + cropped.width / 2,
+    y: cropped.y + cropped.height / 2,
   };
   return {
     x: Math.round(transform.x + center.x * (transform.scale - scale)),
