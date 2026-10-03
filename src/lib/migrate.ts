@@ -1,16 +1,25 @@
 import { createLayerName } from "./layer-defaults.ts";
-import type {
-  Box,
-  Canvas,
-  Clip,
-  ColorClip,
-  Layer,
-  Project,
-  TextClip,
+import {
+  NEUTRAL_VALUES,
+  type AudioClip,
+  type Box,
+  type Canvas,
+  type Clip,
+  type ColorClip,
+  type Crop,
+  type ImageClip,
+  type Layer,
+  type Project,
+  type TextClip,
+  type VideoClip,
 } from "./project.ts";
 import { measureTextHeight } from "./render/text.ts";
 
-export type SavedProject = Omit<Project, "layers" | "locators" | "media"> & {
+export type SavedProject = Omit<
+  Project,
+  "canvas" | "layers" | "locators" | "media"
+> & {
+  canvas: Omit<Canvas, "background"> & { background?: string };
   layers: SavedLayer[];
   // Missing in projects saved before locators.
   locators?: Project["locators"];
@@ -31,18 +40,44 @@ type WithFlatLayerFields<T> = T extends unknown
   : never;
 
 type SavedClip =
-  | Exclude<Clip, ColorClip | TextClip>
+  | SavedVideoClip
+  | SavedAudioClip
+  | SavedImageClip
   | SavedColorClip
   | SavedTextClip;
 
-type SavedColorClip = Omit<ColorClip, "box"> & {
-  // Missing in projects saved before a color clip's box was required.
-  box?: Box;
+// Neutral values are missing in projects saved before they were required.
+type SavedVideoClip = Omit<
+  VideoClip,
+  "crop" | "fadeIn" | "fadeOut" | "hold"
+> & {
+  crop?: Partial<Crop>;
+  fadeIn?: number;
+  fadeOut?: number;
+  hold?: Partial<VideoClip["hold"]>;
 };
 
-type SavedTextClip = Omit<TextClip, "box"> & {
+type SavedAudioClip = Omit<AudioClip, "fadeIn" | "fadeOut"> & {
+  fadeIn?: number;
+  fadeOut?: number;
+};
+
+type SavedImageClip = Omit<ImageClip, "crop"> & { crop?: Partial<Crop> };
+
+type SavedColorClip = Omit<ColorClip, "box" | "opacity"> & {
+  // Missing in projects saved before a color clip's box was required.
+  box?: Box;
+  opacity?: number;
+};
+
+type SavedTextClip = Omit<TextClip, "box" | "align" | "font"> & {
   // Missing height in projects saved before a text clip's box had one.
   box: Omit<Box, "height"> & { height?: number };
+  align?: TextClip["align"];
+  font: Omit<TextClip["font"], "weight" | "lineSpacing"> & {
+    weight?: number;
+    lineSpacing?: number;
+  };
 };
 
 /** A project in the current shape, and what changed to get there. */
@@ -91,17 +126,16 @@ async function migrateProject(
   const changes: string[] = [];
   const layers: Layer[] = [];
   for (const savedLayer of project.layers) {
-    const { name, muted, clips } = normalizeLayer(savedLayer, {
+    const { clips, ...layer } = normalizeLayer(savedLayer, {
       layers,
       changes,
     });
     layers.push({
-      name,
-      ...(muted !== undefined && { muted }),
+      ...layer,
       clips: await Promise.all(
         clips.map((clip) =>
           migrateClip(clip, {
-            label: `${clip.type} clip in layer "${name}"`,
+            label: `${clip.type} clip in layer "${layer.name}"`,
             canvas: project.canvas,
             changes,
           }),
@@ -109,8 +143,10 @@ async function migrateProject(
       ),
     });
   }
+  const canvas = fillDefaults(project.canvas, NEUTRAL_VALUES.canvas);
   const migrated: Project = {
     ...project,
+    canvas,
     layers,
     locators: project.locators ?? [],
     media: project.media ?? {},
@@ -139,7 +175,7 @@ function normalizeLayer(
     changes.push(`${clip.type} layer "${name}" has no name`);
   }
   changes.push(`layer "${name}" has no clips`);
-  return { name, ...(muted !== undefined && { muted }), clips: [clip] };
+  return fillDefaults({ name, muted, clips: [clip] }, NEUTRAL_VALUES.layer);
 }
 
 async function migrateClip(
@@ -148,27 +184,36 @@ async function migrateClip(
     label,
     canvas,
     changes,
-  }: { label: string; canvas: Canvas; changes: string[] },
+  }: { label: string; canvas: SavedProject["canvas"]; changes: string[] },
 ): Promise<Clip> {
   switch (clip.type) {
+    case "video": {
+      return fillDefaults(clip, NEUTRAL_VALUES.video);
+    }
+    case "audio": {
+      return fillDefaults(clip, NEUTRAL_VALUES.audio);
+    }
+    case "image": {
+      return fillDefaults(clip, NEUTRAL_VALUES.image);
+    }
     case "color": {
       if (!clip.box) {
         changes.push(`${label} has no box`);
       }
+      // A color clip without a box covered the canvas.
       const { width, height } = canvas;
-      return { ...clip, box: clip.box ?? { x: 0, y: 0, width, height } };
+      const box = clip.box ?? { x: 0, y: 0, width, height };
+      return fillDefaults({ ...clip, box }, NEUTRAL_VALUES.color);
     }
     case "text": {
-      let { height } = clip.box;
+      const filled = fillDefaults(clip, NEUTRAL_VALUES.text);
+      let { height } = filled.box;
       if (height === undefined) {
         // The box followed the lines, which rendered at their natural height.
         changes.push(`${label} has no box height`);
-        height = await measureTextHeight(clip);
+        height = await measureTextHeight(filled);
       }
-      return { ...clip, box: { ...clip.box, height } };
-    }
-    default: {
-      return clip;
+      return { ...filled, box: { ...filled.box, height } };
     }
   }
 }
@@ -176,4 +221,23 @@ async function migrateClip(
 /** A saved layer's clips, whichever shape it was saved in. */
 export function getSavedClips(layer: SavedLayer): SavedClip[] {
   return "clips" in layer ? layer.clips : [layer];
+}
+
+/**
+ * Fills each missing property with its neutral value, recursing into objects
+ * that are present.
+ */
+function fillDefaults<T extends object, D extends object>(
+  value: T,
+  defaults: D,
+): T & D {
+  const filled = { ...value } as Record<string, unknown>;
+  for (const [key, fallback] of Object.entries(defaults)) {
+    if (filled[key] === undefined) {
+      filled[key] = structuredClone(fallback);
+    } else if (typeof fallback === "object") {
+      filled[key] = fillDefaults(filled[key] as object, fallback);
+    }
+  }
+  return filled as T & D;
 }

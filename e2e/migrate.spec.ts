@@ -5,15 +5,21 @@ import { execFileAsync } from "../src/utils/exec.ts";
 import { editJson, readJson } from "../src/utils/fs.ts";
 import { test } from "./helper";
 
+type SavedFlatLayer = Exclude<
+  SavedProject["layers"][number],
+  { clips: unknown }
+>;
+
 test("read and migrate an older project file", async ({ page, editor }) => {
   const readProject = () => readJson<SavedProject>(editor.projectFile);
 
   // Flatten every layer into its one clip, and remove the image's name, the
-  // tint's box, and the title's box height, as in a project file from before
-  // layers held clips, layers required a name, color layers required a box,
-  // and text layers stored a height. The image then gets the editor's numbered
-  // name, the tint covered the canvas, and the title's box followed its lines,
-  // which is the height the sample stores.
+  // tint's box, the title's box height, and neutral values, as in a project
+  // file from before layers held clips, layers required a name, color layers
+  // required a box, text layers stored a height, and neutral values were
+  // written out. The image then gets the editor's numbered name, the tint
+  // covered the canvas, the title's box followed its lines, which is the height
+  // the sample stores, and the neutral values are the sample's.
   const project = await readJson<Project>(editor.projectFile);
   const migratedProject = {
     ...project,
@@ -37,26 +43,32 @@ test("read and migrate an older project file", async ({ page, editor }) => {
   };
   const removeFields = () =>
     editJson<SavedProject>(editor.projectFile, (savedProject) => {
-      savedProject.layers = project.layers.map(({ clips, ...layer }) => {
-        const clip = clips[0]!;
-        switch (clip.type) {
-          case "image": {
-            const { name: _name, ...rest } = layer;
-            return { ...rest, ...clip };
-          }
-          case "color": {
-            const { box: _box, ...rest } = clip;
-            return { ...layer, ...rest };
-          }
-          case "text": {
-            const { height: _height, ...box } = clip.box;
-            return { ...layer, ...clip, box };
-          }
-          default: {
-            return { ...layer, ...clip };
-          }
+      delete savedProject.canvas.background;
+      const layers: SavedFlatLayer[] = project.layers.map(
+        ({ clips, ...layer }) => ({ ...layer, ...clips[0]! }),
+      );
+      for (const layer of layers) {
+        if (!layer.muted) {
+          delete layer.muted;
         }
-      });
+        if (layer.type === "video") {
+          delete layer.crop;
+          delete layer.fadeIn;
+          delete layer.fadeOut;
+          delete layer.hold;
+        }
+        if (layer.type === "image") {
+          delete layer.name;
+        }
+        if (layer.type === "color") {
+          delete layer.box;
+        }
+        if (layer.type === "text") {
+          delete layer.box.height;
+          delete layer.font.weight;
+        }
+      }
+      savedProject.layers = layers;
     });
   const changes = [
     'layer "Test pattern" has no clips',
@@ -71,7 +83,7 @@ test("read and migrate an older project file", async ({ page, editor }) => {
   await removeFields();
   const savedProject = await readProject();
 
-  // Check it, and confirm it reports each layer and fails without writing.
+  // Check it, and confirm it reports each change and fails without writing.
   const check = execFileAsync(process.execPath, [
     "src/cli.ts",
     "migrate",
@@ -85,7 +97,7 @@ test("read and migrate an older project file", async ({ page, editor }) => {
   }
   expect(await readProject()).toEqual(savedProject);
 
-  // Open the editor, and confirm it reports each layer and rewrites the file
+  // Open the editor, and confirm it reports each change and rewrites the file
   // to render as before.
   await page.goto(editor.url);
   await expect(page.getByRole("main")).toBeVisible();
@@ -94,7 +106,7 @@ test("read and migrate an older project file", async ({ page, editor }) => {
   }
   expect(await readProject()).toEqual(migratedProject);
 
-  // Remove the fields again and render, and confirm it reports each layer and
+  // Remove the fields again and render, and confirm it reports each change and
   // rewrites the file too.
   await removeFields();
   const { stdout } = await execFileAsync(process.execPath, [

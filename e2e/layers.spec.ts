@@ -95,6 +95,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
   expect(project.layers.slice(5)).toEqual([
     {
       name: "video",
+      muted: false,
       clips: [
         {
           type: "video",
@@ -103,16 +104,22 @@ test("add layers from the Library tab", async ({ page, editor }) => {
           in: 0,
           out: 3,
           box: { x: 0, y: 0, width: 640, height: 360 },
+          crop: { left: 0, right: 0, top: 0, bottom: 0 },
+          fadeIn: 0,
+          fadeOut: 0,
+          hold: { before: 0, after: 0 },
         },
       ],
     },
     {
       name: "image",
+      muted: false,
       clips: [
         {
           type: "image",
           src: "media/image.png",
           box: { x: 0, y: 0, width: 640, height: 360 },
+          crop: { left: 0, right: 0, top: 0, bottom: 0 },
           start: 0,
           end: 3,
         },
@@ -120,13 +127,14 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     },
     {
       name: "Text 2",
+      muted: false,
       clips: [
         {
           type: "text",
           text: "Text",
           box: { x: 64, y: 144, width: 512, height: 72 },
           align: "center",
-          font: { family: "Noto Sans", size: 36 },
+          font: { family: "Noto Sans", size: 36, weight: 400, lineSpacing: 0 },
           color: "#ffffff",
           start: 0,
           end: 3,
@@ -135,6 +143,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     },
     {
       name: "Color 2",
+      muted: false,
       clips: [
         {
           type: "color",
@@ -148,6 +157,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     },
     {
       name: "extra",
+      muted: false,
       clips: [
         {
           type: "audio",
@@ -155,6 +165,8 @@ test("add layers from the Library tab", async ({ page, editor }) => {
           start: 1,
           in: 0,
           out: 3,
+          fadeIn: 0,
+          fadeOut: 0,
         },
       ],
     },

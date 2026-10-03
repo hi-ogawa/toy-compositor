@@ -235,6 +235,7 @@ test("edit layer names and a color layer's fill and box, and save them", async (
   const project = await readJson<Project>(editor.projectFile);
   expect(project.layers[5]).toEqual({
     name: "Scrim",
+    muted: false,
     clips: [
       {
         type: "color",

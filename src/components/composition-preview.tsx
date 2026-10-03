@@ -57,7 +57,7 @@ export function CompositionPreview({
               width: canvas.width,
               height: canvas.height,
               transform: `scale(${scale})`,
-              background: canvas.background ?? "#000000",
+              background: canvas.background,
             }}
           >
             {/* Every clip stays mounted, so media is ready when playback reaches it. */}
@@ -164,10 +164,10 @@ function getTextStyle(clip: TextClip): CSSProperties {
   return {
     fontFamily: clip.font.family,
     fontSize: clip.font.size,
-    fontWeight: clip.font.weight ?? 400,
-    lineHeight: `${clip.font.size * 1.2 + (clip.font.lineSpacing ?? 0)}px`,
+    fontWeight: clip.font.weight,
+    lineHeight: `${clip.font.size * 1.2 + clip.font.lineSpacing}px`,
     whiteSpace: "pre",
-    textAlign: clip.align ?? "left",
+    textAlign: clip.align,
     color: clip.color,
     WebkitTextStroke: clip.outline
       ? `${clip.outline.width}px ${clip.outline.color}`

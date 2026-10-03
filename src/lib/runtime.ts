@@ -12,13 +12,15 @@ import {
 } from "./layer-defaults.ts";
 import { getContentRange, getOutputRange, type TimeRange } from "./layout.ts";
 import type { MediaFile } from "./media-file.ts";
-import type {
-  Canvas,
-  Clip,
-  Layer,
-  Locator,
-  Output,
-  Project,
+import {
+  CANVAS_PRESETS,
+  createEmptyProject,
+  type Canvas,
+  type Clip,
+  type Layer,
+  type Locator,
+  type Output,
+  type Project,
 } from "./project.ts";
 import type { ProjectFile } from "./server/api.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
@@ -58,18 +60,10 @@ export interface EditorState {
   audioSources: Record<string, PromiseState<DecodedAudio>>;
 }
 
-const EMPTY_PROJECT: EditorProject = {
-  canvas: { width: 1920, height: 1080, fps: 30 },
-  output: { type: "video", start: 0, end: 0 },
-  layers: [],
-  locators: [],
-  media: {},
-};
-
 export class EditorRuntime {
   readonly store = createStore<EditorState>(() => ({
     file: "",
-    project: EMPTY_PROJECT,
+    project: deserializeEditorProject(createEmptyProject(CANVAS_PRESETS[0])),
     playhead: 0,
     playing: false,
     audioSources: {},
@@ -361,7 +355,7 @@ export class EditorRuntime {
   private syncPlayback(): void {
     const { project, audioSources } = this.store.get();
     const clips = project.layers.flatMap((layer) =>
-      layer.clips.map((clip) => ({ clip, muted: layer.muted ?? false })),
+      layer.clips.map((clip) => ({ clip, muted: layer.muted })),
     );
     for (const [id, playback] of this.videoPlaybacks) {
       const clip = clips.find(({ clip }) => clip.id === id)?.clip;

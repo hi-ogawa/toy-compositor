@@ -418,7 +418,7 @@ function TimelineLayerLane({
           layerInteraction={layerInteraction}
           clip={clip}
           name={name}
-          muted={layer.muted ?? false}
+          muted={layer.muted}
           testId={`timeline-layer-${index}-clip-${clipIndex}`}
           audioSource={
             clip.type === "video" || clip.type === "audio"

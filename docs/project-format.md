@@ -69,7 +69,10 @@ Each clip has a `type`, and the type decides its other fields.
   "in": 0,
   "out": 189.499,
   "box": { "x": 0, "y": 0, "width": 1920, "height": 1080 },
-  "crop": { "left": 0.013, "top": 0.0065 },
+  "crop": { "left": 0.013, "right": 0, "top": 0.0065, "bottom": 0 },
+  "fadeIn": 0,
+  "fadeOut": 0,
+  "hold": { "before": 0, "after": 0 },
 }
 ```
 
@@ -100,6 +103,7 @@ A video clip carries its file's audio, like a clip in other video editors, and t
   "start": 23.7,
   "end": 188.633,
   "box": { "x": 960, "y": 540, "width": 960, "height": 540 },
+  "crop": { "left": 0, "right": 0, "top": 0, "bottom": 0 },
 }
 ```
 
@@ -185,22 +189,14 @@ An entry depends only on the file's contents, so a copied file has the same entr
 
 `box` is where a visual clip goes on the canvas. The source is scaled to fit inside the box while keeping its aspect ratio and is centered in it. Anything outside the canvas is clipped.
 
-`crop` removes a fraction of the source from each edge before fitting, with each side defaulting to 0.
+`crop` removes a fraction of the source from each edge before fitting.
 
 ## Hold
 
 A video clip can keep showing its first frame before `start` and its last frame after its source range ends, so a clip without lead-in or tail, such as a score video, still covers the whole output.
 
 ```jsonc
-{
-  "type": "video",
-  "src": "media/score.mp4",
-  "start": 23.7,
-  "in": 0,
-  "out": 160,
-  "box": { "x": 781, "y": 473, "width": 1152, "height": 648 },
-  "hold": { "before": 5, "after": 10 },
-}
+"hold": { "before": 5, "after": 10 }
 ```
 
 `before` and `after` are durations in seconds. They extend only the clip's picture, so its timing stays its source range and the held spans are silent.

@@ -1,13 +1,14 @@
 import { createNumberedName } from "../utils/name.ts";
 import { fitBox, type TimeRange } from "./layout.ts";
 import type { MediaType } from "./media-file.ts";
-import type {
-  Canvas,
-  Clip,
-  ColorClip,
-  Layer,
-  MediaInfo,
-  TextClip,
+import {
+  NEUTRAL_VALUES,
+  type Canvas,
+  type Clip,
+  type ColorClip,
+  type Layer,
+  type MediaInfo,
+  type TextClip,
 } from "./project.ts";
 
 /** Numbers a layer by a clip type among the layers holding it, such as `Text 2`. */
@@ -48,6 +49,7 @@ export function createMediaLayer({
     .replace(/\.[^.]+$/, "");
   return {
     name,
+    ...NEUTRAL_VALUES.layer,
     clips: [
       createMediaClip({ src, type, mediaInfo, canvas, start, stillRange }),
     ],
@@ -79,7 +81,12 @@ function createMediaClip({
         start,
         in: mediaInfo.start,
         out: mediaInfo.end,
-        box: fitBox({ source: mediaInfo.video!, box: canvasBox }),
+        box: fitBox({
+          source: mediaInfo.video!,
+          crop: NEUTRAL_VALUES.video.crop,
+          box: canvasBox,
+        }),
+        ...NEUTRAL_VALUES.video,
       };
     }
     case "audio": {
@@ -89,13 +96,19 @@ function createMediaClip({
         start,
         in: mediaInfo.start,
         out: mediaInfo.end,
+        ...NEUTRAL_VALUES.audio,
       };
     }
     case "image": {
       return {
         type,
         src,
-        box: fitBox({ source: mediaInfo.video!, box: canvasBox }),
+        box: fitBox({
+          source: mediaInfo.video!,
+          crop: NEUTRAL_VALUES.image.crop,
+          box: canvasBox,
+        }),
+        ...NEUTRAL_VALUES.image,
         ...stillRange,
       };
     }
@@ -111,7 +124,11 @@ export function createTextLayer({
   canvas: Canvas;
   range: TimeRange;
 }): Layer {
-  return { name, clips: [createTextClip({ canvas, range })] };
+  return {
+    name,
+    ...NEUTRAL_VALUES.layer,
+    clips: [createTextClip({ canvas, range })],
+  };
 }
 
 function createTextClip({
@@ -132,7 +149,11 @@ function createTextClip({
       height: Math.round(canvas.height * 0.2),
     },
     align: "center",
-    font: { family: "Noto Sans", size: Math.round(canvas.height / 10) },
+    font: {
+      family: "Noto Sans",
+      size: Math.round(canvas.height / 10),
+      ...NEUTRAL_VALUES.text.font,
+    },
     color: "#ffffff",
     ...range,
   };
@@ -147,7 +168,11 @@ export function createColorLayer({
   canvas: Canvas;
   range: TimeRange;
 }): Layer {
-  return { name, clips: [createColorClip({ canvas, range })] };
+  return {
+    name,
+    ...NEUTRAL_VALUES.layer,
+    clips: [createColorClip({ canvas, range })],
+  };
 }
 
 function createColorClip({

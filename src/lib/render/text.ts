@@ -61,7 +61,7 @@ function getDrawArgs(clip: TextDrawing): string[] {
     "-pointsize",
     String(clip.font.size),
     "-interline-spacing",
-    String(clip.font.lineSpacing ?? 0),
+    String(clip.font.lineSpacing),
     "-fill",
     clip.color,
   ];
@@ -92,9 +92,7 @@ function getDrawArgs(clip: TextDrawing): string[] {
 }
 
 function getGravity(clip: TextDrawing) {
-  return { left: "west", center: "center", right: "east" }[
-    clip.align ?? "left"
-  ];
+  return { left: "west", center: "center", right: "east" }[clip.align];
 }
 
 /** "Noto Sans CJK KR" at weight 700 -> "Noto-Sans-CJK-KR-Bold" */
@@ -106,5 +104,5 @@ function getMagickFont(font: TextClip["font"]) {
     700: "-Bold",
     900: "-Black",
   };
-  return font.family.replaceAll(" ", "-") + (suffix[font.weight ?? 400] ?? "");
+  return font.family.replaceAll(" ", "-") + (suffix[font.weight] ?? "");
 }

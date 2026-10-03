@@ -34,12 +34,12 @@ export function getClipRange(clip: Clip): TimeRange {
 /** Timeline span of a clip's picture, extended by a video clip's hold. */
 export function getPictureRange(clip: Clip): TimeRange {
   const range = getClipRange(clip);
-  if (clip.type !== "video" || !clip.hold) {
+  if (clip.type !== "video") {
     return range;
   }
   return {
-    start: range.start - (clip.hold.before ?? 0),
-    end: range.end + (clip.hold.after ?? 0),
+    start: range.start - clip.hold.before,
+    end: range.end + clip.hold.after,
   };
 }
 
@@ -52,15 +52,15 @@ export function intersect(a: TimeRange, b: TimeRange): TimeRange | undefined {
 /** Scale the cropped source to fit inside the box, keeping its aspect ratio, centered. */
 export function fitBox({
   source,
-  crop = {},
+  crop,
   box,
 }: {
   source: { width: number; height: number };
-  crop?: Crop;
+  crop: Crop;
   box: Box;
 }) {
-  const cw = source.width * (1 - (crop.left ?? 0) - (crop.right ?? 0));
-  const ch = source.height * (1 - (crop.top ?? 0) - (crop.bottom ?? 0));
+  const cw = source.width * (1 - crop.left - crop.right);
+  const ch = source.height * (1 - crop.top - crop.bottom);
   const scale = Math.min(box.width / cw, box.height / ch);
   const width = roundToEven(cw * scale);
   const height = roundToEven(ch * scale);

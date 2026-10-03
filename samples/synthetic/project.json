@@ -32,12 +32,25 @@
             "y": 0,
             "width": 640,
             "height": 360
+          },
+          "crop": {
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0
+          },
+          "fadeIn": 0,
+          "fadeOut": 0,
+          "hold": {
+            "before": 0,
+            "after": 0
           }
         }
       ]
     },
     {
       "name": "Tone 660 Hz",
+      "muted": false,
       "clips": [
         {
           "type": "audio",
@@ -52,6 +65,7 @@
     },
     {
       "name": "Label backdrop",
+      "muted": false,
       "clips": [
         {
           "type": "image",
@@ -63,12 +77,19 @@
             "y": 240,
             "width": 160,
             "height": 90
+          },
+          "crop": {
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0
           }
         }
       ]
     },
     {
       "name": "Title",
+      "muted": false,
       "clips": [
         {
           "type": "text",
@@ -84,7 +105,9 @@
           "align": "center",
           "font": {
             "family": "DejaVu Sans",
-            "size": 20
+            "size": 20,
+            "weight": 400,
+            "lineSpacing": 0
           },
           "color": "#ffffff",
           "outline": {
@@ -96,6 +119,7 @@
     },
     {
       "name": "Tint",
+      "muted": false,
       "clips": [
         {
           "type": "color",
