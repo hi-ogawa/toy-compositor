@@ -42,9 +42,9 @@ Usage:
   toy-compositor install-desktop
       Add an app launcher entry that runs serve --open (Linux)
   toy-compositor upgrade [source] [--port <port>]
-      Install the latest build globally with pnpm, or the build from source,
-      update the app launcher entry, and stop the running editor server,
-      so the next launch uses the new build
+      Install the main build globally with pnpm, or the package at source,
+      such as a pkg.pr.new URL or a tarball, rewrite the app launcher entry,
+      and stop the running editor server, so the next launch uses the new build
   toy-compositor add <path>
       Add a project folder, given as the folder or a project file inside it
   toy-compositor render <project.json> <output> [--dry-run]
