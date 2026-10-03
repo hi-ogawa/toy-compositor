@@ -1,6 +1,6 @@
 # Editor
 
-The editor composes the project in the DOM at one project time. Each visual layer is an absolutely positioned `<video>`, `<img>`, or div, placed in canvas pixels inside a canvas-sized div, and the whole canvas is CSS-scaled to fit the monitor. The preview is a best-effort implementation of the spec in [project-format.md](project-format.md), next to the [render](compiler.md), which implements it exactly. Both share the spec's reference geometry (`fitBox` and `getLayerRange` in [src/lib/layout.ts](../src/lib/layout.ts)), and the preview's deviations from the spec are listed [below](#deviations-from-the-spec).
+The editor composes the project in the DOM at one project time. Each visual layer is an absolutely positioned `<video>`, `<img>`, or div, placed in canvas pixels inside a canvas-sized div, and the whole canvas is CSS-scaled to fit the monitor. The preview is a best-effort implementation of the spec in [project-format.md](project-format.md), next to the [render](compiler.md), which implements it exactly. Both share the spec's reference code (`fitBox` and `getOutputRange` in [src/lib/layout.ts](../src/lib/layout.ts)), and the preview's deviations from the spec are listed [below](#deviations-from-the-spec).
 
 ## Components
 
