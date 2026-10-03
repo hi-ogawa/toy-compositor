@@ -13,7 +13,7 @@ import {
 } from "./lib/desktop-entry.ts";
 import { updateProjectMedia } from "./lib/media-info.ts";
 import {
-  normalizeProject,
+  migrateProject,
   validateProject,
   type SavedProject,
 } from "./lib/migrate.ts";
@@ -167,7 +167,7 @@ async function main() {
       for (const projectFile of args) {
         const savedProject = await readJson<SavedProject>(projectFile);
         validateProject(savedProject);
-        const { project, changes } = normalizeProject(savedProject);
+        const { project, changes } = migrateProject(savedProject);
         if (changes.length === 0) {
           continue;
         }

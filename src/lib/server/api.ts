@@ -6,7 +6,7 @@ import type { Result } from "../../utils/result.ts";
 import { getMediaType, type MediaFile } from "../media-file.ts";
 import { probeMediaInfo } from "../media-info.ts";
 import {
-  normalizeProject,
+  migrateProject,
   validateProject,
   type SavedProject,
 } from "../migrate.ts";
@@ -207,7 +207,7 @@ export function createEditorHandlers({
       } catch (error) {
         return { ok: false, error: (error as Error).message };
       }
-      const { project } = normalizeProject(savedProject);
+      const { project } = migrateProject(savedProject);
       return { ok: true, value: { file: projectPath, project } };
     },
 

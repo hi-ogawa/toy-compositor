@@ -3,7 +3,7 @@ import { once } from "node:events";
 import fs from "node:fs";
 import path from "node:path";
 import {
-  normalizeProject,
+  migrateProject,
   validateProject,
   type SavedProject,
 } from "../migrate.ts";
@@ -24,7 +24,7 @@ export async function renderProject({
     fs.readFileSync(projectFile, "utf-8"),
   );
   validateProject(savedProject);
-  const { project } = normalizeProject(savedProject);
+  const { project } = migrateProject(savedProject);
   const projectDir = path.dirname(path.resolve(projectFile));
   const outPath = path.resolve(outFile);
   const resolved = await resolveProject({

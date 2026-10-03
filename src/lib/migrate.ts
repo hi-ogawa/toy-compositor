@@ -14,11 +14,11 @@ type SavedLayer =
       box?: Box;
     });
 
-/** A saved project whose facts normalizing can rely on. */
+/** A saved project whose facts migrating can rely on. */
 type ValidProject = SavedProject & Pick<Project, "media">;
 
 /**
- * Check what normalizing cannot fill in, which needs a command that reads the
+ * Check what migrating cannot fill in, which needs a command that reads the
  * media files.
  */
 export function validateProject(
@@ -45,7 +45,7 @@ export function validateProject(
  * Bring a project from older formats to the current one, in the order the
  * format changed, and describe each layer change.
  */
-export function normalizeProject(project: ValidProject): {
+export function migrateProject(project: ValidProject): {
   project: Project;
   changes: string[];
 } {
