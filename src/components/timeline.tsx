@@ -27,7 +27,6 @@ import type {
 import { clamp } from "../utils/math";
 import type { PromiseState } from "../utils/promise-state";
 import { AudioWaveformView } from "./audio-waveform";
-import { ClipTypeIcon } from "./clip-type-icon";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import type {
@@ -389,26 +388,18 @@ function TimelineLayerLane({
   selectedClipId?: string;
 }) {
   const { name } = layer;
-  // TODO(multi-clip): The label stands for the layer's first clip, which is
-  // its only one until the editor can put several clips on a layer.
-  const [firstClip] = layer.clips;
   return (
     <TimelineRow
       timeline={timeline}
       className="h-12"
       subdivisions
       label={
-        <button
-          type="button"
+        <div
           title={name}
-          className="flex h-full w-full items-center justify-between gap-2 px-3 text-left hover:bg-neutral-800/60"
-          onClick={() =>
-            layerInteraction.select({ type: "clip", id: firstClip!.id })
-          }
+          className="flex h-full items-center px-3 text-xs font-semibold"
         >
-          <span className="truncate text-xs font-semibold">{name}</span>
-          <ClipTypeIcon type={firstClip!.type} />
-        </button>
+          <span className="truncate">{name}</span>
+        </div>
       }
     >
       {layer.clips.map((clip, clipIndex) => (

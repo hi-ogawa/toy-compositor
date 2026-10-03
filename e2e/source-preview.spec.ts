@@ -19,16 +19,16 @@ test("preview synthetic sources", async ({ page, editor }) => {
   // Switch the side panel to Source, select the video, and confirm its source
   // preview appears.
   await page.getByRole("tab", { name: "Source" }).click();
-  await clickTimelineButton(page, { name: "Test pattern video" });
+  await clickTimelineButton(page, { name: "Select Test pattern region" });
   await expect(page.locator("#side-panel video")).toBeVisible();
 
   // Switch to audio and confirm its preview replaces the video player.
-  await clickTimelineButton(page, { name: "Tone 660 Hz audio" });
+  await clickTimelineButton(page, { name: "Select Tone 660 Hz region" });
   await expect(page.locator("#side-panel video")).toHaveCount(0);
   await expect(page.locator("#side-panel audio")).toBeVisible();
 
   // Select the image and confirm it loads without making the project dirty.
-  await clickTimelineButton(page, { name: "Label backdrop image" });
+  await clickTimelineButton(page, { name: "Select Label backdrop region" });
   await expect(page.locator("#side-panel audio")).toHaveCount(0);
   const image = page
     .locator("#side-panel")
@@ -45,7 +45,7 @@ test("resize and collapse the source panel without changing the project", async 
   // Open a video source and seek independently of project timing.
   await page.goto(editor.url);
   await page.getByRole("tab", { name: "Source" }).click();
-  await clickTimelineButton(page, { name: "Test pattern video" });
+  await clickTimelineButton(page, { name: "Select Test pattern region" });
   const source = page.locator("#side-panel video");
   await seekVideo(source, { time: 1 });
 

@@ -105,7 +105,7 @@ export async function dragBy(
   );
 }
 
-/** Click a lane label or marker in the editor timeline by its accessible name. */
+/** Click a clip region or marker in the editor timeline by its accessible name. */
 export async function clickTimelineButton(
   page: Page,
   { name }: { name: string },

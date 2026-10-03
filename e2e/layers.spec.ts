@@ -79,7 +79,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
   // Select the added video from its lane, then save, and confirm the new layers
   // reach the file on top of the existing five, without runtime ids, the
   // existing media info is reused as is, and the new file's info is probed.
-  await clickTimelineButton(page, { name: "video video" });
+  await clickTimelineButton(page, { name: "Select video region" });
   await expectInspectorFields(page, { start: "1" });
   await page.getByTestId("editor-save-button").click();
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
@@ -177,28 +177,30 @@ test("remove the selected layer", async ({ page, editor }) => {
   // Open the synthetic project and select the title text layer.
   await page.goto(editor.url);
   const lanes = page.getByTestId("editor-timeline");
-  await clickTimelineButton(page, { name: "Title text" });
+  await clickTimelineButton(page, { name: "Select Title region" });
 
   // Press Backspace inside an inspector field, and confirm it edits the field
   // instead of removing the layer, then discard the draft with Escape.
   await getInspectorField(page, { name: "start" }).press("Backspace");
-  await expect(lanes.getByRole("button", { name: "Title text" })).toBeVisible();
+  await expect(
+    lanes.getByRole("button", { name: "Select Title region" }),
+  ).toBeVisible();
   await page.keyboard.press("Escape");
 
   // Click the time readout to leave the field, press Delete, and confirm the
   // lane and its inspector go away.
   await page.getByTestId("timeline-time").click();
   await page.keyboard.press("Delete");
-  await expect(lanes.getByRole("button", { name: "Title text" })).toHaveCount(
-    0,
-  );
+  await expect(
+    lanes.getByRole("button", { name: "Select Title region" }),
+  ).toHaveCount(0);
   await expect(page.getByTestId("inspector")).toHaveCount(0);
 
   // Select the audio and remove it with Backspace.
-  await clickTimelineButton(page, { name: "Tone 660 Hz audio" });
+  await clickTimelineButton(page, { name: "Select Tone 660 Hz region" });
   await page.keyboard.press("Backspace");
   await expect(
-    lanes.getByRole("button", { name: "Tone 660 Hz audio" }),
+    lanes.getByRole("button", { name: "Select Tone 660 Hz region" }),
   ).toHaveCount(0);
 
   // Save and confirm the file keeps only the video, the image, and the tint.
@@ -242,7 +244,7 @@ test("move the selected layer up and down in the stack", async ({
     "Tone 660 Hz",
     "Test pattern",
   ]);
-  await clickTimelineButton(page, { name: "Label backdrop image" });
+  await clickTimelineButton(page, { name: "Select Label backdrop region" });
   const moveUp = page.getByRole("button", { name: "Move up", exact: true });
   const moveDown = page.getByRole("button", { name: "Move down", exact: true });
 
