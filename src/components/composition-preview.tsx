@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
-import { getLayerRange } from "../lib/layout";
+import { getPictureRange } from "../lib/layout";
 import type { Canvas, Layer, Project, TextLayer } from "../lib/project";
 import type { EditorRuntime, EditorProject } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
@@ -68,7 +68,7 @@ export function CompositionPreview({
                 if (layer.type === "audio") {
                   return undefined;
                 }
-                const range = getLayerRange(layer);
+                const range = getPictureRange(layer);
                 return (
                   <PreviewLayer
                     key={layer.id}
