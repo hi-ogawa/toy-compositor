@@ -1,6 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { apiClient } from "../lib/api-client";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import type {
   Canvas,
@@ -271,9 +269,7 @@ function LayerFields({
         <>
           <RangeTimingFields layer={layer} time={time} onUpdate={onUpdate} />
           <TextFields layer={layer} onUpdate={onUpdate} />
-          <BoxFields box={layer.box} onCommit={(box) => onUpdate({ box })}>
-            <FitTextHeightButton layer={layer} onUpdate={onUpdate} />
-          </BoxFields>
+          <BoxFields box={layer.box} onCommit={(box) => onUpdate({ box })} />
         </>
       );
     }
@@ -556,48 +552,12 @@ function TextFields({
   );
 }
 
-/**
- * Sets the box height to the lines' height once, measured by the renderer
- * through the editor server, so the box matches the render.
- */
-function FitTextHeightButton({
-  layer,
-  onUpdate,
-}: {
-  layer: TextLayer;
-  onUpdate: LayerUpdate;
-}) {
-  const fitMutation = useMutation({
-    mutationFn: () => apiClient.measureTextHeight({ layer }),
-    onSuccess: (height) => onUpdate({ box: { ...layer.box, height } }),
-  });
-  return (
-    <>
-      <button
-        type="button"
-        disabled={fitMutation.isPending}
-        onClick={() => fitMutation.mutate()}
-        className="col-span-2 h-8 rounded border border-neutral-600 bg-neutral-900 text-xs text-neutral-400 outline-none hover:bg-neutral-800 focus-visible:border-ring disabled:pointer-events-none disabled:opacity-50"
-      >
-        Fit height to text
-      </button>
-      {fitMutation.isError && (
-        <p role="alert" className="col-span-2 text-xs text-destructive">
-          {fitMutation.error.message}
-        </p>
-      )}
-    </>
-  );
-}
-
 function BoxFields({
   box,
   onCommit,
-  children,
 }: {
   box: Box;
   onCommit: (box: Box) => void;
-  children?: React.ReactNode;
 }) {
   return (
     <Group title="Box">
@@ -610,7 +570,6 @@ function BoxFields({
           onCommit={(value) => onCommit({ ...box, [key]: value })}
         />
       ))}
-      {children}
     </Group>
   );
 }

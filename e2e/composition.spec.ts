@@ -1,6 +1,5 @@
 import { expect } from "@playwright/test";
 import type { Project } from "../src/lib/project.ts";
-import { measureTextHeight } from "../src/lib/render/text.ts";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
 import { readJson } from "../src/utils/fs.ts";
 import {
@@ -146,17 +145,9 @@ test("edit a text layer's content and styling and save them", async ({
     inspector.getByLabel("outline color", { exact: true }),
   ).toBeDisabled();
 
-  // Fit the box height to the text, and confirm it takes the height the
-  // renderer draws the lines at.
-  const height = await measureTextHeight({
-    text: "Edited\nthree\nlines",
-    align: "right",
-    font: { family: "DejaVu Serif", size: 32, weight: 700, lineSpacing: 4 },
-    color: "#ffcc00",
-  });
-  await inspector.getByRole("button", { name: "Fit height to text" }).click();
-  await expectInspectorFields(page, { height: String(height) });
-  await expect(text).toHaveCSS("height", `${height}px`);
+  // Make the box taller, and confirm the preview follows.
+  await commitInspectorField(page, { name: "height", value: "120" });
+  await expect(text).toHaveCSS("height", "120px");
 
   // Save and confirm the edits reach the project file without an outline.
   const save = page.getByTestId("editor-save-button");
@@ -173,7 +164,7 @@ test("edit a text layer's content and styling and save them", async ({
         align: "right",
         font: { family: "DejaVu Serif", size: 32, weight: 700, lineSpacing: 4 },
         color: "#ffcc00",
-        box: { x: 420, y: 260, width: 160, height },
+        box: { x: 420, y: 260, width: 160, height: 120 },
       },
       {},
     ],
