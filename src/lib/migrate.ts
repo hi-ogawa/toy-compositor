@@ -39,8 +39,6 @@ function validateProject(project: SavedProject): void {
   }
 }
 
-// Fixups go in the order the format changed, so each sees the shape from
-// before its own change.
 function migrateProject(project: SavedProject): {
   project: Project;
   changes: string[];
@@ -61,8 +59,6 @@ function migrateProject(project: SavedProject): {
     ...project,
     layers,
     locators: project.locators ?? [],
-    // Validation only lets a project without `media` through when no layer
-    // uses a file, so it has none to record.
     media: project.media ?? {},
   };
   return { project: migrated, changes };
