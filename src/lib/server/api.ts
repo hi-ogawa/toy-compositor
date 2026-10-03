@@ -7,7 +7,7 @@ import { getMediaType, type MediaFile } from "../media-file.ts";
 import { probeMediaInfo } from "../media-info.ts";
 import {
   validateAndMigrateProject,
-  type ProjectMigration,
+  type MigrateProjectResult,
   type SavedProject,
 } from "../migrate.ts";
 import type { MediaInfo, Output, Project } from "../project.ts";
@@ -202,7 +202,7 @@ export function createEditorHandlers({
         throw new HttpError({ status: 404, message: "Project not found" });
       }
       const savedProject = await readJson<SavedProject>(file);
-      let migrated: ProjectMigration;
+      let migrated: MigrateProjectResult;
       try {
         migrated = validateAndMigrateProject(savedProject);
       } catch (error) {
