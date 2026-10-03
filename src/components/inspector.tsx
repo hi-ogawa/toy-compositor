@@ -253,6 +253,7 @@ function LayerFields({
       return (
         <>
           <SourceTimingFields layer={layer} time={time} onUpdate={onUpdate} />
+          <HoldFields layer={layer} time={time} onUpdate={onUpdate} />
           <AudioFields layer={layer} time={time} onUpdate={onUpdate} />
           <TransformFields
             transform={layer.transform}
@@ -377,6 +378,40 @@ function SourceTimingFields({
         value={layer.out}
         {...time}
         onCommit={(out) => onUpdate({ out })}
+      />
+    </Group>
+  );
+}
+
+/** Seconds to hold the first and last frames beyond the source range. */
+function HoldFields({
+  layer,
+  time,
+  onUpdate,
+}: {
+  layer: VideoLayer;
+  time: TimeFieldOptions;
+  onUpdate: LayerUpdate;
+}) {
+  const commit = (key: "before" | "after", value: number) => {
+    const hold = { ...layer.hold, [key]: value || undefined };
+    onUpdate({
+      hold: hold.before || hold.after ? hold : undefined,
+    });
+  };
+  return (
+    <Group title="Hold">
+      <NumberField
+        label="before"
+        value={layer.hold?.before ?? 0}
+        {...time}
+        onCommit={(value) => commit("before", value)}
+      />
+      <NumberField
+        label="after"
+        value={layer.hold?.after ?? 0}
+        {...time}
+        onCommit={(value) => commit("after", value)}
       />
     </Group>
   );

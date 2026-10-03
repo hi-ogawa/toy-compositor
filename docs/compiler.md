@@ -2,8 +2,6 @@
 
 The renderer in [src/lib/render](../src/lib/render) turns a project file ([project-format.md](project-format.md)) into one ffmpeg command and runs it.
 
-The renderer is ffmpeg rather than Remotion. Remotion's projects are React code rather than declarative data, so it would need a JSON-to-React interpreter in front of it, and its offline render captures every frame from headless Chrome, which buys nothing for static layouts of existing media. A native ffmpeg filter graph composes the same result directly and gives direct control over encoding and file size.
-
 ```sh
 pnpm setup-sample samples/synthetic
 pnpm render .local/projects/synthetic/project.json .local/projects/synthetic/out/preview.mp4
@@ -12,12 +10,11 @@ pnpm render <project.json> <output> --dry-run   # print the command only
 
 ## Timing and Frames
 
-- The project file's numbers are the timing truth. Offsets are set on waveforms, which are exact data, and playback only confirms them, so preview drift never shifts the final render. This avoids the Kdenlive problem where preview and render disagreed and timeline positions had to be compensated by guesswork.
+- The project file's numbers are the timing truth. Offsets are set on waveforms, which are exact data, and playback only confirms them, so preview drift never shifts the final render.
 - Source time is a presentation timestamp, including a stream's start offset, and the frame shown at a source time is the frame whose timestamp is nearest to it. Every renderer and the editor preview must pick frames this way, because project times are rounded to milliseconds and source frames often sit off the project's frame grid, so a looser rule makes renderers disagree by one frame.
-- The ffmpeg render is the truth for exact frames. The DOM preview draws the same layout within 1px ([Remotion comparison](https://github.com/hi-ogawa/toy-compositor/tree/e315663/research/remotion)), which is enough for placing layers, but a paused seek may land one frame off the nearest-frame rule, so frame choices such as the thumbnail are checked on a render.
-- The editor plays and decodes source media in the browser, so browser codec support such as HEVC matters there, and constant frame rate working files from ingest cover that case.
-- Variable frame rate phone footage is normalized to constant frame rate working files at ingest, which matches the existing manual pre-transcode. The working files also use a one-second keyframe interval so the editor can seek quickly ([working media](working-media.md)).
-- Encoding settings are explicit in the compiler output, which avoids Kdenlive's file-size inflation.
+- The ffmpeg render is the truth for exact frames. The [editor](editor.md) preview shares the layout math, which is enough for placing layers, but a paused seek may land one frame off the nearest-frame rule, so frame choices such as the thumbnail are checked on a render.
+- A video layer's [hold](project-format.md#hold) clones the first frame the layer reads before it and the last frame it reads after it. Audio is not held, so the held spans are silent.
+- Camera footage is pre-processed outside toy-compositor to a constant frame rate, a browser-playable codec, and a one-second keyframe interval, so the compiler can assume evenly spaced frames and the editor can play and seek it ([pre-processing](preprocessing.md)).
 
 ## Draw Text, Compile, Run
 
@@ -62,11 +59,11 @@ Layers and inputs are not one to one. A color layer has no input, a video layer 
 
 Every layer is compiled on its own, into at most one picture stream and one sound stream. A layer does not need to know which other layers exist.
 
-First, a layer is cut to the part that falls inside the output range. A video or audio layer spans from its `start` for the length of its source range. An image, text, or color layer spans from `start` to `end`. A layer with no visible part contributes nothing.
+First, a layer is cut to the part that falls inside the output range. A video or audio layer spans from its `start` for the length of its source range, and a video layer's picture extends by its hold on both sides. An image, text, or color layer spans from `start` to `end`. A layer with no visible part contributes nothing.
 
 ![Three layers against a four-second output range, where only the parts inside the range become streams, each placed by its offset from the output start](images/layer-timing.svg)
 
-Each stream is trimmed to that visible part when ffmpeg reads the input, then shifted by its offset from the output start. For a video layer, trimming means seeking the source to the matching source time. Because project times are rounded to milliseconds, the seek targets the source frame nearest to that time rather than the first frame after it.
+Each stream is trimmed to that visible part when ffmpeg reads the input, then shifted by its offset from the output start. For a video layer, trimming means seeking the source to the matching source time. Because project times are rounded to milliseconds, the seek targets the source frame nearest to that time rather than the first frame after it. A held video layer reads only the source inside the visible part and clones its first and last frames over the held spans, and a visible part that lies entirely in a hold reads one frame at the edge it holds.
 
 In ffmpeg terms, the cut is input options and the rest is a filter chain. The synthetic sample's video layer covers the whole three-second output and fills the 640×360 canvas:
 
@@ -100,6 +97,7 @@ The ffmpeg building blocks behind the table:
 | Read only the visible part of a source    | input options `-ss <source time> -t <duration>`                                                                                                              |
 | Repeat an image or text PNG               | input options `-loop 1 -framerate <fps> -t <duration>`                                                                                                       |
 | Match the canvas frame rate               | `fps=<fps>`                                                                                                                                                  |
+| Hold the first and last frames            | `tpad=start_duration=<seconds>:stop_duration=<seconds>:start_mode=clone:stop_mode=clone`                                                                     |
 | Crop, then scale by the transform         | `crop=iw*<w>:ih*<h>:iw*<left>:ih*<top>`, `scale=<width>:<height>`                                                                                            |
 | Generate a solid fill, as a source filter | `color=c=<color>@<opacity>:s=<width>x<height>:r=<fps>:d=<duration>`, `format=rgba`                                                                           |
 | Place on the output timeline              | `setpts=PTS-STARTPTS+<offset>/TB`                                                                                                                            |
@@ -158,27 +156,12 @@ For the synthetic thumbnail at 1.5 seconds, the video input reads one frame's wo
 -map [vout] -frames:v 1 -update 1 thumbnail.png
 ```
 
-## Results on the rescene cover (2026-09-26)
+## Why ffmpeg
 
-These were measured on the prototype, before it moved into `src/lib`. All four deliverables of the [RESCENE reference sample](../samples/README.md#local-rescene-reference) render and match the Kdenlive outputs.
-
-| Deliverable             | Render time | Output            | Kdenlive output  |
-| ----------------------- | ----------- | ----------------- | ---------------- |
-| Horizontal thumbnail    | 0.6s        | 1920x1080 PNG     | 1920x1080 JPEG   |
-| Vertical thumbnail      | 0.5s        | 1080x1920 PNG     | 608x1080 JPEG    |
-| Horizontal video (165s) | 54s         | 134MB, 6.3Mbps    | 107MB, 5.3Mbps   |
-| Vertical video (42s)    | 13s         | 28MB at 1080x1920 | 14MB at 608x1080 |
-
-- Layout: side-by-side comparisons of both thumbnails match Kdenlive's, including the score crop, the MV thumbnail, the dim overlay, and the centered title, after mapping the vertical layout to a native 1080x1920 canvas.
-- Stills: rendering the horizontal thumbnail at nearby frames and comparing the camera region with Kdenlive's JPEG peaks at the transcribed time (SSIM 0.991).
-- Durations: both videos match Kdenlive's to the frame (164.933s and 42.367s).
-- Audio: cross-correlation against Kdenlive's renders gives a lag of 0.38ms with correlation 0.99 for both videos (`uv run tools/audio-lag.py`).
-- Video timing: the first version was one frame (33ms) ahead of Kdenlive's camera. The camera's in-point, 15.733s, lands 0.3ms after a source frame (the stream starts at 0.066s), and ffmpeg's accurate seek starts from the first frame at or after the seek time, so it took the next frame. The compiler now seeks to the frame whose timestamp is nearest to the source time, which matches both Kdenlive and Remotion ([Remotion comparison](https://github.com/hi-ogawa/toy-compositor/tree/e315663/research/remotion)).
+A project is declarative data, so it compiles directly to an ffmpeg filter graph. A React-based renderer such as Remotion would need a JSON-to-React interpreter in front of it, and its offline render captures every frame from headless Chrome, which buys nothing for static layouts of existing media. ffmpeg also gives direct control over encoding and file size.
 
 ## Known gaps
 
-- Color metadata is incomplete. The output is BT.709 limited range like the camera source, but only the matrix is tagged, while Kdenlive's render also tags BT.709 transfer and primaries. RGB layers (images, text, color) are likely converted to YUV with ffmpeg's default BT.601 matrix while the file says BT.709, so they may be very slightly off. The fix is to convert with `out_color_matrix=bt709:out_range=tv` and tag the output with `-colorspace bt709 -color_primaries bt709 -color_trc bt709`. It is only visible side by side.
-
-- Encoding uses `libx264 -crf 20 -preset medium`, which comes out about 20% larger than Kdenlive's preset. Tuning is left for later.
-- Text is aligned inside its box width through ImageMagick `label:` and gravity, with the outline drawn as a stroked copy underneath. Kdenlive's text item may have a small top margin that is not modeled.
-- The filter graph is one command per render, so a still still spawns ffmpeg with every input. That is fast enough at 0.5s for an editor preview, but it has not been tried with longer seeks into large files.
+- Color metadata is incomplete. The output is BT.709 limited range like typical camera footage, but only the matrix is tagged, not the transfer and primaries. RGB layers (images, text, color) are likely converted to YUV with ffmpeg's default BT.601 matrix while the file says BT.709, so they may be very slightly off. The fix is to convert with `out_color_matrix=bt709:out_range=tv` and tag the output with `-colorspace bt709 -color_primaries bt709 -color_trc bt709`. It is only visible side by side.
+- Encoding is fixed at `libx264 -crf 20 -preset medium` and not tuned for file size.
+- The filter graph is one command per render, so a still still spawns ffmpeg with every input. A thumbnail renders in about 0.5s, but long seeks into large files have not been tried.

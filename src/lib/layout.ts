@@ -29,6 +29,18 @@ export function getLayerRange(layer: Layer): TimeRange {
   return { start: layer.start, end: layer.end };
 }
 
+/** Timeline span of a layer's picture, extended by a video layer's hold. */
+export function getPictureRange(layer: Layer): TimeRange {
+  const range = getLayerRange(layer);
+  if (layer.type !== "video" || !layer.hold) {
+    return range;
+  }
+  return {
+    start: range.start - (layer.hold.before ?? 0),
+    end: range.end + (layer.hold.after ?? 0),
+  };
+}
+
 export function intersect(a: TimeRange, b: TimeRange): TimeRange | undefined {
   const start = Math.max(a.start, b.start);
   const end = Math.min(a.end, b.end);

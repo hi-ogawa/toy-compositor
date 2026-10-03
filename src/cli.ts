@@ -1,20 +1,33 @@
 #!/usr/bin/env node
+import { spawn } from "node:child_process";
+import { once } from "node:events";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import type { Server } from "srvx";
-import { installDesktopEntry } from "./lib/desktop-entry.ts";
+import {
+  getDesktopEntryFile,
+  installDesktopEntry,
+} from "./lib/desktop-entry.ts";
 import { updateProjectMedia } from "./lib/media-info.ts";
 import { renderProject } from "./lib/render/render.ts";
 import { createLiveConnections } from "./lib/server/live.ts";
 import { openWithDefaultApp } from "./lib/server/open-default.ts";
 import { createProjectRegistry, getConfigDir } from "./lib/server/registry.ts";
-import { checkEditorServer, serveEditor } from "./lib/server/serve.ts";
+import {
+  checkEditorServer,
+  serveEditor,
+  stopEditorServer,
+} from "./lib/server/serve.ts";
+import { execFileAsync } from "./utils/exec.ts";
 
 const packageDir = path.dirname(
   fileURLToPath(import.meta.resolve("#package.json")),
 );
+
+const UPGRADE_SOURCE = "https://pkg.pr.new/hi-ogawa/toy-compositor@main";
 
 const HELP = `\
 Usage:
@@ -22,8 +35,16 @@ Usage:
       Open the editor for the project folders, adding directory to them first.
       --open opens it in the browser, reusing a server already on the port,
       and exits shortly after the last editor tab closes
+  toy-compositor stop [--port <port>]
+      Stop the running editor server, leaving another process on the port alone
+  toy-compositor status [--port <port>]
+      Show whether the editor server is running
   toy-compositor install-desktop
       Add an app launcher entry that runs serve --open (Linux)
+  toy-compositor upgrade [source] [--port <port>]
+      Install a new build globally with pnpm, rewrite the app launcher entry,
+      and stop the running editor server, so the next launch uses the new build.
+      source is a pkg.pr.new URL or a tarball, and defaults to the main build
   toy-compositor add <path>
       Add a project folder, given as the folder or a project file inside it
   toy-compositor render <project.json> <output> [--dry-run]
@@ -37,8 +58,7 @@ Project format:  ${path.join(packageDir, "docs/project-format.md")}
 Sample project:  ${path.join(packageDir, "samples/synthetic")}
 Folder list:     ${path.join(getConfigDir(), "projects.json")}
 
-Source: https://github.com/hi-ogawa/toy-compositor
-Update: pnpm add -g https://pkg.pr.new/hi-ogawa/toy-compositor@main`;
+Source: https://github.com/hi-ogawa/toy-compositor`;
 
 async function main() {
   const { positionals, values } = parseArgs({
@@ -60,6 +80,24 @@ async function main() {
       });
       break;
     }
+    case "stop": {
+      const port = Number(values.port);
+      console.log(
+        (await stopEditorServer(port))
+          ? `Stopped the editor on port ${port}`
+          : `No editor running on port ${port}`,
+      );
+      break;
+    }
+    case "status": {
+      const port = Number(values.port);
+      console.log(
+        (await checkEditorServer(port))
+          ? `Editor running at http://localhost:${port}/`
+          : `No editor running on port ${port}`,
+      );
+      break;
+    }
     case "install-desktop": {
       const iconFile = path.join(getClientDir(), "icon.svg");
       const entryFile = await installDesktopEntry({
@@ -67,6 +105,15 @@ async function main() {
         iconFile,
       });
       console.log(`Installed ${entryFile}`);
+      break;
+    }
+    case "upgrade": {
+      await upgradeGlobalInstall(args[0] ?? UPGRADE_SOURCE);
+      if (await stopEditorServer(Number(values.port))) {
+        console.log(
+          "Stopped the running editor. Launch it again to use the new build.",
+        );
+      }
       break;
     }
     case "add": {
@@ -150,6 +197,39 @@ async function runServe({
     await live.waitForLastClose({ graceMs: 3000 });
     console.log("Closing after the last editor tab closed");
     await server.close(true);
+  }
+}
+
+/**
+ * Install the package from `source` globally with pnpm, and rewrite the
+ * desktop entry if one is installed. The entry names the package's CLI by its
+ * versioned path, so the newly installed CLI writes it again.
+ */
+async function upgradeGlobalInstall(source: string) {
+  // pnpm picks its version from the current directory's packageManager field,
+  // and pnpm versions keep separate global folders, so run it from the home
+  // directory to reach the same global install wherever upgrade runs.
+  const cwd = os.homedir();
+  if (fs.existsSync(source)) {
+    source = path.resolve(source);
+  }
+  await runCommand("pnpm", ["add", "-g", source], { cwd });
+  if (fs.existsSync(getDesktopEntryFile())) {
+    const { stdout } = await execFileAsync("pnpm", ["bin", "-g"], { cwd });
+    const cli = path.join(stdout.trim(), "toy-compositor");
+    await runCommand(cli, ["install-desktop"], { cwd });
+  }
+}
+
+async function runCommand(
+  command: string,
+  args: string[],
+  { cwd }: { cwd: string },
+) {
+  const child = spawn(command, args, { cwd, stdio: "inherit" });
+  const [code] = await once(child, "close");
+  if (code !== 0) {
+    throw new Error(`${command} ${args.join(" ")} exited with code ${code}`);
   }
 }
 

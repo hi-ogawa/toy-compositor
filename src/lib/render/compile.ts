@@ -4,6 +4,7 @@ import {
   intersect,
   getLayerRange,
   getOutputRange,
+  getPictureRange,
   type TimeRange,
 } from "../layout.ts";
 import type {
@@ -178,7 +179,7 @@ function compileVideo({
   mediaInfo: MediaInfo;
   scene: Scene;
 }): LayerStreams {
-  const visible = intersect(getLayerRange(layer), scene.range);
+  const visible = intersect(getPictureRange(layer), scene.range);
   if (!visible) {
     return {};
   }
@@ -188,17 +189,23 @@ function compileVideo({
     crop: layer.crop,
     transform: layer.transform,
   });
+  const read = getSourceRead({ layer, visible, scene });
+  // The held spans are silent, so sound covers only the layer range.
+  const audible = intersect(getLayerRange(layer), scene.range);
   return {
     video: {
       input: buildSeekInput({
         file,
-        seek: getFrameShownAt(video, {
-          time: layer.in + visible.start - layer.start,
-        }),
-        duration: visible.end - visible.start,
+        seek: getFrameShownAt(video, { time: read.time }),
+        duration: read.duration,
       }),
       filters: [
         `fps=${scene.canvas.fps}`,
+        ...(read.before > 0 || read.after > 0
+          ? [
+              `tpad=start_duration=${read.before}:stop_duration=${read.after}:start_mode=clone:stop_mode=clone`,
+            ]
+          : []),
         `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
         ...buildCropFilters(layer.crop),
         `scale=${placed.width}:${placed.height}`,
@@ -207,9 +214,58 @@ function compileVideo({
       y: placed.y,
     },
     audio:
-      scene.withAudio && !layer.muted && mediaInfo.audio
-        ? compileAudioStream({ layer, file, visible, scene })
+      audible && scene.withAudio && !layer.muted && mediaInfo.audio
+        ? compileAudioStream({ layer, file, visible: audible, scene })
         : undefined,
+  };
+}
+
+/**
+ * Source span a video layer reads for its visible part, the part of its
+ * picture inside the scene range, and the seconds of its first and last frames
+ * to clone around it.
+ */
+function getSourceRead({
+  layer,
+  visible,
+  scene,
+}: {
+  layer: VideoLayer;
+  visible: TimeRange;
+  scene: Scene;
+}) {
+  const range = getLayerRange(layer);
+  const played = intersect(range, visible);
+  // A visible part that overlaps the played part reads it and clones its edge
+  // frames over the rest, such as rendering 0.5 s to 1.5 s of a layer playing
+  // 1 s to 2 s with 1 s holds:
+  //
+  //   0        1        2        3
+  //   |  hold  |  play  |  hold  |
+  //       [--------]                  visible
+  //       [---][---]                  clone, read
+  if (played) {
+    return {
+      time: layer.in + played.start - layer.start,
+      duration: played.end - played.start,
+      before: played.start - visible.start,
+      after: visible.end - played.end,
+    };
+  }
+  // A visible part entirely in a hold, such as a still or rendering 0.25 s to
+  // 0.75 s of the same layer, reads the one frame it holds and clones it over
+  // the visible part:
+  //
+  //   0        1        2        3
+  //   |  hold  |  play  |  hold  |
+  //     [----]                        visible, cloned
+  //            ^                      read the first frame
+  const frame = 1 / scene.canvas.fps;
+  return {
+    time: visible.end <= range.start ? layer.in : layer.out - frame,
+    duration: frame,
+    before: 0,
+    after: visible.end - visible.start - frame,
   };
 }
 
