@@ -117,7 +117,6 @@ async function migrateProject(
     if (savedLayer.name === undefined) {
       changes.push(`${label} has no name`);
     }
-    const missing: string[] = [];
     const crop = { left: 0, right: 0, top: 0, bottom: 0 };
     switch (layer.type) {
       case "video": {
@@ -128,23 +127,26 @@ async function migrateProject(
           fadeOut: 0,
           hold: { before: 0, after: 0 },
         };
-        layers.push(fillDefaults(layer, defaults, { missing }));
+        layers.push(fillDefaults(layer, defaults));
         break;
       }
       case "audio": {
         const defaults = { muted: false, fadeIn: 0, fadeOut: 0 };
-        layers.push(fillDefaults(layer, defaults, { missing }));
+        layers.push(fillDefaults(layer, defaults));
         break;
       }
       case "image": {
-        layers.push(fillDefaults(layer, { crop }, { missing }));
+        layers.push(fillDefaults(layer, { crop }));
         break;
       }
       case "color": {
+        if (!layer.box) {
+          changes.push(`${label} has no box`);
+        }
         // A color layer without a box covered the canvas.
         const { width, height } = project.canvas;
         const defaults = { box: { x: 0, y: 0, width, height }, opacity: 1 };
-        layers.push(fillDefaults(layer, defaults, { missing }));
+        layers.push(fillDefaults(layer, defaults));
         break;
       }
       case "text": {
@@ -152,30 +154,19 @@ async function migrateProject(
           align: "left" as const,
           font: { weight: 400, lineSpacing: 0 },
         };
-        const filled = fillDefaults(layer, defaults, { missing });
+        const filled = fillDefaults(layer, defaults);
         let { height } = filled.box;
         if (height === undefined) {
           // The box followed the lines, which rendered at their natural height.
-          missing.push("box.height");
+          changes.push(`${label} has no box height`);
           height = await measureTextHeight(filled);
         }
         layers.push({ ...filled, box: { ...filled.box, height } });
         break;
       }
     }
-    if (missing.length > 0) {
-      changes.push(`${label} has no ${missing.join(", ")}`);
-    }
   }
-  const missing: string[] = [];
-  const canvas = fillDefaults(
-    project.canvas,
-    { background: "#000000" },
-    { missing },
-  );
-  if (missing.length > 0) {
-    changes.push(`canvas has no ${missing.join(", ")}`);
-  }
+  const canvas = fillDefaults(project.canvas, { background: "#000000" });
   const migrated: Project = {
     ...project,
     canvas,
@@ -188,23 +179,18 @@ async function migrateProject(
 
 /**
  * Fills each missing property with its neutral value, recursing into objects
- * that are present, and adds the filled property paths to `missing`.
+ * that are present.
  */
 function fillDefaults<T extends object, D extends object>(
   value: T,
   defaults: D,
-  { missing, prefix = "" }: { missing: string[]; prefix?: string },
 ): T & D {
   const filled = { ...value } as Record<string, unknown>;
   for (const [key, fallback] of Object.entries(defaults)) {
     if (filled[key] === undefined) {
       filled[key] = fallback;
-      missing.push(prefix + key);
     } else if (typeof fallback === "object") {
-      filled[key] = fillDefaults(filled[key] as object, fallback, {
-        missing,
-        prefix: `${prefix}${key}.`,
-      });
+      filled[key] = fillDefaults(filled[key] as object, fallback);
     }
   }
   return filled as T & D;

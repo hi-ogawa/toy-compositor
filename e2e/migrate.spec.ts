@@ -54,11 +54,9 @@ test("read and migrate an older project file", async ({ page, editor }) => {
       }
     });
   const changes = [
-    'video layer "Test pattern" has no crop, fadeIn, fadeOut, hold',
     'image layer "Image 1" has no name',
     'color layer "Tint" has no box',
-    'text layer "Title" has no font.weight, box.height',
-    "canvas has no background",
+    'text layer "Title" has no box height',
   ];
   await removeFields();
   const savedProject = await readProject();
