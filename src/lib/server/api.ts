@@ -198,7 +198,7 @@ export function createEditorHandlers({
         throw new HttpError({ status: 404, message: "Project not found" });
       }
       const savedProject = await readJson<SavedProject>(file);
-      let migrated;
+      let migrated: { project: Project; changes: string[] };
       try {
         migrated = validateAndMigrateProject(savedProject);
       } catch (error) {
