@@ -12,7 +12,7 @@ import {
   installDesktopEntry,
 } from "./lib/desktop-entry.ts";
 import { updateProjectMedia } from "./lib/media-info.ts";
-import { migrateProject, type SavedProject } from "./lib/migrate.ts";
+import { migrateProjectFile } from "./lib/migrate.ts";
 import { renderProject } from "./lib/render/render.ts";
 import { createLiveConnections } from "./lib/server/live.ts";
 import { openWithDefaultApp } from "./lib/server/open-default.ts";
@@ -23,7 +23,6 @@ import {
   stopEditorServer,
 } from "./lib/server/serve.ts";
 import { execFileAsync } from "./utils/exec.ts";
-import { readJson, writeJson } from "./utils/fs.ts";
 
 const packageDir = path.dirname(
   fileURLToPath(import.meta.resolve("#package.json")),
@@ -161,21 +160,19 @@ async function main() {
         return;
       }
       for (const projectFile of args) {
-        const savedProject = await readJson<SavedProject>(projectFile);
-        const { project, changes } = migrateProject(savedProject);
-        if (changes.length === 0) {
-          continue;
-        }
-        console.log(
-          `${values.check ? "Would migrate" : "Migrated"} ${projectFile}`,
-        );
-        for (const change of changes) {
-          console.log(`  ${change}`);
-        }
-        if (values.check) {
-          process.exitCode = 1;
-        } else {
-          await writeJson(projectFile, project);
+        const changes = await migrateProjectFile(projectFile, {
+          check: values.check,
+        });
+        if (changes.length > 0) {
+          console.log(
+            `${values.check ? "Would migrate" : "Migrated"} ${projectFile}`,
+          );
+          for (const change of changes) {
+            console.log(`  ${change}`);
+          }
+          if (values.check) {
+            process.exitCode = 1;
+          }
         }
       }
       break;

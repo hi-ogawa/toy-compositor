@@ -1,3 +1,4 @@
+import { readJson, writeJson } from "../utils/fs.ts";
 import type { Box, ColorLayer, Layer, Project } from "./project.ts";
 
 /** A project file as saved, which may have an older format's shape. */
@@ -15,6 +16,23 @@ type SavedColorLayer = Omit<ColorLayer, "box"> & {
   // Missing in projects saved before a color layer's box was required.
   box?: Box;
 };
+
+/**
+ * Migrate a project file in place, or with `check`, leave it as is, and return
+ * the layer changes.
+ */
+export async function migrateProjectFile(
+  projectFile: string,
+  { check }: { check?: boolean },
+) {
+  const { project, changes } = migrateProject(
+    await readJson<SavedProject>(projectFile),
+  );
+  if (changes.length > 0 && !check) {
+    await writeJson(projectFile, project);
+  }
+  return changes;
+}
 
 /**
  * Bring a project from older formats to the current one, in the order the
