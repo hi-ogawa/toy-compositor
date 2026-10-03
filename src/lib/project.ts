@@ -123,6 +123,7 @@ export type VideoLayer = LayerBase & {
   muted?: boolean;
   fadeIn?: number;
   fadeOut?: number;
+  hold?: { before?: number; after?: number };
 };
 
 export type AudioLayer = LayerBase & {

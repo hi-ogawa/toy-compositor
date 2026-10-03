@@ -15,6 +15,7 @@ pnpm render <project.json> <output> --dry-run   # print the command only
 - The project file's numbers are the timing truth. Offsets are set on waveforms, which are exact data, and playback only confirms them, so preview drift never shifts the final render. This avoids the Kdenlive problem where preview and render disagreed and timeline positions had to be compensated by guesswork.
 - Source time is a presentation timestamp, including a stream's start offset, and the frame shown at a source time is the frame whose timestamp is nearest to it. Every renderer and the editor preview must pick frames this way, because project times are rounded to milliseconds and source frames often sit off the project's frame grid, so a looser rule makes renderers disagree by one frame.
 - The ffmpeg render is the truth for exact frames. The DOM preview draws the same layout within 1px ([Remotion comparison](https://github.com/hi-ogawa/toy-compositor/tree/e315663/research/remotion)), which is enough for placing layers, but a paused seek may land one frame off the nearest-frame rule, so frame choices such as the thumbnail are checked on a render.
+- A video layer's [hold](project-format.md#hold) clones the first frame the layer reads before it and the last frame it reads after it. Audio is not held, so the held spans are silent.
 - The editor plays and decodes source media in the browser, so browser codec support such as HEVC matters there, and constant frame rate working files from ingest cover that case.
 - Variable frame rate phone footage is normalized to constant frame rate working files at ingest, which matches the existing manual pre-transcode. The working files also use a one-second keyframe interval so the editor can seek quickly ([working media](working-media.md)).
 - Encoding settings are explicit in the compiler output, which avoids Kdenlive's file-size inflation.
@@ -62,11 +63,11 @@ Layers and inputs are not one to one. A color layer has no input, a video layer 
 
 Every layer is compiled on its own, into at most one picture stream and one sound stream. A layer does not need to know which other layers exist.
 
-First, a layer is cut to the part that falls inside the output range. A video or audio layer spans from its `start` for the length of its source range. An image, text, or color layer spans from `start` to `end`. A layer with no visible part contributes nothing.
+First, a layer is cut to the part that falls inside the output range. A video or audio layer spans from its `start` for the length of its source range, and a video layer's picture extends by its hold on both sides. An image, text, or color layer spans from `start` to `end`. A layer with no visible part contributes nothing.
 
 ![Three layers against a four-second output range, where only the parts inside the range become streams, each placed by its offset from the output start](images/layer-timing.svg)
 
-Each stream is trimmed to that visible part when ffmpeg reads the input, then shifted by its offset from the output start. For a video layer, trimming means seeking the source to the matching source time. Because project times are rounded to milliseconds, the seek targets the source frame nearest to that time rather than the first frame after it.
+Each stream is trimmed to that visible part when ffmpeg reads the input, then shifted by its offset from the output start. For a video layer, trimming means seeking the source to the matching source time. Because project times are rounded to milliseconds, the seek targets the source frame nearest to that time rather than the first frame after it. A held video layer reads only the source inside the visible part and clones its first and last frames over the held spans, and a visible part that lies entirely in a hold reads one frame at the edge it holds.
 
 In ffmpeg terms, the cut is input options and the rest is a filter chain. The synthetic sample's video layer covers the whole three-second output and fills the 640×360 canvas:
 
@@ -100,6 +101,7 @@ The ffmpeg building blocks behind the table:
 | Read only the visible part of a source    | input options `-ss <source time> -t <duration>`                                                                                                              |
 | Repeat an image or text PNG               | input options `-loop 1 -framerate <fps> -t <duration>`                                                                                                       |
 | Match the canvas frame rate               | `fps=<fps>`                                                                                                                                                  |
+| Hold the first and last frames            | `tpad=start_duration=<seconds>:stop_duration=<seconds>:start_mode=clone:stop_mode=clone`                                                                     |
 | Crop, then fit to the box                 | `crop=iw*<w>:ih*<h>:iw*<left>:ih*<top>`, `scale=<width>:<height>`                                                                                            |
 | Generate a solid fill, as a source filter | `color=c=<color>@<opacity>:s=<width>x<height>:r=<fps>:d=<duration>`, `format=rgba`                                                                           |
 | Place on the output timeline              | `setpts=PTS-STARTPTS+<offset>/TB`                                                                                                                            |

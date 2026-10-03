@@ -21,7 +21,10 @@ const MAX_RATE_CHANGE = 0.1;
  * to the playhead. While playing it plays natively and closes any drift by
  * nudging `playbackRate`, because a corrective seek lands behind by however
  * long the seek took, which on long keyframe intervals is longer than the drift
- * it corrects. The element is always muted, since audio plays on the transport.
+ * it corrects. Outside the source range it rests on `in` before and `out`
+ * after, so the element shows the layer's edge frames wherever it is drawn,
+ * which is what a hold shows. The element is always muted, since audio plays on
+ * the transport.
  */
 export class VideoPlayback {
   private readonly transport: AudioContextTransport;
