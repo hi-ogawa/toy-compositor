@@ -1,5 +1,5 @@
 import { createNumberedName } from "../utils/name.ts";
-import { fitInsideCanvas, type TimeRange } from "./layout.ts";
+import { getFittedTransform, type TimeRange } from "./layout.ts";
 import type { MediaType } from "./media-file.ts";
 import {
   NEUTRAL_VALUES,
@@ -80,7 +80,7 @@ function createMediaClip({
         start,
         in: mediaInfo.start,
         out: mediaInfo.end,
-        transform: fitInsideCanvas({ size: mediaInfo.video!, canvas }),
+        transform: getFittedTransform({ size: mediaInfo.video!, canvas }),
         ...NEUTRAL_VALUES.video,
       };
     }
@@ -98,7 +98,7 @@ function createMediaClip({
       return {
         type,
         src,
-        transform: fitInsideCanvas({ size: mediaInfo.video!, canvas }),
+        transform: getFittedTransform({ size: mediaInfo.video!, canvas }),
         ...NEUTRAL_VALUES.image,
         ...stillRange,
       };
