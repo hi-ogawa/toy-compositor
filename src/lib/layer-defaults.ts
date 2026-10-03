@@ -76,6 +76,8 @@ export function createTextLayer({
       x: Math.round(canvas.width * 0.1),
       y: Math.round(canvas.height * 0.4),
       width: Math.round(canvas.width * 0.8),
+      // Leaves room for one line at the default size.
+      height: Math.round(canvas.height * 0.2),
     },
     align: "center",
     font: { family: "Noto Sans", size: Math.round(canvas.height / 10) },

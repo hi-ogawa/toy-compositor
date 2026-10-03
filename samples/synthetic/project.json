@@ -62,7 +62,8 @@
       "box": {
         "x": 420,
         "y": 260,
-        "width": 160
+        "width": 160,
+        "height": 50
       },
       "align": "center",
       "font": {

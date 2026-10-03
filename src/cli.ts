@@ -258,7 +258,7 @@ async function runMigrate(
   { check }: { check?: boolean },
 ) {
   for (const projectFile of projectFiles) {
-    const { project, changes } = validateAndMigrateProject(
+    const { project, changes } = await validateAndMigrateProject(
       await readJson<SavedProject>(projectFile),
     );
     if (changes.length === 0) {

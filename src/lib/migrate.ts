@@ -7,9 +7,11 @@ import type {
   Layer,
   MediaInfo,
   Project,
+  TextLayer,
   Transform,
   VideoLayer,
 } from "./project.ts";
+import { measureTextHeight } from "./render/text.ts";
 
 export type SavedProject = Omit<Project, "layers" | "locators" | "media"> & {
   layers: SavedLayer[];
@@ -20,14 +22,20 @@ export type SavedProject = Omit<Project, "layers" | "locators" | "media"> & {
 };
 
 type SavedLayer =
-  | Exclude<Layer, ColorLayer | VideoLayer | ImageLayer>
+  | Exclude<Layer, ColorLayer | TextLayer | VideoLayer | ImageLayer>
   | SavedColorLayer
+  | SavedTextLayer
   | SavedMediaLayer<VideoLayer>
   | SavedMediaLayer<ImageLayer>;
 
 type SavedColorLayer = Omit<ColorLayer, "box"> & {
   // Missing in projects saved before a color layer's box was required.
   box?: Box;
+};
+
+type SavedTextLayer = Omit<TextLayer, "box"> & {
+  // Missing height in projects saved before a text layer's box had one.
+  box: Omit<Box, "height"> & { height?: number };
 };
 
 type SavedMediaLayer<T extends VideoLayer | ImageLayer> = Omit<
@@ -42,7 +50,7 @@ type SavedMediaLayer<T extends VideoLayer | ImageLayer> = Omit<
 /** A project in the current shape, and what changed to get there. */
 export type MigrateProjectResult = { project: Project; changes: string[] };
 
-export function validateAndMigrateProject(project: SavedProject) {
+export async function validateAndMigrateProject(project: SavedProject) {
   validateProject(project);
   return migrateProject(project);
 }
@@ -69,34 +77,53 @@ function validateProject(project: SavedProject): void {
   }
 }
 
-function migrateProject(project: SavedProject): MigrateProjectResult {
+async function migrateProject(
+  project: SavedProject,
+): Promise<MigrateProjectResult> {
   const changes: string[] = [];
-  const layers = project.layers.map((layer): Layer => {
+  const layers: Layer[] = [];
+  for (const layer of project.layers) {
     const label = `${layer.type} layer "${layer.name ?? layer.type}"`;
     if (layer.type === "color") {
       if (!layer.box) {
         changes.push(`${label} has no box`);
       }
       const { width, height } = project.canvas;
-      return { ...layer, box: layer.box ?? { x: 0, y: 0, width, height } };
+      layers.push({
+        ...layer,
+        box: layer.box ?? { x: 0, y: 0, width, height },
+      });
+      continue;
+    }
+    if (layer.type === "text") {
+      let { height } = layer.box;
+      if (height === undefined) {
+        // The box followed the lines, which rendered at their natural height.
+        changes.push(`${label} has no box height`);
+        height = await measureTextHeight(layer);
+      }
+      layers.push({ ...layer, box: { ...layer.box, height } });
+      continue;
     }
     if (layer.type === "video" || layer.type === "image") {
       const { box, transform, ...rest } = layer;
       if (transform) {
-        return { ...rest, transform };
+        layers.push({ ...rest, transform });
+        continue;
       }
       changes.push(`${label} has a fit box instead of a transform`);
-      return {
+      layers.push({
         ...rest,
         transform: convertFitBox({
           box: box!,
           mediaInfo: project.media![layer.src],
           crop: layer.crop,
         }),
-      };
+      });
+      continue;
     }
-    return layer;
-  });
+    layers.push(layer);
+  }
   const migrated: Project = {
     ...project,
     layers,

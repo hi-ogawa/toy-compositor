@@ -128,7 +128,7 @@ export type ImageLayer = LayerBase & {
 export type TextLayer = LayerBase & {
   type: "text";
   text: string;
-  box: { x: number; y: number; width: number };
+  box: Box;
   align?: "left" | "center" | "right";
   font: { family: string; size: number; weight?: number; lineSpacing?: number };
   color: string;

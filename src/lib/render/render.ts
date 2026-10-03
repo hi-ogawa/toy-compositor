@@ -17,7 +17,7 @@ export async function renderProject({
   outFile: string;
   dryRun?: boolean;
 }) {
-  const { project, changes } = validateAndMigrateProject(
+  const { project, changes } = await validateAndMigrateProject(
     await readJson<SavedProject>(projectFile),
   );
   if (changes.length > 0) {

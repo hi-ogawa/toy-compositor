@@ -96,7 +96,7 @@ A video layer carries its file's audio, like a clip in other video editors, and 
   "text": "RESCENE\nLOVE ATTACK\n(John Park ver.)",
   "start": 23.7,
   "end": 188.633,
-  "box": { "x": 336, "y": 222, "width": 1247 },
+  "box": { "x": 336, "y": 222, "width": 1247, "height": 649 },
   "align": "center",
   "font": {
     "family": "Noto Sans CJK KR",
@@ -109,7 +109,7 @@ A video layer carries its file's audio, like a clip in other video editors, and 
 }
 ```
 
-The text is drawn at its font size and never wraps, so lines break only at `\n`. `box.width` is a frame the lines are aligned in by `align`, and text wider than the frame is cut off. The height has no field because it follows the lines. `box.y` is the top of the first line at the font's normal line height, and `lineSpacing` is added only between lines.
+The lines are drawn at the font's size and aligned across the box's width by `align`, starting at the top of the box. `box.y` is the top of the first line at the font's normal line height, and `lineSpacing` is added only between lines. Text past the box's edges is cut off, so the box alone decides the layer's rectangle.
 
 ### `color`
 

@@ -204,7 +204,7 @@ export function createEditorHandlers({
       const savedProject = await readJson<SavedProject>(file);
       let migrated: MigrateProjectResult;
       try {
-        migrated = validateAndMigrateProject(savedProject);
+        migrated = await validateAndMigrateProject(savedProject);
       } catch (error) {
         return { ok: false, error: (error as Error).message };
       }

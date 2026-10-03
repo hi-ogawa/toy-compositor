@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
 import { getPictureRange, placeMedia } from "../lib/layout";
-import type { Layer, Project, TextLayer } from "../lib/project";
+import type { Box, Layer, Project, TextLayer } from "../lib/project";
 import type { EditorRuntime, EditorProject } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
 import type { EditorSelection } from "./use-layer-interaction";
@@ -134,7 +134,10 @@ function PreviewLayer({
           resolveMediaUrl={resolveMediaUrl}
         />
       ) : layer.type === "text" ? (
-        <div style={{ ...style, ...getTextStyle(layer) }}>{layer.text}</div>
+        // Text past the box is cut off, as in the render.
+        <div style={{ ...style, ...getTextStyle(layer), overflow: "hidden" }}>
+          {layer.text}
+        </div>
       ) : (
         <div
           style={{ ...style, background: layer.color, opacity: layer.opacity }}
@@ -145,26 +148,20 @@ function PreviewLayer({
           className="pointer-events-none z-10 outline outline-2 outline-primary"
           aria-label="Selected layer outline"
           style={style}
-        >
-          {layer.type === "text" && (
-            <div className="invisible" style={getTextStyle(layer)}>
-              {layer.text}
-            </div>
-          )}
-        </div>
+        />
       )}
     </div>
   );
 }
 
-/** The layer's rectangle in canvas pixels. Text has no height, because its lines decide it. */
+/** The layer's rectangle in canvas pixels. */
 function getPreviewBox({
   layer,
   mediaInfoMap,
 }: {
   layer: Exclude<Layer, { type: "audio" }>;
   mediaInfoMap: Project["media"];
-}): TextLayer["box"] & { height?: number } {
+}): Box {
   switch (layer.type) {
     case "video":
     case "image": {

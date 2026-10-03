@@ -290,19 +290,7 @@ function LayerFields({
         <>
           <RangeTimingFields layer={layer} time={time} onUpdate={onUpdate} />
           <TextFields layer={layer} onUpdate={onUpdate} />
-          <Group title="Box">
-            {(["x", "y", "width"] as const).map((key) => (
-              <NumberField
-                key={key}
-                label={key}
-                value={layer.box[key]}
-                {...PIXEL_FIELD}
-                onCommit={(value) =>
-                  onUpdate({ box: { ...layer.box, [key]: value } })
-                }
-              />
-            ))}
-          </Group>
+          <BoxFields box={layer.box} onCommit={(box) => onUpdate({ box })} />
         </>
       );
     }
