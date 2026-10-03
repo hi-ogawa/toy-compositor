@@ -29,11 +29,7 @@ export function getLayerRange(layer: Layer): TimeRange {
   return { start: layer.start, end: layer.end };
 }
 
-/**
- * Timeline span over which a layer shows a picture, which for a video layer
- * extends its layer range by the first and last frames it holds. Only drawing
- * the picture reads the hold, so editing and sound keep the layer range.
- */
+/** Timeline span of a layer's picture, extended by a video layer's hold. */
 export function getPictureRange(layer: Layer): TimeRange {
   const range = getLayerRange(layer);
   if (layer.type !== "video" || !layer.hold) {

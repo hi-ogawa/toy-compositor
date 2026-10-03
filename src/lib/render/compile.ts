@@ -216,11 +216,7 @@ function compileVideo({
   };
 }
 
-/**
- * Which source span a video layer reads for its visible part, and how many
- * seconds to clone its first and last frames over the held spans. A visible
- * part that lies entirely in a hold reads one frame at the edge it holds.
- */
+/** Source span a video layer reads for its visible part, and the held seconds to clone around it. */
 function getSourceRead({
   layer,
   visible,

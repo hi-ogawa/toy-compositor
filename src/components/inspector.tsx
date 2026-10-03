@@ -362,7 +362,7 @@ function SourceTimingFields({
   );
 }
 
-/** Seconds a video layer shows its first frame before `start` and its last frame after `out`. */
+/** Seconds to hold the first and last frames beyond the source range. */
 function HoldFields({
   layer,
   time,
