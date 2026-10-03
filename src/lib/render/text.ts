@@ -21,16 +21,17 @@ export async function renderText({
   file: string;
 }) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  const gravity = { left: "northwest", center: "north", right: "northeast" }[
-    layer.align ?? "left"
-  ];
   await execFileAsync("magick", [
     ...getDrawArgs(layer),
-    // label: scales the text to fill a -size width and ignores -pointsize, so the
-    // text is drawn at its natural size and then extended to the box by alignment.
-    // Lines start at the top of the box, and anything past its edges is cut off.
+    // label: scales the text to fill a -size width and ignores -pointsize, so the text
+    // is drawn at its natural size and then extended to the box width by alignment.
     "-gravity",
-    gravity,
+    getGravity(layer),
+    "-extent",
+    `${layer.box.width}x%[h]`,
+    // Lines start at the top of the box, and lines past its bottom are cut off.
+    "-gravity",
+    "north",
     "-extent",
     `${layer.box.width}x${layer.box.height}`,
     file,
@@ -50,17 +51,11 @@ export async function measureTextHeight(layer: TextDrawing): Promise<number> {
 
 /** Draw the lines at their natural size, before they are placed in the box. */
 function getDrawArgs(layer: TextDrawing): string[] {
-  // Unlike the box's top-anchored gravity, this one keeps the vertical center,
-  // because north would also drop the font's space above the first line, which
-  // box.y includes.
-  const gravity = { left: "west", center: "center", right: "east" }[
-    layer.align ?? "left"
-  ];
   const common = [
     "-background",
     "none",
     "-gravity",
-    gravity,
+    getGravity(layer),
     "-font",
     getMagickFont(layer.font),
     "-pointsize",
@@ -93,6 +88,12 @@ function getDrawArgs(layer: TextDrawing): string[] {
     `label:${layer.text}`,
     ")",
     ...(layer.outline ? ["-gravity", "center", "-composite"] : []),
+  ];
+}
+
+function getGravity(layer: TextDrawing) {
+  return { left: "west", center: "center", right: "east" }[
+    layer.align ?? "left"
   ];
 }
 
