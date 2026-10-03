@@ -195,7 +195,6 @@ function LayerInspector({
         <TextField
           label="name"
           value={layer.name}
-          required
           onCommit={(name) => onUpdate({ name })}
         />
         <Group title="Stack">
@@ -674,14 +673,11 @@ function TextField({
   label,
   value,
   multiline,
-  required,
   onCommit,
 }: {
   label: string;
   value: string;
   multiline?: boolean;
-  /** Reverts an empty value instead of committing it. */
-  required?: boolean;
   onCommit: (value: string) => void;
 }) {
   const [draft, setDraft] = useState(value);
@@ -706,9 +702,7 @@ function TextField({
       }
     },
     onBlur: () => {
-      if (required && !draft) {
-        setDraft(value);
-      } else if (draft !== value) {
+      if (draft !== value) {
         onCommit(draft);
       }
     },

@@ -216,15 +216,7 @@ test("edit layer names and a color layer's fill and box, and save them", async (
   await commitInspectorField(page, { name: "width", value: "320" });
   await expect(fill).toHaveCSS("width", "320px");
 
-  // Clear the text layer's name and confirm the field reverts to it.
-  await clickTimelineButton(page, { name: "Title text" });
-  await name.fill("");
-  await name.press("Enter");
-  await expect(name).toHaveValue("Title");
-  await clickTimelineButton(page, { name: "Title text" });
-
-  // Save and confirm the name, color, and box reach the project file, and the
-  // text layer keeps its name.
+  // Save and confirm the name, color, and box reach the project file.
   const save = page.getByTestId("editor-save-button");
   await save.click();
   await expect(save).toHaveAttribute("data-status", "saved");
@@ -238,7 +230,6 @@ test("edit layer names and a color layer's fill and box, and save them", async (
     end: 3,
     box: { x: 0, y: 0, width: 320, height: 360 },
   });
-  expect(project.layers[3]).toHaveProperty("name", "Title");
 });
 
 test("edit the canvas in composition settings and save it", async ({
