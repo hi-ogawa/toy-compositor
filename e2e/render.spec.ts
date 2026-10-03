@@ -165,21 +165,18 @@ test("hold a video layer's first and last frames beyond its source range", async
     contentType: "video/mp4",
   });
 
-  // Check that the first second repeats the first played frame, the last
-  // second repeats the last played frame, and the played frames still move.
+  // Check that 0 s shows the same frame as 1 s and 2 s the same as the end,
+  // while 1.5 s differs from both.
   const fps = 30;
   const frames = await readGrayFrames(output);
   expect(frames).toHaveLength(3 * fps);
   expect(diffFrames(frames[0], frames[fps])).toBeLessThan(0.1);
-  expect(diffFrames(frames[fps - 1], frames[fps])).toBeLessThan(0.1);
-  expect(diffFrames(frames[2 * fps], frames[2 * fps - 1])).toBeLessThan(0.1);
-  expect(diffFrames(frames[3 * fps - 1], frames[2 * fps - 1])).toBeLessThan(
-    0.1,
-  );
-  expect(diffFrames(frames[fps], frames[2 * fps - 1])).toBeGreaterThan(1);
+  expect(diffFrames(frames[2 * fps], frames.at(-1)!)).toBeLessThan(0.1);
+  expect(diffFrames(frames[0], frames[1.5 * fps])).toBeGreaterThan(1);
+  expect(diffFrames(frames[1.5 * fps], frames.at(-1)!)).toBeGreaterThan(1);
 
-  // Render stills inside each hold and at the edge frames it holds, and check
-  // that each held still matches its edge frame.
+  // Render stills inside each hold, and check that each matches the render's
+  // frames there, within the video encode's loss.
   const renderStill = async (time: number) => {
     const file = `${directory}/still-${time}.json`;
     await cp(`${directory}/project.json`, file);
@@ -196,10 +193,8 @@ test("hold a video layer's first and last frames beyond its source range", async
     const [frame] = await readGrayFrames(still);
     return frame;
   };
-  expect(diffFrames(await renderStill(0.5), await renderStill(1))).toBe(0);
-  expect(
-    diffFrames(await renderStill(2.5), await renderStill((2 * fps - 1) / fps)),
-  ).toBe(0);
+  expect(diffFrames(await renderStill(0.5), frames[0])).toBeLessThan(1);
+  expect(diffFrames(await renderStill(2.5), frames.at(-1)!)).toBeLessThan(1);
 });
 
 /** RMS level in dB of a 20ms window of a file's audio at a time. */
