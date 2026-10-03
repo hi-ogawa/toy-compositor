@@ -50,7 +50,8 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     .click();
   await expectInspectorFields(page, { start: "0", end: "3" });
 
-  // Add the built-in text and color layers.
+  // Add the built-in text and color layers, which take the next number after
+  // the sample's own text and color layers.
   await page.getByRole("button", { name: "Add Text", exact: true }).click();
   await page.getByRole("button", { name: "Add Color", exact: true }).click();
   await expect(page.getByTestId("timeline-layer-8")).toBeVisible();
@@ -110,6 +111,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
       end: 3,
     },
     {
+      name: "Text 2",
       type: "text",
       text: "Text",
       box: { x: 64, y: 144, width: 512, height: 72 },
@@ -120,6 +122,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
       end: 3,
     },
     {
+      name: "Color 2",
       type: "color",
       color: "#000000",
       opacity: 0.5,

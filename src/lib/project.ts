@@ -77,7 +77,7 @@ export type Layer =
   | TextLayer
   | ColorLayer;
 
-type LayerBase = { name?: string };
+type LayerBase = { name: string };
 
 export type Box = { x: number; y: number; width: number; height: number };
 

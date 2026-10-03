@@ -6,6 +6,7 @@ import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
 import { createAudioView, type AudioView } from "./audio-view.ts";
 import {
   createColorLayer,
+  createLayerName,
   createMediaLayer,
   createTextLayer,
 } from "./layer-defaults.ts";
@@ -135,16 +136,24 @@ export class EditorRuntime {
   }
 
   addTextLayer(): string {
-    const { canvas } = this.store.get().project;
+    const { canvas, layers } = this.store.get().project;
     return this.insertLayer(
-      createTextLayer({ canvas, range: this.getNewStillRange() }),
+      createTextLayer({
+        name: createLayerName({ layers, type: "text" }),
+        canvas,
+        range: this.getNewStillRange(),
+      }),
     );
   }
 
   addColorLayer(): string {
-    const { canvas } = this.store.get().project;
+    const { canvas, layers } = this.store.get().project;
     return this.insertLayer(
-      createColorLayer({ canvas, range: this.getNewStillRange() }),
+      createColorLayer({
+        name: createLayerName({ layers, type: "color" }),
+        canvas,
+        range: this.getNewStillRange(),
+      }),
     );
   }
 

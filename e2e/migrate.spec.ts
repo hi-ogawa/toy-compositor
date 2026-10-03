@@ -85,3 +85,40 @@ test("read and migrate an older project file", async ({ page, editor }) => {
     "--check",
   ]);
 });
+
+test("name unnamed layers when opening a project", async ({ page, editor }) => {
+  // Remove the title's and the tint's names, as in a project file from before
+  // layers required a name.
+  await editJson<SavedProject>(editor.projectFile, (savedProject) => {
+    for (const layer of savedProject.layers) {
+      if (layer.name === "Title" || layer.name === "Tint") {
+        delete layer.name;
+      }
+    }
+  });
+
+  // Open the editor, and confirm it numbers each layer by its type, reports
+  // both, and shows the names on their lanes.
+  await page.goto(editor.url);
+  await expect(page.getByText('text layer "Text 1" has no name')).toBeVisible();
+  await expect(
+    page.getByText('color layer "Color 1" has no name'),
+  ).toBeVisible();
+  const lanes = page.getByTestId("editor-timeline");
+  await expect(
+    lanes.getByRole("button", { name: "Text 1 text", exact: true }),
+  ).toBeVisible();
+  await expect(
+    lanes.getByRole("button", { name: "Color 1 color", exact: true }),
+  ).toBeVisible();
+
+  // Confirm the file is rewritten with the names.
+  const project = await readJson<Project>(editor.projectFile);
+  expect(project.layers.map((layer) => layer.name)).toEqual([
+    "Test pattern",
+    "Tone 660 Hz",
+    "Label backdrop",
+    "Text 1",
+    "Color 1",
+  ]);
+});

@@ -190,13 +190,13 @@ function LayerInspector({
 }) {
   return (
     <div data-testid="inspector">
-      <InspectorTitle title={layer.name ?? layer.type} subtitle={layer.type} />
+      <InspectorTitle title={layer.name} subtitle={layer.type} />
       <div className="flex flex-col gap-4 p-3">
-        {/* An empty name removes it, so the layer reads as its type again. */}
         <TextField
           label="name"
-          value={layer.name ?? ""}
-          onCommit={(name) => onUpdate({ name: name || undefined })}
+          value={layer.name}
+          required
+          onCommit={(name) => onUpdate({ name })}
         />
         <Group title="Stack">
           {(["up", "down"] as const).map((direction) => (
@@ -674,11 +674,14 @@ function TextField({
   label,
   value,
   multiline,
+  required,
   onCommit,
 }: {
   label: string;
   value: string;
   multiline?: boolean;
+  /** Reverts an empty value instead of committing it. */
+  required?: boolean;
   onCommit: (value: string) => void;
 }) {
   const [draft, setDraft] = useState(value);
@@ -703,7 +706,9 @@ function TextField({
       }
     },
     onBlur: () => {
-      if (draft !== value) {
+      if (required && !draft) {
+        setDraft(value);
+      } else if (draft !== value) {
         onCommit(draft);
       }
     },

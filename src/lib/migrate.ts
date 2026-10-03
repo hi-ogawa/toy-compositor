@@ -1,3 +1,4 @@
+import { createLayerName } from "./layer-defaults.ts";
 import type { Box, ColorLayer, Layer, Project, TextLayer } from "./project.ts";
 import { measureTextHeight } from "./render/text.ts";
 
@@ -9,10 +10,14 @@ export type SavedProject = Omit<Project, "layers" | "locators" | "media"> & {
   media?: Project["media"];
 };
 
-type SavedLayer =
-  | Exclude<Layer, ColorLayer | TextLayer>
-  | SavedColorLayer
-  | SavedTextLayer;
+type SavedLayer = WithOptionalName<
+  Exclude<Layer, ColorLayer | TextLayer> | SavedColorLayer | SavedTextLayer
+>;
+
+// Missing in projects saved before layer names were required.
+type WithOptionalName<T> = T extends unknown
+  ? Omit<T, "name"> & { name?: string }
+  : never;
 
 type SavedColorLayer = Omit<ColorLayer, "box"> & {
   // Missing in projects saved before a color layer's box was required.
@@ -28,21 +33,22 @@ type SavedTextLayer = Omit<TextLayer, "box"> & {
 export type MigrateProjectResult = { project: Project; changes: string[] };
 
 export async function validateAndMigrateProject(project: SavedProject) {
-  validateProject(project);
-  return migrateProject(project);
+  const result = await migrateProject(project);
+  validateProject(result.project);
+  return result;
 }
 
 /**
  * Reject what loading cannot fix from the file alone, which needs update-media
  * or a different file.
  */
-function validateProject(project: SavedProject): void {
+function validateProject(project: Project): void {
   for (const layer of project.layers) {
     if (!("src" in layer)) {
       continue;
     }
-    const label = `${layer.type} layer "${layer.name ?? layer.type}" (${layer.src})`;
-    const mediaInfo = project.media?.[layer.src];
+    const label = `${layer.type} layer "${layer.name}" (${layer.src})`;
+    const mediaInfo = project.media[layer.src];
     if (!mediaInfo) {
       throw new Error(`${label} has no media info, run update-media`);
     }
@@ -59,8 +65,14 @@ async function migrateProject(
 ): Promise<MigrateProjectResult> {
   const changes: string[] = [];
   const layers: Layer[] = [];
-  for (const layer of project.layers) {
-    const label = `${layer.type} layer "${layer.name ?? layer.type}"`;
+  for (const savedLayer of project.layers) {
+    const name =
+      savedLayer.name ?? createLayerName({ layers, type: savedLayer.type });
+    const layer = { ...savedLayer, name };
+    const label = `${layer.type} layer "${name}"`;
+    if (savedLayer.name === undefined) {
+      changes.push(`${label} has no name`);
+    }
     if (layer.type === "color") {
       if (!layer.box) {
         changes.push(`${label} has no box`);
