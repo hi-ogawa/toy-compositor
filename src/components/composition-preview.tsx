@@ -6,6 +6,9 @@ import type { EditorRuntime, EditorProject } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
 import type { EditorSelection } from "./use-layer-interaction";
 
+const FIT_RATIO = 0.9;
+const OUTSIDE_FRAME_DIM = "rgb(23 23 23 / 0.7)";
+
 export function CompositionPreview({
   project,
   selection,
@@ -24,10 +27,10 @@ export function CompositionPreview({
     setSize({ width: element.clientWidth, height: element.clientHeight }),
   );
   const { canvas } = project;
-  const scale = Math.min(
-    size.width / canvas.width,
-    size.height / canvas.height,
-  );
+  // Leaves a margin around the frame, so layers overflowing it stay visible.
+  const scale =
+    FIT_RATIO *
+    Math.min(size.width / canvas.width, size.height / canvas.height);
   return (
     <>
       <div className="flex h-7 shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-3 text-xs">
@@ -54,7 +57,7 @@ export function CompositionPreview({
             }}
           >
             <div
-              className="absolute origin-top-left overflow-hidden"
+              className="absolute origin-top-left"
               data-testid="composition-canvas"
               style={{
                 width: canvas.width,
@@ -86,6 +89,11 @@ export function CompositionPreview({
                   />
                 );
               })}
+              {/* Dims everything outside the frame, below the selection outline. */}
+              <div
+                className="pointer-events-none absolute inset-0 z-[5]"
+                style={{ boxShadow: `0 0 0 100000px ${OUTSIDE_FRAME_DIM}` }}
+              />
             </div>
           </div>
         </div>
