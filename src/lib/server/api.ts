@@ -64,6 +64,12 @@ export function createEditorHandler({
         }
       }
     } catch (error) {
+      // Log every failed request, so a failure that the editor only shows as
+      // a status, such as a failed save, leaves its cause in the server output.
+      console.error(
+        `${request.method} ${new URL(request.url).pathname} failed:`,
+        error instanceof HttpError ? `${error.status} ${error.message}` : error,
+      );
       return toErrorResponse(error);
     }
   };
