@@ -4,8 +4,6 @@ A project is one JSON file that describes one deliverable: a canvas, an output, 
 
 This doc describes what a project means. The [renderer](compiler.md) turns it into the finished video or image, and the [editor](editor.md) previews it in the browser while you edit.
 
-The format has no version number, so a file in an older format is recognized by its shape alone. A format change therefore changes the shape, and never only the meaning of an existing field.
-
 ```jsonc
 {
   "canvas": {
@@ -167,6 +165,8 @@ Locators are labeled timeline times, like markers in other video editors. They d
 - `audio` says whether the file has an audio stream, which decides whether a video layer contributes to the mix.
 
 An entry depends only on the file's contents, so a copied file has the same entry. Facts describe a file, not a layer, so layers that share a file share its entry. Each project file carries its own `media`, so variants such as the thumbnail repeat the entries they share and stay self-contained.
+
+`toy-compositor update-media <project.json...>` fills `media` from the files the layers use, replacing what was there, for example after hand-editing layers or replacing a file.
 
 ## Box and crop
 
