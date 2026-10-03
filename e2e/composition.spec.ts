@@ -8,6 +8,7 @@ import {
   expectInspectorFields,
   clickTimelineButton,
   getInspectorField,
+  registerFolder,
   seekTimelineByPixels,
   test,
 } from "./helper";
@@ -413,5 +414,39 @@ test("hold a video layer's first and last frames in the preview", async ({
       {},
       {},
     ],
+  });
+});
+
+test("name the cause of a failed save and save on retry", async ({
+  page,
+  request,
+  editor,
+}) => {
+  // Open the synthetic project, trim the render end, and forget its folder so
+  // the server refuses the save.
+  await page.goto(editor.url);
+  await page
+    .getByRole("button", { name: "Composition settings", exact: true })
+    .click();
+  await commitInspectorField(page, { name: "end", value: "2" });
+  const response = await request.post("/api/rpc/removeProjectFolder", {
+    data: { directory: editor.projectDir },
+  });
+  expect(response.ok()).toBe(true);
+
+  // Save and confirm the button names the server's reason.
+  const save = page.getByTestId("editor-save-button");
+  await save.click();
+  await expect(save).toHaveAttribute("data-status", "error");
+  await expect(save).toHaveAccessibleName(
+    `Save failed: ${editor.projectDir} is not a registered project folder (click or Ctrl/Cmd+S to retry)`,
+  );
+
+  // Register the folder again, retry, and confirm the edit reaches the file.
+  await registerFolder(request, { directory: editor.projectDir });
+  await save.click();
+  await expect(save).toHaveAttribute("data-status", "saved");
+  expect(await readJson(editor.projectFile)).toMatchObject({
+    output: { start: 0, end: 2 },
   });
 });
