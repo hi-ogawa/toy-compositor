@@ -3,7 +3,7 @@ export type Project = {
   canvas: Canvas;
   output: Output;
   layers: Layer[];
-  locators?: Locator[];
+  locators: Locator[];
   /** Facts about every media file a layer uses, keyed by the layers' `src`. */
   media: Record<string, MediaInfo>;
 };
@@ -42,34 +42,6 @@ export type VideoInfo = {
   startTime: number;
   frameRate: number;
 };
-
-/**
- * Check what consumers read without checking: every color layer has a box,
- * every file-backed layer has media info for its `src`, and video and image
- * layers' files have a video stream. It does not compare the facts with the
- * files.
- */
-export function validateProject(project: Project): void {
-  for (const layer of project.layers) {
-    if (layer.type === "color" && !layer.box) {
-      throw new Error(`color layer "${layer.name ?? layer.type}" has no box`);
-    }
-    if (!("src" in layer)) {
-      continue;
-    }
-    const label = `${layer.type} layer "${layer.name ?? layer.type}" (${layer.src})`;
-    // A project file from before `media` has none at all.
-    const mediaInfo = project.media?.[layer.src];
-    if (!mediaInfo) {
-      throw new Error(`${label} has no media info, run update-media`);
-    }
-    if (layer.type !== "audio" && !mediaInfo.video) {
-      throw new Error(
-        `${label} has no video stream, use a file with video or run update-media if the file changed`,
-      );
-    }
-  }
-}
 
 /** Canvas presets for new projects, named as their first project file. */
 export const CANVAS_PRESETS = [

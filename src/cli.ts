@@ -12,6 +12,7 @@ import {
   installDesktopEntry,
 } from "./lib/desktop-entry.ts";
 import { updateProjectMedia } from "./lib/media-info.ts";
+import { validateAndMigrateProject, type SavedProject } from "./lib/migrate.ts";
 import { renderProject } from "./lib/render/render.ts";
 import { createLiveConnections } from "./lib/server/live.ts";
 import { openWithDefaultApp } from "./lib/server/open-default.ts";
@@ -22,6 +23,7 @@ import {
   stopEditorServer,
 } from "./lib/server/serve.ts";
 import { execFileAsync } from "./utils/exec.ts";
+import { readJson, writeJson } from "./utils/fs.ts";
 
 const packageDir = path.dirname(
   fileURLToPath(import.meta.resolve("#package.json")),
@@ -52,6 +54,10 @@ Usage:
   toy-compositor update-media <project.json...>
       Record media info for the files that layers use in each project,
       which the editor and renderer need before they accept it
+  toy-compositor migrate <project.json...> [--check]
+      Rewrite each project from an older format to the current one.
+      --check lists what would change without writing, and exits non-zero
+      if anything would
 
 Getting started: ${path.join(packageDir, "docs/getting-started.md")}
 Project format:  ${path.join(packageDir, "docs/project-format.md")}
@@ -67,6 +73,7 @@ async function main() {
       port: { type: "string", default: "5190" },
       open: { type: "boolean" },
       "dry-run": { type: "boolean" },
+      check: { type: "boolean" },
       help: { type: "boolean", short: "h" },
     },
   });
@@ -145,6 +152,15 @@ async function main() {
       for (const projectFile of args) {
         await updateProjectMedia(projectFile);
       }
+      break;
+    }
+    case "migrate": {
+      if (args.length === 0) {
+        console.error(HELP);
+        process.exitCode = 1;
+        return;
+      }
+      await runMigrate(args, { check: values.check });
       break;
     }
     default: {
@@ -230,6 +246,33 @@ async function runCommand(
   const [code] = await once(child, "close");
   if (code !== 0) {
     throw new Error(`${command} ${args.join(" ")} exited with code ${code}`);
+  }
+}
+
+/**
+ * Migrate each project file in place and print its changed layers, or with
+ * `check`, only print them and fail if any file would change.
+ */
+async function runMigrate(
+  projectFiles: string[],
+  { check }: { check?: boolean },
+) {
+  for (const projectFile of projectFiles) {
+    const { project, changes } = validateAndMigrateProject(
+      await readJson<SavedProject>(projectFile),
+    );
+    if (changes.length === 0) {
+      continue;
+    }
+    console.log(`${check ? "Would migrate" : "Migrated"} ${projectFile}`);
+    for (const change of changes) {
+      console.log(`  ${change}`);
+    }
+    if (check) {
+      process.exitCode = 1;
+    } else {
+      await writeJson(projectFile, project);
+    }
   }
 }
 
