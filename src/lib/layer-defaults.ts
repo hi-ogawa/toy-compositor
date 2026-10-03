@@ -84,6 +84,18 @@ export function createTextLayer({
   };
 }
 
-export function createColorLayer({ range }: { range: TimeRange }): ColorLayer {
-  return { type: "color", color: "#000000", opacity: 0.5, ...range };
+export function createColorLayer({
+  canvas,
+  range,
+}: {
+  canvas: Canvas;
+  range: TimeRange;
+}): ColorLayer {
+  return {
+    type: "color",
+    color: "#000000",
+    opacity: 0.5,
+    box: { x: 0, y: 0, width: canvas.width, height: canvas.height },
+    ...range,
+  };
 }

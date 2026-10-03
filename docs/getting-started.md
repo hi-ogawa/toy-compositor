@@ -1,5 +1,16 @@
 # Getting started
 
+## Install
+
+```sh
+pnpm add -g https://pkg.pr.new/hi-ogawa/toy-compositor@main
+toy-compositor --help  # commands, and paths of the bundled docs and sample
+```
+
+On Linux, `toy-compositor install-desktop` adds an app launcher entry that runs `toy-compositor serve --open`, which opens the editor in the browser and exits shortly after the last editor tab closes. `toy-compositor status` shows whether the editor server is running, and `toy-compositor stop` stops it.
+
+`toy-compositor upgrade` installs the latest main build, rewrites the launcher entry, and stops the running editor server, so the next launch uses the new build. It also takes a pkg.pr.new URL or a tarball to install another build, such as a pull request's.
+
 ## Project folders
 
 A project folder holds its project files at the top level and their media under `media/`. Each project file describes one deliverable, such as a video or its thumbnail, and its layers refer to media by paths relative to the folder, such as `media/clip.mp4`. The editor's library lists the files in `media/`.

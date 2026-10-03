@@ -347,6 +347,7 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
       { start: 0, in: 0, out: 3 },
       { start: 0, end: 2 },
       { start: 0, end: 3 },
+      {},
     ],
   });
 });

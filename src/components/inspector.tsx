@@ -338,11 +338,7 @@ function LayerFields({
               }
             />
           </Group>
-          <ColorBoxFields
-            box={layer.box}
-            canvas={canvas}
-            onCommit={(box) => onUpdate({ box })}
-          />
+          <BoxFields box={layer.box} onCommit={(box) => onUpdate({ box })} />
         </>
       );
     }
@@ -663,15 +659,12 @@ function TransformFields({
 function BoxFields({
   box,
   onCommit,
-  children,
 }: {
   box: Box;
   onCommit: (box: Box) => void;
-  children?: React.ReactNode;
 }) {
   return (
     <Group title="Box">
-      {children}
       {(["x", "y", "width", "height"] as const).map((key) => (
         <NumberField
           key={key}
@@ -682,42 +675,6 @@ function BoxFields({
         />
       ))}
     </Group>
-  );
-}
-
-/** A color layer fills the canvas until it is given a box. */
-function ColorBoxFields({
-  box,
-  canvas,
-  onCommit,
-}: {
-  box?: Box;
-  canvas: Canvas;
-  onCommit: (box: Box | undefined) => void;
-}) {
-  const toggle = (
-    <label className="col-span-2 flex items-center gap-2 text-xs">
-      <input
-        type="checkbox"
-        checked={!!box}
-        onChange={(e) =>
-          onCommit(
-            e.target.checked
-              ? { x: 0, y: 0, width: canvas.width, height: canvas.height }
-              : undefined,
-          )
-        }
-      />
-      box
-    </label>
-  );
-  if (!box) {
-    return <Group title="Box">{toggle}</Group>;
-  }
-  return (
-    <BoxFields box={box} onCommit={onCommit}>
-      {toggle}
-    </BoxFields>
   );
 }
 

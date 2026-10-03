@@ -33,7 +33,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
   await page
     .getByRole("button", { name: "Add video.mp4", exact: true })
     .click();
-  await expect(page.getByTestId("timeline-layer-4")).toBeVisible();
+  await expect(page.getByTestId("timeline-layer-5")).toBeVisible();
   await expectInspectorFields(page, {
     start: "1",
     in: "0",
@@ -54,7 +54,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
   // Add the built-in text and color layers.
   await page.getByRole("button", { name: "Add Text", exact: true }).click();
   await page.getByRole("button", { name: "Add Color", exact: true }).click();
-  await expect(page.getByTestId("timeline-layer-7")).toBeVisible();
+  await expect(page.getByTestId("timeline-layer-8")).toBeVisible();
 
   // Drop a new file into the folder, focus the window as when switching back
   // from the file manager, and confirm the list picks it up.
@@ -74,10 +74,10 @@ test("add layers from the Library tab", async ({ page, editor }) => {
   await page
     .getByRole("button", { name: "Add extra.wav", exact: true })
     .click();
-  await expect(page.getByTestId("timeline-layer-8")).toBeVisible();
+  await expect(page.getByTestId("timeline-layer-9")).toBeVisible();
 
   // Select the added video from its lane, then save, and confirm the new layers
-  // reach the file on top of the existing four, without runtime ids, the
+  // reach the file on top of the existing five, without runtime ids, the
   // existing media info is reused as is, and the new file's info is probed.
   await clickTimelineButton(page, { name: "video video" });
   await expectInspectorFields(page, { start: "1" });
@@ -92,7 +92,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     ...sample.media,
     "media/extra.wav": sample.media["media/audio.wav"],
   });
-  expect(project.layers.slice(4)).toEqual([
+  expect(project.layers.slice(5)).toEqual([
     {
       name: "video",
       type: "video",
@@ -120,7 +120,14 @@ test("add layers from the Library tab", async ({ page, editor }) => {
       start: 0,
       end: 3,
     },
-    { type: "color", color: "#000000", opacity: 0.5, start: 0, end: 3 },
+    {
+      type: "color",
+      color: "#000000",
+      opacity: 0.5,
+      box: { x: 0, y: 0, width: 640, height: 360 },
+      start: 0,
+      end: 3,
+    },
     {
       name: "extra",
       type: "audio",
@@ -160,7 +167,7 @@ test("remove the selected layer", async ({ page, editor }) => {
     lanes.getByRole("button", { name: "Tone 660 Hz audio" }),
   ).toHaveCount(0);
 
-  // Save and confirm the file keeps only the video and the image.
+  // Save and confirm the file keeps only the video, the image, and the tint.
   await page.getByTestId("editor-save-button").click();
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
     "data-status",
@@ -172,6 +179,7 @@ test("remove the selected layer", async ({ page, editor }) => {
   expect(project.layers.map((layer) => layer.name)).toEqual([
     "Test pattern",
     "Label backdrop",
+    "Tint",
   ]);
 });
 
@@ -180,7 +188,7 @@ test("move the selected layer up and down in the stack", async ({
   editor,
 }) => {
   // Open the synthetic project, whose stack from the bottom is the video, the
-  // audio, the image, and the title text, and select the image.
+  // audio, the image, the title text, and the tint, and select the image.
   await page.goto(editor.url);
   const regions = page
     .getByTestId("editor-timeline")
@@ -194,6 +202,7 @@ test("move the selected layer up and down in the stack", async ({
       )
       .toEqual(names.map((name) => `Select ${name} region`));
   await expectLaneOrder([
+    "Tint",
     "Title",
     "Label backdrop",
     "Tone 660 Hz",
@@ -203,16 +212,18 @@ test("move the selected layer up and down in the stack", async ({
   const moveUp = page.getByRole("button", { name: "Move up", exact: true });
   const moveDown = page.getByRole("button", { name: "Move down", exact: true });
 
-  // Move it up, and confirm it takes the top lane and draws above the title
-  // while staying selected, with nothing left above it.
+  // Move it up twice, and confirm it takes the top lane and draws above the
+  // title and the tint while staying selected, with nothing left above it.
+  await moveUp.click();
   await moveUp.click();
   await expectLaneOrder([
     "Label backdrop",
+    "Tint",
     "Title",
     "Tone 660 Hz",
     "Test pattern",
   ]);
-  const top = page.getByTestId("composition-layer-3");
+  const top = page.getByTestId("composition-layer-4");
   await expect(top.getByRole("img", { name: "Label backdrop" })).toBeVisible();
   await expect(top.getByLabel("Selected layer outline")).toBeVisible();
   await expect(page.getByTestId("composition-layer-2")).toHaveText(
@@ -220,11 +231,13 @@ test("move the selected layer up and down in the stack", async ({
   );
   await expect(moveUp).toBeDisabled();
 
-  // Move it down twice to just above the video, and confirm the inspector
-  // still shows it.
+  // Move it down three times to just above the video, and confirm the
+  // inspector still shows it.
+  await moveDown.click();
   await moveDown.click();
   await moveDown.click();
   await expectLaneOrder([
+    "Tint",
     "Title",
     "Tone 660 Hz",
     "Label backdrop",
@@ -239,6 +252,7 @@ test("move the selected layer up and down in the stack", async ({
   // Move it to the bottom, and confirm nothing is left below it.
   await moveDown.click();
   await expectLaneOrder([
+    "Tint",
     "Title",
     "Tone 660 Hz",
     "Test pattern",
@@ -260,5 +274,6 @@ test("move the selected layer up and down in the stack", async ({
     "Test pattern",
     "Tone 660 Hz",
     "Title",
+    "Tint",
   ]);
 });

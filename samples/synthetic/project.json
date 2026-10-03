@@ -74,6 +74,20 @@
         "width": 2,
         "color": "#000000"
       }
+    },
+    {
+      "name": "Tint",
+      "type": "color",
+      "color": "#0080ff",
+      "opacity": 0.5,
+      "start": 0,
+      "end": 3,
+      "box": {
+        "x": 40,
+        "y": 100,
+        "width": 240,
+        "height": 135
+      }
     }
   ],
   "media": {

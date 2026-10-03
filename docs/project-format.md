@@ -109,7 +109,7 @@ A video layer carries its file's audio, like a clip in other video editors, and 
 }
 ```
 
-Text is rendered to a transparent PNG and composited like an image, so the renderer does not depend on ffmpeg's `drawtext`. The text is drawn at its font size and never wraps, so lines break only at `\n`. `box.width` is a frame the lines are aligned in by `align`, and text wider than the frame is cut off. The height has no field because it follows the lines. `box.y` is the top of the first line at the font's normal line height, and `lineSpacing` is added only between lines.
+The text is drawn at its font size and never wraps, so lines break only at `\n`. `box.width` is a frame the lines are aligned in by `align`, and text wider than the frame is cut off. The height has no field because it follows the lines. `box.y` is the top of the first line at the font's normal line height, and `lineSpacing` is added only between lines.
 
 ### `color`
 
@@ -118,12 +118,13 @@ Text is rendered to a transparent PNG and composited like an image, so the rende
   "type": "color",
   "color": "#000000",
   "opacity": 0.51,
+  "box": { "x": 0, "y": 0, "width": 1920, "height": 1080 },
   "start": 23.7,
   "end": 188.633,
 }
 ```
 
-A solid fill, used for the translucent dim under thumbnail titles. It covers the whole canvas unless it sets a `box`.
+A solid fill over its `box`, used for the translucent dim under thumbnail titles.
 
 ## Locators
 
@@ -139,7 +140,7 @@ Locators are labeled timeline times, like markers in other video editors. They d
 
 ## Media
 
-`media` holds what ffprobe reports about every media file the layers use, keyed by the layers' `src`. The project then describes its media completely, so the editor, the renderer, and scripts all read the same facts. Every `src` a layer uses has an entry, and video and image layers' entries have `video`. The editor and the renderer check this when they load a project and name the layer and the fix if it fails.
+`media` holds what ffprobe reports about every media file the layers use, keyed by the layers' `src`. The project then describes its media completely, so the editor, the renderer, and scripts all read the same facts. Every `src` a layer uses has an entry, and video and image layers' entries have `video`.
 
 ```jsonc
 "media": {
@@ -160,12 +161,10 @@ Locators are labeled timeline times, like markers in other video editors. They d
 ```
 
 - `start` and `end` bound the file's source times, the same presentation timestamps as `in` and `out`, so they include the container's start offset. A still image has no duration, so both are 0.
-- `video` is the video stream's size, its own start time, and its frame rate, which the compiler's frame timing counts from. Only files with a video stream have it, including images.
+- `video` is the video stream's size, its own start time, and its frame rate. Only files with a video stream have it, including images.
 - `audio` says whether the file has an audio stream, which decides whether a video layer contributes to the mix.
 
 An entry depends only on the file's contents, so a copied file has the same entry. Facts describe a file, not a layer, so layers that share a file share its entry. Each project file carries its own `media`, so variants such as the thumbnail repeat the entries they share and stay self-contained.
-
-`toy-compositor update-media <project.json...>` fills `media` from the files the layers use, replacing what was there, for example after hand-editing layers or replacing a file.
 
 ## Transform and crop
 

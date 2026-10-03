@@ -347,12 +347,7 @@ function compileColor({
     return {};
   }
   const { canvas } = scene;
-  const box = layer.box ?? {
-    x: 0,
-    y: 0,
-    width: canvas.width,
-    height: canvas.height,
-  };
+  const { box } = layer;
   return {
     video: {
       filters: [
