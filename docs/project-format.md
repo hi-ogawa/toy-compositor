@@ -2,6 +2,8 @@
 
 A project is one JSON file that describes one deliverable: a canvas, an output, which is a video range or a still frame, and a stack of layers. Variants of a cover, such as the horizontal video and its thumbnail, are separate project files, and each one is self-contained.
 
+This doc describes what a project means. The [renderer](compiler.md) turns it into the finished video or image, and the [editor](editor.md) previews it in the browser while you edit.
+
 ```jsonc
 {
   "canvas": {
@@ -35,6 +37,8 @@ A video or audio layer plays its source from `in` to `out`, starting at timeline
 An image, text, or color layer is visible from timeline position `start` to `end`. Every layer sets its range, so a layer's timing never depends on the output. An overlay meant for the whole cover, such as the title, spans the main video's output range, which also covers variants whose output falls inside it, such as the thumbnail.
 
 ## Layers
+
+Layers stack in list order over the canvas `background`, so later layers sit on top. The sound of all video and audio layers is mixed together.
 
 Every layer can have an optional `name`, such as `"camera"`, `"score"`, or `"mix"`. Names do not affect rendering. They label layers in the editor and let scripts find a layer by its role instead of its position in the list.
 
@@ -105,7 +109,7 @@ A video layer carries its file's audio, like a clip in other video editors, and 
 }
 ```
 
-Text is rendered to a transparent PNG and composited like an image, so the renderer does not depend on ffmpeg's `drawtext`. `box.y` is the top of the first line at the font's normal line height, and `lineSpacing` is added only between lines.
+`box.y` is the top of the first line at the font's normal line height, and `lineSpacing` is added only between lines.
 
 ### `color`
 
@@ -135,7 +139,7 @@ Locators are labeled timeline times, like markers in other video editors. They d
 
 ## Media
 
-`media` holds what ffprobe reports about every media file the layers use, keyed by the layers' `src`. The project then describes its media completely, so the editor, the renderer, and scripts all read the same facts. Every `src` a layer uses has an entry, and video and image layers' entries have `video`. The editor and the renderer check this when they load a project and name the layer and the fix if it fails.
+`media` holds what ffprobe reports about every media file the layers use, keyed by the layers' `src`. The project then describes its media completely, so the editor, the renderer, and scripts all read the same facts. Every `src` a layer uses has an entry, and video and image layers' entries have `video`.
 
 ```jsonc
 "media": {
@@ -156,12 +160,10 @@ Locators are labeled timeline times, like markers in other video editors. They d
 ```
 
 - `start` and `end` bound the file's source times, the same presentation timestamps as `in` and `out`, so they include the container's start offset. A still image has no duration, so both are 0.
-- `video` is the video stream's size, its own start time, and its frame rate, which the compiler's frame timing counts from. Only files with a video stream have it, including images.
+- `video` is the video stream's size, its own start time, and its frame rate. Only files with a video stream have it, including images.
 - `audio` says whether the file has an audio stream, which decides whether a video layer contributes to the mix.
 
 An entry depends only on the file's contents, so a copied file has the same entry. Facts describe a file, not a layer, so layers that share a file share its entry. Each project file carries its own `media`, so variants such as the thumbnail repeat the entries they share and stay self-contained.
-
-`toy-compositor update-media <project.json...>` fills `media` from the files the layers use, replacing what was there, for example after hand-editing layers or replacing a file.
 
 ## Box and crop
 

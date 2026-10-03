@@ -22,12 +22,13 @@ Setup preserves every file in the sample, including additional project variants.
 - A moving 320×180 ffmpeg test pattern is scaled to fill the canvas. Its embedded 440 Hz audio is muted.
 - A dark gray 160×90 image with a yellow border overlays the video at `(420, 240)` throughout the clip.
 - A centered white “Synthetic sample” text layer with a black outline sits on the image throughout the clip.
+- A 240×135 blue color layer at 50% opacity tints the video at `(40, 100)` throughout the clip.
 - A separate 660 Hz WAV tone plays throughout, fading in over the first 0.2 seconds and fading out over the last 0.5 seconds.
 - A `thumbnail` locator marks 1.5 seconds, the frame that `thumbnail.json` renders.
 
 [synthetic/thumbnail.json](synthetic/thumbnail.json) is the same composition with a still output at 1.5 seconds, so it renders only frame 45 of the test pattern as a PNG.
 
-The sample exercises video scaling, image placement, text rendering with an outline, source audio muting, audio fades, and still output. `pnpm test-e2e` renders both committed projects, checks their output metadata, and checks that the outputs can be decoded without errors.
+The sample exercises video scaling, image placement, text rendering with an outline, a translucent color layer with a box, source audio muting, audio fades, and still output. `pnpm test-e2e` renders both committed projects, checks their output metadata, and checks that the outputs can be decoded without errors.
 
 ## Local RESCENE reference
 
