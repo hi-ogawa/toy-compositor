@@ -1,6 +1,5 @@
 import type { Box, ColorLayer, Layer, Project } from "./project.ts";
 
-/** A project file as saved, which may have an older format's shape. */
 export type SavedProject = Omit<Project, "layers" | "locators" | "media"> & {
   layers: SavedLayer[];
   // Missing in projects saved before locators.
