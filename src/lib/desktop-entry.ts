@@ -17,11 +17,8 @@ export async function installDesktopEntry({
   if (process.platform !== "linux") {
     throw new Error(`No desktop entry on ${process.platform}`);
   }
-  const dir = path.join(
-    process.env.XDG_DATA_HOME || path.join(os.homedir(), ".local/share"),
-    "applications",
-  );
-  const entryFile = path.join(dir, "toy-compositor.desktop");
+  const entryFile = getDesktopEntryFile();
+  const dir = path.dirname(entryFile);
   const installedIcon = path.join(dir, "toy-compositor.svg");
   await fs.promises.mkdir(dir, { recursive: true });
   await fs.promises.copyFile(iconFile, installedIcon);
@@ -39,6 +36,13 @@ Categories=AudioVideo;Video;
 `;
   await fs.promises.writeFile(entryFile, entry);
   return entryFile;
+}
+
+export function getDesktopEntryFile(): string {
+  return path.join(
+    process.env.XDG_DATA_HOME || path.join(os.homedir(), ".local/share"),
+    "applications/toy-compositor.desktop",
+  );
 }
 
 // The spec's Exec quoting for paths that may hold spaces: double quotes,
