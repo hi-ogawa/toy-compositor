@@ -33,7 +33,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
   await page
     .getByRole("button", { name: "Add video.mp4", exact: true })
     .click();
-  await expect(page.getByTestId("timeline-layer-5")).toBeVisible();
+  await expect(page.getByTestId("timeline-layer-5-clip-0")).toBeVisible();
   await expectInspectorFields(page, {
     start: "1",
     in: "0",
@@ -51,10 +51,11 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     .click();
   await expectInspectorFields(page, { start: "0", end: "3" });
 
-  // Add the built-in text and color layers.
+  // Add the built-in text and color layers, which take the next number after
+  // the sample's own text and color layers.
   await page.getByRole("button", { name: "Add Text", exact: true }).click();
   await page.getByRole("button", { name: "Add Color", exact: true }).click();
-  await expect(page.getByTestId("timeline-layer-8")).toBeVisible();
+  await expect(page.getByTestId("timeline-layer-8-clip-0")).toBeVisible();
 
   // Drop a new file into the folder, focus the window as when switching back
   // from the file manager, and confirm the list picks it up.
@@ -74,12 +75,12 @@ test("add layers from the Library tab", async ({ page, editor }) => {
   await page
     .getByRole("button", { name: "Add extra.wav", exact: true })
     .click();
-  await expect(page.getByTestId("timeline-layer-9")).toBeVisible();
+  await expect(page.getByTestId("timeline-layer-9-clip-0")).toBeVisible();
 
   // Select the added video from its lane, then save, and confirm the new layers
   // reach the file on top of the existing five, without runtime ids, the
   // existing media info is reused as is, and the new file's info is probed.
-  await clickTimelineButton(page, { name: "video video" });
+  await clickTimelineButton(page, { name: "Select video region" });
   await expectInspectorFields(page, { start: "1" });
   await page.getByTestId("editor-save-button").click();
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
@@ -95,46 +96,80 @@ test("add layers from the Library tab", async ({ page, editor }) => {
   expect(project.layers.slice(5)).toEqual([
     {
       name: "video",
-      type: "video",
-      src: "media/video.mp4",
-      start: 1,
-      in: 0,
-      out: 3,
-      transform: { x: 0, y: 0, scale: 2 },
+      muted: false,
+      clips: [
+        {
+          type: "video",
+          src: "media/video.mp4",
+          start: 1,
+          in: 0,
+          out: 3,
+          transform: { x: 0, y: 0, scale: 2 },
+          crop: { left: 0, right: 0, top: 0, bottom: 0 },
+          fadeIn: 0,
+          fadeOut: 0,
+          hold: { before: 0, after: 0 },
+        },
+      ],
     },
     {
       name: "image",
-      type: "image",
-      src: "media/image.png",
-      transform: { x: 0, y: 0, scale: 4 },
-      start: 0,
-      end: 3,
+      muted: false,
+      clips: [
+        {
+          type: "image",
+          src: "media/image.png",
+          transform: { x: 0, y: 0, scale: 4 },
+          crop: { left: 0, right: 0, top: 0, bottom: 0 },
+          start: 0,
+          end: 3,
+        },
+      ],
     },
     {
-      type: "text",
-      text: "Text",
-      box: { x: 64, y: 144, width: 512, height: 72 },
-      align: "center",
-      font: { family: "Noto Sans", size: 36 },
-      color: "#ffffff",
-      start: 0,
-      end: 3,
+      name: "Text 2",
+      muted: false,
+      clips: [
+        {
+          type: "text",
+          text: "Text",
+          box: { x: 64, y: 144, width: 512, height: 72 },
+          align: "center",
+          font: { family: "Noto Sans", size: 36, weight: 400, lineSpacing: 0 },
+          color: "#ffffff",
+          start: 0,
+          end: 3,
+        },
+      ],
     },
     {
-      type: "color",
-      color: "#000000",
-      opacity: 0.5,
-      box: { x: 0, y: 0, width: 640, height: 360 },
-      start: 0,
-      end: 3,
+      name: "Color 2",
+      muted: false,
+      clips: [
+        {
+          type: "color",
+          color: "#000000",
+          opacity: 0.5,
+          box: { x: 0, y: 0, width: 640, height: 360 },
+          start: 0,
+          end: 3,
+        },
+      ],
     },
     {
       name: "extra",
-      type: "audio",
-      src: "media/extra.wav",
-      start: 1,
-      in: 0,
-      out: 3,
+      muted: false,
+      clips: [
+        {
+          type: "audio",
+          src: "media/extra.wav",
+          start: 1,
+          in: 0,
+          out: 3,
+          fadeIn: 0,
+          fadeOut: 0,
+        },
+      ],
     },
   ]);
 });
@@ -143,28 +178,30 @@ test("remove the selected layer", async ({ page, editor }) => {
   // Open the synthetic project and select the title text layer.
   await page.goto(editor.url);
   const lanes = page.getByTestId("editor-timeline");
-  await clickTimelineButton(page, { name: "Title text" });
+  await clickTimelineButton(page, { name: "Select Title region" });
 
   // Press Backspace inside an inspector field, and confirm it edits the field
   // instead of removing the layer, then discard the draft with Escape.
   await getInspectorField(page, { name: "start" }).press("Backspace");
-  await expect(lanes.getByRole("button", { name: "Title text" })).toBeVisible();
+  await expect(
+    lanes.getByRole("button", { name: "Select Title region" }),
+  ).toBeVisible();
   await page.keyboard.press("Escape");
 
   // Click the time readout to leave the field, press Delete, and confirm the
   // lane and its inspector go away.
   await page.getByTestId("timeline-time").click();
   await page.keyboard.press("Delete");
-  await expect(lanes.getByRole("button", { name: "Title text" })).toHaveCount(
-    0,
-  );
+  await expect(
+    lanes.getByRole("button", { name: "Select Title region" }),
+  ).toHaveCount(0);
   await expect(page.getByTestId("inspector")).toHaveCount(0);
 
   // Select the audio and remove it with Backspace.
-  await clickTimelineButton(page, { name: "Tone 660 Hz audio" });
+  await clickTimelineButton(page, { name: "Select Tone 660 Hz region" });
   await page.keyboard.press("Backspace");
   await expect(
-    lanes.getByRole("button", { name: "Tone 660 Hz audio" }),
+    lanes.getByRole("button", { name: "Select Tone 660 Hz region" }),
   ).toHaveCount(0);
 
   // Save and confirm the file keeps only the video, the image, and the tint.
@@ -208,7 +245,7 @@ test("move the selected layer up and down in the stack", async ({
     "Tone 660 Hz",
     "Test pattern",
   ]);
-  await clickTimelineButton(page, { name: "Label backdrop image" });
+  await clickTimelineButton(page, { name: "Select Label backdrop region" });
   const moveUp = page.getByRole("button", { name: "Move up", exact: true });
   const moveDown = page.getByRole("button", { name: "Move down", exact: true });
 
@@ -223,10 +260,10 @@ test("move the selected layer up and down in the stack", async ({
     "Tone 660 Hz",
     "Test pattern",
   ]);
-  const top = page.getByTestId("composition-layer-4");
+  const top = page.getByTestId("composition-layer-4-clip-0");
   await expect(top.getByRole("img", { name: "Label backdrop" })).toBeVisible();
   await expect(top.getByLabel("Selected layer outline")).toBeVisible();
-  await expect(page.getByTestId("composition-layer-2")).toHaveText(
+  await expect(page.getByTestId("composition-layer-2-clip-0")).toHaveText(
     "Synthetic sample",
   );
   await expect(moveUp).toBeDisabled();

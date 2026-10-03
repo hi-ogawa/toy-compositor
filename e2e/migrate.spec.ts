@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
-import type { SavedProject } from "../src/lib/migrate.ts";
-import type { Box, Project } from "../src/lib/project.ts";
+import type { SavedFlatLayer, SavedProject } from "../src/lib/migrate.ts";
+import type { Project } from "../src/lib/project.ts";
 import { execFileAsync } from "../src/utils/exec.ts";
 import { editJson, readJson } from "../src/utils/fs.ts";
 import { test } from "./helper";
@@ -8,38 +8,98 @@ import { test } from "./helper";
 test("read and migrate an older project file", async ({ page, editor }) => {
   const readProject = () => readJson<SavedProject>(editor.projectFile);
 
-  // Remove the tint's box and the title's box height, as in a project file
-  // from before color layers required a box and text layers stored a height.
-  // The tint then covered the canvas, and the title's box followed its lines,
-  // which is the height the sample stores.
+  // Flatten every layer into its one clip, replace the video's and the image's
+  // transforms with fit boxes, and remove the image's name, the tint's box, the
+  // title's box height, and neutral values, as in a project file from before
+  // layers held clips, media had transforms, layers required a name, color
+  // layers required a box, text layers stored a height, and neutral values
+  // were written out. The image then gets the editor's numbered name, the tint
+  // covered the canvas, the title's box followed its lines, which is the height
+  // the sample stores, and the neutral values are the sample's. The image also
+  // crops its left quarter, and its box is wider than what remains, so the fit
+  // centers it with space on both sides, and its corner is the hidden
+  // quarter's left edge, 40 px before the visible part.
   const project = await readJson<Project>(editor.projectFile);
   const migratedProject = {
     ...project,
-    layers: project.layers.map((layer) =>
-      layer.name === "Tint"
-        ? { ...layer, box: { x: 0, y: 0, width: 640, height: 360 } }
-        : layer,
-    ),
-  };
-  const removeBoxes = () =>
-    editJson<SavedProject>(editor.projectFile, (savedProject) => {
-      for (const layer of savedProject.layers) {
-        if (layer.type === "color" && layer.name === "Tint") {
-          delete layer.box;
+    layers: project.layers.map((layer) => {
+      const clip = layer.clips[0]!;
+      switch (clip.type) {
+        case "image": {
+          return {
+            ...layer,
+            name: "Image 1",
+            clips: [
+              {
+                ...clip,
+                transform: { x: 400, y: 240, scale: 1 },
+                crop: { left: 0.25, right: 0, top: 0, bottom: 0 },
+              },
+            ],
+          };
         }
-        if (layer.type === "text" && layer.name === "Title") {
-          delete layer.box.height;
+        case "color": {
+          return {
+            ...layer,
+            clips: [{ ...clip, box: { x: 0, y: 0, width: 640, height: 360 } }],
+          };
+        }
+        default: {
+          return layer;
         }
       }
+    }),
+  };
+  const removeFields = () =>
+    editJson<SavedProject>(editor.projectFile, (savedProject) => {
+      delete savedProject.canvas.background;
+      const layers: SavedFlatLayer[] = project.layers.map(
+        ({ clips, ...layer }) => ({ ...layer, ...structuredClone(clips[0]!) }),
+      );
+      for (const layer of layers) {
+        if (!layer.muted) {
+          delete layer.muted;
+        }
+        if (layer.type === "video") {
+          delete layer.transform;
+          layer.box = { x: 0, y: 0, width: 640, height: 360 };
+          delete layer.crop;
+          delete layer.fadeIn;
+          delete layer.fadeOut;
+          delete layer.hold;
+        }
+        if (layer.type === "image") {
+          delete layer.transform;
+          layer.box = { x: 400, y: 240, width: 200, height: 90 };
+          layer.crop = { left: 0.25 };
+          delete layer.name;
+        }
+        if (layer.type === "color") {
+          delete layer.box;
+        }
+        if (layer.type === "text") {
+          delete layer.box.height;
+          delete layer.font.weight;
+        }
+      }
+      savedProject.layers = layers;
     });
   const changes = [
-    'color layer "Tint" has no box',
-    'text layer "Title" has no box height',
+    'layer "Test pattern" has no clips',
+    'video clip in layer "Test pattern" has a fit box instead of a transform',
+    'layer "Tone 660 Hz" has no clips',
+    'image layer "Image 1" has no name',
+    'layer "Image 1" has no clips',
+    'image clip in layer "Image 1" has a fit box instead of a transform',
+    'layer "Title" has no clips',
+    'text clip in layer "Title" has no box height',
+    'layer "Tint" has no clips',
+    'color clip in layer "Tint" has no box',
   ];
-  await removeBoxes();
+  await removeFields();
   const savedProject = await readProject();
 
-  // Check it, and confirm it reports both layers and fails without writing.
+  // Check it, and confirm it reports each change and fails without writing.
   const check = execFileAsync(process.execPath, [
     "src/cli.ts",
     "migrate",
@@ -53,7 +113,7 @@ test("read and migrate an older project file", async ({ page, editor }) => {
   }
   expect(await readProject()).toEqual(savedProject);
 
-  // Open the editor, and confirm it reports both layers and rewrites the file
+  // Open the editor, and confirm it reports each change and rewrites the file
   // to render as before.
   await page.goto(editor.url);
   await expect(page.getByRole("main")).toBeVisible();
@@ -62,9 +122,9 @@ test("read and migrate an older project file", async ({ page, editor }) => {
   }
   expect(await readProject()).toEqual(migratedProject);
 
-  // Remove the boxes again and render, and confirm it reports both layers and
+  // Remove the fields again and render, and confirm it reports each change and
   // rewrites the file too.
-  await removeBoxes();
+  await removeFields();
   const { stdout } = await execFileAsync(process.execPath, [
     "src/cli.ts",
     "render",
@@ -84,69 +144,4 @@ test("read and migrate an older project file", async ({ page, editor }) => {
     editor.projectFile,
     "--check",
   ]);
-});
-
-test("read and migrate media layers with fit boxes", async ({
-  page,
-  editor,
-}) => {
-  const readProject = () => readJson<SavedProject>(editor.projectFile);
-
-  // Replace the video's and the image's transforms with the fit boxes from
-  // before transforms. The image also crops its left quarter, and its box is
-  // wider than what remains, so the fit centers it with space on both sides.
-  const project = await readProject();
-  const boxes: Record<string, Box> = {
-    "Test pattern": { x: 0, y: 0, width: 640, height: 360 },
-    "Label backdrop": { x: 400, y: 240, width: 200, height: 90 },
-  };
-  await editJson<SavedProject>(editor.projectFile, (savedProject) => {
-    for (const layer of savedProject.layers) {
-      if (layer.name && boxes[layer.name] && "transform" in layer) {
-        delete layer.transform;
-        Object.assign(layer, { box: boxes[layer.name] });
-      }
-      if (layer.name === "Label backdrop" && layer.type === "image") {
-        layer.crop = { left: 0.25 };
-      }
-    }
-  });
-  const savedProject = await readProject();
-
-  // Check it, and confirm it reports both layers and fails without writing.
-  await expect(
-    execFileAsync(process.execPath, [
-      "src/cli.ts",
-      "migrate",
-      editor.projectFile,
-      "--check",
-    ]),
-  ).rejects.toMatchObject({
-    stdout: expect.stringMatching(
-      /video layer "Test pattern" has a fit box[\s\S]*image layer "Label backdrop" has a fit box/,
-    ),
-  });
-  expect(await readProject()).toEqual(savedProject);
-
-  // Open the editor, and confirm the image sits where the fit put it and the
-  // file gets transforms that place both layers the same way. The image's
-  // corner is the hidden quarter's left edge, 40 px before the visible part.
-  await page.goto(editor.url);
-  const image = page
-    .getByTestId("composition-canvas")
-    .getByRole("img", { name: "Label backdrop", exact: true });
-  await expect(image.locator("..")).toHaveCSS("left", "440px");
-  await expect(image.locator("..")).toHaveCSS("width", "120px");
-  expect(await readProject()).toEqual({
-    ...project,
-    layers: project.layers.map((layer) =>
-      layer.name === "Label backdrop"
-        ? {
-            ...layer,
-            transform: { x: 400, y: 240, scale: 1 },
-            crop: { left: 0.25 },
-          }
-        : layer,
-    ),
-  });
 });

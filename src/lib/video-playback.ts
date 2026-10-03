@@ -1,6 +1,6 @@
 import { clamp } from "../utils/math.ts";
 import { throttle } from "../utils/timing.ts";
-import type { VideoLayer } from "./project.ts";
+import type { VideoClip } from "./project.ts";
 import type { AudioContextTransport } from "./transport.ts";
 
 type PlaybackMode = "paused" | "before" | "playing" | "after";
@@ -17,19 +17,19 @@ const RATE_CATCH_UP_SECONDS = 2;
 const MAX_RATE_CHANGE = 0.1;
 
 /**
- * Makes one video layer's `<video>` follow the transport. While paused it seeks
+ * Makes one video clip's `<video>` follow the transport. While paused it seeks
  * to the playhead. While playing it plays natively and closes any drift by
  * nudging `playbackRate`, because a corrective seek lands behind by however
  * long the seek took, which on long keyframe intervals is longer than the drift
  * it corrects. Outside the source range it rests on `in` before and `out`
- * after, so the element shows the layer's edge frames wherever it is drawn,
+ * after, so the element shows the clip's edge frames wherever it is drawn,
  * which is what a hold shows. The element is always muted, since audio plays on
  * the transport.
  */
 export class VideoPlayback {
   private readonly transport: AudioContextTransport;
   private readonly element: HTMLVideoElement;
-  private layer?: VideoLayer;
+  private clip?: VideoClip;
   private mode?: PlaybackMode;
   private readonly unsubscribe: () => void;
   private readonly correctDriftThrottled = throttle(
@@ -52,9 +52,9 @@ export class VideoPlayback {
     element.addEventListener("loadedmetadata", this.resync);
   }
 
-  setLayer({ layer }: { layer: VideoLayer }): void {
-    this.layer = layer;
-    // A moved layer re-enters its mode instead of being corrected as drift.
+  setClip({ clip }: { clip: VideoClip }): void {
+    this.clip = clip;
+    // A moved clip re-enters its mode instead of being corrected as drift.
     this.mode = undefined;
     this.sync();
   }
@@ -71,22 +71,22 @@ export class VideoPlayback {
   };
 
   private sync = (): void => {
-    const layer = this.layer;
-    if (!layer) {
+    const clip = this.clip;
+    if (!clip) {
       return;
     }
     const { position, isPlaying } = this.transport.store.get();
-    const expectedTime = layer.in + position - layer.start;
+    const expectedTime = clip.in + position - clip.start;
     if (!isPlaying) {
       this.mode = "paused";
-      this.pause(clamp(expectedTime, layer.in, layer.out));
+      this.pause(clamp(expectedTime, clip.in, clip.out));
       return;
     }
 
     const mode: PlaybackMode =
-      expectedTime < layer.in
+      expectedTime < clip.in
         ? "before"
-        : expectedTime >= layer.out
+        : expectedTime >= clip.out
           ? "after"
           : "playing";
     if (mode === this.mode) {
@@ -98,7 +98,7 @@ export class VideoPlayback {
     this.mode = mode;
     switch (mode) {
       case "before": {
-        this.pause(layer.in);
+        this.pause(clip.in);
         break;
       }
       case "playing": {
@@ -106,7 +106,7 @@ export class VideoPlayback {
         break;
       }
       case "after": {
-        this.pause(layer.out);
+        this.pause(clip.out);
         break;
       }
     }

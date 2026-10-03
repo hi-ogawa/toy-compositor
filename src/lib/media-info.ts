@@ -1,25 +1,35 @@
 import path from "node:path";
 import { execFileAsync } from "../utils/exec.ts";
 import { readJson, writeJson } from "../utils/fs.ts";
-import type { SavedProject } from "./migrate.ts";
+import { migrateProject, type SavedProject } from "./migrate.ts";
 import type { Project, MediaInfo } from "./project.ts";
 
 /**
- * Probe every media file a project file's layers use and write their media info
- * into the project's `media`, replacing what was there.
+ * Probe every media file a project file's clips use and write their media info
+ * into the project's `media`, replacing what was there. The project is written
+ * in the current shape, migrated as on load, after probing, because migrating
+ * a fit box needs the source size.
  */
 export async function updateProjectMedia(projectFile: string) {
-  const project = await readJson<SavedProject>(projectFile);
+  const savedProject = await readJson<SavedProject>(projectFile);
   const projectDir = path.dirname(path.resolve(projectFile));
   const mediaInfoMap: Project["media"] = {};
-  for (const layer of project.layers) {
-    if ("src" in layer && !mediaInfoMap[layer.src]) {
-      mediaInfoMap[layer.src] = await probeMediaInfo(
-        path.resolve(projectDir, layer.src),
+  // Layers saved before clips hold their one clip on the layer itself.
+  const clips = savedProject.layers.flatMap((layer) =>
+    "clips" in layer ? layer.clips : [layer],
+  );
+  for (const clip of clips) {
+    if ("src" in clip && !mediaInfoMap[clip.src]) {
+      mediaInfoMap[clip.src] = await probeMediaInfo(
+        path.resolve(projectDir, clip.src),
       );
     }
   }
-  await writeJson(projectFile, { ...project, media: mediaInfoMap });
+  const { project } = await migrateProject({
+    ...savedProject,
+    media: mediaInfoMap,
+  });
+  await writeJson(projectFile, project);
 }
 
 /** Read a media file's time range, video size and frame timing, and whether it has audio. */

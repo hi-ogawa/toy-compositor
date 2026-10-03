@@ -1,4 +1,4 @@
-import type { Box, Crop, Layer, Project, Transform } from "./project.ts";
+import type { Box, Clip, Crop, Project, Transform } from "./project.ts";
 
 export type TimeRange = { start: number; end: number };
 
@@ -9,35 +9,37 @@ export function getOutputRange(project: Project): TimeRange {
     : { start: output.time, end: output.time + 1 / canvas.fps };
 }
 
-/** Timeline span covering every layer, from the earliest start to the latest end. */
+/** Timeline span covering every clip, from the earliest start to the latest end. */
 export function getContentRange(project: Project): TimeRange {
-  if (project.layers.length === 0) {
+  const ranges = project.layers.flatMap((layer) =>
+    layer.clips.map(getClipRange),
+  );
+  if (ranges.length === 0) {
     return { start: 0, end: 0 };
   }
-  const ranges = project.layers.map(getLayerRange);
   return {
     start: Math.min(...ranges.map((range) => range.start)),
     end: Math.max(...ranges.map((range) => range.end)),
   };
 }
 
-/** Timeline span of a layer, from its source range for video and audio. */
-export function getLayerRange(layer: Layer): TimeRange {
-  if (layer.type === "video" || layer.type === "audio") {
-    return { start: layer.start, end: layer.start + layer.out - layer.in };
+/** Timeline span of a clip, from its source range for video and audio. */
+export function getClipRange(clip: Clip): TimeRange {
+  if (clip.type === "video" || clip.type === "audio") {
+    return { start: clip.start, end: clip.start + clip.out - clip.in };
   }
-  return { start: layer.start, end: layer.end };
+  return { start: clip.start, end: clip.end };
 }
 
-/** Timeline span of a layer's picture, extended by a video layer's hold. */
-export function getPictureRange(layer: Layer): TimeRange {
-  const range = getLayerRange(layer);
-  if (layer.type !== "video" || !layer.hold) {
+/** Timeline span of a clip's picture, extended by a video clip's hold. */
+export function getPictureRange(clip: Clip): TimeRange {
+  const range = getClipRange(clip);
+  if (clip.type !== "video") {
     return range;
   }
   return {
-    start: range.start - (layer.hold.before ?? 0),
-    end: range.end + (layer.hold.after ?? 0),
+    start: range.start - clip.hold.before,
+    end: range.end + clip.hold.after,
   };
 }
 
@@ -57,23 +59,19 @@ type Size = { width: number; height: number };
  */
 export function getVisibleBox({
   size,
-  crop = {},
+  crop,
   transform,
 }: {
   size: Size;
-  crop?: Crop;
+  crop: Crop;
   transform: Transform;
 }): Box {
   const cropped = getCroppedSize({ size, crop });
   return {
     width: roundToEven(cropped.width * transform.scale),
     height: roundToEven(cropped.height * transform.scale),
-    x: Math.round(
-      transform.x + (crop.left ?? 0) * size.width * transform.scale,
-    ),
-    y: Math.round(
-      transform.y + (crop.top ?? 0) * size.height * transform.scale,
-    ),
+    x: Math.round(transform.x + crop.left * size.width * transform.scale),
+    y: Math.round(transform.y + crop.top * size.height * transform.scale),
   };
 }
 
@@ -116,14 +114,14 @@ export function scaleTransform({
 /** The size after removing each cropped edge. */
 export function getCroppedSize({
   size,
-  crop = {},
+  crop,
 }: {
   size: Size;
-  crop?: Crop;
+  crop: Crop;
 }): Size {
   return {
-    width: size.width * (1 - (crop.left ?? 0) - (crop.right ?? 0)),
-    height: size.height * (1 - (crop.top ?? 0) - (crop.bottom ?? 0)),
+    width: size.width * (1 - crop.left - crop.right),
+    height: size.height * (1 - crop.top - crop.bottom),
   };
 }
 

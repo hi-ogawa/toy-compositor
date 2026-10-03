@@ -117,7 +117,9 @@ test("fade audio at the layer's own edges when the output cuts into them", async
   const directory = testInfo.outputPath("project");
   await cp("samples/synthetic", directory, { recursive: true });
   await editJson<Project>(`${directory}/project.json`, (project) => {
-    project.layers = project.layers.filter((layer) => layer.type === "audio");
+    project.layers = project.layers.filter(
+      (layer) => layer.clips[0]!.type === "audio",
+    );
     project.output = { type: "video", start: 0.1, end: 2.8 };
   });
   const output = testInfo.outputPath("cut.mp4");
@@ -148,13 +150,16 @@ test("hold a video layer's first and last frames beyond its source range", async
   await cp("samples/synthetic", directory, { recursive: true });
   await editJson<Project>(`${directory}/project.json`, (project) => {
     project.layers = project.layers
-      .filter((layer) => layer.type === "video")
+      .filter((layer) => layer.clips[0]!.type === "video")
       .map((layer) => ({
         ...layer,
-        start: 1,
-        in: 1,
-        out: 2,
-        hold: { before: 1, after: 1 },
+        clips: layer.clips.map((clip) => ({
+          ...clip,
+          start: 1,
+          in: 1,
+          out: 2,
+          hold: { before: 1, after: 1 },
+        })),
       }));
   });
   const output = testInfo.outputPath("hold.mp4");
