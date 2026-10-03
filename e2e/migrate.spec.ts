@@ -1,14 +1,9 @@
 import { expect } from "@playwright/test";
-import type { SavedProject } from "../src/lib/migrate.ts";
+import type { SavedFlatLayer, SavedProject } from "../src/lib/migrate.ts";
 import type { Project } from "../src/lib/project.ts";
 import { execFileAsync } from "../src/utils/exec.ts";
 import { editJson, readJson } from "../src/utils/fs.ts";
 import { test } from "./helper";
-
-type SavedFlatLayer = Exclude<
-  SavedProject["layers"][number],
-  { clips: unknown }
->;
 
 test("read and migrate an older project file", async ({ page, editor }) => {
   const readProject = () => readJson<SavedProject>(editor.projectFile);
