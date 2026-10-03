@@ -20,6 +20,10 @@ export function loadSavedProject(project: SavedProject) {
   return migrateProject(project);
 }
 
+/**
+ * Reject what loading cannot fix from the file alone, which needs update-media
+ * or a different file.
+ */
 function validateProject(project: SavedProject): void {
   for (const layer of project.layers) {
     if (!("src" in layer)) {
