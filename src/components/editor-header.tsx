@@ -21,14 +21,12 @@ import type { SaveStatus } from "./use-editor-project";
 export function EditorHeader({
   file,
   saveStatus,
-  saveError,
   compositionSettingsSelected,
   onSave,
   onCompositionSettingsSelect,
 }: {
   file: string;
   saveStatus: SaveStatus;
-  saveError?: string;
   compositionSettingsSelected: boolean;
   onSave: () => void;
   onCompositionSettingsSelect: () => void;
@@ -42,7 +40,7 @@ export function EditorHeader({
       >
         {file.split(/[\\/]/).slice(-2).join("/")}
       </span>
-      <EditorSaveButton status={saveStatus} error={saveError} onSave={onSave} />
+      <EditorSaveButton status={saveStatus} onSave={onSave} />
       <div className="flex-1" />
       <Button
         aria-label="Composition settings"
@@ -87,21 +85,17 @@ function getToggleClassName(active: boolean) {
 
 function EditorSaveButton({
   status,
-  error,
   onSave,
 }: {
   status: SaveStatus;
-  error?: string;
   onSave: () => void;
 }) {
   const canSave = status === "unsaved" || status === "error";
-  // Name the cause of a failed save, so the user can act on it rather than
-  // only retry.
   const label = {
     saved: "All changes saved",
     unsaved: "Unsaved changes (Ctrl/Cmd+S to save)",
     saving: "Saving project",
-    error: `Save failed: ${error} (click or Ctrl/Cmd+S to retry)`,
+    error: "Save failed (click or Ctrl/Cmd+S to retry)",
   }[status];
   const icon = {
     saved: <SaveCheckIcon className="size-4" />,
@@ -132,7 +126,7 @@ function EditorSaveButton({
       <span
         id="editor-save-tooltip"
         role="tooltip"
-        className="pointer-events-none absolute top-full left-0 z-50 mt-2 rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs font-normal w-max max-w-md break-words text-neutral-100 opacity-0 shadow-lg transition-opacity duration-200 group-focus-within/save:opacity-100 group-hover/save:opacity-100"
+        className="pointer-events-none absolute top-full left-1/2 z-50 mt-2 -translate-x-1/2 rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs font-normal whitespace-nowrap text-neutral-100 opacity-0 shadow-lg transition-opacity duration-200 group-focus-within/save:opacity-100 group-hover/save:opacity-100"
       >
         {label}
       </span>

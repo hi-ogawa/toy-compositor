@@ -75,7 +75,6 @@ export function useEditorProject({
     ready: projectQuery.isSuccess,
     save: saveMutation.mutate,
     saveStatus,
-    saveError: saveMutation.error?.message,
     resolveMediaUrl: (src: string) =>
       apiClient.getMediaUrl({ src, projectPath }),
   };

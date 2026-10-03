@@ -93,7 +93,6 @@ export function Editor({ projectPath }: { projectPath: string }) {
       <EditorHeader
         file={state.file}
         saveStatus={project.saveStatus}
-        saveError={project.saveError}
         compositionSettingsSelected={selection?.type === "output"}
         onSave={() => project.save()}
         onCompositionSettingsSelect={() =>
