@@ -1,7 +1,6 @@
 import { expect } from "@playwright/test";
 import type { SavedProject } from "../src/lib/migrate.ts";
 import type { Project } from "../src/lib/project.ts";
-import { measureTextHeight } from "../src/lib/render/text.ts";
 import { execFileAsync } from "../src/utils/exec.ts";
 import { editJson, readJson } from "../src/utils/fs.ts";
 import { test } from "./helper";
@@ -11,21 +10,15 @@ test("read and migrate an older project file", async ({ page, editor }) => {
 
   // Remove the tint's box and the title's box height, as in a project file
   // from before color layers required a box and text layers stored a height.
-  // The tint then covered the canvas, and the title's box followed its lines.
+  // The tint then covered the canvas, and the title's box followed its lines,
+  // which is the height the sample stores.
   const project = await readJson<Project>(editor.projectFile);
-  const title = project.layers.find((layer) => layer.name === "Title");
-  if (title?.type !== "text") {
-    throw new Error("The sample has no title text");
-  }
-  const titleHeight = await measureTextHeight(title);
   const migratedProject = {
     ...project,
     layers: project.layers.map((layer) =>
       layer.name === "Tint"
         ? { ...layer, box: { x: 0, y: 0, width: 640, height: 360 } }
-        : layer === title
-          ? { ...title, box: { ...title.box, height: titleHeight } }
-          : layer,
+        : layer,
     ),
   };
   const removeBoxes = () =>
