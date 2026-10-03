@@ -1,6 +1,9 @@
+import { cp } from "node:fs/promises";
+import path from "node:path";
 import { expect } from "@playwright/test";
 import type { SavedProject } from "../src/lib/migrate.ts";
 import type { Project } from "../src/lib/project.ts";
+import { getProjectPageUrl } from "../src/lib/routes.ts";
 import { execFileAsync } from "../src/utils/exec.ts";
 import { editJson, readJson } from "../src/utils/fs.ts";
 import { test } from "./helper";
@@ -9,50 +12,47 @@ test("read and migrate a color layer without a box", async ({
   page,
   editor,
 }) => {
-  // Remove the tint's box, as in a project file from before color layers
-  // required one.
-  const project = await readJson<Project>(editor.projectFile);
-  await editJson<SavedProject>(editor.projectFile, (savedProject) => {
-    const tint = savedProject.layers.find((layer) => layer.name === "Tint");
+  // Copy the project without the tint's box, as in a project file from before
+  // color layers required one.
+  const oldFile = path.join(editor.projectDir, "old.json");
+  await cp(editor.projectFile, oldFile);
+  await editJson<SavedProject>(oldFile, (project) => {
+    const tint = project.layers.find((layer) => layer.name === "Tint");
     if (tint?.type === "color") {
       delete tint.box;
     }
   });
-  const savedProject = await readJson<SavedProject>(editor.projectFile);
+  const oldProject = await readJson<SavedProject>(oldFile);
 
-  // Open the editor, and confirm it loads the project as it is.
-  await page.goto(editor.url);
+  // Open the copy in the editor, and confirm it loads as it is.
+  await page.goto(getProjectPageUrl({ path: oldFile }));
   await expect(page.getByRole("main")).toBeVisible();
 
-  // Render, and confirm it accepts the project too.
+  // Render the copy, and confirm it accepts the project too.
   await execFileAsync(process.execPath, [
     "src/cli.ts",
     "render",
-    editor.projectFile,
-    `${editor.projectFile}.mp4`,
+    oldFile,
+    `${oldFile}.mp4`,
     "--dry-run",
   ]);
 
-  // Check it, and confirm the check fails without writing.
+  // Check the copy, and confirm the check fails without writing.
   await expect(
     execFileAsync(process.execPath, [
       "src/cli.ts",
       "migrate",
-      editor.projectFile,
+      oldFile,
       "--check",
     ]),
   ).rejects.toThrow();
-  expect(await readJson<SavedProject>(editor.projectFile)).toEqual(
-    savedProject,
-  );
+  expect(await readJson<SavedProject>(oldFile)).toEqual(oldProject);
 
-  // Migrate it, and confirm the tint covers the whole canvas as it rendered before.
-  await execFileAsync(process.execPath, [
-    "src/cli.ts",
-    "migrate",
-    editor.projectFile,
-  ]);
-  expect(await readJson<Project>(editor.projectFile)).toEqual({
+  // Migrate the copy, and confirm it matches the original except that the tint
+  // covers the whole canvas, as it rendered before.
+  await execFileAsync(process.execPath, ["src/cli.ts", "migrate", oldFile]);
+  const project = await readJson<Project>(editor.projectFile);
+  expect(await readJson<Project>(oldFile)).toEqual({
     ...project,
     layers: project.layers.map((layer) =>
       layer.name === "Tint"
@@ -65,7 +65,7 @@ test("read and migrate a color layer without a box", async ({
   await execFileAsync(process.execPath, [
     "src/cli.ts",
     "migrate",
-    editor.projectFile,
+    oldFile,
     "--check",
   ]);
 });
