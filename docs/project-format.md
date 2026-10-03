@@ -2,6 +2,8 @@
 
 A project is one JSON file that describes one deliverable: a canvas, an output, which is a video range or a still frame, and a stack of layers. Variants of a cover, such as the horizontal video and its thumbnail, are separate project files, and each one is self-contained.
 
+This doc describes what a project means. The [renderer](compiler.md) turns it into the finished video or image, and the [editor](editor.md) previews it in the browser while you edit.
+
 ```jsonc
 {
   "canvas": {
@@ -35,6 +37,8 @@ A video or audio layer plays its source from `in` to `out`, starting at timeline
 An image, text, or color layer is visible from timeline position `start` to `end`. Every layer sets its range, so a layer's timing never depends on the output. An overlay meant for the whole cover, such as the title, spans the main video's output range, which also covers variants whose output falls inside it, such as the thumbnail.
 
 ## Layers
+
+Layers stack in list order over the canvas `background`, so later layers sit on top. The sound of all video and audio layers is mixed together.
 
 Every layer can have an optional `name`, such as `"camera"`, `"score"`, or `"mix"`. Names do not affect rendering. They label layers in the editor and let scripts find a layer by its role instead of its position in the list.
 

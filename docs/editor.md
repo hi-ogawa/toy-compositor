@@ -1,6 +1,6 @@
 # Editor
 
-The editor composes the project in the DOM at one project time. Each visual layer is an absolutely positioned `<video>`, `<img>`, or div, placed in canvas pixels inside a canvas-sized div, and the whole canvas is CSS-scaled to fit the monitor. The preview shares layout math with the [compiler](compiler.md) (`placeMedia` and `getOutputRange` in [src/lib/layout.ts](../src/lib/layout.ts)), but not its rendering, so the ffmpeg render stays the truth for exact frames and text.
+The editor composes the project in the DOM at one project time. Each visual layer is an absolutely positioned `<video>`, `<img>`, or div, placed in canvas pixels inside a canvas-sized div, and the whole canvas is CSS-scaled to fit the monitor. The preview shares layout math with the [compiler](compiler.md) (`placeMedia` and `getOutputRange` in [src/lib/layout.ts](../src/lib/layout.ts)), but not its rendering, so it differs from the render in the places listed [below](#differences-from-the-render).
 
 ## Components
 
@@ -38,7 +38,7 @@ The preview time decides which layers show and which frame each video shows. A l
 
 ![One project time picks which layers are visible and which source frame each video shows](images/time-mapping.svg)
 
-Every layer stays mounted and is hidden outside its range, so its media is loaded before playback reaches it. Layers draw in project order, so later layers sit on top, matching the compiler's overlay order. Audio layers draw nothing, and their sound plays on the transport, described below.
+Every layer stays mounted and is hidden outside its range, so its media is loaded before playback reaches it. Layers draw in [project order](project-format.md#layers), so later layers sit on top. Audio layers draw nothing, and their sound plays on the transport, described below.
 
 The selected layer gets a read-only outline, drawn as a second div with the same rectangle. Text layers have no height, so the outline holds an invisible copy of the text to match it.
 
@@ -59,12 +59,15 @@ EditorRuntime              runtime.ts                source loading, restarts ar
 - **Audio is scheduled, never steered.** A layer plays wherever its own range covers the playhead, so trimming decides what plays. Fades are gain ramps, and `muted` silences the layer.
 - **Playbacks start only at the anchor.** An edit, or a buffer that arrives during playback, restarts the transport around the change.
 - **Sources load in the background.** Loading a project decodes each source once, shared by its layers' playback and lane waveforms, so opening never waits on a long source.
-- **Pausing lands on the frame grid,** so a paused preview matches a rendered frame.
+- **Pausing snaps the playhead to the frame grid,** so a paused preview shows the same time as a rendered frame.
+
+## Differences from the render
+
+- A paused video shows whatever frame the browser picks for `currentTime`, while the render picks the nearest source frame, so the preview may be one frame off.
+- Text is DOM text with `-webkit-text-stroke` and an estimated line height, while the render draws it with ImageMagick, so glyph placement differs slightly.
 
 ## Known gaps
 
-- A paused video shows whatever frame the browser picks for `currentTime`, while the compiler snaps to the nearest source frame, so the preview may be one frame off.
-- Text is DOM text with `-webkit-text-stroke` and an estimated line height, while the compiler draws it with ImageMagick, so glyph placement differs slightly.
 - The transport publishes the playhead through the editor store, so the editor re-renders on every animation frame while playing.
 - A video starts 50 to 90 ms behind the sound right after Play and catches up within a few seconds, because the element takes that long to start.
 - Each video and audio source decodes whole into memory, about 60MB for a 3-minute stereo mix, and a video source is downloaded in full for its audio (#85).

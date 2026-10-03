@@ -11,8 +11,7 @@ pnpm render <project.json> <output> --dry-run   # print the command only
 ## Timing and Frames
 
 - The project file's numbers are the timing truth. Offsets are set on waveforms, which are exact data, and playback only confirms them, so preview drift never shifts the final render.
-- Source time is a presentation timestamp, including a stream's start offset, and the frame shown at a source time is the frame whose timestamp is nearest to it. Every renderer and the editor preview must pick frames this way, because project times are rounded to milliseconds and source frames often sit off the project's frame grid, so a looser rule makes renderers disagree by one frame.
-- The ffmpeg render is the truth for exact frames. The [editor](editor.md) preview shares the layout math, which is enough for placing layers, but a paused seek may land one frame off the nearest-frame rule, so frame choices such as the thumbnail are checked on a render.
+- The frame shown at a source time is the one [nearest to it](project-format.md#time). A paused editor preview can be [one frame off](editor.md#differences-from-the-render), so check frame choices such as the thumbnail on a render.
 - A video layer's [hold](project-format.md#hold) clones the first frame the layer reads before it and the last frame it reads after it. Audio is not held, so the held spans are silent.
 - Camera footage is pre-processed outside toy-compositor to a constant frame rate, a browser-playable codec, and a one-second keyframe interval, so the compiler can assume evenly spaced frames and the editor can play and seek it ([pre-processing](preprocessing.md)).
 
