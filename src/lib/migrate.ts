@@ -57,26 +57,9 @@ async function migrateProject(project: SavedProject): Promise<{
 }> {
   const changes: string[] = [];
   const layers = await Promise.all(
-    project.layers.map(async (layer): Promise<Layer> => {
-      const label = `${layer.type} layer "${layer.name ?? layer.type}"`;
-      if (layer.type === "color") {
-        if (!layer.box) {
-          changes.push(`${label} has no box`);
-        }
-        const { width, height } = project.canvas;
-        return { ...layer, box: layer.box ?? { x: 0, y: 0, width, height } };
-      }
-      if (layer.type === "text") {
-        let { height } = layer.box;
-        if (height === undefined) {
-          // The box followed the lines, which rendered at their natural height.
-          changes.push(`${label} has no box height`);
-          height = await measureTextHeight(layer);
-        }
-        return { ...layer, box: { ...layer.box, height } };
-      }
-      return layer;
-    }),
+    project.layers.map((layer) =>
+      migrateLayer(layer, { canvas: project.canvas, changes }),
+    ),
   );
   const migrated: Project = {
     ...project,
@@ -85,4 +68,29 @@ async function migrateProject(project: SavedProject): Promise<{
     media: project.media ?? {},
   };
   return { project: migrated, changes };
+}
+
+/** Bring one layer to the current shape, recording each change it needs. */
+async function migrateLayer(
+  layer: SavedLayer,
+  { canvas, changes }: { canvas: Project["canvas"]; changes: string[] },
+): Promise<Layer> {
+  const label = `${layer.type} layer "${layer.name ?? layer.type}"`;
+  if (layer.type === "color") {
+    if (!layer.box) {
+      changes.push(`${label} has no box`);
+    }
+    const { width, height } = canvas;
+    return { ...layer, box: layer.box ?? { x: 0, y: 0, width, height } };
+  }
+  if (layer.type === "text") {
+    let { height } = layer.box;
+    if (height === undefined) {
+      // The box followed the lines, which rendered at their natural height.
+      changes.push(`${label} has no box height`);
+      height = await measureTextHeight(layer);
+    }
+    return { ...layer, box: { ...layer.box, height } };
+  }
+  return layer;
 }
