@@ -56,7 +56,8 @@
 <rect x="530" y="388" width="180" height="48" rx="7" fill="#e7eff8" stroke="#2f6fb0"/>
 <text x="542" y="408">overlay x=420 y=259</text>
 <!-- row 4 color -->
-<text x="32" y="484" fill="#8c9691" font-family="Arial,sans-serif">4: color, no input</text>
+<text x="32" y="484" font-family="Arial,sans-serif" font-size="12" fill="#8c9691">Layer 4 has no input,</text>
+<text x="32" y="502" font-family="Arial,sans-serif" font-size="12" fill="#8c9691">color is a source filter</text>
 <rect x="250" y="464" width="220" height="48" rx="7" fill="#e7eff8" stroke="#2f6fb0"/>
 <text x="262" y="484">color #0080ff@0.5 240×135,</text>
 <text x="262" y="502">format=rgba, setpts</text>
