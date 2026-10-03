@@ -46,7 +46,7 @@ function validateProject(project: SavedProject): void {
     if (!("src" in layer)) {
       continue;
     }
-    const label = `${layer.type} layer (${layer.src})`;
+    const label = `${layer.type} layer "${layer.name ?? layer.type}" (${layer.src})`;
     const mediaInfo = project.media?.[layer.src];
     if (!mediaInfo) {
       throw new Error(`${label} has no media info, run update-media`);
