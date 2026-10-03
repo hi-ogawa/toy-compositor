@@ -1,5 +1,6 @@
 import {
   CircleAlertIcon,
+  CircleHelpIcon,
   ClapperboardIcon,
   HouseIcon,
   LoaderCircleIcon,
@@ -24,12 +25,14 @@ export function EditorHeader({
   compositionSettingsSelected,
   onSave,
   onCompositionSettingsSelect,
+  onHelpOpen,
 }: {
   file: string;
   saveStatus: SaveStatus;
   compositionSettingsSelected: boolean;
   onSave: () => void;
   onCompositionSettingsSelect: () => void;
+  onHelpOpen: () => void;
 }) {
   return (
     <header className="flex h-[53px] shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-4 shadow-sm">
@@ -65,6 +68,10 @@ export function EditorHeader({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={onHelpOpen}>
+            <CircleHelpIcon />
+            Help & Shortcuts
+          </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <a href={getHomePageUrl()}>
               <HouseIcon />
