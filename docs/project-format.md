@@ -187,7 +187,7 @@ An entry depends only on the file's contents, so a copied file has the same entr
 
 ## Transform and crop
 
-`transform` is where a video or image clip goes on the canvas. `x` and `y` are where the source's top-left corner goes, in canvas pixels, like a text or color clip's `box`, and `scale` multiplies the source's own size, keeping its aspect ratio. A 1920×1080 camera zoomed in by 10% around the middle of a 1920×1080 canvas is `{ "x": -96, "y": -54, "scale": 1.1 }`. The placed size rounds to even pixels. Anything outside the canvas is clipped, so a clip can be larger than the canvas or partly off it.
+`transform` is where a video or image clip goes on the canvas. `x` and `y` are where the source's top-left corner goes, in canvas pixels, like a text or color clip's `box`, and `scale` multiplies the source's own size, keeping its aspect ratio. A 1920×1080 camera zoomed in by 10% around the middle of a 1920×1080 canvas is `{ "x": -96, "y": -54, "scale": 1.1 }`. The placed size rounds to whole pixels. Anything outside the canvas is clipped, so a clip can be larger than the canvas or partly off it.
 
 `crop` hides a fraction of the source at each edge. The transform still places the whole source, so cropping never moves what remains.
 
