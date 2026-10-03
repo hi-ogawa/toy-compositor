@@ -2,11 +2,7 @@ import { spawn } from "node:child_process";
 import { once } from "node:events";
 import fs from "node:fs";
 import path from "node:path";
-import {
-  migrateProject,
-  validateProject,
-  type SavedProject,
-} from "../migrate.ts";
+import { migrateProject, type SavedProject } from "../migrate.ts";
 import { compile } from "./compile.ts";
 import { resolveProject } from "./resolve.ts";
 
@@ -23,7 +19,6 @@ export async function renderProject({
   const savedProject: SavedProject = JSON.parse(
     fs.readFileSync(projectFile, "utf-8"),
   );
-  validateProject(savedProject);
   const { project } = migrateProject(savedProject);
   const projectDir = path.dirname(path.resolve(projectFile));
   const outPath = path.resolve(outFile);

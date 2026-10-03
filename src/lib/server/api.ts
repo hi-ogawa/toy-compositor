@@ -5,11 +5,7 @@ import { readJson, writeJson } from "../../utils/fs.ts";
 import type { Result } from "../../utils/result.ts";
 import { getMediaType, type MediaFile } from "../media-file.ts";
 import { probeMediaInfo } from "../media-info.ts";
-import {
-  migrateProject,
-  validateProject,
-  type SavedProject,
-} from "../migrate.ts";
+import { migrateProject, type SavedProject } from "../migrate.ts";
 import type { MediaInfo, Output, Project } from "../project.ts";
 import { getDialogTool, pickProjectPath } from "./dialog.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
@@ -203,12 +199,11 @@ export function createEditorHandlers({
       }
       const savedProject = await readJson<SavedProject>(file);
       try {
-        validateProject(savedProject);
+        const { project } = migrateProject(savedProject);
+        return { ok: true, value: { file: projectPath, project } };
       } catch (error) {
         return { ok: false, error: (error as Error).message };
       }
-      const { project } = migrateProject(savedProject);
-      return { ok: true, value: { file: projectPath, project } };
     },
 
     async saveProject({

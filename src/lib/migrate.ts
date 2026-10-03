@@ -17,35 +17,15 @@ type SavedColorLayer = Omit<ColorLayer, "box"> & {
 };
 
 /**
- * Check what migrating cannot fill in, which needs a command that reads the
- * media files.
- */
-export function validateProject(project: SavedProject): void {
-  for (const layer of project.layers) {
-    if (!("src" in layer)) {
-      continue;
-    }
-    const label = `${layer.type} layer "${layer.name ?? layer.type}" (${layer.src})`;
-    const mediaInfo = project.media?.[layer.src];
-    if (!mediaInfo) {
-      throw new Error(`${label} has no media info, run update-media`);
-    }
-    if (layer.type !== "audio" && !mediaInfo.video) {
-      throw new Error(
-        `${label} has no video stream, use a file with video or run update-media if the file changed`,
-      );
-    }
-  }
-}
-
-/**
  * Bring a project from older formats to the current one, in the order the
- * format changed, and describe each layer change.
+ * format changed, and describe each layer change. Throw when it lacks what
+ * only update-media can fill in.
  */
 export function migrateProject(project: SavedProject): {
   project: Project;
   changes: string[];
 } {
+  validateProject(project);
   const changes: string[] = [];
   const layers = project.layers.map((layer): Layer => {
     const label = `${layer.type} layer "${layer.name ?? layer.type}"`;
@@ -67,4 +47,26 @@ export function migrateProject(project: SavedProject): {
     media: project.media ?? {},
   };
   return { project: migrated, changes };
+}
+
+/**
+ * Check what migrating cannot fill in, which needs a command that reads the
+ * media files.
+ */
+function validateProject(project: SavedProject): void {
+  for (const layer of project.layers) {
+    if (!("src" in layer)) {
+      continue;
+    }
+    const label = `${layer.type} layer "${layer.name ?? layer.type}" (${layer.src})`;
+    const mediaInfo = project.media?.[layer.src];
+    if (!mediaInfo) {
+      throw new Error(`${label} has no media info, run update-media`);
+    }
+    if (layer.type !== "audio" && !mediaInfo.video) {
+      throw new Error(
+        `${label} has no video stream, use a file with video or run update-media if the file changed`,
+      );
+    }
+  }
 }
