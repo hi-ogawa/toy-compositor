@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
 import { getPictureRange } from "../lib/layout";
-import type { Canvas, Layer, Project, TextLayer } from "../lib/project";
+import type { Layer, Project, TextLayer } from "../lib/project";
 import type { EditorRuntime, EditorProject } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
 import type { EditorSelection } from "./use-layer-interaction";
@@ -80,7 +80,6 @@ export function CompositionPreview({
                     }
                     id={layer.id}
                     index={index}
-                    canvas={canvas}
                     mediaInfoMap={project.media}
                     resolveMediaUrl={resolveMediaUrl}
                   />
@@ -101,7 +100,6 @@ function PreviewLayer({
   selected,
   id,
   index,
-  canvas,
   mediaInfoMap,
   resolveMediaUrl,
 }: {
@@ -112,19 +110,10 @@ function PreviewLayer({
   id: string;
   /** Position in the project, for test ids. */
   index: number;
-  canvas: Canvas;
   mediaInfoMap: Project["media"];
   resolveMediaUrl: (src: string) => string;
 }) {
-  const box: TextLayer["box"] & { height?: number } =
-    layer.type === "color"
-      ? (layer.box ?? {
-          x: 0,
-          y: 0,
-          width: canvas.width,
-          height: canvas.height,
-        })
-      : layer.box;
+  const box: TextLayer["box"] & { height?: number } = layer.box;
   const style: CSSProperties = {
     position: "absolute",
     left: box.x,

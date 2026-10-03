@@ -84,7 +84,7 @@ What each layer type turns into:
 | Video | Source frames at the canvas rate, cropped, then scaled to fit its box      | Its own audio, unless muted |
 | Image | The image repeated at the canvas rate, cropped, then scaled to fit its box | None                        |
 | Text  | The text PNG repeated at the canvas rate, placed at its box                | None                        |
-| Color | A generated solid fill with opacity, over its box or the whole canvas      | None                        |
+| Color | A generated solid fill with opacity, over its box                          | None                        |
 | Audio | None                                                                       | Its audio, unless muted     |
 
 Sound is normalized to 48 kHz stereo, faded in and out at the layer's own edges when the layer asks for it, trimmed to the visible part, and delayed to its offset. The output range only cuts a layer and never moves its fades, so a sound is read from the layer's start rather than the visible part's, because `afade` cannot start before its stream does.

@@ -146,8 +146,9 @@ export class EditorRuntime {
   }
 
   addColorLayer(): string {
+    const { canvas } = this.store.get().project;
     return this.insertLayer(
-      createColorLayer({ range: this.getNewStillRange() }),
+      createColorLayer({ canvas, range: this.getNewStillRange() }),
     );
   }
 

@@ -118,12 +118,13 @@ A video layer carries its file's audio, like a clip in other video editors, and 
   "type": "color",
   "color": "#000000",
   "opacity": 0.51,
+  "box": { "x": 0, "y": 0, "width": 1920, "height": 1080 },
   "start": 23.7,
   "end": 188.633,
 }
 ```
 
-A solid fill, used for the translucent dim under thumbnail titles. It covers the whole canvas unless it sets a `box`.
+A solid fill over its `box`, used for the translucent dim under thumbnail titles.
 
 ## Locators
 
