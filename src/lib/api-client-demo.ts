@@ -47,7 +47,7 @@ export const apiClient: typeof serverApiClient = {
     }
     return {
       ok: true,
-      value: { file: path, project: structuredClone(project) },
+      value: { file: path, project: structuredClone(project), changes: [] },
     };
   },
 

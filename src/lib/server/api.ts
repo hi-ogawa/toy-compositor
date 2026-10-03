@@ -192,18 +192,27 @@ export function createEditorHandlers({
       path: projectPath,
     }: {
       path: string;
-    }): Promise<Result<ProjectFile, string>> {
+    }): Promise<Result<ProjectFile & { changes: string[] }, string>> {
       const file = await resolveProjectFile({ registry, projectPath });
       if (!fs.existsSync(file)) {
         throw new HttpError({ status: 404, message: "Project not found" });
       }
       const savedProject = await readJson<SavedProject>(file);
+      let migrated;
       try {
-        const { project } = validateAndMigrateProject(savedProject);
-        return { ok: true, value: { file: projectPath, project } };
+        migrated = validateAndMigrateProject(savedProject);
       } catch (error) {
         return { ok: false, error: (error as Error).message };
       }
+      const { project, changes } = migrated;
+      if (changes.length > 0) {
+        await writeJson(file, project);
+        console.log(`Migrated ${file}`);
+        for (const change of changes) {
+          console.log(`  ${change}`);
+        }
+      }
+      return { ok: true, value: { file: projectPath, project, changes } };
     },
 
     async saveProject({
