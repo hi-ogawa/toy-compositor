@@ -31,7 +31,7 @@ test("compose the output start, follow inspector edits, and save them", async ({
   ).toBeVisible();
 
   // Crop the image sides and confirm it refits inside its box with an outline.
-  await clickTimelineButton(page, { name: "Label backdrop image" });
+  await clickTimelineButton(page, { name: "Select Label backdrop region" });
   await expect(canvas.getByLabel("Selected layer outline")).toBeVisible();
   await commitInspectorField(page, { name: "left", value: "0.25" });
   await commitInspectorField(page, { name: "right", value: "0.25" });
@@ -46,7 +46,7 @@ test("compose the output start, follow inspector edits, and save them", async ({
   await commitInspectorField(page, { name: "start", value: "1" });
   await clickTimelineButton(page, { name: "Render start" });
   await expect(page.getByTestId("timeline-time")).toContainText("1.000 s");
-  await clickTimelineButton(page, { name: "Test pattern video" });
+  await clickTimelineButton(page, { name: "Select Test pattern region" });
   await commitInspectorField(page, { name: "start", value: "0.3" });
   await commitInspectorField(page, { name: "in", value: "0.2" });
   await expect
@@ -63,7 +63,7 @@ test("compose the output start, follow inspector edits, and save them", async ({
   // End the text at the playhead and confirm it hides, because its range
   // excludes its end.
   const text = page.getByTestId("composition-layer-3-clip-0");
-  await clickTimelineButton(page, { name: "Title text" });
+  await clickTimelineButton(page, { name: "Select Title region" });
   await commitInspectorField(page, { name: "end", value: "1" });
   await expect(text).toBeHidden();
 
@@ -103,7 +103,7 @@ test("edit a text layer's content and styling and save them", async ({
   // Open the synthetic project and select the title text.
   await page.goto(editor.url);
   const canvas = page.getByTestId("composition-canvas");
-  await clickTimelineButton(page, { name: "Title text" });
+  await clickTimelineButton(page, { name: "Select Title region" });
   const inspector = page.getByTestId("inspector");
 
   // Rewrite the text over three lines and confirm the preview follows on blur,
@@ -208,7 +208,7 @@ test("edit layer names and a color layer's fill and box, and save them", async (
   await expect(
     page
       .getByTestId("editor-timeline")
-      .getByRole("button", { name: "Scrim color", exact: true }),
+      .getByRole("button", { name: "Select Scrim region", exact: true }),
   ).toBeVisible();
 
   // Change the fill color and confirm the preview paints it.
@@ -375,7 +375,7 @@ test("hold a video layer's first and last frames in the preview", async ({
   const video = page.getByTestId("composition-canvas").locator("video");
   const readVideoTime = () =>
     video.evaluate((element: HTMLVideoElement) => element.currentTime);
-  await clickTimelineButton(page, { name: "Test pattern video" });
+  await clickTimelineButton(page, { name: "Select Test pattern region" });
   await commitInspectorField(page, { name: "start", value: "1" });
   await expect(video).toBeHidden();
 

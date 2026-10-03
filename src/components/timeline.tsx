@@ -389,26 +389,18 @@ function TimelineLayerLane({
   selectedClipId?: string;
 }) {
   const { name } = layer;
-  // TODO(multi-clip): The label stands for the layer's first clip, which is
-  // its only one until the editor can put several clips on a layer.
-  const [firstClip] = layer.clips;
   return (
     <TimelineRow
       timeline={timeline}
       className="h-12"
       subdivisions
       label={
-        <button
-          type="button"
+        <div
           title={name}
-          className="flex h-full w-full items-center justify-between gap-2 px-3 text-left hover:bg-neutral-800/60"
-          onClick={() =>
-            layerInteraction.select({ type: "clip", id: firstClip!.id })
-          }
+          className="flex h-full items-center px-3 text-xs font-semibold"
         >
-          <span className="truncate text-xs font-semibold">{name}</span>
-          <ClipTypeIcon type={firstClip!.type} />
-        </button>
+          <span className="truncate">{name}</span>
+        </div>
       }
     >
       {layer.clips.map((clip, clipIndex) => (
@@ -510,14 +502,17 @@ function TimelineClip({
                 dimmed={muted}
               />
             )}
-            {/* The lane's header already names the layer, so the clip shows only state. */}
-            {audioClip && muted && (
-              <VolumeXIcon
-                role="img"
-                aria-label="muted"
-                className="absolute left-1 top-1 size-3.5"
-              />
-            )}
+            {/* The lane's header already names the layer, so the clip shows its type and state. */}
+            <div className="absolute left-1 top-1 flex gap-1">
+              <ClipTypeIcon type={clip.type} />
+              {audioClip && muted && (
+                <VolumeXIcon
+                  role="img"
+                  aria-label="muted"
+                  className="size-3.5"
+                />
+              )}
+            </div>
             {audioSource?.status === "pending" && (
               <LoaderCircleIcon
                 role="img"

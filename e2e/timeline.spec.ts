@@ -259,7 +259,7 @@ test("draw audio waveforms in lanes", async ({ page, editor }) => {
   await expect(videoWaveform).toHaveAttribute("data-dimmed", "true");
 
   // Select the video and unmute it, and confirm its waveform is no longer dimmed.
-  await clickTimelineButton(page, { name: "Test pattern video" });
+  await clickTimelineButton(page, { name: "Select Test pattern region" });
   await page
     .getByTestId("inspector")
     .getByRole("checkbox", { name: "muted", exact: true })
@@ -379,7 +379,7 @@ test("add, move, rename, and delete locators", async ({ page, editor }) => {
 
   // Select the video layer, then click the thumbnail locator, which takes
   // over the selection and seeks, and delete it without removing the layer.
-  await clickTimelineButton(page, { name: "Test pattern video" });
+  await clickTimelineButton(page, { name: "Select Test pattern region" });
   await clickTimelineButton(page, { name: "thumbnail" });
   await expect(page.getByTestId("timeline-time")).toContainText("1.500 s");
   await expect(getMarker("shorts")).toHaveAttribute("aria-pressed", "false");

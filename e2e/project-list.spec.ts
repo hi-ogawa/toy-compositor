@@ -34,7 +34,7 @@ test("open projects from the start page", async ({ page, editor }) => {
   // Select the image in the Source tab and confirm its source resolves
   // relative to the project folder.
   await page.getByRole("tab", { name: "Source" }).click();
-  await clickTimelineButton(page, { name: "Label backdrop image" });
+  await clickTimelineButton(page, { name: "Select Label backdrop region" });
   const image = page
     .locator("#side-panel")
     .getByRole("img", { name: "Label backdrop", exact: true });
