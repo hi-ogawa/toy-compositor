@@ -387,7 +387,8 @@ test("hold a video layer's first and last frames in the preview", async ({
   ).toHaveAttribute("title", "hold 0.000–1.000 s");
 
   // Shorten its source range to 1 s and hold its last frame for 1 s, then seek
-  // into that hold and confirm the preview stays at the source range's end.
+  // into that hold and confirm the preview shows the frame one output frame
+  // before the source range ends.
   await commitInspectorField(page, { name: "out", value: "1" });
   await commitInspectorField(page, { name: "after", value: "1" });
   await expect(lane).toHaveAttribute("title", "1.000–2.000 s");
@@ -400,7 +401,7 @@ test("hold a video layer's first and last frames in the preview", async ({
   });
   await expect(page.getByTestId("timeline-time")).toContainText("2.500 s");
   await expect(video).toBeVisible();
-  await expect.poll(readVideoTime).toBeCloseTo(1);
+  await expect.poll(readVideoTime).toBeCloseTo(1 - 1 / 30);
 
   // Save and confirm the hold reaches the project file.
   const save = page.getByTestId("editor-save-button");

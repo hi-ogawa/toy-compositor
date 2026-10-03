@@ -2,6 +2,7 @@ import path from "node:path";
 import {
   fitBox,
   intersect,
+  getLastFrameTime,
   getLayerRange,
   getOutputRange,
   getPictureRange,
@@ -180,12 +181,13 @@ function compileVideo({
   scene: Scene;
 }): LayerStreams {
   const visible = intersect(getPictureRange(layer), scene.range);
-  if (!visible) {
+  const frames = visible && getOutputFrames({ visible, scene });
+  if (!visible || !frames) {
     return {};
   }
   const video = mediaInfo.video!;
   const fit = fitBox({ source: video, crop: layer.crop, box: layer.box });
-  const read = getSourceRead({ layer, visible, scene });
+  const read = getSourceRead({ layer, visible, frames, scene });
   // The held spans are silent, so sound covers only the layer range.
   const audible = intersect(getLayerRange(layer), scene.range);
   return {
@@ -193,16 +195,17 @@ function compileVideo({
       input: buildSeekInput({
         file,
         seek: getFrameShownAt(video, { time: read.time }),
-        duration: read.duration,
+        duration: getReadDuration(read, scene),
       }),
       filters: [
         `fps=${scene.canvas.fps}`,
+        buildTrimFilter(read.count),
         ...(read.before > 0 || read.after > 0
           ? [
-              `tpad=start_duration=${read.before}:stop_duration=${read.after}:start_mode=clone:stop_mode=clone`,
+              `tpad=start=${read.before}:stop=${read.after}:start_mode=clone:stop_mode=clone`,
             ]
           : []),
-        `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
+        buildPlaceFilter(frames.first, scene),
         ...buildCropFilters(layer.crop),
         `scale=${fit.width}:${fit.height}`,
       ],
@@ -217,34 +220,42 @@ function compileVideo({
 }
 
 /**
- * Which source span a video layer reads for its visible part, and how many
- * seconds to clone its first and last frames over the held spans. A visible
- * part that lies entirely in a hold reads one frame at the edge it holds.
+ * Which source frames a video layer reads for its visible output frames, and
+ * how many frames to clone before and after them over the held spans. Visible
+ * frames that lie entirely in a hold read the one frame it holds, which is
+ * what the layer shows on its first or last output frame.
  */
 function getSourceRead({
   layer,
   visible,
+  frames,
   scene,
 }: {
   layer: VideoLayer;
   visible: TimeRange;
+  frames: OutputFrames;
   scene: Scene;
 }) {
   const range = getLayerRange(layer);
-  const played = intersect(range, visible);
-  if (played) {
+  const played = intersect(range, scene.range);
+  const playedFrames = played && getOutputFrames({ visible: played, scene });
+  if (played && playedFrames) {
     return {
       time: layer.in + played.start - layer.start,
-      duration: played.end - played.start,
-      before: played.start - visible.start,
-      after: visible.end - played.end,
+      count: playedFrames.count,
+      before: playedFrames.first - frames.first,
+      after:
+        frames.first + frames.count - playedFrames.first - playedFrames.count,
     };
   }
-  const frame = 1 / scene.canvas.fps;
-  const held = visible.end - visible.start - frame;
   return visible.end <= range.start
-    ? { time: layer.in, duration: frame, before: held, after: 0 }
-    : { time: layer.out - frame, duration: frame, before: 0, after: held };
+    ? { time: layer.in, count: 1, before: frames.count - 1, after: 0 }
+    : {
+        time: getLastFrameTime(layer, { fps: scene.canvas.fps }),
+        count: 1,
+        before: 0,
+        after: frames.count - 1,
+      };
 }
 
 function compileImage({
@@ -259,7 +270,8 @@ function compileImage({
   scene: Scene;
 }): LayerStreams {
   const visible = intersect(getLayerRange(layer), scene.range);
-  if (!visible) {
+  const frames = visible && getOutputFrames({ visible, scene });
+  if (!frames) {
     return {};
   }
   const fit = fitBox({
@@ -272,12 +284,13 @@ function compileImage({
       input: buildStillInput({
         file,
         fps: scene.canvas.fps,
-        duration: visible.end - visible.start,
+        duration: getReadDuration(frames, scene),
       }),
       filters: [
         ...buildCropFilters(layer.crop),
         `scale=${fit.width}:${fit.height}`,
-        `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
+        buildTrimFilter(frames.count),
+        buildPlaceFilter(frames.first, scene),
       ],
       x: fit.x,
       y: fit.y,
@@ -295,7 +308,8 @@ function compileText({
   scene: Scene;
 }): LayerStreams {
   const visible = intersect(getLayerRange(layer), scene.range);
-  if (!visible) {
+  const frames = visible && getOutputFrames({ visible, scene });
+  if (!frames) {
     return {};
   }
   return {
@@ -303,9 +317,12 @@ function compileText({
       input: buildStillInput({
         file,
         fps: scene.canvas.fps,
-        duration: visible.end - visible.start,
+        duration: getReadDuration(frames, scene),
       }),
-      filters: [`setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`],
+      filters: [
+        buildTrimFilter(frames.count),
+        buildPlaceFilter(frames.first, scene),
+      ],
       // The stroked copy pads the PNG by half the outline width, so shift it back up.
       x: layer.box.x,
       y: layer.box.y - Math.round((layer.outline?.width ?? 0) / 2),
@@ -321,7 +338,8 @@ function compileColor({
   scene: Scene;
 }): LayerStreams {
   const visible = intersect(getLayerRange(layer), scene.range);
-  if (!visible) {
+  const frames = visible && getOutputFrames({ visible, scene });
+  if (!frames) {
     return {};
   }
   const { canvas } = scene;
@@ -334,9 +352,10 @@ function compileColor({
   return {
     video: {
       filters: [
-        `color=c=${layer.color}@${layer.opacity ?? 1}:s=${box.width}x${box.height}:r=${canvas.fps}:d=${visible.end - visible.start}`,
+        `color=c=${layer.color}@${layer.opacity ?? 1}:s=${box.width}x${box.height}:r=${canvas.fps}:d=${getReadDuration(frames, scene)}`,
         "format=rgba",
-        `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
+        buildTrimFilter(frames.count),
+        buildPlaceFilter(frames.first, scene),
       ],
       x: box.x,
       y: box.y,
@@ -494,6 +513,46 @@ function buildStillInput({
     "-i",
     file,
   ];
+}
+
+/** A visual layer's output frames, counted from the output start. */
+type OutputFrames = { first: number; count: number };
+
+/**
+ * The output frames a visible range covers, from the frame nearest its start
+ * to the one before the frame nearest its end, or nothing when it covers none.
+ * Rounding both edges on the output frame grid keeps a millisecond-rounded
+ * frame time such as 1.033 s on frame 31 at 30 fps.
+ */
+function getOutputFrames({
+  visible,
+  scene,
+}: {
+  visible: TimeRange;
+  scene: Scene;
+}): OutputFrames | undefined {
+  const { fps } = scene.canvas;
+  const first = Math.round((visible.start - scene.range.start) * fps);
+  const end = Math.round((visible.end - scene.range.start) * fps);
+  return end > first ? { first, count: end - first } : undefined;
+}
+
+/** Read one frame beyond a layer's frames, so the trim, not the read, ends it. */
+function getReadDuration(frames: { count: number }, scene: Scene) {
+  return (frames.count + 1) / scene.canvas.fps;
+}
+
+/**
+ * Cut a stream at the canvas frame rate to a layer's frame count, because
+ * ffmpeg would otherwise end it by its own rounding of the read duration.
+ */
+function buildTrimFilter(count: number) {
+  return `trim=end_frame=${count}`;
+}
+
+/** Place a stream on its first output frame, rounding because setpts truncates. */
+function buildPlaceFilter(first: number, scene: Scene) {
+  return `setpts=PTS-STARTPTS+round(${first / scene.canvas.fps}/TB)`;
 }
 
 function buildCropFilters(crop?: Crop) {

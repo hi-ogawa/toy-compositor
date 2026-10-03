@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="910" height="552" viewBox="0 0 910 552" role="img" aria-labelledby="title desc">
 <title id="title">The filter graph of the synthetic sample</title>
-<desc id="desc">Four inputs feed four filter chains, one row per layer. Input 0, the video, becomes stream v0 after fps, setpts, and scale. Input 1, the audio file, becomes a1 after aformat, two afades, and adelay. Input 2, the image, becomes v2 after scale and setpts. Input 3, the text PNG, becomes v3 after setpts. A color source filter makes the canvas stream. Each overlay takes the stream from above as its background and the stream from the left as the foreground drawn at x and y: canvas with v0 makes over0, over0 with v2 makes over2, and over2 with v3 makes over3. format turns over3 into vout, and amix, apad, and atrim turn a1 into aout. The output maps vout and aout. Input 0's audio stream is unused because the video layer is muted.</desc>
+<desc id="desc">Four inputs feed four filter chains, one row per layer. Input 0, the video, becomes stream v0 after fps, trim, setpts, and scale. Input 1, the audio file, becomes a1 after aformat, two afades, and adelay. Input 2, the image, becomes v2 after scale, trim, and setpts. Input 3, the text PNG, becomes v3 after trim and setpts. A color source filter makes the canvas stream. Each overlay takes the stream from above as its background and the stream from the left as the foreground drawn at x and y: canvas with v0 makes over0, over0 with v2 makes over2, and over2 with v3 makes over3. format turns over3 into vout, and amix, apad, and atrim turn a1 into aout. The output maps vout and aout. Input 0's audio stream is unused because the video layer is muted.</desc>
 <defs>
 <marker id="pic" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f6fb0"/></marker>
 <marker id="snd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3641f"/></marker>
@@ -24,7 +24,7 @@
 <text x="32" y="180">0: video.mp4</text>
 <text x="32" y="198" fill="#52625d">-ss 0 -t 3</text>
 <rect x="250" y="160" width="220" height="48" rx="7" fill="#e7eff8" stroke="#2f6fb0"/>
-<text x="262" y="180">fps=30, setpts,</text>
+<text x="262" y="180">fps=30, trim, setpts,</text>
 <text x="262" y="198">scale=640:360</text>
 <rect x="530" y="160" width="180" height="48" rx="7" fill="#e7eff8" stroke="#2f6fb0"/>
 <text x="542" y="180">overlay x=0 y=0</text>
@@ -44,7 +44,7 @@
 <text x="32" y="350" fill="#52625d">-loop 1 -t 3</text>
 <rect x="250" y="312" width="220" height="48" rx="7" fill="#e7eff8" stroke="#2f6fb0"/>
 <text x="262" y="332">scale=160:90,</text>
-<text x="262" y="350">setpts</text>
+<text x="262" y="350">trim, setpts</text>
 <rect x="530" y="312" width="180" height="48" rx="7" fill="#e7eff8" stroke="#2f6fb0"/>
 <text x="542" y="332">overlay x=420 y=240</text>
 <!-- row 3 text -->
@@ -52,7 +52,7 @@
 <text x="32" y="408">3: text PNG</text>
 <text x="32" y="426" fill="#52625d">-loop 1 -t 3</text>
 <rect x="250" y="388" width="220" height="48" rx="7" fill="#e7eff8" stroke="#2f6fb0"/>
-<text x="262" y="408">setpts</text>
+<text x="262" y="408">trim, setpts</text>
 <rect x="530" y="388" width="180" height="48" rx="7" fill="#e7eff8" stroke="#2f6fb0"/>
 <text x="542" y="408">overlay x=420 y=259</text>
 <!-- outputs -->
