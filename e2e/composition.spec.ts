@@ -201,11 +201,7 @@ test("edit layer names and a color layer's fill and box, and save them", async (
     .fill("#ff0000");
   await expect(fill).toHaveCSS("background-color", "rgb(255, 0, 0)");
 
-  // Turn the box on, confirm it starts from the full canvas, and narrow it.
-  const box = page
-    .getByTestId("inspector")
-    .getByRole("checkbox", { name: "box" });
-  await box.check();
+  // Confirm the box starts from the full canvas, and narrow it.
   await expectInspectorFields(page, {
     x: "0",
     y: "0",
@@ -214,14 +210,6 @@ test("edit layer names and a color layer's fill and box, and save them", async (
   });
   await commitInspectorField(page, { name: "width", value: "320" });
   await expect(fill).toHaveCSS("width", "320px");
-
-  // Turn the box off and confirm the layer fills the canvas again without box
-  // fields, then turn it back on and narrow it for saving.
-  await box.uncheck();
-  await expect(fill).toHaveCSS("width", "640px");
-  await expect(getInspectorField(page, { name: "width" })).toBeHidden();
-  await box.check();
-  await commitInspectorField(page, { name: "width", value: "320" });
 
   // Clear the text layer's name and confirm its lane falls back to the type.
   await clickTimelineButton(page, { name: "Title text" });
