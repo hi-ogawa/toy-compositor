@@ -59,7 +59,7 @@ EditorRuntime              runtime.ts                source loading, restarts ar
 - **Audio is scheduled, never steered.** A layer plays wherever its own range covers the playhead, so trimming decides what plays. Fades are gain ramps, and `muted` silences the layer.
 - **Playbacks start only at the anchor.** An edit, or a buffer that arrives during playback, restarts the transport around the change.
 - **Sources load in the background.** Loading a project decodes each source once, shared by its layers' playback and lane waveforms, so opening never waits on a long source.
-- **Pausing lands on the frame grid,** so a paused preview matches a rendered frame.
+- **Pausing snaps the playhead to the frame grid,** so a paused preview shows the same time as a rendered frame.
 
 ## Differences from the render
 
