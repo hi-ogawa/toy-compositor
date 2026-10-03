@@ -80,25 +80,28 @@ type SavedTextClip = Omit<TextClip, "box" | "align" | "font"> & {
 /** A project in the current shape, and what changed to get there. */
 export type MigrateProjectResult = { project: Project; changes: string[] };
 
-export async function validateAndMigrateProject(project: SavedProject) {
-  validateProject(project);
-  return migrateProject(project);
+/**
+ * Migrate a project to the current shape, then validate it. Migration never
+ * reads `media`, so it runs first, and validation only reads the current shape.
+ */
+export async function migrateAndValidateProject(project: SavedProject) {
+  const migrated = await migrateProject(project);
+  validateProject(migrated.project);
+  return migrated;
 }
 
 /**
  * Reject what loading cannot fix from the file alone, which needs update-media
- * or a different file.
+ * or a different file. So far this only checks each clip's media info.
  */
-function validateProject(project: SavedProject): void {
+function validateProject(project: Project): void {
   for (const layer of project.layers) {
-    const clips = getSavedClips(layer);
-    const layerLabel = `layer "${layer.name ?? clips[0]!.type}"`;
-    for (const clip of clips) {
+    for (const clip of layer.clips) {
       if (!("src" in clip)) {
         continue;
       }
-      const label = `${clip.type} clip in ${layerLabel} (${clip.src})`;
-      const mediaInfo = project.media?.[clip.src];
+      const label = `${clip.type} clip in layer "${layer.name}" (${clip.src})`;
+      const mediaInfo = project.media[clip.src];
       if (!mediaInfo) {
         throw new Error(`${label} has no media info, run update-media`);
       }
@@ -114,10 +117,13 @@ function validateProject(project: SavedProject): void {
 }
 
 /**
- * Normalize each layer to the clips shape first, then migrate each clip's
- * fields, so a field migration works whichever shape the file started in.
+ * Bring a project to the current shape by filling what older files lack. It
+ * does not read `media` or check it, so update-media also runs it on a project
+ * whose media info is missing. Each layer is normalized to the clips shape
+ * first, and then each clip's fields are migrated, so a field migration works
+ * whichever shape the file started in.
  */
-async function migrateProject(
+export async function migrateProject(
   project: SavedProject,
 ): Promise<MigrateProjectResult> {
   const changes: string[] = [];
@@ -213,11 +219,6 @@ async function migrateClip(
       return { ...filled, box: { ...filled.box, height } };
     }
   }
-}
-
-/** A saved layer's clips, whichever shape it was saved in. */
-export function getSavedClips(layer: SavedLayer): SavedClip[] {
-  return "clips" in layer ? layer.clips : [layer];
 }
 
 /**

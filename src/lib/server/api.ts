@@ -6,7 +6,7 @@ import type { Result } from "../../utils/result.ts";
 import { getMediaType, type MediaFile } from "../media-file.ts";
 import { probeMediaInfo } from "../media-info.ts";
 import {
-  validateAndMigrateProject,
+  migrateAndValidateProject,
   type MigrateProjectResult,
   type SavedProject,
 } from "../migrate.ts";
@@ -204,7 +204,7 @@ export function createEditorHandlers({
       const savedProject = await readJson<SavedProject>(file);
       let migrated: MigrateProjectResult;
       try {
-        migrated = await validateAndMigrateProject(savedProject);
+        migrated = await migrateAndValidateProject(savedProject);
       } catch (error) {
         return { ok: false, error: (error as Error).message };
       }
