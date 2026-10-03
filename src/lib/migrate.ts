@@ -55,54 +55,38 @@ async function migrateProject(project: SavedProject): Promise<{
   project: Project;
   changes: string[];
 }> {
-  const results = await Promise.all(
-    project.layers.map((layer) =>
-      migrateLayer(layer, { canvas: project.canvas }),
-    ),
-  );
+  const changes: string[] = [];
+  const layers: Layer[] = [];
+  for (const layer of project.layers) {
+    const label = `${layer.type} layer "${layer.name ?? layer.type}"`;
+    if (layer.type === "color") {
+      if (!layer.box) {
+        changes.push(`${label} has no box`);
+      }
+      const { width, height } = project.canvas;
+      layers.push({
+        ...layer,
+        box: layer.box ?? { x: 0, y: 0, width, height },
+      });
+      continue;
+    }
+    if (layer.type === "text") {
+      let { height } = layer.box;
+      if (height === undefined) {
+        // The box followed the lines, which rendered at their natural height.
+        changes.push(`${label} has no box height`);
+        height = await measureTextHeight(layer);
+      }
+      layers.push({ ...layer, box: { ...layer.box, height } });
+      continue;
+    }
+    layers.push(layer);
+  }
   const migrated: Project = {
     ...project,
-    layers: results.map((result) => result.layer),
+    layers,
     locators: project.locators ?? [],
     media: project.media ?? {},
   };
-  return {
-    project: migrated,
-    changes: results.flatMap((result) => result.changes),
-  };
-}
-
-async function migrateLayer(
-  layer: SavedLayer,
-  { canvas }: { canvas: Project["canvas"] },
-): Promise<{ layer: Layer; changes: string[] }> {
-  const label = `${layer.type} layer "${layer.name ?? layer.type}"`;
-  if (layer.type === "color") {
-    if (layer.box) {
-      return { layer: { ...layer, box: layer.box }, changes: [] };
-    }
-    const { width, height } = canvas;
-    return {
-      layer: { ...layer, box: { x: 0, y: 0, width, height } },
-      changes: [`${label} has no box`],
-    };
-  }
-  if (layer.type === "text") {
-    const { height } = layer.box;
-    if (height !== undefined) {
-      return {
-        layer: { ...layer, box: { ...layer.box, height } },
-        changes: [],
-      };
-    }
-    // The box followed the lines, which rendered at their natural height.
-    return {
-      layer: {
-        ...layer,
-        box: { ...layer.box, height: await measureTextHeight(layer) },
-      },
-      changes: [`${label} has no box height`],
-    };
-  }
-  return { layer, changes: [] };
+  return { project: migrated, changes };
 }
