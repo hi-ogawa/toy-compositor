@@ -111,7 +111,7 @@ This pass is the only place that knows how streams are numbered and connected. T
 
 For the synthetic sample, the inputs are numbered in the order they are added, and each chain's output label uses its layer's index:
 
-![The synthetic sample's graph, where four inputs feed one chain per layer, pictures stack through three overlays from a color canvas, and the audio chain goes to a mix](images/synthetic-graph.svg)
+![The synthetic sample's graph, where four inputs and a color source feed one chain per layer, pictures stack through four overlays from a color canvas, and the audio chain goes to a mix](images/synthetic-graph.svg)
 
 A chain can read more than one stream when its filter takes more than one input. `overlay` takes two. The first label is the background, and the second is drawn on top of it at `x` and `y`, so `[canvas][v0]overlay=x=0:y=0[over0]` composites the video over the canvas. Its result `[over0]` becomes the background of the next overlay, which is how the stack is built one layer at a time. `amix` likewise takes every sound stream at once.
 
@@ -134,8 +134,11 @@ color=c=#000000:s=640x360:r=30:d=3[canvas];                             canvas
 [2:v]scale=160:90,setpts=PTS-STARTPTS+0/TB[v2];                         layer 2 picture
 [over0][v2]overlay=x=420:y=240:eof_action=pass[over2];                  stack on the result so far
 [3:v]setpts=PTS-STARTPTS+0/TB[v3];                                      layer 3 picture
-[over2][v3]overlay=x=420:y=259:eof_action=pass[over3];                  stack on top
-[over3]format=yuv420p[vout];                                            output picture
+[over2][v3]overlay=x=420:y=259:eof_action=pass[over3];                  stack on the result so far
+color=c=#0080ff@0.5:s=240x135:r=30:d=3,format=rgba,
+     setpts=PTS-STARTPTS+0/TB[v4];                                      layer 4 picture, no input
+[over3][v4]overlay=x=40:y=100:eof_action=pass[over4];                   stack on top
+[over4]format=yuv420p[vout];                                            output picture
 [a1]amix=inputs=1:normalize=0:duration=longest,apad,atrim=0:3[aout]     output sound
 ```
 
