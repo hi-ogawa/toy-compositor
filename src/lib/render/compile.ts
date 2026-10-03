@@ -217,12 +217,17 @@ function compileVideo({
 }
 
 /**
- * Source span a video layer reads for its visible part, and the seconds of its
- * first and last frames to clone around it.
+ * Source span a video layer reads for the visible part of its picture, which
+ * is the picture inside the scene range, and the seconds of its first and
+ * last frames to clone around it.
  *
- *   |  hold  |  play  |  hold  |
- *        [ visible ]              read the played part, clone before it
- *    [vis]                        read the first frame, clone it
+ *        |  hold  |  play  |  hold  |   picture
+ *   {-----------------}                 scene range
+ *        [------------]                 visible: read the played part,
+ *                                       clone before it
+ *           {-}                         scene range of a still
+ *           [-]                         visible: read the first frame,
+ *                                       clone it
  */
 function getSourceRead({
   layer,
