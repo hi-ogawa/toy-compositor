@@ -223,11 +223,10 @@ async function measureRmsLevel(file: string, { time }: { time: number }) {
   return Number(levels.at(-1)![1]);
 }
 
-const FRAME_WIDTH = 64;
-const FRAME_HEIGHT = 36;
-
 /** Every frame of a file, scaled down to small grayscale pixels. */
 async function readGrayFrames(file: string) {
+  const width = 64;
+  const height = 36;
   const { stdout } = await execFileAsync(
     "ffmpeg",
     [
@@ -236,14 +235,14 @@ async function readGrayFrames(file: string) {
       "-i",
       file,
       "-vf",
-      `scale=${FRAME_WIDTH}:${FRAME_HEIGHT},format=gray`,
+      `scale=${width}:${height},format=gray`,
       "-f",
       "rawvideo",
       "-",
     ],
     { encoding: "buffer" },
   );
-  const size = FRAME_WIDTH * FRAME_HEIGHT;
+  const size = width * height;
   return Array.from({ length: stdout.length / size }, (_, i) =>
     stdout.subarray(i * size, (i + 1) * size),
   );
