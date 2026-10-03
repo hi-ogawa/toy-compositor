@@ -140,6 +140,10 @@ test("fade audio at the layer's own edges when the output cuts into them", async
 test("hold a video layer's first and last frames beyond its source range", async ({}, testInfo) => {
   // Copy the synthetic sample and keep only its test pattern, playing source
   // 1s to 2s at 1s and holding its first and last frames for 1s on each side.
+  //
+  //   |  hold  |  play  |  hold  |
+  //   0        1        2        3
+  //               1.5
   const directory = testInfo.outputPath("project");
   await cp("samples/synthetic", directory, { recursive: true });
   await editJson<Project>(`${directory}/project.json`, (project) => {
