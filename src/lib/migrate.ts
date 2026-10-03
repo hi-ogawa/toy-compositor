@@ -1,4 +1,4 @@
-import { getCroppedSize } from "./layout.ts";
+import { getCroppedSize, roundToEven } from "./layout.ts";
 import type {
   Box,
   ColorLayer,
@@ -107,22 +107,36 @@ function migrateProject(project: SavedProject): {
 }
 
 /**
- * The transform that places the source where the old fit put it: scaled to fit
- * inside the box, keeping its aspect ratio, and centered in it.
+ * The transform that places the source where the old fit put it: the cropped
+ * source scaled to fit inside the box, keeping its aspect ratio, and centered
+ * in it.
  */
 function convertFitBox({
   box,
   mediaInfo,
-  crop,
+  crop = {},
 }: {
   box: Box;
   mediaInfo: MediaInfo;
   crop?: Crop;
 }): Transform {
-  const cropped = getCroppedSize({ source: mediaInfo.video!, crop });
+  const source = mediaInfo.video!;
+  const cropped = getCroppedSize({ source, crop });
+  const scale = Math.min(
+    box.width / cropped.width,
+    box.height / cropped.height,
+  );
+  // The fitted rectangle is the visible part, so step back over the hidden
+  // left and top edges to the whole source's corner.
+  const width = roundToEven(cropped.width * scale);
+  const height = roundToEven(cropped.height * scale);
   return {
-    x: box.x + box.width / 2,
-    y: box.y + box.height / 2,
-    scale: Math.min(box.width / cropped.width, box.height / cropped.height),
+    x:
+      Math.round(box.x + (box.width - width) / 2) -
+      (crop.left ?? 0) * source.width * scale,
+    y:
+      Math.round(box.y + (box.height - height) / 2) -
+      (crop.top ?? 0) * source.height * scale,
+    scale,
   };
 }

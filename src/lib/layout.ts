@@ -50,13 +50,14 @@ export function intersect(a: TimeRange, b: TimeRange): TimeRange | undefined {
 type Size = { width: number; height: number };
 
 /**
- * Place the cropped source on the canvas: scaled by the transform and centered
- * on its position. The size rounds to even pixels for the encoder's chroma
- * subsampling, and anything outside the canvas is clipped later.
+ * Place the visible part of the source on the canvas. The transform scales the
+ * whole source and puts its top-left corner at its position, and the crop then
+ * hides edges without moving the rest. The size rounds to even pixels for the
+ * encoder's chroma subsampling, and anything outside the canvas is clipped later.
  */
 export function placeMedia({
   source,
-  crop,
+  crop = {},
   transform,
 }: {
   source: Size;
@@ -64,13 +65,15 @@ export function placeMedia({
   transform: Transform;
 }): Box {
   const cropped = getCroppedSize({ source, crop });
-  const width = roundToEven(cropped.width * transform.scale);
-  const height = roundToEven(cropped.height * transform.scale);
   return {
-    width,
-    height,
-    x: Math.round(transform.x - width / 2),
-    y: Math.round(transform.y - height / 2),
+    width: roundToEven(cropped.width * transform.scale),
+    height: roundToEven(cropped.height * transform.scale),
+    x: Math.round(
+      transform.x + (crop.left ?? 0) * source.width * transform.scale,
+    ),
+    y: Math.round(
+      transform.y + (crop.top ?? 0) * source.height * transform.scale,
+    ),
   };
 }
 
@@ -82,10 +85,33 @@ export function fitCanvas({
   source: Size;
   canvas: Size;
 }): Transform {
+  const scale = Math.min(
+    canvas.width / source.width,
+    canvas.height / source.height,
+  );
   return {
-    x: canvas.width / 2,
-    y: canvas.height / 2,
-    scale: Math.min(canvas.width / source.width, canvas.height / source.height),
+    x: Math.round((canvas.width - source.width * scale) / 2),
+    y: Math.round((canvas.height - source.height * scale) / 2),
+    scale,
+  };
+}
+
+/** Change the scale around the center of the scaled source, so it stays in place. */
+export function rescaleMedia({
+  source,
+  transform,
+  scale,
+}: {
+  source: Size;
+  transform: Transform;
+  scale: number;
+}): Transform {
+  return {
+    x: Math.round(transform.x + (source.width * (transform.scale - scale)) / 2),
+    y: Math.round(
+      transform.y + (source.height * (transform.scale - scale)) / 2,
+    ),
+    scale,
   };
 }
 
@@ -103,6 +129,6 @@ export function getCroppedSize({
   };
 }
 
-function roundToEven(n: number) {
+export function roundToEven(n: number) {
   return Math.max(2, 2 * Math.round(n / 2));
 }

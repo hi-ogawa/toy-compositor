@@ -19,8 +19,8 @@
       "in": 0,
       "out": 3,
       "transform": {
-        "x": 320,
-        "y": 180,
+        "x": 0,
+        "y": 0,
         "scale": 2
       },
       "muted": true
@@ -42,8 +42,8 @@
       "start": 0,
       "end": 3,
       "transform": {
-        "x": 500,
-        "y": 285,
+        "x": 420,
+        "y": 240,
         "scale": 1
       }
     },

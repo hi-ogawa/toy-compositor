@@ -52,7 +52,7 @@ Every layer can have an optional `name`, such as `"camera"`, `"score"`, or `"mix
   "start": 7.967,
   "in": 0,
   "out": 189.499,
-  "transform": { "x": 960, "y": 540, "scale": 1.1 },
+  "transform": { "x": -96, "y": -54, "scale": 1.1 },
   "crop": { "left": 0.013, "top": 0.0065 },
   "muted": true,
 }
@@ -84,7 +84,7 @@ A video layer carries its file's audio, like a clip in other video editors, and 
   "src": "media/mv-thumbnail.jpg",
   "start": 23.7,
   "end": 188.633,
-  "transform": { "x": 1440, "y": 810, "scale": 0.5 },
+  "transform": { "x": 960, "y": 540, "scale": 0.5 },
 }
 ```
 
@@ -168,9 +168,9 @@ An entry depends only on the file's contents, so a copied file has the same entr
 
 ## Transform and crop
 
-`transform` is where a video or image layer goes on the canvas. `x` and `y` are where the center of the cropped source goes, in canvas pixels, not its top-left corner, and `scale` multiplies the source's own size, keeping its aspect ratio. Scaling therefore stays centered, and a camera at `{ "x": 960, "y": 540, "scale": 1.1 }` on a 1920×1080 canvas zooms in by 10% around the middle. The placed size rounds to even pixels. Anything outside the canvas is clipped, so a layer can be larger than the canvas or partly off it.
+`transform` is where a video or image layer goes on the canvas. `x` and `y` are where the source's top-left corner goes, in canvas pixels, like a text or color layer's `box`, and `scale` multiplies the source's own size, keeping its aspect ratio. A 1920×1080 camera zoomed in by 10% around the middle of a 1920×1080 canvas is `{ "x": -96, "y": -54, "scale": 1.1 }`. The placed size rounds to even pixels. Anything outside the canvas is clipped, so a layer can be larger than the canvas or partly off it.
 
-`crop` removes a fraction of the source from each edge before the transform, with each side defaulting to 0. The center is the center of what remains.
+`crop` hides a fraction of the source at each edge, with each side defaulting to 0. The transform still places the whole source, so cropping never moves what remains.
 
 Text and color layers use `box` instead, which places them directly: text by its left, top, and width, and a color fill as the rectangle it covers.
 
@@ -185,7 +185,7 @@ A video layer can keep showing its first frame before `start` and its last frame
   "start": 23.7,
   "in": 0,
   "out": 160,
-  "transform": { "x": 1357, "y": 797, "scale": 0.6 },
+  "transform": { "x": 781, "y": 473, "scale": 0.6 },
   "hold": { "before": 5, "after": 10 },
 }
 ```

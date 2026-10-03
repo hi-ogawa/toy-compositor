@@ -81,7 +81,7 @@ type LayerBase = { name?: string };
 
 export type Box = { x: number; y: number; width: number; height: number };
 
-/** Where a media layer's cropped source goes: its center in canvas pixels, at a uniform scale. */
+/** Where a media layer's whole source goes: its top-left corner in canvas pixels, at a uniform scale. */
 export type Transform = { x: number; y: number; scale: number };
 
 export type Crop = {

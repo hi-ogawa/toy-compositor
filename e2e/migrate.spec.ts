@@ -77,8 +77,8 @@ test("read and migrate media layers with fit boxes", async ({
   editor,
 }) => {
   // Replace the video's and the image's transforms with the fit boxes from
-  // before transforms. The image box is wider than the image, so the fit
-  // letterboxes it.
+  // before transforms. The image also crops its left quarter, and its box is
+  // wider than what remains, so the fit centers it with space on both sides.
   const project = await readJson<Project>(editor.projectFile);
   const boxes: Record<string, Box> = {
     "Test pattern": { x: 0, y: 0, width: 640, height: 360 },
@@ -90,6 +90,9 @@ test("read and migrate media layers with fit boxes", async ({
         delete layer.transform;
         Object.assign(layer, { box: boxes[layer.name] });
       }
+      if (layer.name === "Label backdrop" && layer.type === "image") {
+        layer.crop = { left: 0.25 };
+      }
     }
   });
 
@@ -98,8 +101,8 @@ test("read and migrate media layers with fit boxes", async ({
   const image = page
     .getByTestId("composition-canvas")
     .getByRole("img", { name: "Label backdrop", exact: true });
-  await expect(image.locator("..")).toHaveCSS("left", "420px");
-  await expect(image.locator("..")).toHaveCSS("width", "160px");
+  await expect(image.locator("..")).toHaveCSS("left", "440px");
+  await expect(image.locator("..")).toHaveCSS("width", "120px");
 
   // Check it, and confirm it reports both layers.
   await expect(
@@ -115,12 +118,24 @@ test("read and migrate media layers with fit boxes", async ({
     ),
   });
 
-  // Migrate it, and confirm both get back the transforms that place them the
-  // same way.
+  // Migrate it, and confirm both get transforms that place them the same way.
+  // The image's corner is the hidden quarter's left edge, 40 px before the
+  // visible part.
   await execFileAsync(process.execPath, [
     "src/cli.ts",
     "migrate",
     editor.projectFile,
   ]);
-  expect(await readJson<Project>(editor.projectFile)).toEqual(project);
+  expect(await readJson<Project>(editor.projectFile)).toEqual({
+    ...project,
+    layers: project.layers.map((layer) =>
+      layer.name === "Label backdrop"
+        ? {
+            ...layer,
+            transform: { x: 400, y: 240, scale: 1 },
+            crop: { left: 0.25 },
+          }
+        : layer,
+    ),
+  });
 });
