@@ -11,7 +11,7 @@ On Linux, `toy-compositor install-desktop` adds an app launcher entry that runs 
 
 `toy-compositor upgrade` installs the latest main build, rewrites the launcher entry, and stops the running editor server, so the next launch uses the new build. It also takes a pkg.pr.new URL or a tarball to install another build, such as a pull request's.
 
-Project files from an older build keep working. `toy-compositor migrate <project.json...>` rewrites them to the current format, for example before your own scripts read them.
+The editor and the renderer open project files from an older build as they are, or reject one with a message naming the command that fixes it, such as `update-media`. `toy-compositor migrate <project.json...>` rewrites them to the current format, for example before your own scripts read them.
 
 ## Project folders
 
