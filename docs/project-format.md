@@ -2,6 +2,8 @@
 
 A project is one JSON file that describes one deliverable: a canvas, an output, which is a video range or a still frame, and a stack of layers. Variants of a cover, such as the horizontal video and its thumbnail, are separate project files, and each one is self-contained.
 
+This doc defines what a project means, and both the [renderer](compiler.md) and the [editor](editor.md) follow it.
+
 ```jsonc
 {
   "canvas": {
