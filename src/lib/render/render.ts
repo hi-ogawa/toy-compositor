@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { once } from "node:events";
 import fs from "node:fs";
 import path from "node:path";
-import { validateProject } from "../persistence.ts";
+import { validateProject } from "../migrate.ts";
 import type { Project } from "../project.ts";
 import { compile } from "./compile.ts";
 import { resolveProject } from "./resolve.ts";

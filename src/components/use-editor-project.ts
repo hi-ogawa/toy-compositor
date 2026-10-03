@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { apiClient } from "../lib/api-client";
-import { validateProject } from "../lib/persistence";
+import { validateProject } from "../lib/migrate";
 import type { EditorRuntime } from "../lib/runtime";
 import { useWindowEvent } from "./use-window-event";
 
