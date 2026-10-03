@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import type { ServerRequest } from "srvx";
 import { readJson, writeJson } from "../../utils/fs.ts";
 import { getMediaType, type MediaFile } from "../media-file.ts";
 import { probeMediaInfo } from "../media-info.ts";
@@ -20,16 +21,20 @@ import type { ProjectRegistry } from "./registry.ts";
  *   requested it is open.
  * - `GET /api/server` answers `{ "name": "toy-compositor" }`, so the CLI can
  *   tell an editor server apart from another process on its port.
+ * - `POST /api/server/stop` calls `stop`, so `toy-compositor stop` can shut
+ *   down a server started by the CLI. The dev server passes no `stop`.
  */
 export function createEditorHandler({
   registry,
   live,
+  stop,
 }: {
   registry: ProjectRegistry;
   live: LiveConnections;
+  stop?: (request: ServerRequest) => void;
 }) {
   const handlers = createEditorHandlers({ registry });
-  return async (request: Request): Promise<Response> => {
+  return async (request: ServerRequest): Promise<Response> => {
     try {
       const url = new URL(request.url);
       const method = url.pathname.match(/^\/api\/rpc\/(\w+)$/)?.[1];
@@ -46,6 +51,13 @@ export function createEditorHandler({
         }
         case "GET /api/server": {
           return Response.json({ name: SERVER_NAME });
+        }
+        case "POST /api/server/stop": {
+          if (!stop) {
+            return new Response(undefined, { status: 404 });
+          }
+          stop(request);
+          return new Response(undefined, { status: 204 });
         }
         default: {
           return new Response(undefined, { status: 404 });
