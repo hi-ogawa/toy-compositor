@@ -119,7 +119,14 @@ test("add layers from the Library tab", async ({ page, editor }) => {
       start: 0,
       end: 3,
     },
-    { type: "color", color: "#000000", opacity: 0.5, start: 0, end: 3 },
+    {
+      type: "color",
+      color: "#000000",
+      opacity: 0.5,
+      box: { x: 0, y: 0, width: 640, height: 360 },
+      start: 0,
+      end: 3,
+    },
     {
       name: "extra",
       type: "audio",

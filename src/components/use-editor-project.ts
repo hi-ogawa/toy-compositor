@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { apiClient } from "../lib/api-client";
-import { validateMedia } from "../lib/project";
+import { validateProject } from "../lib/project";
 import type { EditorRuntime } from "../lib/runtime";
 import { useWindowEvent } from "./use-window-event";
 
@@ -23,7 +23,7 @@ export function useEditorProject({
     staleTime: Infinity,
     queryFn: async () => {
       const projectFile = await apiClient.loadProject({ path: projectPath });
-      validateMedia(projectFile.project);
+      validateProject(projectFile.project);
       runtime.deserializeProject(projectFile);
       return true;
     },
