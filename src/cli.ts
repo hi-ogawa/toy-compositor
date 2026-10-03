@@ -12,7 +12,11 @@ import {
   installDesktopEntry,
 } from "./lib/desktop-entry.ts";
 import { updateProjectMedia } from "./lib/media-info.ts";
-import { readProjectFile } from "./lib/migrate.ts";
+import {
+  migrateProject,
+  validateProject,
+  type SavedProject,
+} from "./lib/migrate.ts";
 import { renderProject } from "./lib/render/render.ts";
 import { createLiveConnections } from "./lib/server/live.ts";
 import { openWithDefaultApp } from "./lib/server/open-default.ts";
@@ -23,7 +27,7 @@ import {
   stopEditorServer,
 } from "./lib/server/serve.ts";
 import { execFileAsync } from "./utils/exec.ts";
-import { writeJson } from "./utils/fs.ts";
+import { readJson, writeJson } from "./utils/fs.ts";
 
 const packageDir = path.dirname(
   fileURLToPath(import.meta.resolve("#package.json")),
@@ -258,7 +262,9 @@ async function runMigrate(
   { check }: { check?: boolean },
 ) {
   for (const projectFile of projectFiles) {
-    const { project, changes } = await readProjectFile(projectFile);
+    const savedProject = await readJson<SavedProject>(projectFile);
+    validateProject(savedProject);
+    const { project, changes } = migrateProject(savedProject);
     if (changes.length === 0) {
       continue;
     }

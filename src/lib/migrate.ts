@@ -1,4 +1,3 @@
-import { readJson } from "../utils/fs.ts";
 import type { Box, ColorLayer, Layer, Project } from "./project.ts";
 
 /** A project file as saved, which may have an older format's shape. */
@@ -18,20 +17,10 @@ type SavedColorLayer = Omit<ColorLayer, "box"> & {
 };
 
 /**
- * Read a project file in the current format, and describe each layer change
- * from an older one. Throw when it lacks what only update-media can fill in.
- */
-export async function readProjectFile(projectFile: string) {
-  const project = await readJson<SavedProject>(projectFile);
-  validateProject(project);
-  return migrateProject(project);
-}
-
-/**
  * Check what migrating cannot fill in, which needs a command that reads the
  * media files.
  */
-function validateProject(project: SavedProject): void {
+export function validateProject(project: SavedProject): void {
   for (const layer of project.layers) {
     if (!("src" in layer)) {
       continue;
@@ -53,7 +42,7 @@ function validateProject(project: SavedProject): void {
  * Bring a project from older formats to the current one, in the order the
  * format changed, and describe each layer change.
  */
-function migrateProject(project: SavedProject): {
+export function migrateProject(project: SavedProject): {
   project: Project;
   changes: string[];
 } {
