@@ -1,6 +1,5 @@
 import { expect } from "@playwright/test";
 import type { SavedProject } from "../src/lib/migrate.ts";
-import type { Project } from "../src/lib/project.ts";
 import { execFileAsync } from "../src/utils/exec.ts";
 import { editJson, readJson } from "../src/utils/fs.ts";
 import { test } from "./helper";
@@ -9,9 +8,11 @@ test("read and migrate a color layer without a box", async ({
   page,
   editor,
 }) => {
+  const readProject = () => readJson<SavedProject>(editor.projectFile);
+
   // Remove the tint's box, as in a project file from before color layers
   // required one.
-  const project = await readJson<Project>(editor.projectFile);
+  const project = await readProject();
   const migratedProject = {
     ...project,
     layers: project.layers.map((layer) =>
@@ -28,7 +29,7 @@ test("read and migrate a color layer without a box", async ({
       }
     });
   await removeTintBox();
-  const savedProject = await readJson<SavedProject>(editor.projectFile);
+  const savedProject = await readProject();
 
   // Check it, and confirm it reports the tint and fails without writing.
   await expect(
@@ -41,16 +42,14 @@ test("read and migrate a color layer without a box", async ({
   ).rejects.toMatchObject({
     stdout: expect.stringContaining('color layer "Tint" has no box'),
   });
-  expect(await readJson<SavedProject>(editor.projectFile)).toEqual(
-    savedProject,
-  );
+  expect(await readProject()).toEqual(savedProject);
 
   // Open the editor, and confirm it reports the tint and rewrites the file
   // with the tint covering the whole canvas as it rendered before.
   await page.goto(editor.url);
   await expect(page.getByRole("main")).toBeVisible();
   await expect(page.getByText('color layer "Tint" has no box')).toBeVisible();
-  expect(await readJson<Project>(editor.projectFile)).toEqual(migratedProject);
+  expect(await readProject()).toEqual(migratedProject);
 
   // Remove the box again and render, and confirm it reports the tint and
   // rewrites the file too.
@@ -63,7 +62,7 @@ test("read and migrate a color layer without a box", async ({
     "--dry-run",
   ]);
   expect(stdout).toContain('color layer "Tint" has no box');
-  expect(await readJson<Project>(editor.projectFile)).toEqual(migratedProject);
+  expect(await readProject()).toEqual(migratedProject);
 
   // Check it again, and confirm nothing is left to migrate.
   await execFileAsync(process.execPath, [
