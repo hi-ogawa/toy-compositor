@@ -347,7 +347,7 @@ function compileColor({
   return {
     video: {
       filters: [
-        `color=c=${layer.color}@${layer.opacity ?? 1}:s=${box.width}x${box.height}:r=${canvas.fps}:d=${visible.end - visible.start}`,
+        `color=c=${layer.color}@${layer.opacity}:s=${box.width}x${box.height}:r=${canvas.fps}:d=${visible.end - visible.start}`,
         "format=rgba",
         `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
       ],
@@ -430,7 +430,7 @@ function assembleGraph({
 }) {
   const inputs: string[][] = [];
   const filters = [
-    `color=c=${canvas.background ?? "#000000"}:s=${canvas.width}x${canvas.height}:r=${canvas.fps}:d=${duration}[canvas]`,
+    `color=c=${canvas.background}:s=${canvas.width}x${canvas.height}:r=${canvas.fps}:d=${duration}[canvas]`,
   ];
   const audioLabels: string[] = [];
   let base = "canvas";
@@ -509,11 +509,11 @@ function buildStillInput({
   ];
 }
 
-function buildCropFilters(crop?: Crop) {
-  if (!crop) {
+function buildCropFilters(crop: Crop) {
+  const { left, right, top, bottom } = crop;
+  if (!left && !right && !top && !bottom) {
     return [];
   }
-  const { left = 0, right = 0, top = 0, bottom = 0 } = crop;
   return [
     `crop=iw*${1 - left - right}:ih*${1 - top - bottom}:iw*${left}:ih*${top}`,
   ];

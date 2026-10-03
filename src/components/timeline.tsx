@@ -467,7 +467,7 @@ function TimelineLayerLane({
                 sourceStart={audioLayer.in + visible.start - audioLayer.start}
                 sourceEnd={audioLayer.in + visible.end - audioLayer.start}
                 pixelsPerSecond={timeline.pixelsPerSecond}
-                dimmed={audioLayer.muted ?? false}
+                dimmed={audioLayer.muted}
               />
             )}
             {/* The lane's header already names the layer, so the clip shows only state. */}

@@ -12,7 +12,7 @@ export type Canvas = {
   width: number;
   height: number;
   fps: number;
-  background?: string;
+  background: string;
 };
 
 export type Output =
@@ -81,12 +81,7 @@ type LayerBase = { name: string };
 
 export type Box = { x: number; y: number; width: number; height: number };
 
-export type Crop = {
-  left?: number;
-  right?: number;
-  top?: number;
-  bottom?: number;
-};
+export type Crop = { left: number; right: number; top: number; bottom: number };
 
 export type VideoLayer = LayerBase & {
   type: "video";
@@ -95,11 +90,11 @@ export type VideoLayer = LayerBase & {
   in: number;
   out: number;
   box: Box;
-  crop?: Crop;
-  muted?: boolean;
-  fadeIn?: number;
-  fadeOut?: number;
-  hold?: { before?: number; after?: number };
+  crop: Crop;
+  muted: boolean;
+  fadeIn: number;
+  fadeOut: number;
+  hold: { before: number; after: number };
 };
 
 export type AudioLayer = LayerBase & {
@@ -108,16 +103,16 @@ export type AudioLayer = LayerBase & {
   start: number;
   in: number;
   out: number;
-  fadeIn?: number;
-  fadeOut?: number;
-  muted?: boolean;
+  fadeIn: number;
+  fadeOut: number;
+  muted: boolean;
 };
 
 export type ImageLayer = LayerBase & {
   type: "image";
   src: string;
   box: Box;
-  crop?: Crop;
+  crop: Crop;
   start: number;
   end: number;
 };
@@ -126,8 +121,8 @@ export type TextLayer = LayerBase & {
   type: "text";
   text: string;
   box: Box;
-  align?: "left" | "center" | "right";
-  font: { family: string; size: number; weight?: number; lineSpacing?: number };
+  align: "left" | "center" | "right";
+  font: { family: string; size: number; weight: number; lineSpacing: number };
   color: string;
   outline?: { width: number; color: string };
   start: number;
@@ -137,7 +132,7 @@ export type TextLayer = LayerBase & {
 export type ColorLayer = LayerBase & {
   type: "color";
   color: string;
-  opacity?: number;
+  opacity: number;
   box: Box;
   start: number;
   end: number;

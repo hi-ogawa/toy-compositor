@@ -46,7 +46,7 @@ export interface EditorState {
 }
 
 const EMPTY_PROJECT: EditorProject = {
-  canvas: { width: 1920, height: 1080, fps: 30 },
+  canvas: { width: 1920, height: 1080, fps: 30, background: "#000000" },
   output: { type: "video", start: 0, end: 0 },
   layers: [],
   locators: [],

@@ -123,7 +123,7 @@ function OutputInspector({
               type="color"
               aria-label="background"
               className="h-8 w-full min-w-0 cursor-pointer rounded border border-neutral-600 bg-neutral-900 px-1 outline-none focus-visible:border-ring"
-              value={canvas.background ?? "#000000"}
+              value={canvas.background}
               onChange={(e) =>
                 onCanvasCommit({ ...canvas, background: e.target.value })
               }
@@ -284,14 +284,12 @@ function LayerFields({
             />
             <NumberField
               label="opacity"
-              value={layer.opacity ?? 1}
+              value={layer.opacity}
               step={0.01}
               min={0}
               max={1}
               round={(value) => roundTo(value, 1e-3)}
-              onCommit={(opacity) =>
-                onUpdate({ opacity: opacity === 1 ? undefined : opacity })
-              }
+              onCommit={(opacity) => onUpdate({ opacity })}
             />
           </Group>
           <BoxFields box={layer.box} onCommit={(box) => onUpdate({ box })} />
@@ -345,25 +343,19 @@ function HoldFields({
   time: TimeFieldOptions;
   onUpdate: LayerUpdate;
 }) {
-  const commit = (key: "before" | "after", value: number) => {
-    const hold = { ...layer.hold, [key]: value || undefined };
-    onUpdate({
-      hold: hold.before || hold.after ? hold : undefined,
-    });
-  };
   return (
     <Group title="Hold">
       <NumberField
         label="before"
-        value={layer.hold?.before ?? 0}
+        value={layer.hold.before}
         {...time}
-        onCommit={(value) => commit("before", value)}
+        onCommit={(before) => onUpdate({ hold: { ...layer.hold, before } })}
       />
       <NumberField
         label="after"
-        value={layer.hold?.after ?? 0}
+        value={layer.hold.after}
         {...time}
-        onCommit={(value) => commit("after", value)}
+        onCommit={(after) => onUpdate({ hold: { ...layer.hold, after } })}
       />
     </Group>
   );
@@ -411,22 +403,22 @@ function AudioFields({
       <label className="col-span-2 flex items-center gap-2 text-xs">
         <input
           type="checkbox"
-          checked={layer.muted ?? false}
-          onChange={(e) => onUpdate({ muted: e.target.checked || undefined })}
+          checked={layer.muted}
+          onChange={(e) => onUpdate({ muted: e.target.checked })}
         />
         muted
       </label>
       <NumberField
         label="fade in"
-        value={layer.fadeIn ?? 0}
+        value={layer.fadeIn}
         {...time}
-        onCommit={(fadeIn) => onUpdate({ fadeIn: fadeIn || undefined })}
+        onCommit={(fadeIn) => onUpdate({ fadeIn })}
       />
       <NumberField
         label="fade out"
-        value={layer.fadeOut ?? 0}
+        value={layer.fadeOut}
         {...time}
-        onCommit={(fadeOut) => onUpdate({ fadeOut: fadeOut || undefined })}
+        onCommit={(fadeOut) => onUpdate({ fadeOut })}
       />
     </Group>
   );
@@ -439,8 +431,7 @@ function TextFields({
   layer: TextLayer;
   onUpdate: LayerUpdate;
 }) {
-  const { font, outline } = layer;
-  const align = layer.align ?? "left";
+  const { align, font, outline } = layer;
   return (
     <>
       <Group title="Text">
@@ -460,9 +451,7 @@ function TextFields({
               key={value}
               type="button"
               aria-pressed={align === value}
-              onClick={() =>
-                onUpdate({ align: value === "left" ? undefined : value })
-              }
+              onClick={() => onUpdate({ align: value })}
               className="h-8 rounded border border-neutral-600 bg-neutral-900 text-xs text-neutral-400 outline-none hover:bg-neutral-800 focus-visible:border-ring aria-pressed:bg-neutral-700 aria-pressed:text-neutral-100"
             >
               {value}
@@ -494,13 +483,10 @@ function TextFields({
           <select
             aria-label="weight"
             className="h-8 w-full min-w-0 rounded border border-neutral-600 bg-neutral-900 px-1 text-sm outline-none focus-visible:border-ring"
-            value={font.weight ?? 400}
-            onChange={(e) => {
-              const weight = Number(e.target.value);
-              onUpdate({
-                font: { ...font, weight: weight === 400 ? undefined : weight },
-              });
-            }}
+            value={font.weight}
+            onChange={(e) =>
+              onUpdate({ font: { ...font, weight: Number(e.target.value) } })
+            }
           >
             {[300, 400, 500, 700, 900].map((weight) => (
               <option key={weight} value={weight}>
@@ -511,12 +497,10 @@ function TextFields({
         </label>
         <NumberField
           label="line spacing"
-          value={font.lineSpacing ?? 0}
+          value={font.lineSpacing}
           {...PIXEL_FIELD}
           onCommit={(lineSpacing) =>
-            onUpdate({
-              font: { ...font, lineSpacing: lineSpacing || undefined },
-            })
+            onUpdate({ font: { ...font, lineSpacing } })
           }
         />
       </Group>
@@ -574,11 +558,11 @@ function BoxFields({
 }
 
 function CropFields({
-  crop = {},
+  crop,
   onCommit,
 }: {
-  crop?: Crop;
-  onCommit: (crop: Crop | undefined) => void;
+  crop: Crop;
+  onCommit: (crop: Crop) => void;
 }) {
   return (
     <Group title="Crop">
@@ -586,16 +570,12 @@ function CropFields({
         <NumberField
           key={key}
           label={key}
-          value={crop[key] ?? 0}
+          value={crop[key]}
           step={0.001}
           min={0}
           max={1}
           round={(value) => roundTo(value, 1e-7)}
-          onCommit={(value) => {
-            const next = { ...crop, [key]: value || undefined };
-            const empty = Object.values(next).every((v) => v === undefined);
-            onCommit(empty ? undefined : next);
-          }}
+          onCommit={(value) => onCommit({ ...crop, [key]: value })}
         />
       ))}
     </Group>

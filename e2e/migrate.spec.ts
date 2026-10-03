@@ -8,11 +8,12 @@ import { test } from "./helper";
 test("read and migrate an older project file", async ({ page, editor }) => {
   const readProject = () => readJson<SavedProject>(editor.projectFile);
 
-  // Remove the image's name, the tint's box, and the title's box height, as in
-  // a project file from before layers required a name, color layers required a
-  // box, and text layers stored a height. The image then gets the editor's
-  // numbered name, the tint covered the canvas, and the title's box followed
-  // its lines, which is the height the sample stores.
+  // Remove the image's name, the tint's box, the title's box height, and
+  // neutral values, as in a project file from before layers required a name,
+  // color layers required a box, text layers stored a height, and neutral
+  // values were written out. The image then gets the editor's numbered name,
+  // the tint covered the canvas, the title's box followed its lines, which is
+  // the height the sample stores, and the neutral values are the sample's.
   const project = await readJson<Project>(editor.projectFile);
   const migratedProject = {
     ...project,
@@ -32,7 +33,14 @@ test("read and migrate an older project file", async ({ page, editor }) => {
   };
   const removeFields = () =>
     editJson<SavedProject>(editor.projectFile, (savedProject) => {
+      delete savedProject.canvas.background;
       for (const layer of savedProject.layers) {
+        if (layer.type === "video") {
+          delete layer.crop;
+          delete layer.fadeIn;
+          delete layer.fadeOut;
+          delete layer.hold;
+        }
         if (layer.type === "image") {
           delete layer.name;
         }
@@ -41,18 +49,21 @@ test("read and migrate an older project file", async ({ page, editor }) => {
         }
         if (layer.type === "text") {
           delete layer.box.height;
+          delete layer.font.weight;
         }
       }
     });
   const changes = [
+    'video layer "Test pattern" has no crop, fadeIn, fadeOut, hold',
     'image layer "Image 1" has no name',
     'color layer "Tint" has no box',
-    'text layer "Title" has no box height',
+    'text layer "Title" has no font.weight, box.height',
+    "canvas has no background",
   ];
   await removeFields();
   const savedProject = await readProject();
 
-  // Check it, and confirm it reports each layer and fails without writing.
+  // Check it, and confirm it reports each change and fails without writing.
   const check = execFileAsync(process.execPath, [
     "src/cli.ts",
     "migrate",
@@ -66,7 +77,7 @@ test("read and migrate an older project file", async ({ page, editor }) => {
   }
   expect(await readProject()).toEqual(savedProject);
 
-  // Open the editor, and confirm it reports each layer and rewrites the file
+  // Open the editor, and confirm it reports each change and rewrites the file
   // to render as before.
   await page.goto(editor.url);
   await expect(page.getByRole("main")).toBeVisible();
@@ -75,7 +86,7 @@ test("read and migrate an older project file", async ({ page, editor }) => {
   }
   expect(await readProject()).toEqual(migratedProject);
 
-  // Remove the fields again and render, and confirm it reports each layer and
+  // Remove the fields again and render, and confirm it reports each change and
   // rewrites the file too.
   await removeFields();
   const { stdout } = await execFileAsync(process.execPath, [

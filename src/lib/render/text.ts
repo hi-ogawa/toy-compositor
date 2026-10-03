@@ -61,7 +61,7 @@ function getDrawArgs(layer: TextDrawing): string[] {
     "-pointsize",
     String(layer.font.size),
     "-interline-spacing",
-    String(layer.font.lineSpacing ?? 0),
+    String(layer.font.lineSpacing),
     "-fill",
     layer.color,
   ];
@@ -92,9 +92,7 @@ function getDrawArgs(layer: TextDrawing): string[] {
 }
 
 function getGravity(layer: TextDrawing) {
-  return { left: "west", center: "center", right: "east" }[
-    layer.align ?? "left"
-  ];
+  return { left: "west", center: "center", right: "east" }[layer.align];
 }
 
 /** "Noto Sans CJK KR" at weight 700 -> "Noto-Sans-CJK-KR-Bold" */
@@ -106,5 +104,5 @@ function getMagickFont(font: TextLayer["font"]) {
     700: "-Bold",
     900: "-Black",
   };
-  return font.family.replaceAll(" ", "-") + (suffix[font.weight ?? 400] ?? "");
+  return font.family.replaceAll(" ", "-") + (suffix[font.weight] ?? "");
 }

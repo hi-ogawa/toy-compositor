@@ -46,6 +46,7 @@ export function createMediaLayer({
     .pop()!
     .replace(/\.[^.]+$/, "");
   const canvasBox = { x: 0, y: 0, width: canvas.width, height: canvas.height };
+  const crop = { left: 0, right: 0, top: 0, bottom: 0 };
   switch (type) {
     case "video": {
       return {
@@ -55,7 +56,12 @@ export function createMediaLayer({
         start,
         in: mediaInfo.start,
         out: mediaInfo.end,
-        box: fitBox({ source: mediaInfo.video!, box: canvasBox }),
+        box: fitBox({ source: mediaInfo.video!, crop, box: canvasBox }),
+        crop,
+        muted: false,
+        fadeIn: 0,
+        fadeOut: 0,
+        hold: { before: 0, after: 0 },
       };
     }
     case "audio": {
@@ -66,6 +72,9 @@ export function createMediaLayer({
         start,
         in: mediaInfo.start,
         out: mediaInfo.end,
+        fadeIn: 0,
+        fadeOut: 0,
+        muted: false,
       };
     }
     case "image": {
@@ -73,7 +82,8 @@ export function createMediaLayer({
         name,
         type,
         src,
-        box: fitBox({ source: mediaInfo.video!, box: canvasBox }),
+        box: fitBox({ source: mediaInfo.video!, crop, box: canvasBox }),
+        crop,
         ...stillRange,
       };
     }
@@ -101,7 +111,12 @@ export function createTextLayer({
       height: Math.round(canvas.height * 0.2),
     },
     align: "center",
-    font: { family: "Noto Sans", size: Math.round(canvas.height / 10) },
+    font: {
+      family: "Noto Sans",
+      size: Math.round(canvas.height / 10),
+      weight: 400,
+      lineSpacing: 0,
+    },
     color: "#ffffff",
     ...range,
   };
