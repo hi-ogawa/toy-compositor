@@ -217,17 +217,19 @@ function compileVideo({
 }
 
 /**
- * Source span a video layer reads for the visible part of its picture, which
- * is the picture inside the scene range, and the seconds of its first and
- * last frames to clone around it.
+ * Source span a video layer reads for its visible part, the part of its
+ * picture inside the scene range, and the seconds of its first and last frames
+ * to clone around it. For a layer playing 1 s to 2 s and holding 1 s on each
+ * side:
  *
- *        |  hold  |  play  |  hold  |   picture
- *   {-----------------}                 scene range
- *        [------------]                 visible: read the played part,
- *                                       clone before it
- *           {-}                         scene range of a still
- *           [-]                         visible: read the first frame,
- *                                       clone it
+ *   0        1        2        3
+ *   |  hold  |  play  |  hold  |
+ *       [--------]                 (a)
+ *       [-]                        (b)
+ *
+ * (a) Rendering 0.5 s to 1.5 s reads the source for 1 s to 1.5 s and clones
+ * its first frame over the 0.5 s before it.
+ * (b) A still at 0.5 s has no played part, so it reads only the first frame.
  */
 function getSourceRead({
   layer,
@@ -248,8 +250,6 @@ function getSourceRead({
       after: visible.end - played.end,
     };
   }
-  // A visible part entirely in a hold, such as a still, has no played part,
-  // so it reads the one frame it holds and clones it over the rest.
   const frame = 1 / scene.canvas.fps;
   return {
     time: visible.end <= range.start ? layer.in : layer.out - frame,
