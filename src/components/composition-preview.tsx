@@ -89,10 +89,14 @@ export function CompositionPreview({
                   />
                 );
               })}
-              {/* Dims everything outside the frame, below the selection outline. */}
+              {/* Dims everything outside the frame, below the selection outline,
+                  and marks the frame edge with a 1px screen line just outside it. */}
               <div
-                className="pointer-events-none absolute inset-0 z-[5]"
-                style={{ boxShadow: `0 0 0 100000px ${OUTSIDE_FRAME_DIM}` }}
+                className="pointer-events-none absolute inset-0 z-[5] outline outline-neutral-600"
+                style={{
+                  boxShadow: `0 0 0 100000px ${OUTSIDE_FRAME_DIM}`,
+                  outlineWidth: 1 / scale,
+                }}
               />
             </div>
           </div>
