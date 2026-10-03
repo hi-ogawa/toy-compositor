@@ -11,7 +11,20 @@ type LayerFixup = {
 // In the order the format changed. The format has no version, so each fixup
 // recognizes its own old shape and leaves a current layer alone, which also
 // makes a second run change nothing.
-const LAYER_FIXUPS: LayerFixup[] = [];
+const LAYER_FIXUPS: LayerFixup[] = [
+  // A color layer's box became required, and without one it covered the whole
+  // canvas.
+  {
+    problem: "has no box",
+    fix: (layer, { canvas }) =>
+      layer.type === "color" && !layer.box
+        ? {
+            ...layer,
+            box: { x: 0, y: 0, width: canvas.width, height: canvas.height },
+          }
+        : undefined,
+  },
+];
 
 /**
  * Rewrite a project from older formats to the current one, and describe each

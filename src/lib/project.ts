@@ -46,16 +46,13 @@ export type VideoInfo = {
 };
 
 /**
- * Check what consumers read without checking: every color layer has a box,
- * every file-backed layer has media info for its `src`, video and image
- * layers' files have a video stream, and no layer has an older format's shape.
- * It does not compare the facts with the files.
+ * Check what consumers read without checking: every file-backed layer has
+ * media info for its `src`, video and image layers' files have a video stream,
+ * and no layer has an older format's shape. It does not compare the facts with
+ * the files.
  */
 export function validateProject(project: Project): void {
   for (const layer of project.layers) {
-    if (layer.type === "color" && !layer.box) {
-      throw new Error(`color layer "${layer.name ?? layer.type}" has no box`);
-    }
     if (!("src" in layer)) {
       continue;
     }
