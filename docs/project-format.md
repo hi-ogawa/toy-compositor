@@ -165,8 +165,6 @@ Locators are labeled timeline times, like markers in other video editors. They d
 
 An entry depends only on the file's contents, so a copied file has the same entry. Facts describe a file, not a layer, so layers that share a file share its entry. Each project file carries its own `media`, so variants such as the thumbnail repeat the entries they share and stay self-contained.
 
-`toy-compositor update-media <project.json...>` fills `media` from the files the layers use, replacing what was there, for example after hand-editing layers or replacing a file.
-
 ## Box and crop
 
 `box` is where a visual layer goes on the canvas. The source is scaled to fit inside the box while keeping its aspect ratio and is centered in it. Anything outside the canvas is clipped.
