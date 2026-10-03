@@ -168,23 +168,3 @@ An entry depends only on the file's contents, so a copied file has the same entr
 `box` is where a visual layer goes on the canvas. The source is scaled to fit inside the box while keeping its aspect ratio and is centered in it. Anything outside the canvas is clipped.
 
 `crop` removes a fraction of the source from each edge before fitting, with each side defaulting to 0.
-
-## Hold
-
-The prototype does not implement this yet, so the compiler ignores `hold`.
-
-A video layer can keep showing its first frame before `start` and its last frame after its source range ends, so a clip without lead-in or tail, such as the toy-midi score video, still covers the whole output.
-
-```jsonc
-{
-  "type": "video",
-  "src": "media/score.mp4",
-  "start": 23.7,
-  "in": 0,
-  "out": 160,
-  "box": { "x": 781, "y": 473, "width": 1152, "height": 648 },
-  "hold": { "before": 5, "after": 10 },
-}
-```
-
-`before` and `after` are durations in seconds, and they will compile to `tpad` with `clone` mode.
