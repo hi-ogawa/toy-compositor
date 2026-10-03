@@ -399,7 +399,7 @@ function TimelineLayerLane({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const name = layer.name ?? layer.type;
+  const { name } = layer;
   const region = timeline.rangeStyle(range);
   const pixelsToSeconds = (deltaX: number) => deltaX / timeline.pixelsPerSecond;
   // A click without dragging selects through the button's own click.

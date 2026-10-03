@@ -190,13 +190,12 @@ function LayerInspector({
 }) {
   return (
     <div data-testid="inspector">
-      <InspectorTitle title={layer.name ?? layer.type} subtitle={layer.type} />
+      <InspectorTitle title={layer.name} subtitle={layer.type} />
       <div className="flex flex-col gap-4 p-3">
-        {/* An empty name removes it, so the layer reads as its type again. */}
         <TextField
           label="name"
-          value={layer.name ?? ""}
-          onCommit={(name) => onUpdate({ name: name || undefined })}
+          value={layer.name}
+          onCommit={(name) => onUpdate({ name })}
         />
         <Group title="Stack">
           {(["up", "down"] as const).map((direction) => (

@@ -91,7 +91,7 @@ function SourceElement({
       return (
         <img
           src={src}
-          alt={layer.name ?? layer.src}
+          alt={layer.name}
           onError={onError}
           className="max-h-full max-w-full object-contain"
         />

@@ -70,7 +70,7 @@ export function CompositionMedia({
         ) : (
           <img
             src={resolveMediaUrl(layer.src)}
-            alt={layer.name ?? layer.src}
+            alt={layer.name}
             style={mediaStyle}
             onError={() => setFailed(true)}
           />
@@ -106,7 +106,7 @@ function CompositionVideo({
       src={src}
       playsInline
       preload="auto"
-      aria-label={layer.name ?? layer.src}
+      aria-label={layer.name}
       style={style}
       onError={onError}
     />

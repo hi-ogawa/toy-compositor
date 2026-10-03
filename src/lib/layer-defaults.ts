@@ -1,3 +1,4 @@
+import { createNumberedName } from "../utils/name.ts";
 import { fitBox, type TimeRange } from "./layout.ts";
 import type { MediaType } from "./media-file.ts";
 import type {
@@ -7,6 +8,22 @@ import type {
   MediaInfo,
   TextLayer,
 } from "./project.ts";
+
+/** Numbers a layer by its type among the existing ones, such as `Text 2`. */
+export function createLayerName({
+  layers,
+  type,
+}: {
+  layers: readonly Pick<Layer, "name" | "type">[];
+  type: Layer["type"];
+}): string {
+  return createNumberedName({
+    names: layers
+      .filter((layer) => layer.type === type)
+      .map((layer) => layer.name),
+    prefix: type[0]!.toUpperCase() + type.slice(1),
+  });
+}
 
 /** Video and images fit inside the canvas, so the box is the visible area. */
 export function createMediaLayer({
@@ -64,13 +81,16 @@ export function createMediaLayer({
 }
 
 export function createTextLayer({
+  name,
   canvas,
   range,
 }: {
+  name: string;
   canvas: Canvas;
   range: TimeRange;
 }): TextLayer {
   return {
+    name,
     type: "text",
     text: "Text",
     box: {
@@ -88,13 +108,16 @@ export function createTextLayer({
 }
 
 export function createColorLayer({
+  name,
   canvas,
   range,
 }: {
+  name: string;
   canvas: Canvas;
   range: TimeRange;
 }): ColorLayer {
   return {
+    name,
     type: "color",
     color: "#000000",
     opacity: 0.5,
