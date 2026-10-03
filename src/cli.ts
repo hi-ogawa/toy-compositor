@@ -10,7 +10,11 @@ import { renderProject } from "./lib/render/render.ts";
 import { createLiveConnections } from "./lib/server/live.ts";
 import { openWithDefaultApp } from "./lib/server/open-default.ts";
 import { createProjectRegistry, getConfigDir } from "./lib/server/registry.ts";
-import { checkEditorServer, serveEditor } from "./lib/server/serve.ts";
+import {
+  checkEditorServer,
+  serveEditor,
+  stopEditorServer,
+} from "./lib/server/serve.ts";
 
 const packageDir = path.dirname(
   fileURLToPath(import.meta.resolve("#package.json")),
@@ -22,6 +26,10 @@ Usage:
       Open the editor for the project folders, adding directory to them first.
       --open opens it in the browser, reusing a server already on the port,
       and exits shortly after the last editor tab closes
+  toy-compositor stop [--port <port>]
+      Stop the running editor server, leaving another process on the port alone
+  toy-compositor status [--port <port>]
+      Show whether the editor server is running
   toy-compositor install-desktop
       Add an app launcher entry that runs serve --open (Linux)
   toy-compositor add <path>
@@ -58,6 +66,24 @@ async function main() {
         port: Number(values.port),
         open: values.open,
       });
+      break;
+    }
+    case "stop": {
+      const port = Number(values.port);
+      console.log(
+        (await stopEditorServer(port))
+          ? `Stopped the editor on port ${port}`
+          : `No editor running on port ${port}`,
+      );
+      break;
+    }
+    case "status": {
+      const port = Number(values.port);
+      console.log(
+        (await checkEditorServer(port))
+          ? `Editor running at http://localhost:${port}/`
+          : `No editor running on port ${port}`,
+      );
       break;
     }
     case "install-desktop": {
