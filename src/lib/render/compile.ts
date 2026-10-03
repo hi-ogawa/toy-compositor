@@ -216,7 +216,14 @@ function compileVideo({
   };
 }
 
-/** Source span a video layer reads for its visible part, and the held seconds to clone around it. */
+/**
+ * Source span a video layer reads for its visible part, and the seconds of its
+ * first and last frames to clone around it.
+ *
+ *   |  hold  |  play  |  hold  |
+ *        [ visible ]              read the played part, clone before it
+ *    [vis]                        read the first frame, clone it
+ */
 function getSourceRead({
   layer,
   visible,
@@ -236,11 +243,15 @@ function getSourceRead({
       after: visible.end - played.end,
     };
   }
+  // A visible part entirely in a hold, such as a still, has no played part,
+  // so it reads the one frame it holds and clones it over the rest.
   const frame = 1 / scene.canvas.fps;
-  const held = visible.end - visible.start - frame;
-  return visible.end <= range.start
-    ? { time: layer.in, duration: frame, before: held, after: 0 }
-    : { time: layer.out - frame, duration: frame, before: 0, after: held };
+  return {
+    time: visible.end <= range.start ? layer.in : layer.out - frame,
+    duration: frame,
+    before: 0,
+    after: visible.end - visible.start - frame,
+  };
 }
 
 function compileImage({
