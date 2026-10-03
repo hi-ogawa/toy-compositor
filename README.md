@@ -20,7 +20,7 @@ toy-compositor serve --open                    # open it in the browser, exiting
 toy-compositor stop                            # stop the running editor server
 toy-compositor status                          # show whether the editor server is running
 toy-compositor install-desktop                 # add an app launcher entry that runs serve --open (Linux)
-toy-compositor upgrade [source]                # install the main build, or a pkg.pr.new URL or tarball, rewrite the launcher, and stop the server
+toy-compositor upgrade [source]                # install a new build, rewrite the launcher, and stop the server
 toy-compositor add <path>                      # add a project folder, or a project file's folder
 toy-compositor render <project.json> <output>  # .mp4 or .png
 toy-compositor update-media <project.json...>  # record the media info layers use
