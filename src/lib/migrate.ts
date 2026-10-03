@@ -14,16 +14,11 @@ type SavedLayer =
       box?: Box;
     });
 
-/** A saved project whose facts migrating can rely on. */
-type ValidProject = SavedProject & Pick<Project, "media">;
-
 /**
  * Check what migrating cannot fill in, which needs a command that reads the
  * media files.
  */
-export function validateProject(
-  project: SavedProject,
-): asserts project is ValidProject {
+export function validateProject(project: SavedProject): void {
   for (const layer of project.layers) {
     if (!("src" in layer)) {
       continue;
@@ -45,7 +40,7 @@ export function validateProject(
  * Bring a project from older formats to the current one, in the order the
  * format changed, and describe each layer change.
  */
-export function migrateProject(project: ValidProject): {
+export function migrateProject(project: SavedProject): {
   project: Project;
   changes: string[];
 } {
@@ -61,5 +56,12 @@ export function migrateProject(project: ValidProject): {
     }
     return layer;
   });
-  return { project: { ...project, layers }, changes };
+  const migrated: Project = {
+    ...project,
+    layers,
+    // Validation only lets a project without `media` through when no layer
+    // uses a file, so it has none to record.
+    media: project.media ?? {},
+  };
+  return { project: migrated, changes };
 }
