@@ -1,18 +1,28 @@
 # Working media
 
-Camera footage is transcoded into a working file before it goes into a project, with ffmpeg directly and outside toy-compositor. Both the editor and the renderer read that working file, so it has to be easy to seek as well as correct and small.
+Camera footage, especially from a phone, should be transcoded into a working file before it goes into a project. toy-compositor does not do this itself, so it is one ffmpeg command run by hand. The working file solves four problems:
+
+- **Frame timing goes wrong.** Phone footage has a variable frame rate, but the renderer picks frames assuming they are evenly spaced.
+- **The editor may not play the file.** The editor decodes media in the browser, which may not support a phone's codec, such as HEVC.
+- **Seeking in the editor lags.** Default encodes can put several seconds between keyframes, so clicking the timeline can take over half a second to show a frame.
+- **Files are large.** A 3-minute 1080p phone clip can be 366MB.
 
 ```sh
 ffmpeg -i input.mp4 -vf fps=30 -c:v libx264 -b:v 8000k -g 30 -preset slow -c:a aac -b:a 256k output-work-30fps-8mbps.mp4
 ```
 
-Each video setting fixes a different problem:
+| Setting        | Solves          | Effect                                                                  |
+| -------------- | --------------- | ----------------------------------------------------------------------- |
+| `-vf fps=30`   | Frame timing    | A constant 30 frames per second.                                        |
+| `-c:v libx264` | Editor playback | H.264, which every browser decodes.                                     |
+| `-g 30`        | Seeking         | A keyframe every second, so a seek decodes at most one second of video. |
+| `-b:v 8000k`   | File size       | About 200MB for a 3-minute 1080p clip.                                  |
 
-| Setting      | Controls          | Why                                                                                             |
-| ------------ | ----------------- | ----------------------------------------------------------------------------------------------- |
-| `-vf fps=30` | Frame rate        | Phone footage has a variable frame rate, and project times assume evenly spaced frames.         |
-| `-b:v 8000k` | Bitrate           | Keeps a 3-minute 1080p clip around 200MB instead of the 366MB phone original.                   |
-| `-g 30`      | Keyframe interval | Makes every second start with a complete frame, so seeking decodes at most one second of video. |
+The rest of this doc explains the frame timing and seeking problems, and how to check a working file.
+
+## Constant frame rate
+
+A project's `media` records one frame rate per video file, and frame times are computed from it as the stream's start time plus a whole number of frame durations. The renderer seeks to the frame nearest a source time this way. With a variable frame rate, the real frames drift away from those computed times, so a render can land on a different frame than the project intends. `fps=30` rewrites the footage onto an even grid, so computed and real frame times agree.
 
 ## Keyframe interval
 
