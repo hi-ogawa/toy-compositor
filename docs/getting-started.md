@@ -11,7 +11,7 @@ On Linux, `toy-compositor install-desktop` adds an app launcher entry that runs 
 
 `toy-compositor upgrade` installs the latest main build, rewrites the launcher entry, and stops the running editor server, so the next launch uses the new build. It also takes a pkg.pr.new URL or a tarball to install another build, such as a pull request's.
 
-When a new build changes the project format, the editor and the renderer reject a project file in the older format with a message to run `toy-compositor migrate <project.json...>`, which rewrites each file in place. `--check` only lists what would change.
+When a new build changes the project format, the editor and the renderer still read project files in the older format, and the editor's next save writes the new one. `toy-compositor migrate <project.json...>` rewrites each file in place without opening it, and `--check` only lists what would change.
 
 ## Project folders
 

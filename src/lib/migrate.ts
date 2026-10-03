@@ -14,16 +14,17 @@ type SavedLayer =
       box?: Box;
     });
 
-/** Check what consumers read without checking. */
+/** A saved project whose facts normalizing can rely on. */
+type ValidProject = SavedProject & Pick<Project, "media">;
+
+/**
+ * Check what normalizing cannot fill in, which needs a command that reads the
+ * media files.
+ */
 export function validateProject(
   project: SavedProject,
-): asserts project is Project {
+): asserts project is ValidProject {
   for (const layer of project.layers) {
-    if (layer.type === "color" && !layer.box) {
-      throw new Error(
-        `color layer "${layer.name ?? layer.type}" has no box, run migrate`,
-      );
-    }
     if (!("src" in layer)) {
       continue;
     }
@@ -41,20 +42,22 @@ export function validateProject(
 }
 
 /**
- * Rewrite a project from older formats, in the order the format changed, and
- * describe each layer change.
+ * Bring a project from older formats to the current one, in the order the
+ * format changed, and describe each layer change.
  */
-export function migrateProject(project: SavedProject): {
-  project: SavedProject;
+export function normalizeProject(project: ValidProject): {
+  project: Project;
   changes: string[];
 } {
   const changes: string[] = [];
-  const layers = project.layers.map((layer) => {
+  const layers = project.layers.map((layer): Layer => {
     const label = `${layer.type} layer "${layer.name ?? layer.type}"`;
-    if (layer.type === "color" && !layer.box) {
-      changes.push(`${label} has no box`);
+    if (layer.type === "color") {
+      if (!layer.box) {
+        changes.push(`${label} has no box`);
+      }
       const { width, height } = project.canvas;
-      layer = { ...layer, box: { x: 0, y: 0, width, height } };
+      return { ...layer, box: layer.box ?? { x: 0, y: 0, width, height } };
     }
     return layer;
   });

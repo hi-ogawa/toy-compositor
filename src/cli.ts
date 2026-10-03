@@ -12,7 +12,11 @@ import {
   installDesktopEntry,
 } from "./lib/desktop-entry.ts";
 import { updateProjectMedia } from "./lib/media-info.ts";
-import { migrateProject, type SavedProject } from "./lib/migrate.ts";
+import {
+  normalizeProject,
+  validateProject,
+  type SavedProject,
+} from "./lib/migrate.ts";
 import { renderProject } from "./lib/render/render.ts";
 import { createLiveConnections } from "./lib/server/live.ts";
 import { openWithDefaultApp } from "./lib/server/open-default.ts";
@@ -161,9 +165,9 @@ async function main() {
         return;
       }
       for (const projectFile of args) {
-        const { project, changes } = migrateProject(
-          await readJson<SavedProject>(projectFile),
-        );
+        const savedProject = await readJson<SavedProject>(projectFile);
+        validateProject(savedProject);
+        const { project, changes } = normalizeProject(savedProject);
         if (changes.length === 0) {
           continue;
         }
