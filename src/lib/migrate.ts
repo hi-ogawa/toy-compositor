@@ -1,8 +1,24 @@
 import { createLayerName } from "./layer-defaults.ts";
-import type { Box, ColorLayer, Layer, Project, TextLayer } from "./project.ts";
+import {
+  NEUTRAL_VALUES,
+  type AudioLayer,
+  type Box,
+  type Canvas,
+  type ColorLayer,
+  type Crop,
+  type ImageLayer,
+  type Layer,
+  type Project,
+  type TextLayer,
+  type VideoLayer,
+} from "./project.ts";
 import { measureTextHeight } from "./render/text.ts";
 
-export type SavedProject = Omit<Project, "layers" | "locators" | "media"> & {
+export type SavedProject = Omit<
+  Project,
+  "canvas" | "layers" | "locators" | "media"
+> & {
+  canvas: Omit<Canvas, "background"> & { background?: string };
   layers: SavedLayer[];
   // Missing in projects saved before locators.
   locators?: Project["locators"];
@@ -11,7 +27,11 @@ export type SavedProject = Omit<Project, "layers" | "locators" | "media"> & {
 };
 
 type SavedLayer = WithOptionalName<
-  Exclude<Layer, ColorLayer | TextLayer> | SavedColorLayer | SavedTextLayer
+  | SavedVideoLayer
+  | SavedAudioLayer
+  | SavedImageLayer
+  | SavedColorLayer
+  | SavedTextLayer
 >;
 
 // Missing in projects saved before layer names were required.
@@ -19,14 +39,40 @@ type WithOptionalName<T> = T extends unknown
   ? Omit<T, "name"> & { name?: string }
   : never;
 
-type SavedColorLayer = Omit<ColorLayer, "box"> & {
-  // Missing in projects saved before a color layer's box was required.
-  box?: Box;
+// Neutral values are missing in projects saved before they were required.
+type SavedVideoLayer = Omit<
+  VideoLayer,
+  "crop" | "muted" | "fadeIn" | "fadeOut" | "hold"
+> & {
+  crop?: Partial<Crop>;
+  muted?: boolean;
+  fadeIn?: number;
+  fadeOut?: number;
+  hold?: Partial<VideoLayer["hold"]>;
 };
 
-type SavedTextLayer = Omit<TextLayer, "box"> & {
+type SavedAudioLayer = Omit<AudioLayer, "muted" | "fadeIn" | "fadeOut"> & {
+  muted?: boolean;
+  fadeIn?: number;
+  fadeOut?: number;
+};
+
+type SavedImageLayer = Omit<ImageLayer, "crop"> & { crop?: Partial<Crop> };
+
+type SavedColorLayer = Omit<ColorLayer, "box" | "opacity"> & {
+  // Missing in projects saved before a color layer's box was required.
+  box?: Box;
+  opacity?: number;
+};
+
+type SavedTextLayer = Omit<TextLayer, "box" | "align" | "font"> & {
   // Missing height in projects saved before a text layer's box had one.
   box: Omit<Box, "height"> & { height?: number };
+  align?: TextLayer["align"];
+  font: Omit<TextLayer["font"], "weight" | "lineSpacing"> & {
+    weight?: number;
+    lineSpacing?: number;
+  };
 };
 
 /** A project in the current shape, and what changed to get there. */
@@ -72,34 +118,68 @@ async function migrateProject(
     if (savedLayer.name === undefined) {
       changes.push(`${label} has no name`);
     }
-    if (layer.type === "color") {
-      if (!layer.box) {
-        changes.push(`${label} has no box`);
+    switch (layer.type) {
+      case "video": {
+        layers.push(fillDefaults(layer, NEUTRAL_VALUES.video));
+        break;
       }
-      const { width, height } = project.canvas;
-      layers.push({
-        ...layer,
-        box: layer.box ?? { x: 0, y: 0, width, height },
-      });
-      continue;
-    }
-    if (layer.type === "text") {
-      let { height } = layer.box;
-      if (height === undefined) {
-        // The box followed the lines, which rendered at their natural height.
-        changes.push(`${label} has no box height`);
-        height = await measureTextHeight(layer);
+      case "audio": {
+        layers.push(fillDefaults(layer, NEUTRAL_VALUES.audio));
+        break;
       }
-      layers.push({ ...layer, box: { ...layer.box, height } });
-      continue;
+      case "image": {
+        layers.push(fillDefaults(layer, NEUTRAL_VALUES.image));
+        break;
+      }
+      case "color": {
+        if (!layer.box) {
+          changes.push(`${label} has no box`);
+        }
+        // A color layer without a box covered the canvas.
+        const { width, height } = project.canvas;
+        const box = layer.box ?? { x: 0, y: 0, width, height };
+        layers.push(fillDefaults({ ...layer, box }, NEUTRAL_VALUES.color));
+        break;
+      }
+      case "text": {
+        const filled = fillDefaults(layer, NEUTRAL_VALUES.text);
+        let { height } = filled.box;
+        if (height === undefined) {
+          // The box followed the lines, which rendered at their natural height.
+          changes.push(`${label} has no box height`);
+          height = await measureTextHeight(filled);
+        }
+        layers.push({ ...filled, box: { ...filled.box, height } });
+        break;
+      }
     }
-    layers.push(layer);
   }
+  const canvas = fillDefaults(project.canvas, NEUTRAL_VALUES.canvas);
   const migrated: Project = {
     ...project,
+    canvas,
     layers,
     locators: project.locators ?? [],
     media: project.media ?? {},
   };
   return { project: migrated, changes };
+}
+
+/**
+ * Fills each missing property with its neutral value, recursing into objects
+ * that are present.
+ */
+function fillDefaults<T extends object, D extends object>(
+  value: T,
+  defaults: D,
+): T & D {
+  const filled = { ...value } as Record<string, unknown>;
+  for (const [key, fallback] of Object.entries(defaults)) {
+    if (filled[key] === undefined) {
+      filled[key] = structuredClone(fallback);
+    } else if (typeof fallback === "object") {
+      filled[key] = fillDefaults(filled[key] as object, fallback);
+    }
+  }
+  return filled as T & D;
 }

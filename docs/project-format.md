@@ -53,8 +53,11 @@ Every layer has a `name`, such as `"camera"`, `"score"`, or `"mix"`. Names do no
   "in": 0,
   "out": 189.499,
   "box": { "x": 0, "y": 0, "width": 1920, "height": 1080 },
-  "crop": { "left": 0.013, "top": 0.0065 },
+  "crop": { "left": 0.013, "right": 0, "top": 0.0065, "bottom": 0 },
   "muted": true,
+  "fadeIn": 0,
+  "fadeOut": 0,
+  "hold": { "before": 0, "after": 0 },
 }
 ```
 
@@ -64,6 +67,7 @@ A video layer carries its file's audio, like a clip in other video editors, and 
 
 ```jsonc
 {
+  "name": "mix",
   "type": "audio",
   "src": "media/mix.wav",
   "start": 23.7,
@@ -71,6 +75,7 @@ A video layer carries its file's audio, like a clip in other video editors, and 
   "out": 175.233,
   "fadeIn": 0,
   "fadeOut": 4.7,
+  "muted": false,
 }
 ```
 
@@ -80,11 +85,13 @@ A video layer carries its file's audio, like a clip in other video editors, and 
 
 ```jsonc
 {
+  "name": "mv thumbnail",
   "type": "image",
   "src": "media/mv-thumbnail.jpg",
   "start": 23.7,
   "end": 188.633,
   "box": { "x": 960, "y": 540, "width": 960, "height": 540 },
+  "crop": { "left": 0, "right": 0, "top": 0, "bottom": 0 },
 }
 ```
 
@@ -92,6 +99,7 @@ A video layer carries its file's audio, like a clip in other video editors, and 
 
 ```jsonc
 {
+  "name": "title",
   "type": "text",
   "text": "RESCENE\nLOVE ATTACK\n(John Park ver.)",
   "start": 23.7,
@@ -115,6 +123,7 @@ The lines are drawn at the font's size and aligned across the box's width by `al
 
 ```jsonc
 {
+  "name": "dim",
   "type": "color",
   "color": "#000000",
   "opacity": 0.51,
@@ -170,22 +179,14 @@ An entry depends only on the file's contents, so a copied file has the same entr
 
 `box` is where a visual layer goes on the canvas. The source is scaled to fit inside the box while keeping its aspect ratio and is centered in it. Anything outside the canvas is clipped.
 
-`crop` removes a fraction of the source from each edge before fitting, with each side defaulting to 0.
+`crop` removes a fraction of the source from each edge before fitting.
 
 ## Hold
 
 A video layer can keep showing its first frame before `start` and its last frame after its source range ends, so a clip without lead-in or tail, such as a score video, still covers the whole output.
 
 ```jsonc
-{
-  "type": "video",
-  "src": "media/score.mp4",
-  "start": 23.7,
-  "in": 0,
-  "out": 160,
-  "box": { "x": 781, "y": 473, "width": 1152, "height": 648 },
-  "hold": { "before": 5, "after": 10 },
-}
+"hold": { "before": 5, "after": 10 }
 ```
 
 `before` and `after` are durations in seconds. They extend only the layer's picture, so its timing stays its source range and the held spans are silent.

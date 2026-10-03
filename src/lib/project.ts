@@ -12,7 +12,7 @@ export type Canvas = {
   width: number;
   height: number;
   fps: number;
-  background?: string;
+  background: string;
 };
 
 export type Output =
@@ -52,6 +52,34 @@ export const CANVAS_PRESETS = [
 export type CanvasPreset = (typeof CANVAS_PRESETS)[number];
 
 /**
+ * Values that leave their property without effect, such as no crop or no fade.
+ * New layers start from them, and migration fills them into older projects.
+ */
+export const NEUTRAL_VALUES = {
+  canvas: { background: "#000000" },
+  video: {
+    crop: { left: 0, right: 0, top: 0, bottom: 0 },
+    muted: false,
+    fadeIn: 0,
+    fadeOut: 0,
+    hold: { before: 0, after: 0 },
+  },
+  audio: { muted: false, fadeIn: 0, fadeOut: 0 },
+  image: { crop: { left: 0, right: 0, top: 0, bottom: 0 } },
+  text: { align: "left", font: { weight: 400, lineSpacing: 0 } },
+  color: { opacity: 1 },
+} satisfies {
+  canvas: Pick<Canvas, "background">;
+  video: Pick<VideoLayer, "crop" | "muted" | "fadeIn" | "fadeOut" | "hold">;
+  audio: Pick<AudioLayer, "muted" | "fadeIn" | "fadeOut">;
+  image: Pick<ImageLayer, "crop">;
+  text: Pick<TextLayer, "align"> & {
+    font: Pick<TextLayer["font"], "weight" | "lineSpacing">;
+  };
+  color: Pick<ColorLayer, "opacity">;
+};
+
+/**
  * Create a project without layers. Its output starts as a short range from 0,
  * because no media exists yet to size it by.
  */
@@ -61,7 +89,7 @@ export function createEmptyProject(preset: CanvasPreset): Project {
       width: preset.width,
       height: preset.height,
       fps: 30,
-      background: "#000000",
+      ...NEUTRAL_VALUES.canvas,
     },
     output: { type: "video", start: 0, end: 10 },
     layers: [],
@@ -81,12 +109,7 @@ type LayerBase = { name: string };
 
 export type Box = { x: number; y: number; width: number; height: number };
 
-export type Crop = {
-  left?: number;
-  right?: number;
-  top?: number;
-  bottom?: number;
-};
+export type Crop = { left: number; right: number; top: number; bottom: number };
 
 export type VideoLayer = LayerBase & {
   type: "video";
@@ -95,11 +118,11 @@ export type VideoLayer = LayerBase & {
   in: number;
   out: number;
   box: Box;
-  crop?: Crop;
-  muted?: boolean;
-  fadeIn?: number;
-  fadeOut?: number;
-  hold?: { before?: number; after?: number };
+  crop: Crop;
+  muted: boolean;
+  fadeIn: number;
+  fadeOut: number;
+  hold: { before: number; after: number };
 };
 
 export type AudioLayer = LayerBase & {
@@ -108,16 +131,16 @@ export type AudioLayer = LayerBase & {
   start: number;
   in: number;
   out: number;
-  fadeIn?: number;
-  fadeOut?: number;
-  muted?: boolean;
+  fadeIn: number;
+  fadeOut: number;
+  muted: boolean;
 };
 
 export type ImageLayer = LayerBase & {
   type: "image";
   src: string;
   box: Box;
-  crop?: Crop;
+  crop: Crop;
   start: number;
   end: number;
 };
@@ -126,8 +149,8 @@ export type TextLayer = LayerBase & {
   type: "text";
   text: string;
   box: Box;
-  align?: "left" | "center" | "right";
-  font: { family: string; size: number; weight?: number; lineSpacing?: number };
+  align: "left" | "center" | "right";
+  font: { family: string; size: number; weight: number; lineSpacing: number };
   color: string;
   outline?: { width: number; color: string };
   start: number;
@@ -137,7 +160,7 @@ export type TextLayer = LayerBase & {
 export type ColorLayer = LayerBase & {
   type: "color";
   color: string;
-  opacity?: number;
+  opacity: number;
   box: Box;
   start: number;
   end: number;

@@ -20,23 +20,18 @@ export function CompositionMedia({
   const [failed, setFailed] = useState(false);
 
   const video = mediaInfo.video!;
-  const crop = layer.crop ?? {};
+  const { crop } = layer;
   const fit = fitBox({ source: video, crop, box: layer.box });
   const mediaStyle: CSSProperties = {
     position: "absolute",
     maxWidth: "none",
     width:
-      (video.width * fit.width) /
-      (video.width * (1 - (crop.left ?? 0) - (crop.right ?? 0))),
+      (video.width * fit.width) / (video.width * (1 - crop.left - crop.right)),
     height:
       (video.height * fit.height) /
-      (video.height * (1 - (crop.top ?? 0) - (crop.bottom ?? 0))),
-    left:
-      (-(crop.left ?? 0) * fit.width) /
-      (1 - (crop.left ?? 0) - (crop.right ?? 0)),
-    top:
-      (-(crop.top ?? 0) * fit.height) /
-      (1 - (crop.top ?? 0) - (crop.bottom ?? 0)),
+      (video.height * (1 - crop.top - crop.bottom)),
+    left: (-crop.left * fit.width) / (1 - crop.left - crop.right),
+    top: (-crop.top * fit.height) / (1 - crop.top - crop.bottom),
   };
   return (
     <>

@@ -1,12 +1,13 @@
 import { createNumberedName } from "../utils/name.ts";
 import { fitBox, type TimeRange } from "./layout.ts";
 import type { MediaType } from "./media-file.ts";
-import type {
-  Canvas,
-  ColorLayer,
-  Layer,
-  MediaInfo,
-  TextLayer,
+import {
+  NEUTRAL_VALUES,
+  type Canvas,
+  type ColorLayer,
+  type Layer,
+  type MediaInfo,
+  type TextLayer,
 } from "./project.ts";
 
 /** Numbers a layer by its type among the existing ones, such as `Text 2`. */
@@ -55,7 +56,12 @@ export function createMediaLayer({
         start,
         in: mediaInfo.start,
         out: mediaInfo.end,
-        box: fitBox({ source: mediaInfo.video!, box: canvasBox }),
+        box: fitBox({
+          source: mediaInfo.video!,
+          crop: NEUTRAL_VALUES.video.crop,
+          box: canvasBox,
+        }),
+        ...NEUTRAL_VALUES.video,
       };
     }
     case "audio": {
@@ -66,6 +72,7 @@ export function createMediaLayer({
         start,
         in: mediaInfo.start,
         out: mediaInfo.end,
+        ...NEUTRAL_VALUES.audio,
       };
     }
     case "image": {
@@ -73,7 +80,12 @@ export function createMediaLayer({
         name,
         type,
         src,
-        box: fitBox({ source: mediaInfo.video!, box: canvasBox }),
+        box: fitBox({
+          source: mediaInfo.video!,
+          crop: NEUTRAL_VALUES.image.crop,
+          box: canvasBox,
+        }),
+        ...NEUTRAL_VALUES.image,
         ...stillRange,
       };
     }
@@ -101,7 +113,11 @@ export function createTextLayer({
       height: Math.round(canvas.height * 0.2),
     },
     align: "center",
-    font: { family: "Noto Sans", size: Math.round(canvas.height / 10) },
+    font: {
+      family: "Noto Sans",
+      size: Math.round(canvas.height / 10),
+      ...NEUTRAL_VALUES.text.font,
+    },
     color: "#ffffff",
     ...range,
   };
