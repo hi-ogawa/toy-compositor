@@ -79,6 +79,7 @@ test("compose the output start, follow inspector edits, and save them", async ({
       {},
       { crop: { left: 0.25, right: 0.25 } },
       { end: 1 },
+      {},
     ],
   });
 
@@ -160,6 +161,7 @@ test("edit a text layer's content and styling and save them", async ({
         font: { family: "DejaVu Serif", size: 32, weight: 700, lineSpacing: 4 },
         color: "#ffcc00",
       },
+      {},
     ],
   });
   expect(project.layers[3]).not.toHaveProperty("outline");
@@ -173,7 +175,7 @@ test("edit layer names and a color layer's fill and box, and save them", async (
   // filling the canvas.
   await page.goto(editor.url);
   await page.getByRole("button", { name: "Add Color", exact: true }).click();
-  const fill = page.getByTestId("composition-layer-4").locator("div").first();
+  const fill = page.getByTestId("composition-layer-5").locator("div").first();
   await expect(fill).toHaveCSS("width", "640px");
 
   // Name the color layer and confirm its lane and the inspector title follow.
@@ -233,7 +235,7 @@ test("edit layer names and a color layer's fill and box, and save them", async (
   await save.click();
   await expect(save).toHaveAttribute("data-status", "saved");
   const project = await readJson<Project>(editor.projectFile);
-  expect(project.layers[4]).toEqual({
+  expect(project.layers[5]).toEqual({
     name: "Scrim",
     type: "color",
     color: "#ff0000",
@@ -409,6 +411,7 @@ test("hold a video layer's first and last frames in the preview", async ({
   expect(await readJson(editor.projectFile)).toMatchObject({
     layers: [
       { start: 1, in: 0, out: 1, hold: { before: 1, after: 1 } },
+      {},
       {},
       {},
       {},
