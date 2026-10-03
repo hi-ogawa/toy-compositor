@@ -1,4 +1,4 @@
-import type { Box, Crop, Layer, Project } from "./project.ts";
+import type { Box, Crop, Layer, Project, VideoLayer } from "./project.ts";
 
 export type TimeRange = { start: number; end: number };
 
@@ -39,6 +39,20 @@ export function getPictureRange(layer: Layer): TimeRange {
     start: range.start - (layer.hold.before ?? 0),
     end: range.end + (layer.hold.after ?? 0),
   };
+}
+
+/**
+ * Source time a video layer shows on its last output frame, which its hold
+ * keeps showing after it. The layer covers the output frames nearest its start
+ * and end, and those frames follow its source from `in`.
+ */
+export function getLastFrameTime(
+  layer: VideoLayer,
+  { fps }: { fps: number },
+): number {
+  const range = getLayerRange(layer);
+  const count = Math.round(range.end * fps) - Math.round(range.start * fps);
+  return layer.in + Math.max(count - 1, 0) / fps;
 }
 
 export function intersect(a: TimeRange, b: TimeRange): TimeRange | undefined {

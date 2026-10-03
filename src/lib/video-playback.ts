@@ -1,5 +1,6 @@
 import { clamp } from "../utils/math.ts";
 import { throttle } from "../utils/timing.ts";
+import { getLastFrameTime } from "./layout.ts";
 import type { VideoLayer } from "./project.ts";
 import type { AudioContextTransport } from "./transport.ts";
 
@@ -21,15 +22,16 @@ const MAX_RATE_CHANGE = 0.1;
  * to the playhead. While playing it plays natively and closes any drift by
  * nudging `playbackRate`, because a corrective seek lands behind by however
  * long the seek took, which on long keyframe intervals is longer than the drift
- * it corrects. Outside the source range it rests on `in` before and `out`
- * after, so the element shows the layer's edge frames wherever it is drawn,
- * which is what a hold shows. The element is always muted, since audio plays on
- * the transport.
+ * it corrects. Before the source range it rests on `in`, and after it on the
+ * source frame the layer shows on its last output frame, so the element shows
+ * the layer's edge frames wherever it is drawn, which is what a hold shows. The
+ * element is always muted, since audio plays on the transport.
  */
 export class VideoPlayback {
   private readonly transport: AudioContextTransport;
   private readonly element: HTMLVideoElement;
   private layer?: VideoLayer;
+  private fps = 30;
   private mode?: PlaybackMode;
   private readonly unsubscribe: () => void;
   private readonly correctDriftThrottled = throttle(
@@ -52,8 +54,10 @@ export class VideoPlayback {
     element.addEventListener("loadedmetadata", this.resync);
   }
 
-  setLayer({ layer }: { layer: VideoLayer }): void {
+  /** `fps` is the canvas frame rate, which places a layer's last output frame. */
+  setLayer({ layer, fps }: { layer: VideoLayer; fps: number }): void {
     this.layer = layer;
+    this.fps = fps;
     // A moved layer re-enters its mode instead of being corrected as drift.
     this.mode = undefined;
     this.sync();
@@ -77,9 +81,12 @@ export class VideoPlayback {
     }
     const { position, isPlaying } = this.transport.store.get();
     const expectedTime = layer.in + position - layer.start;
+    // Outside its source range, a layer holds its first frame or the one it
+    // shows on its last output frame.
+    const lastFrameTime = getLastFrameTime(layer, { fps: this.fps });
     if (!isPlaying) {
       this.mode = "paused";
-      this.pause(clamp(expectedTime, layer.in, layer.out));
+      this.pause(clamp(expectedTime, layer.in, lastFrameTime));
       return;
     }
 
@@ -106,7 +113,7 @@ export class VideoPlayback {
         break;
       }
       case "after": {
-        this.pause(layer.out);
+        this.pause(lastFrameTime);
         break;
       }
     }

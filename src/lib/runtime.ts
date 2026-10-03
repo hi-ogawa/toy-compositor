@@ -183,6 +183,8 @@ export class EditorRuntime {
   setCanvas(canvas: Canvas): void {
     const { project } = this.store.get();
     this.store.update({ project: { ...project, canvas } });
+    // Video playback holds last frames by the canvas frame rate.
+    this.syncPlayback();
   }
 
   setOutput(output: Output): void {
@@ -307,7 +309,7 @@ export class EditorRuntime {
     for (const [id, playback] of this.videoPlaybacks) {
       const layer = layers.find((layer) => layer.id === id);
       if (layer?.type === "video") {
-        playback.setLayer({ layer });
+        playback.setLayer({ layer, fps: project.canvas.fps });
       }
     }
 
