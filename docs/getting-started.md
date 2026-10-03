@@ -11,6 +11,8 @@ On Linux, `toy-compositor install-desktop` adds an app launcher entry that runs 
 
 `toy-compositor upgrade` installs the latest main build, rewrites the launcher entry, and stops the running editor server, so the next launch uses the new build. It also takes a pkg.pr.new URL or a tarball to install another build, such as a pull request's.
 
+When a new build changes the project format, the editor and the renderer reject a project file in the older format with a message to run `toy-compositor migrate <project.json...>`, which rewrites each file in place. `--check` only lists what would change.
+
 ## Project folders
 
 A project folder holds its project files at the top level and their media under `media/`. Each project file describes one deliverable, such as a video or its thumbnail, and its layers refer to media by paths relative to the folder, such as `media/clip.mp4`. The editor's library lists the files in `media/`.
