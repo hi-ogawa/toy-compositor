@@ -185,4 +185,4 @@ A video layer can keep showing its first frame before `start` and its last frame
 }
 ```
 
-`before` and `after` are durations in seconds, and the held frames extend the layer's picture by them on each side. The layer's timing and its timeline region stay its source range, so moves and trims carry the hold along. The held spans are silent, and they compile to `tpad` with `clone` mode ([compiler](compiler.md#timing-and-frames)).
+`before` and `after` are durations in seconds. They extend only the layer's picture, so its timing stays its source range and the held spans are silent.

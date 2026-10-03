@@ -512,11 +512,7 @@ function TimelineLayerLane({
   );
 }
 
-/**
- * A span where a video layer holds its first or last frame, drawn beside its
- * region. The hold is edited in the inspector, so the span takes no pointer
- * input.
- */
+/** A held span beside a region, edited in the inspector, so it takes no pointer input. */
 function TimelineHoldSpan({
   timeline,
   range,
@@ -532,7 +528,7 @@ function TimelineHoldSpan({
       <div
         title={`hold ${range.start.toFixed(3)}–${range.end.toFixed(3)} s`}
         data-testid={testId}
-        className="pointer-events-none absolute inset-y-2 rounded-sm border border-dashed border-blue-400/50 bg-blue-400/10"
+        className="pointer-events-none absolute inset-y-1 rounded-sm border border-dashed border-blue-400/50 bg-blue-400/10"
         style={style}
       />
     )

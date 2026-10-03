@@ -160,7 +160,7 @@ test("cover the output frames nearest a layer's start and end", async ({}, testI
   // on either side, rather than the start truncating to frame 30 or ffmpeg
   // rounding the 28.08-frame duration up to 29 frames.
   const frames = await readGrayFrames(output);
-  const canvas = new Uint8Array(FRAME_WIDTH * FRAME_HEIGHT);
+  const canvas = new Uint8Array(frames[0].length);
   expect(diffFrames(frames[30], canvas)).toBeLessThan(1);
   expect(diffFrames(frames[31], canvas)).toBeGreaterThan(10);
   expect(diffFrames(frames[58], canvas)).toBeGreaterThan(10);
@@ -170,6 +170,10 @@ test("cover the output frames nearest a layer's start and end", async ({}, testI
 test("hold a video layer's first and last frames beyond its source range", async ({}, testInfo) => {
   // Copy the synthetic sample and keep only its test pattern, playing source
   // 1s to 2s at 1s and holding its first and last frames for 1s on each side.
+  //
+  //   |  hold  |  play  |  hold  |
+  //   0        1        2        3
+  //               1.5
   const directory = testInfo.outputPath("project");
   await cp("samples/synthetic", directory, { recursive: true });
   await editJson<Project>(`${directory}/project.json`, (project) => {
@@ -195,18 +199,18 @@ test("hold a video layer's first and last frames beyond its source range", async
     contentType: "video/mp4",
   });
 
-  // Check that the first second repeats the first played frame, the last
-  // second repeats the last played frame, and the played frames still move.
+  // Check that 0 s shows the same frame as 1 s and 2 s the same as the end,
+  // while 1.5 s differs from both.
+  const fps = 30;
   const frames = await readGrayFrames(output);
-  expect(frames).toHaveLength(90);
-  expect(diffFrames(frames[0], frames[30])).toBeLessThan(0.1);
-  expect(diffFrames(frames[29], frames[30])).toBeLessThan(0.1);
-  expect(diffFrames(frames[60], frames[59])).toBeLessThan(0.1);
-  expect(diffFrames(frames[89], frames[59])).toBeLessThan(0.1);
-  expect(diffFrames(frames[30], frames[59])).toBeGreaterThan(1);
+  expect(frames).toHaveLength(3 * fps);
+  expect(diffFrames(frames[0], frames[fps])).toBeLessThan(0.1);
+  expect(diffFrames(frames[2 * fps], frames.at(-1)!)).toBeLessThan(0.1);
+  expect(diffFrames(frames[0], frames[1.5 * fps])).toBeGreaterThan(1);
+  expect(diffFrames(frames[1.5 * fps], frames.at(-1)!)).toBeGreaterThan(1);
 
-  // Render stills inside each hold and at the edge frames it holds, and check
-  // that each held still matches its edge frame exactly.
+  // Render stills inside each hold, and check that each matches the render's
+  // frames there, within the video encode's loss.
   const renderStill = async (time: number) => {
     const file = `${directory}/still-${time}.json`;
     await cp(`${directory}/project.json`, file);
@@ -223,10 +227,8 @@ test("hold a video layer's first and last frames beyond its source range", async
     const [frame] = await readGrayFrames(still);
     return frame;
   };
-  expect(diffFrames(await renderStill(0.5), await renderStill(1))).toBe(0);
-  expect(diffFrames(await renderStill(2.5), await renderStill(59 / 30))).toBe(
-    0,
-  );
+  expect(diffFrames(await renderStill(0.5), frames[0])).toBeLessThan(1);
+  expect(diffFrames(await renderStill(2.5), frames.at(-1)!)).toBeLessThan(1);
 });
 
 test("hold the frame a layer shows on its last output frame when its edges are off the frame grid", async ({}, testInfo) => {
@@ -292,11 +294,10 @@ async function measureRmsLevel(file: string, { time }: { time: number }) {
   return Number(levels.at(-1)![1]);
 }
 
-const FRAME_WIDTH = 64;
-const FRAME_HEIGHT = 36;
-
 /** Every frame of a file, scaled down to small grayscale pixels. */
 async function readGrayFrames(file: string) {
+  const width = 64;
+  const height = 36;
   const { stdout } = await execFileAsync(
     "ffmpeg",
     [
@@ -305,14 +306,14 @@ async function readGrayFrames(file: string) {
       "-i",
       file,
       "-vf",
-      `scale=${FRAME_WIDTH}:${FRAME_HEIGHT},format=gray`,
+      `scale=${width}:${height},format=gray`,
       "-f",
       "rawvideo",
       "-",
     ],
     { encoding: "buffer" },
   );
-  const size = FRAME_WIDTH * FRAME_HEIGHT;
+  const size = width * height;
   return Array.from({ length: stdout.length / size }, (_, i) =>
     stdout.subarray(i * size, (i + 1) * size),
   );

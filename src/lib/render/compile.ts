@@ -221,9 +221,7 @@ function compileVideo({
 
 /**
  * Which source frames a video layer reads for its visible output frames, and
- * how many frames to clone before and after them over the held spans. Visible
- * frames that lie entirely in a hold read the one frame it holds, which is
- * what the layer shows on its first or last output frame.
+ * how many copies of its first and last frames to clone around them.
  */
 function getSourceRead({
   layer,
@@ -237,8 +235,16 @@ function getSourceRead({
   scene: Scene;
 }) {
   const range = getLayerRange(layer);
-  const played = intersect(range, scene.range);
+  const played = intersect(range, visible);
   const playedFrames = played && getOutputFrames({ visible: played, scene });
+  // A visible part that overlaps the played part reads its frames and clones
+  // the edge frames over the rest, such as rendering 0.5 s to 1.5 s of a layer
+  // playing 1 s to 2 s with 1 s holds:
+  //
+  //   0        1        2        3
+  //   |  hold  |  play  |  hold  |
+  //       [--------]                  visible
+  //       [---][---]                  clone, read
   if (played && playedFrames) {
     return {
       time: layer.in + played.start - layer.start,
@@ -248,14 +254,23 @@ function getSourceRead({
         frames.first + frames.count - playedFrames.first - playedFrames.count,
     };
   }
-  return visible.end <= range.start
-    ? { time: layer.in, count: 1, before: frames.count - 1, after: 0 }
-    : {
-        time: getLastFrameTime(layer, { fps: scene.canvas.fps }),
-        count: 1,
-        before: 0,
-        after: frames.count - 1,
-      };
+  // A visible part entirely in a hold, such as a still or rendering 0.25 s to
+  // 0.75 s of the same layer, reads the one frame it holds, which the layer
+  // shows on its first or last output frame, and clones it over the rest:
+  //
+  //   0        1        2        3
+  //   |  hold  |  play  |  hold  |
+  //     [----]                        visible, cloned
+  //            ^                      read the first frame
+  return {
+    time:
+      visible.end <= range.start
+        ? layer.in
+        : getLastFrameTime(layer, { fps: scene.canvas.fps }),
+    count: 1,
+    before: 0,
+    after: frames.count - 1,
+  };
 }
 
 function compileImage({
