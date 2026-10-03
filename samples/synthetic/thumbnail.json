@@ -9,6 +9,7 @@
     "type": "still",
     "time": 1.5
   },
+  "locators": [],
   "layers": [
     {
       "name": "Test pattern",

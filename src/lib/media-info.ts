@@ -1,6 +1,7 @@
 import path from "node:path";
 import { execFileAsync } from "../utils/exec.ts";
 import { readJson, writeJson } from "../utils/fs.ts";
+import type { SavedProject } from "./migrate.ts";
 import type { Project, MediaInfo } from "./project.ts";
 
 /**
@@ -8,7 +9,7 @@ import type { Project, MediaInfo } from "./project.ts";
  * into the project's `media`, replacing what was there.
  */
 export async function updateProjectMedia(projectFile: string) {
-  const project = await readJson<Project>(projectFile);
+  const project = await readJson<SavedProject>(projectFile);
   const projectDir = path.dirname(path.resolve(projectFile));
   const mediaInfoMap: Project["media"] = {};
   for (const layer of project.layers) {

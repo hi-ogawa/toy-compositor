@@ -24,10 +24,9 @@ export function CompositionPreview({
     setSize({ width: element.clientWidth, height: element.clientHeight }),
   );
   const { canvas } = project;
-  const scale = Math.min(
-    size.width / canvas.width,
-    size.height / canvas.height,
-  );
+  // Leaves a margin around the frame, so layers overflowing it stay visible.
+  const scale =
+    0.9 * Math.min(size.width / canvas.width, size.height / canvas.height);
   return (
     <>
       <div className="flex h-7 shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-3 text-xs">
@@ -39,53 +38,56 @@ export function CompositionPreview({
           {canvas.width} × {canvas.height} · {canvas.fps} fps
         </span>
       </div>
-      {/* Pads outside the measured viewport so the scale fits the inner size. */}
-      <div className="flex min-h-0 flex-1 p-3">
+      <div
+        ref={viewportRef}
+        className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden"
+        data-testid="composition-viewport"
+      >
         <div
-          ref={viewportRef}
-          className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden"
-          data-testid="composition-viewport"
+          className="relative shrink-0"
+          style={{
+            width: canvas.width * scale,
+            height: canvas.height * scale,
+          }}
         >
           <div
-            className="relative shrink-0"
+            className="absolute origin-top-left"
+            data-testid="composition-canvas"
             style={{
-              width: canvas.width * scale,
-              height: canvas.height * scale,
+              width: canvas.width,
+              height: canvas.height,
+              transform: `scale(${scale})`,
+              background: canvas.background ?? "#000000",
             }}
           >
+            {/* Every layer stays mounted, so media is ready when playback reaches it. */}
+            {project.layers.map((layer, index) => {
+              if (layer.type === "audio") {
+                return undefined;
+              }
+              const range = getPictureRange(layer);
+              return (
+                <PreviewLayer
+                  key={layer.id}
+                  layer={layer}
+                  visible={time >= range.start && time < range.end}
+                  runtime={runtime}
+                  selected={
+                    selection?.type === "layer" && selection.id === layer.id
+                  }
+                  id={layer.id}
+                  index={index}
+                  mediaInfoMap={project.media}
+                  resolveMediaUrl={resolveMediaUrl}
+                />
+              );
+            })}
+            {/* Dims everything outside the frame, below the selection outline,
+                and marks the frame edge with a 1px screen line just outside it. */}
             <div
-              className="absolute origin-top-left overflow-hidden"
-              data-testid="composition-canvas"
-              style={{
-                width: canvas.width,
-                height: canvas.height,
-                transform: `scale(${scale})`,
-                background: canvas.background ?? "#000000",
-              }}
-            >
-              {/* Every layer stays mounted, so media is ready when playback reaches it. */}
-              {project.layers.map((layer, index) => {
-                if (layer.type === "audio") {
-                  return undefined;
-                }
-                const range = getPictureRange(layer);
-                return (
-                  <PreviewLayer
-                    key={layer.id}
-                    layer={layer}
-                    visible={time >= range.start && time < range.end}
-                    runtime={runtime}
-                    selected={
-                      selection?.type === "layer" && selection.id === layer.id
-                    }
-                    id={layer.id}
-                    index={index}
-                    mediaInfoMap={project.media}
-                    resolveMediaUrl={resolveMediaUrl}
-                  />
-                );
-              })}
-            </div>
+              className="pointer-events-none absolute inset-0 z-[5] outline outline-neutral-600 ring-[100000px] ring-neutral-900/70"
+              style={{ outlineWidth: 1 / scale }}
+            />
           </div>
         </div>
       </div>
