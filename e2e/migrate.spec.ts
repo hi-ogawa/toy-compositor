@@ -1,7 +1,8 @@
 import { expect } from "@playwright/test";
-import type { ColorLayer, Project } from "../src/lib/project.ts";
+import type { SavedProject } from "../src/lib/migrate.ts";
+import type { Project } from "../src/lib/project.ts";
 import { execFileAsync } from "../src/utils/exec.ts";
-import { readJson, writeJson } from "../src/utils/fs.ts";
+import { editJson, readJson } from "../src/utils/fs.ts";
 import { test } from "./helper";
 
 test("read and migrate a color layer without a box", async ({
@@ -11,10 +12,13 @@ test("read and migrate a color layer without a box", async ({
   // Remove the tint's box, as in a project file from before color layers
   // required one.
   const project = await readJson<Project>(editor.projectFile);
-  const oldProject = structuredClone(project);
-  const oldTint = oldProject.layers.find((layer) => layer.name === "Tint");
-  delete (oldTint as Partial<ColorLayer>).box;
-  await writeJson(editor.projectFile, oldProject);
+  await editJson<SavedProject>(editor.projectFile, (savedProject) => {
+    const tint = savedProject.layers.find((layer) => layer.name === "Tint");
+    if (tint?.type === "color") {
+      delete tint.box;
+    }
+  });
+  const savedProject = await readJson<SavedProject>(editor.projectFile);
 
   // Open the editor, and confirm it loads the project as it is.
   await page.goto(editor.url);
@@ -38,7 +42,9 @@ test("read and migrate a color layer without a box", async ({
       "--check",
     ]),
   ).rejects.toThrow();
-  expect(await readJson<Project>(editor.projectFile)).toEqual(oldProject);
+  expect(await readJson<SavedProject>(editor.projectFile)).toEqual(
+    savedProject,
+  );
 
   // Migrate it, and confirm the tint covers the whole canvas as it rendered before.
   await execFileAsync(process.execPath, [
