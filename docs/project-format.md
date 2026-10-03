@@ -105,7 +105,7 @@ A video layer carries its file's audio, like a clip in other video editors, and 
 }
 ```
 
-Text is rendered to a transparent PNG and composited like an image, so the renderer does not depend on ffmpeg's `drawtext`. `box.y` is the top of the first line at the font's normal line height, and `lineSpacing` is added only between lines.
+Text is rendered to a transparent PNG and composited like an image, so the renderer does not depend on ffmpeg's `drawtext`. The text is drawn at its font size and never wraps, so lines break only at `\n`. `box.width` is a frame the lines are aligned in by `align`, and text wider than the frame is cut off. The height has no field because it follows the lines. `box.y` is the top of the first line at the font's normal line height, and `lineSpacing` is added only between lines.
 
 ### `color`
 
