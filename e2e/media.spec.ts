@@ -31,7 +31,7 @@ test("reject a layer whose file has no media info", async ({
     delete project.media["media/image.png"];
   });
   const message =
-    'image layer "Label backdrop" (media/image.png) has no media info, run update-media';
+    "image layer (media/image.png) has no media info, run update-media";
 
   // Open the editor, and confirm it shows the error instead of the editor.
   await page.goto(editor.url);

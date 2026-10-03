@@ -33,22 +33,21 @@ type SavedTextLayer = Omit<TextLayer, "box"> & {
 export type MigrateProjectResult = { project: Project; changes: string[] };
 
 export async function validateAndMigrateProject(project: SavedProject) {
-  const result = await migrateProject(project);
-  validateProject(result.project);
-  return result;
+  validateProject(project);
+  return migrateProject(project);
 }
 
 /**
  * Reject what loading cannot fix from the file alone, which needs update-media
  * or a different file.
  */
-function validateProject(project: Project): void {
+function validateProject(project: SavedProject): void {
   for (const layer of project.layers) {
     if (!("src" in layer)) {
       continue;
     }
-    const label = `${layer.type} layer "${layer.name}" (${layer.src})`;
-    const mediaInfo = project.media[layer.src];
+    const label = `${layer.type} layer (${layer.src})`;
+    const mediaInfo = project.media?.[layer.src];
     if (!mediaInfo) {
       throw new Error(`${label} has no media info, run update-media`);
     }
