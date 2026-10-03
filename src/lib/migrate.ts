@@ -17,7 +17,7 @@ export type SavedProject = Omit<
   Project,
   "canvas" | "layers" | "locators" | "media"
 > & {
-  canvas: WithOptional<Canvas, "background">;
+  canvas: Omit<Canvas, "background"> & { background?: string };
   layers: SavedLayer[];
   // Missing in projects saved before locators.
   locators?: Project["locators"];
@@ -39,25 +39,39 @@ type WithOptionalName<T> = T extends unknown
   : never;
 
 // Neutral values are missing in projects saved before they were required.
-type WithOptional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
-
 type SavedVideoLayer = Omit<
-  WithOptional<VideoLayer, "muted" | "fadeIn" | "fadeOut">,
-  "crop" | "hold"
-> & { crop?: Partial<Crop>; hold?: Partial<VideoLayer["hold"]> };
+  VideoLayer,
+  "crop" | "muted" | "fadeIn" | "fadeOut" | "hold"
+> & {
+  crop?: Partial<Crop>;
+  muted?: boolean;
+  fadeIn?: number;
+  fadeOut?: number;
+  hold?: Partial<VideoLayer["hold"]>;
+};
 
-type SavedAudioLayer = WithOptional<AudioLayer, "muted" | "fadeIn" | "fadeOut">;
+type SavedAudioLayer = Omit<AudioLayer, "muted" | "fadeIn" | "fadeOut"> & {
+  muted?: boolean;
+  fadeIn?: number;
+  fadeOut?: number;
+};
 
 type SavedImageLayer = Omit<ImageLayer, "crop"> & { crop?: Partial<Crop> };
 
-// The box is missing in projects saved before a color layer's box was required.
-type SavedColorLayer = WithOptional<ColorLayer, "box" | "opacity">;
+type SavedColorLayer = Omit<ColorLayer, "box" | "opacity"> & {
+  // Missing in projects saved before a color layer's box was required.
+  box?: Box;
+  opacity?: number;
+};
 
 type SavedTextLayer = Omit<TextLayer, "box" | "align" | "font"> & {
   // Missing height in projects saved before a text layer's box had one.
   box: Omit<Box, "height"> & { height?: number };
   align?: TextLayer["align"];
-  font: WithOptional<TextLayer["font"], "weight" | "lineSpacing">;
+  font: Omit<TextLayer["font"], "weight" | "lineSpacing"> & {
+    weight?: number;
+    lineSpacing?: number;
+  };
 };
 
 /** A project in the current shape, and what changed to get there. */
