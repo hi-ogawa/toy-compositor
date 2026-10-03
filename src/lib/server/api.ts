@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { ServerRequest } from "srvx";
 import { readJson, writeJson } from "../../utils/fs.ts";
+import type { Result } from "../../utils/result.ts";
 import { getMediaType, type MediaFile } from "../media-file.ts";
 import { probeMediaInfo } from "../media-info.ts";
 import { validateProject, type SavedProject } from "../migrate.ts";
@@ -191,7 +192,7 @@ export function createEditorHandlers({
       path: projectPath,
     }: {
       path: string;
-    }): Promise<ProjectFile | { error: string }> {
+    }): Promise<Result<ProjectFile, string>> {
       const file = await resolveProjectFile({ registry, projectPath });
       if (!fs.existsSync(file)) {
         throw new HttpError({ status: 404, message: "Project not found" });
@@ -200,9 +201,9 @@ export function createEditorHandlers({
       try {
         validateProject(project);
       } catch (error) {
-        return { error: (error as Error).message };
+        return { ok: false, error: (error as Error).message };
       }
-      return { file: projectPath, project };
+      return { ok: true, value: { file: projectPath, project } };
     },
 
     async saveProject({

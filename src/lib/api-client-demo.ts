@@ -45,7 +45,10 @@ export const apiClient: typeof serverApiClient = {
     if (!project) {
       throw new Error(`${path} is not in the demo`);
     }
-    return { file: path, project: structuredClone(project) };
+    return {
+      ok: true,
+      value: { file: path, project: structuredClone(project) },
+    };
   },
 
   /** Saves last for the browser tab's session. */

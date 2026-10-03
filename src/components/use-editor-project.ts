@@ -22,10 +22,10 @@ export function useEditorProject({
     staleTime: Infinity,
     queryFn: async () => {
       const result = await apiClient.loadProject({ path: projectPath });
-      if ("error" in result) {
+      if (!result.ok) {
         throw new Error(result.error);
       }
-      runtime.deserializeProject(result);
+      runtime.deserializeProject(result.value);
       return true;
     },
   });
