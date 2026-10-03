@@ -2,8 +2,7 @@ import { spawn } from "node:child_process";
 import { once } from "node:events";
 import fs from "node:fs";
 import path from "node:path";
-import { validateProject } from "../migrate.ts";
-import type { Project } from "../project.ts";
+import { validateProject, type SavedProject } from "../migrate.ts";
 import { compile } from "./compile.ts";
 import { resolveProject } from "./resolve.ts";
 
@@ -17,7 +16,9 @@ export async function renderProject({
   outFile: string;
   dryRun?: boolean;
 }) {
-  const project: Project = JSON.parse(fs.readFileSync(projectFile, "utf-8"));
+  const project: SavedProject = JSON.parse(
+    fs.readFileSync(projectFile, "utf-8"),
+  );
   validateProject(project);
   const projectDir = path.dirname(path.resolve(projectFile));
   const outPath = path.resolve(outFile);

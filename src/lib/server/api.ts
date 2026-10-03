@@ -4,6 +4,7 @@ import type { ServerRequest } from "srvx";
 import { readJson, writeJson } from "../../utils/fs.ts";
 import { getMediaType, type MediaFile } from "../media-file.ts";
 import { probeMediaInfo } from "../media-info.ts";
+import type { SavedProject } from "../migrate.ts";
 import type { MediaInfo, Output, Project } from "../project.ts";
 import { getDialogTool, pickProjectPath } from "./dialog.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
@@ -190,12 +191,12 @@ export function createEditorHandlers({
       path: projectPath,
     }: {
       path: string;
-    }): Promise<ProjectFile> {
+    }): Promise<{ file: string; project: SavedProject }> {
       const file = await resolveProjectFile({ registry, projectPath });
       if (!fs.existsSync(file)) {
         throw new HttpError({ status: 404, message: "Project not found" });
       }
-      return { file: projectPath, project: await readJson<Project>(file) };
+      return { file: projectPath, project: await readJson<SavedProject>(file) };
     },
 
     async saveProject({

@@ -1,7 +1,23 @@
-import type { Project } from "./project.ts";
+import type { Box, ColorLayer, Layer, Project } from "./project.ts";
+
+/** A project file as saved, which may have an older format's shape. */
+export type SavedProject = Omit<Project, "layers" | "media"> & {
+  layers: SavedLayer[];
+  // Missing in projects saved before media info, filled by update-media.
+  media?: Project["media"];
+};
+
+type SavedLayer =
+  | Exclude<Layer, ColorLayer>
+  | (Omit<ColorLayer, "box"> & {
+      // Missing in projects saved before a color layer's box was required.
+      box?: Box;
+    });
 
 /** Check what consumers read without checking. */
-export function validateProject(project: Project): void {
+export function validateProject(
+  project: SavedProject,
+): asserts project is Project {
   for (const layer of project.layers) {
     if (layer.type === "color" && !layer.box) {
       throw new Error(
@@ -12,7 +28,6 @@ export function validateProject(project: Project): void {
       continue;
     }
     const label = `${layer.type} layer "${layer.name ?? layer.type}" (${layer.src})`;
-    // A project file from before `media` has none at all.
     const mediaInfo = project.media?.[layer.src];
     if (!mediaInfo) {
       throw new Error(`${label} has no media info, run update-media`);
@@ -29,8 +44,8 @@ export function validateProject(project: Project): void {
  * Rewrite a project from older formats, in the order the format changed, and
  * describe each layer change.
  */
-export function migrateProject(project: Project): {
-  project: Project;
+export function migrateProject(project: SavedProject): {
+  project: SavedProject;
   changes: string[];
 } {
   const changes: string[] = [];
