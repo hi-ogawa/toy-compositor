@@ -1,5 +1,5 @@
 import { createLayerName } from "./layer-defaults.ts";
-import { getCroppedSize, roundToEven } from "./layout.ts";
+import { getCroppedBox, roundToEven } from "./layout.ts";
 import {
   NEUTRAL_VALUES,
   type AudioClip,
@@ -282,7 +282,7 @@ function convertFitBox({
   size: { width: number; height: number };
   crop: Crop;
 }): Transform {
-  const cropped = getCroppedSize({ size, crop });
+  const cropped = getCroppedBox({ size, crop });
   const scale = Math.min(
     box.width / cropped.width,
     box.height / cropped.height,

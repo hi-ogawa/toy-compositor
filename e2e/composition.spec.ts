@@ -142,9 +142,18 @@ test("place a media layer by position, scale, and size, and save them", async ({
   await expect(outline).toHaveCSS("left", "160px");
   await expect(outline).toHaveCSS("width", "320px");
 
+  // Crop its left half, then scale it back to 100%, and confirm what remains
+  // stays centered at x 400.
+  await commitInspectorField(page, { name: "left", value: "0.5" });
+  await expect(placed).toHaveCSS("left", "320px");
+  await expect(placed).toHaveCSS("width", "160px");
+  await commitInspectorField(page, { name: "scale %", value: "100" });
+  await expect(placed).toHaveCSS("left", "360px");
+  await expect(placed).toHaveCSS("width", "80px");
+
   // Move it partly off the canvas, which clips it rather than limiting it.
   await commitInspectorField(page, { name: "x", value: "-400" });
-  await expect(placed).toHaveCSS("left", "-400px");
+  await expect(placed).toHaveCSS("left", "-320px");
 
   // Save and confirm the transform stores the top-left corner and the scale.
   const save = page.getByTestId("editor-save-button");
@@ -152,7 +161,8 @@ test("place a media layer by position, scale, and size, and save them", async ({
   await expect(save).toHaveAttribute("data-status", "saved");
   const project = await readJson<Project>(editor.projectFile);
   expect(project.layers[2].clips[0]).toMatchObject({
-    transform: { x: -400, y: 91, scale: 2 },
+    transform: { x: -400, y: 136, scale: 1 },
+    crop: { left: 0.5, right: 0, top: 0, bottom: 0 },
   });
 });
 

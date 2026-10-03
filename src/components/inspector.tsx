@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { matchKeyboardEvent } from "../lib/keyboard";
-import { scaleTransform } from "../lib/layout";
+import { getCroppedBox, rescaleAroundCenter } from "../lib/layout";
 import type {
   Canvas,
   AudioClip,
@@ -275,6 +275,7 @@ function ClipFields({
           <TransformFields
             transform={clip.transform}
             source={media[clip.src].video!}
+            crop={clip.crop}
             onCommit={(transform) => onUpdate({ transform })}
           />
           <CropFields
@@ -299,6 +300,7 @@ function ClipFields({
           <TransformFields
             transform={clip.transform}
             source={media[clip.src].video!}
+            crop={clip.crop}
             onCommit={(transform) => onUpdate({ transform })}
           />
           <CropFields
@@ -588,20 +590,27 @@ function TextFields({
 /**
  * Position and size describe the whole scaled source, before the crop hides
  * its edges. Scale, width, and height are linked views of the one stored
- * scale, and editing any of them keeps the source centered where it was.
+ * scale, and editing any of them keeps what the crop leaves centered where it
+ * was.
  */
 function TransformFields({
   transform,
   source,
+  crop,
   onCommit,
 }: {
   transform: Transform;
   source: { width: number; height: number };
+  crop: Crop;
   onCommit: (transform: Transform) => void;
 }) {
   const commitScale = (scale: number) =>
     onCommit(
-      scaleTransform({ size: source, transform, scale: roundTo(scale, 1e-6) }),
+      rescaleAroundCenter({
+        region: getCroppedBox({ size: source, crop }),
+        transform,
+        scale: roundTo(scale, 1e-6),
+      }),
     );
   return (
     <Group title="Transform">

@@ -66,12 +66,12 @@ export function getVisibleBox({
   crop: Crop;
   transform: Transform;
 }): Box {
-  const cropped = getCroppedSize({ size, crop });
+  const cropped = getCroppedBox({ size, crop });
   return {
     width: roundToEven(cropped.width * transform.scale),
     height: roundToEven(cropped.height * transform.scale),
-    x: Math.round(transform.x + crop.left * size.width * transform.scale),
-    y: Math.round(transform.y + crop.top * size.height * transform.scale),
+    x: Math.round(transform.x + cropped.x * transform.scale),
+    y: Math.round(transform.y + cropped.y * transform.scale),
   };
 }
 
@@ -94,32 +94,36 @@ export function getFitTransform({
   };
 }
 
-/** Change the scale around the center of the scaled size, so it stays in place. */
-export function scaleTransform({
-  size,
+/**
+ * Change the scale while the center of a region of the source, such as what
+ * the crop leaves, stays where it is on the canvas.
+ */
+export function rescaleAroundCenter({
+  region,
   transform,
   scale,
 }: {
-  size: Size;
+  /** In source pixels. */
+  region: Box;
   transform: Transform;
   scale: number;
 }): Transform {
+  const center = {
+    x: region.x + region.width / 2,
+    y: region.y + region.height / 2,
+  };
   return {
-    x: Math.round(transform.x + (size.width * (transform.scale - scale)) / 2),
-    y: Math.round(transform.y + (size.height * (transform.scale - scale)) / 2),
+    x: Math.round(transform.x + center.x * (transform.scale - scale)),
+    y: Math.round(transform.y + center.y * (transform.scale - scale)),
     scale,
   };
 }
 
-/** The size after removing each cropped edge. */
-export function getCroppedSize({
-  size,
-  crop,
-}: {
-  size: Size;
-  crop: Crop;
-}): Size {
+/** What the crop leaves of the source, in source pixels. */
+export function getCroppedBox({ size, crop }: { size: Size; crop: Crop }): Box {
   return {
+    x: crop.left * size.width,
+    y: crop.top * size.height,
     width: size.width * (1 - crop.left - crop.right),
     height: size.height * (1 - crop.top - crop.bottom),
   };
