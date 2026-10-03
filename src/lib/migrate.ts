@@ -24,6 +24,9 @@ type SavedTextLayer = Omit<TextLayer, "box"> & {
   box: Omit<Box, "height"> & { height?: number };
 };
 
+/** A project in the current shape, and what changed to get there. */
+export type MigrateProjectResult = { project: Project; changes: string[] };
+
 export async function validateAndMigrateProject(project: SavedProject) {
   validateProject(project);
   return migrateProject(project);
@@ -51,10 +54,9 @@ function validateProject(project: SavedProject): void {
   }
 }
 
-async function migrateProject(project: SavedProject): Promise<{
-  project: Project;
-  changes: string[];
-}> {
+async function migrateProject(
+  project: SavedProject,
+): Promise<MigrateProjectResult> {
   const changes: string[] = [];
   const layers: Layer[] = [];
   for (const layer of project.layers) {
