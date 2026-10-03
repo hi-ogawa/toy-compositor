@@ -21,9 +21,11 @@ export function useEditorProject({
     retry: false,
     staleTime: Infinity,
     queryFn: async () => {
-      runtime.deserializeProject(
-        await apiClient.loadProject({ path: projectPath }),
-      );
+      const result = await apiClient.loadProject({ path: projectPath });
+      if ("error" in result) {
+        throw new Error(result.error);
+      }
+      runtime.deserializeProject(result);
       return true;
     },
   });

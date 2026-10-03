@@ -191,13 +191,17 @@ export function createEditorHandlers({
       path: projectPath,
     }: {
       path: string;
-    }): Promise<ProjectFile> {
+    }): Promise<ProjectFile | { error: string }> {
       const file = await resolveProjectFile({ registry, projectPath });
       if (!fs.existsSync(file)) {
         throw new HttpError({ status: 404, message: "Project not found" });
       }
       const project = await readJson<SavedProject>(file);
-      validateProject(project);
+      try {
+        validateProject(project);
+      } catch (error) {
+        return { error: (error as Error).message };
+      }
       return { file: projectPath, project };
     },
 
