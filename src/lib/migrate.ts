@@ -15,7 +15,7 @@ type SavedColorLayer = Omit<ColorLayer, "box"> & {
   box?: Box;
 };
 
-export function loadSavedProject(project: SavedProject) {
+export function validateAndMigrateProject(project: SavedProject) {
   validateProject(project);
   return migrateProject(project);
 }
