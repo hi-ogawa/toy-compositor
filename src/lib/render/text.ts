@@ -50,6 +50,9 @@ export async function measureTextHeight(layer: TextDrawing): Promise<number> {
 
 /** Draw the lines at their natural size, before they are placed in the box. */
 function getDrawArgs(layer: TextDrawing): string[] {
+  // Unlike the box's top-anchored gravity, this one keeps the vertical center,
+  // because north would also drop the font's space above the first line, which
+  // box.y includes.
   const gravity = { left: "west", center: "center", right: "east" }[
     layer.align ?? "left"
   ];
