@@ -1,15 +1,16 @@
 import { createLayerName } from "./layer-defaults.ts";
-import type {
-  AudioLayer,
-  Box,
-  Canvas,
-  ColorLayer,
-  Crop,
-  ImageLayer,
-  Layer,
-  Project,
-  TextLayer,
-  VideoLayer,
+import {
+  NEUTRAL_VALUES,
+  type AudioLayer,
+  type Box,
+  type Canvas,
+  type ColorLayer,
+  type Crop,
+  type ImageLayer,
+  type Layer,
+  type Project,
+  type TextLayer,
+  type VideoLayer,
 } from "./project.ts";
 import { measureTextHeight } from "./render/text.ts";
 
@@ -117,26 +118,17 @@ async function migrateProject(
     if (savedLayer.name === undefined) {
       changes.push(`${label} has no name`);
     }
-    const crop = { left: 0, right: 0, top: 0, bottom: 0 };
     switch (layer.type) {
       case "video": {
-        const defaults = {
-          crop,
-          muted: false,
-          fadeIn: 0,
-          fadeOut: 0,
-          hold: { before: 0, after: 0 },
-        };
-        layers.push(fillDefaults(layer, defaults));
+        layers.push(fillDefaults(layer, NEUTRAL_VALUES.video));
         break;
       }
       case "audio": {
-        const defaults = { muted: false, fadeIn: 0, fadeOut: 0 };
-        layers.push(fillDefaults(layer, defaults));
+        layers.push(fillDefaults(layer, NEUTRAL_VALUES.audio));
         break;
       }
       case "image": {
-        layers.push(fillDefaults(layer, { crop }));
+        layers.push(fillDefaults(layer, NEUTRAL_VALUES.image));
         break;
       }
       case "color": {
@@ -145,16 +137,12 @@ async function migrateProject(
         }
         // A color layer without a box covered the canvas.
         const { width, height } = project.canvas;
-        const defaults = { box: { x: 0, y: 0, width, height }, opacity: 1 };
-        layers.push(fillDefaults(layer, defaults));
+        const box = layer.box ?? { x: 0, y: 0, width, height };
+        layers.push(fillDefaults({ ...layer, box }, NEUTRAL_VALUES.color));
         break;
       }
       case "text": {
-        const defaults = {
-          align: "left" as const,
-          font: { weight: 400, lineSpacing: 0 },
-        };
-        const filled = fillDefaults(layer, defaults);
+        const filled = fillDefaults(layer, NEUTRAL_VALUES.text);
         let { height } = filled.box;
         if (height === undefined) {
           // The box followed the lines, which rendered at their natural height.
@@ -166,7 +154,7 @@ async function migrateProject(
       }
     }
   }
-  const canvas = fillDefaults(project.canvas, { background: "#000000" });
+  const canvas = fillDefaults(project.canvas, NEUTRAL_VALUES.canvas);
   const migrated: Project = {
     ...project,
     canvas,
@@ -188,7 +176,7 @@ function fillDefaults<T extends object, D extends object>(
   const filled = { ...value } as Record<string, unknown>;
   for (const [key, fallback] of Object.entries(defaults)) {
     if (filled[key] === undefined) {
-      filled[key] = fallback;
+      filled[key] = structuredClone(fallback);
     } else if (typeof fallback === "object") {
       filled[key] = fillDefaults(filled[key] as object, fallback);
     }
