@@ -6,7 +6,8 @@ import type { Result } from "../../utils/result.ts";
 import { getMediaType, type MediaFile } from "../media-file.ts";
 import { probeMediaInfo } from "../media-info.ts";
 import { validateAndMigrateProject, type SavedProject } from "../migrate.ts";
-import type { MediaInfo, Output, Project } from "../project.ts";
+import type { MediaInfo, Output, Project, TextLayer } from "../project.ts";
+import { measureTextHeight } from "../render/text.ts";
 import { getDialogTool, pickProjectPath } from "./dialog.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 import type { LiveConnections } from "./live.ts";
@@ -199,7 +200,7 @@ export function createEditorHandlers({
       }
       const savedProject = await readJson<SavedProject>(file);
       try {
-        const { project } = validateAndMigrateProject(savedProject);
+        const { project } = await validateAndMigrateProject(savedProject);
         return { ok: true, value: { file: projectPath, project } };
       } catch (error) {
         return { ok: false, error: (error as Error).message };
@@ -252,6 +253,11 @@ export function createEditorHandlers({
       return await probeMediaInfo(
         await resolveMediaFile({ registry, projectPath, src }),
       );
+    },
+
+    /** Measure a text layer's lines as the renderer draws them, so its box can fit them. */
+    async measureTextHeight({ layer }: { layer: TextLayer }): Promise<number> {
+      return await measureTextHeight(layer);
     },
 
     /** List the media files in the project's `media/` folder. */

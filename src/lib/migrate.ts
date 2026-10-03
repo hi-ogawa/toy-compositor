@@ -1,4 +1,5 @@
-import type { Box, ColorLayer, Layer, Project } from "./project.ts";
+import type { Box, ColorLayer, Layer, Project, TextLayer } from "./project.ts";
+import { measureTextHeight } from "./render/text.ts";
 
 export type SavedProject = Omit<Project, "layers" | "locators" | "media"> & {
   layers: SavedLayer[];
@@ -8,14 +9,22 @@ export type SavedProject = Omit<Project, "layers" | "locators" | "media"> & {
   media?: Project["media"];
 };
 
-type SavedLayer = Exclude<Layer, ColorLayer> | SavedColorLayer;
+type SavedLayer =
+  | Exclude<Layer, ColorLayer | TextLayer>
+  | SavedColorLayer
+  | SavedTextLayer;
 
 type SavedColorLayer = Omit<ColorLayer, "box"> & {
   // Missing in projects saved before a color layer's box was required.
   box?: Box;
 };
 
-export function validateAndMigrateProject(project: SavedProject) {
+type SavedTextLayer = Omit<TextLayer, "box"> & {
+  // Missing height in projects saved before a text layer's box had one.
+  box: Omit<Box, "height"> & { height?: number };
+};
+
+export async function validateAndMigrateProject(project: SavedProject) {
   validateProject(project);
   return migrateProject(project);
 }
@@ -42,22 +51,33 @@ function validateProject(project: SavedProject): void {
   }
 }
 
-function migrateProject(project: SavedProject): {
+async function migrateProject(project: SavedProject): Promise<{
   project: Project;
   changes: string[];
-} {
+}> {
   const changes: string[] = [];
-  const layers = project.layers.map((layer): Layer => {
-    const label = `${layer.type} layer "${layer.name ?? layer.type}"`;
-    if (layer.type === "color") {
-      if (!layer.box) {
-        changes.push(`${label} has no box`);
+  const layers = await Promise.all(
+    project.layers.map(async (layer): Promise<Layer> => {
+      const label = `${layer.type} layer "${layer.name ?? layer.type}"`;
+      if (layer.type === "color") {
+        if (!layer.box) {
+          changes.push(`${label} has no box`);
+        }
+        const { width, height } = project.canvas;
+        return { ...layer, box: layer.box ?? { x: 0, y: 0, width, height } };
       }
-      const { width, height } = project.canvas;
-      return { ...layer, box: layer.box ?? { x: 0, y: 0, width, height } };
-    }
-    return layer;
-  });
+      if (layer.type === "text") {
+        let { height } = layer.box;
+        if (height === undefined) {
+          // The box followed the lines, which rendered at their natural height.
+          changes.push(`${label} has no box height`);
+          height = await measureTextHeight(layer);
+        }
+        return { ...layer, box: { ...layer.box, height } };
+      }
+      return layer;
+    }),
+  );
   const migrated: Project = {
     ...project,
     layers,

@@ -17,7 +17,7 @@ export async function renderProject({
   outFile: string;
   dryRun?: boolean;
 }) {
-  const { project } = validateAndMigrateProject(
+  const { project } = await validateAndMigrateProject(
     await readJson<SavedProject>(projectFile),
   );
   const projectDir = path.dirname(path.resolve(projectFile));
