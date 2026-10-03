@@ -52,8 +52,8 @@ export function intersect(a: TimeRange, b: TimeRange): TimeRange | undefined {
 /**
  * The visible part of a crop on the canvas. The transform scales the whole size
  * and puts its top-left corner at its position, and the crop then hides edges
- * without moving the rest. The size rounds to even pixels for the encoder's
- * chroma subsampling, and anything outside the canvas is clipped later.
+ * without moving the rest. The size rounds to whole pixels, and anything
+ * outside the canvas is clipped later.
  */
 export function getVisibleBox({
   size,
@@ -66,8 +66,8 @@ export function getVisibleBox({
 }): Box {
   const cropped = getCroppedBox({ size, crop });
   return {
-    width: roundToEven(cropped.width * transform.scale),
-    height: roundToEven(cropped.height * transform.scale),
+    width: Math.round(cropped.width * transform.scale),
+    height: Math.round(cropped.height * transform.scale),
     x: Math.round(transform.x + cropped.x * transform.scale),
     y: Math.round(transform.y + cropped.y * transform.scale),
   };
@@ -127,8 +127,4 @@ export function getCroppedBox({ size, crop }: { size: Size; crop: Crop }): Box {
     width: size.width * (1 - crop.left - crop.right),
     height: size.height * (1 - crop.top - crop.bottom),
   };
-}
-
-export function roundToEven(n: number) {
-  return Math.max(2, 2 * Math.round(n / 2));
 }

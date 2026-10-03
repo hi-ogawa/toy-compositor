@@ -26,6 +26,8 @@ This doc describes what a project means. The [renderer](compiler.md) turns it in
 }
 ```
 
+A video output needs an even canvas `width` and `height`, because it is encoded as 4:2:0, which stores one color sample per 2×2 block of pixels. Clips inside the canvas can have any size.
+
 ## Time
 
 All times are seconds. Timeline times (`start`, `end`, `output.*`) are positions on the project timeline. Source times (`in`, `out`) are positions in a media file, measured as presentation timestamps including the stream's start offset. The frame shown at a source time is the frame whose timestamp is nearest to it, because millisecond times rarely land exactly on a frame.
@@ -187,7 +189,7 @@ An entry depends only on the file's contents, so a copied file has the same entr
 
 ## Transform and crop
 
-`transform` is where a video or image clip goes on the canvas. `x` and `y` are where the source's top-left corner goes, in canvas pixels, like a text or color clip's `box`, and `scale` multiplies the source's own size, keeping its aspect ratio. A 1920×1080 camera zoomed in by 10% around the middle of a 1920×1080 canvas is `{ "x": -96, "y": -54, "scale": 1.1 }`. The placed size rounds to even pixels. Anything outside the canvas is clipped, so a clip can be larger than the canvas or partly off it.
+`transform` is where a video or image clip goes on the canvas. `x` and `y` are where the source's top-left corner goes, in canvas pixels, like a text or color clip's `box`, and `scale` multiplies the source's own size, keeping its aspect ratio. A 1920×1080 camera zoomed in by 10% around the middle of a 1920×1080 canvas is `{ "x": -96, "y": -54, "scale": 1.1 }`. The placed size rounds to whole pixels. Anything outside the canvas is clipped, so a clip can be larger than the canvas or partly off it.
 
 `crop` hides a fraction of the source at each edge. The transform still places the whole source, so cropping never moves what remains.
 

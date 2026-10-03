@@ -115,13 +115,16 @@ function OutputInspector({
       <InspectorTitle title="Composition settings" subtitle={output.type} />
       <div className="flex flex-col gap-4 p-3">
         <Group title="Canvas">
+          {/* Video output needs an even canvas (see renderProject),
+              so arrow keys step by two. */}
           {(["width", "height"] as const).map((key) => (
             <NumberField
               key={key}
               label={key}
               value={canvas[key]}
               {...PIXEL_FIELD}
-              min={1}
+              step={2}
+              min={2}
               onCommit={(value) => onCanvasCommit({ ...canvas, [key]: value })}
             />
           ))}

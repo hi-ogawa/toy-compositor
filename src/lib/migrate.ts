@@ -1,5 +1,5 @@
 import { createLayerName } from "./layer-defaults.ts";
-import { getCroppedBox, roundToEven } from "./layout.ts";
+import { getCroppedBox } from "./layout.ts";
 import {
   NEUTRAL_VALUES,
   type AudioClip,
@@ -327,4 +327,9 @@ function fillDefaults<T extends object, D extends object>(
     }
   }
   return filled as T & D;
+}
+
+/** The old fit rounded placed sizes to even pixels. */
+function roundToEven(n: number) {
+  return Math.max(2, 2 * Math.round(n / 2));
 }

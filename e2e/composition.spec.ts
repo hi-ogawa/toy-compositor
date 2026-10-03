@@ -127,13 +127,12 @@ test("place a media layer by position, scale, and size, and save them", async ({
   await expect(placed).toHaveCSS("left", "240px");
   await expect(placed).toHaveCSS("top", "135px");
 
-  // Scale it by percentage and confirm it grows around its center, with the
-  // placed height rounding to even pixels.
+  // Scale it by percentage and confirm it grows around its center.
   await commitInspectorField(page, { name: "scale %", value: "150" });
   await expectInspectorFields(page, { x: "200", width: "240", height: "135" });
   await expect(placed).toHaveCSS("left", "200px");
   await expect(placed).toHaveCSS("top", "113px");
-  await expect(placed).toHaveCSS("height", "136px");
+  await expect(placed).toHaveCSS("height", "135px");
 
   // Set its width directly and confirm the scale and height follow.
   await commitInspectorField(page, { name: "width", value: "320" });

@@ -51,6 +51,9 @@ export async function renderProject({
   const ffmpeg = spawn("ffmpeg", args, { stdio: "inherit" });
   const [code] = await once(ffmpeg, "close");
   if (code !== 0) {
+    // An expected case is an odd canvas in a video output. libx264 encodes
+    // yuv420p, which needs an even size, so it prints "width not divisible by
+    // 2" above this and exits.
     throw new Error(`ffmpeg exited with code ${code}`);
   }
   console.error(
