@@ -8,17 +8,17 @@ ffmpeg -i input.mp4 -vf fps=30 -c:v libx264 -b:v 8000k -g 30 -preset slow -c:a a
 
 Each video setting fixes a different problem:
 
-| Setting      | Controls          | Why                                                                                                                               |
-| ------------ | ----------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `-vf fps=30` | Frame rate        | Phone footage has a variable frame rate, and project times assume evenly spaced frames.                                           |
-| `-b:v 8000k` | Bitrate           | Keeps a 3-minute 1080p clip around 200MB instead of the 366MB phone original or the 900MB that Kdenlive's own transcode produced. |
-| `-g 30`      | Keyframe interval | Makes every second start with a complete frame, so seeking decodes at most one second of video.                                   |
+| Setting      | Controls          | Why                                                                                             |
+| ------------ | ----------------- | ----------------------------------------------------------------------------------------------- |
+| `-vf fps=30` | Frame rate        | Phone footage has a variable frame rate, and project times assume evenly spaced frames.         |
+| `-b:v 8000k` | Bitrate           | Keeps a 3-minute 1080p clip around 200MB instead of the 366MB phone original.                   |
+| `-g 30`      | Keyframe interval | Makes every second start with a complete frame, so seeking decodes at most one second of video. |
 
 ## Keyframe interval
 
 A keyframe is a complete picture, and the frames after it only store what changed. To show an arbitrary frame, a decoder starts from the keyframe before it and decodes forward, so the gap between keyframes sets the worst-case seek time. Without `-g`, x264 allows up to 250 frames between keyframes, which is 8.33 seconds at 30fps.
 
-The editor seeks whenever the playhead moves while paused, so long keyframe intervals make timeline clicks lag and make any corrective seek during playback stall. A 60-second excerpt of the RESCENE camera, whose working file came from this recipe without `-g`, was encoded again with and without `-g 30`, and compared against that working file:
+The editor seeks whenever the playhead moves while paused, so long keyframe intervals make timeline clicks lag and make any corrective seek during playback stall. A 60-second excerpt of a phone camera clip, whose working file came from this recipe without `-g`, was encoded again with and without `-g 30`, and compared against that working file:
 
 |                          | Keyframes | Size   | SSIM vs source | Seek in Chromium |
 | ------------------------ | --------- | ------ | -------------- | ---------------- |
