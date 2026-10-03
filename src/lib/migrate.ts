@@ -9,12 +9,12 @@ export type SavedProject = Omit<Project, "layers" | "locators" | "media"> & {
   media?: Project["media"];
 };
 
-type SavedLayer =
-  | Exclude<Layer, ColorLayer>
-  | (Omit<ColorLayer, "box"> & {
-      // Missing in projects saved before a color layer's box was required.
-      box?: Box;
-    });
+type SavedLayer = Exclude<Layer, ColorLayer> | SavedColorLayer;
+
+type SavedColorLayer = Omit<ColorLayer, "box"> & {
+  // Missing in projects saved before a color layer's box was required.
+  box?: Box;
+};
 
 /**
  * Check what migrating cannot fill in, which needs a command that reads the
