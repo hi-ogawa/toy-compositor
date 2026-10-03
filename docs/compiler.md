@@ -1,6 +1,6 @@
 # ffmpeg compiler
 
-The renderer in [src/lib/render](../src/lib/render) is the exact implementation of the spec in [project-format.md](project-format.md). It turns a project file into one ffmpeg command and runs it, and its output is the deliverable.
+The renderer in [src/lib/render](../src/lib/render) turns a project file ([project-format.md](project-format.md)) into one ffmpeg command and runs it. Its output is the finished video or image, so it is the reference when the editor preview looks different.
 
 ```sh
 pnpm setup-sample samples/synthetic
@@ -11,7 +11,7 @@ pnpm render <project.json> <output> --dry-run   # print the command only
 ## Timing and Frames
 
 - The project file's numbers are the timing truth. Offsets are set on waveforms, which are exact data, and playback only confirms them, so preview drift never shifts the final render.
-- The render picks frames by the spec's [nearest-frame rule](project-format.md#time) exactly, while the [editor](editor.md) preview may land one frame off it, so frame choices such as the thumbnail are checked on a render.
+- The render follows the [nearest-frame rule](project-format.md#time), but a paused [editor](editor.md) preview may land one frame off it, so frame choices such as the thumbnail are checked on a render.
 - A video layer's [hold](project-format.md#hold) clones the first frame the layer reads before it and the last frame it reads after it. Audio is not held, so the held spans are silent.
 - Camera footage is pre-processed outside toy-compositor to a constant frame rate, a browser-playable codec, and a one-second keyframe interval, so the compiler can assume evenly spaced frames and the editor can play and seek it ([pre-processing](preprocessing.md)).
 

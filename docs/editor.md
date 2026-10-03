@@ -1,6 +1,6 @@
 # Editor
 
-The editor composes the project in the DOM at one project time. Each visual layer is an absolutely positioned `<video>`, `<img>`, or div, placed in canvas pixels inside a canvas-sized div, and the whole canvas is CSS-scaled to fit the monitor. The preview is a best-effort implementation of the spec in [project-format.md](project-format.md), next to the [render](compiler.md), which implements it exactly. Both share the spec's reference code (`fitBox` and `getOutputRange` in [src/lib/layout.ts](../src/lib/layout.ts)), and the preview's deviations from the spec are listed [below](#deviations-from-the-spec).
+The editor composes the project in the DOM at one project time. Each visual layer is an absolutely positioned `<video>`, `<img>`, or div, placed in canvas pixels inside a canvas-sized div, and the whole canvas is CSS-scaled to fit the monitor. The preview follows the same [project format](project-format.md) as the [render](compiler.md) and shares its layout math (`fitBox` and `getOutputRange` in [src/lib/layout.ts](../src/lib/layout.ts)). It draws with the browser instead of ffmpeg, so it differs from the render in the few places listed [below](#differences-from-the-render).
 
 ## Components
 
@@ -61,9 +61,9 @@ EditorRuntime              runtime.ts                source loading, restarts ar
 - **Sources load in the background.** Loading a project decodes each source once, shared by its layers' playback and lane waveforms, so opening never waits on a long source.
 - **Pausing lands on the frame grid,** so a paused preview matches a rendered frame.
 
-## Deviations from the spec
+## Differences from the render
 
-- A paused video shows whatever frame the browser picks for `currentTime`, while the spec picks the nearest source frame, so the preview may be one frame off.
+- A paused video shows whatever frame the browser picks for `currentTime`, while the render picks the nearest source frame, so the preview may be one frame off.
 - Text is DOM text with `-webkit-text-stroke` and an estimated line height, while the render draws it with ImageMagick, so glyph placement differs slightly.
 
 ## Known gaps
