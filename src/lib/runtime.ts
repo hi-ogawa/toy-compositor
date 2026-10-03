@@ -11,10 +11,6 @@ import {
 } from "./layer-defaults.ts";
 import { getContentRange, getOutputRange, type TimeRange } from "./layout.ts";
 import type { MediaFile } from "./media-file.ts";
-import {
-  deserializeEditorProject,
-  serializeEditorProject,
-} from "./persistence.ts";
 import type { Canvas, Layer, Locator, Output, Project } from "./project.ts";
 import type { ProjectFile } from "./server/api.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
@@ -386,4 +382,26 @@ export class EditorRuntime {
       listener,
     });
   }
+}
+
+function serializeEditorProject(project: EditorProject): Project {
+  return {
+    ...project,
+    layers: project.layers.map(({ id: _id, ...layer }) => layer),
+    locators: project.locators.map(({ id: _id, ...locator }) => locator),
+  };
+}
+
+function deserializeEditorProject(project: Project): EditorProject {
+  return {
+    ...project,
+    layers: project.layers.map((layer): EditorLayer => ({
+      ...layer,
+      id: crypto.randomUUID(),
+    })),
+    locators: (project.locators ?? []).map((locator): EditorLocator => ({
+      ...locator,
+      id: crypto.randomUUID(),
+    })),
+  };
 }
