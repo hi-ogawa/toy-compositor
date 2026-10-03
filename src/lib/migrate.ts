@@ -78,22 +78,27 @@ type SavedTextLayer = Omit<TextLayer, "box" | "align" | "font"> & {
 /** A project in the current shape, and what changed to get there. */
 export type MigrateProjectResult = { project: Project; changes: string[] };
 
-export async function validateAndMigrateProject(project: SavedProject) {
-  validateProject(project);
-  return migrateProject(project);
+/**
+ * Migrate a project to the current shape, then validate it. Migration never
+ * reads `media`, so it runs first, and validation only reads the current shape.
+ */
+export async function migrateAndValidateProject(project: SavedProject) {
+  const migrated = await migrateProject(project);
+  validateProject(migrated.project);
+  return migrated;
 }
 
 /**
  * Reject what loading cannot fix from the file alone, which needs update-media
- * or a different file.
+ * or a different file. So far this only checks each layer's media info.
  */
-function validateProject(project: SavedProject): void {
+function validateProject(project: Project): void {
   for (const layer of project.layers) {
     if (!("src" in layer)) {
       continue;
     }
-    const label = `${layer.type} layer "${layer.name ?? layer.type}" (${layer.src})`;
-    const mediaInfo = project.media?.[layer.src];
+    const label = `${layer.type} layer "${layer.name}" (${layer.src})`;
+    const mediaInfo = project.media[layer.src];
     if (!mediaInfo) {
       throw new Error(`${label} has no media info, run update-media`);
     }
@@ -105,7 +110,12 @@ function validateProject(project: SavedProject): void {
   }
 }
 
-async function migrateProject(
+/**
+ * Bring a project to the current shape by filling what older files lack. It
+ * does not read `media` or check it, so update-media also runs it on a project
+ * whose media info is missing.
+ */
+export async function migrateProject(
   project: SavedProject,
 ): Promise<MigrateProjectResult> {
   const changes: string[] = [];
