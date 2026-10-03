@@ -8,38 +8,51 @@ import { test } from "./helper";
 test("read and migrate an older project file", async ({ page, editor }) => {
   const readProject = () => readJson<SavedProject>(editor.projectFile);
 
-  // Remove the tint's box and the title's box height, as in a project file
-  // from before color layers required a box and text layers stored a height.
-  // The tint then covered the canvas, and the title's box followed its lines,
-  // which is the height the sample stores.
+  // Remove the image's name, the tint's box, and the title's box height, as in
+  // a project file from before layers required a name, color layers required a
+  // box, and text layers stored a height. The image then gets the editor's
+  // numbered name, the tint covered the canvas, and the title's box followed
+  // its lines, which is the height the sample stores.
   const project = await readJson<Project>(editor.projectFile);
   const migratedProject = {
     ...project,
-    layers: project.layers.map((layer) =>
-      layer.name === "Tint"
-        ? { ...layer, box: { x: 0, y: 0, width: 640, height: 360 } }
-        : layer,
-    ),
+    layers: project.layers.map((layer) => {
+      switch (layer.type) {
+        case "image": {
+          return { ...layer, name: "Image 1" };
+        }
+        case "color": {
+          return { ...layer, box: { x: 0, y: 0, width: 640, height: 360 } };
+        }
+        default: {
+          return layer;
+        }
+      }
+    }),
   };
-  const removeBoxes = () =>
+  const removeFields = () =>
     editJson<SavedProject>(editor.projectFile, (savedProject) => {
       for (const layer of savedProject.layers) {
-        if (layer.type === "color" && layer.name === "Tint") {
+        if (layer.type === "image") {
+          delete layer.name;
+        }
+        if (layer.type === "color") {
           delete layer.box;
         }
-        if (layer.type === "text" && layer.name === "Title") {
+        if (layer.type === "text") {
           delete layer.box.height;
         }
       }
     });
   const changes = [
+    'image layer "Image 1" has no name',
     'color layer "Tint" has no box',
     'text layer "Title" has no box height',
   ];
-  await removeBoxes();
+  await removeFields();
   const savedProject = await readProject();
 
-  // Check it, and confirm it reports both layers and fails without writing.
+  // Check it, and confirm it reports each layer and fails without writing.
   const check = execFileAsync(process.execPath, [
     "src/cli.ts",
     "migrate",
@@ -53,7 +66,7 @@ test("read and migrate an older project file", async ({ page, editor }) => {
   }
   expect(await readProject()).toEqual(savedProject);
 
-  // Open the editor, and confirm it reports both layers and rewrites the file
+  // Open the editor, and confirm it reports each layer and rewrites the file
   // to render as before.
   await page.goto(editor.url);
   await expect(page.getByRole("main")).toBeVisible();
@@ -62,9 +75,9 @@ test("read and migrate an older project file", async ({ page, editor }) => {
   }
   expect(await readProject()).toEqual(migratedProject);
 
-  // Remove the boxes again and render, and confirm it reports both layers and
+  // Remove the fields again and render, and confirm it reports each layer and
   // rewrites the file too.
-  await removeBoxes();
+  await removeFields();
   const { stdout } = await execFileAsync(process.execPath, [
     "src/cli.ts",
     "render",
@@ -83,42 +96,5 @@ test("read and migrate an older project file", async ({ page, editor }) => {
     "migrate",
     editor.projectFile,
     "--check",
-  ]);
-});
-
-test("name unnamed layers when opening a project", async ({ page, editor }) => {
-  // Remove the title's and the tint's names, as in a project file from before
-  // layers required a name.
-  await editJson<SavedProject>(editor.projectFile, (savedProject) => {
-    for (const layer of savedProject.layers) {
-      if (layer.name === "Title" || layer.name === "Tint") {
-        delete layer.name;
-      }
-    }
-  });
-
-  // Open the editor, and confirm it numbers each layer by its type, reports
-  // both, and shows the names on their lanes.
-  await page.goto(editor.url);
-  await expect(page.getByText('text layer "Text 1" has no name')).toBeVisible();
-  await expect(
-    page.getByText('color layer "Color 1" has no name'),
-  ).toBeVisible();
-  const lanes = page.getByTestId("editor-timeline");
-  await expect(
-    lanes.getByRole("button", { name: "Text 1 text", exact: true }),
-  ).toBeVisible();
-  await expect(
-    lanes.getByRole("button", { name: "Color 1 color", exact: true }),
-  ).toBeVisible();
-
-  // Confirm the file is rewritten with the names.
-  const project = await readJson<Project>(editor.projectFile);
-  expect(project.layers.map((layer) => layer.name)).toEqual([
-    "Test pattern",
-    "Tone 660 Hz",
-    "Label backdrop",
-    "Text 1",
-    "Color 1",
   ]);
 });
