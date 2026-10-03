@@ -12,6 +12,7 @@ import type {
   Layer,
   MediaInfo,
   Output,
+  Size,
   TextClip,
   Transform,
   VideoClip,
@@ -600,7 +601,7 @@ function TransformFields({
   onCommit,
 }: {
   transform: Transform;
-  source: { width: number; height: number };
+  source: Size;
   crop: Crop;
   onCommit: (transform: Transform) => void;
 }) {

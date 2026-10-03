@@ -8,9 +8,10 @@ export type Project = {
   media: Record<string, MediaInfo>;
 };
 
-export type Canvas = {
-  width: number;
-  height: number;
+/** A width and height in pixels, such as the canvas's or a media file's picture. */
+export type Size = { width: number; height: number };
+
+export type Canvas = Size & {
   fps: number;
   background: string;
 };
@@ -35,9 +36,7 @@ export type MediaInfo = {
 };
 
 /** A media file's video stream, which images have too. */
-export type VideoInfo = {
-  width: number;
-  height: number;
+export type VideoInfo = Size & {
   /** The video stream's own start time, which frame timing counts from. */
   startTime: number;
   frameRate: number;

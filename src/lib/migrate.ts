@@ -11,6 +11,7 @@ import {
   type ImageClip,
   type Layer,
   type Project,
+  type Size,
   type TextClip,
   type Transform,
   type VideoClip,
@@ -279,7 +280,7 @@ function convertFitBox({
   crop,
 }: {
   box: Box;
-  size: { width: number; height: number };
+  size: Size;
   crop: Crop;
 }): Transform {
   const cropped = getCroppedBox({ size, crop });

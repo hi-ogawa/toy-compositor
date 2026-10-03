@@ -1,4 +1,4 @@
-import type { Box, Clip, Crop, Project, Transform } from "./project.ts";
+import type { Box, Clip, Crop, Project, Size, Transform } from "./project.ts";
 
 export type TimeRange = { start: number; end: number };
 
@@ -48,8 +48,6 @@ export function intersect(a: TimeRange, b: TimeRange): TimeRange | undefined {
   const end = Math.min(a.end, b.end);
   return end > start ? { start, end } : undefined;
 }
-
-type Size = { width: number; height: number };
 
 /**
  * The visible part of a crop on the canvas. The transform scales the whole size
