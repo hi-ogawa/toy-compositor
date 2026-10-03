@@ -115,7 +115,7 @@ function PreviewLayer({
   mediaInfoMap: Project["media"];
   resolveMediaUrl: (src: string) => string;
 }) {
-  const box: TextLayer["box"] & { height?: number } = layer.box;
+  const { box } = layer;
   const style: CSSProperties = {
     position: "absolute",
     left: box.x,
@@ -134,7 +134,10 @@ function PreviewLayer({
           resolveMediaUrl={resolveMediaUrl}
         />
       ) : layer.type === "text" ? (
-        <div style={{ ...style, ...getTextStyle(layer) }}>{layer.text}</div>
+        // Text past the box is cut off, as in the render.
+        <div style={{ ...style, ...getTextStyle(layer), overflow: "hidden" }}>
+          {layer.text}
+        </div>
       ) : (
         <div
           style={{ ...style, background: layer.color, opacity: layer.opacity }}
@@ -145,13 +148,7 @@ function PreviewLayer({
           className="pointer-events-none z-10 outline outline-2 outline-primary"
           aria-label="Selected layer outline"
           style={style}
-        >
-          {layer.type === "text" && (
-            <div className="invisible" style={getTextStyle(layer)}>
-              {layer.text}
-            </div>
-          )}
-        </div>
+        />
       )}
     </div>
   );

@@ -40,7 +40,7 @@ The preview time decides which layers show and which frame each video shows. A l
 
 Every layer stays mounted and is hidden outside its range, so its media is loaded before playback reaches it. Layers draw in [project order](project-format.md#layers), so later layers sit on top. Audio layers draw nothing, and their sound plays on the transport, described below.
 
-The selected layer gets a read-only outline, drawn as a second div with the same box. Text layers have no height, so the outline holds an invisible copy of the text to match it.
+The selected layer gets a read-only outline, drawn as a second div with the same box.
 
 ## Play Along the Transport
 

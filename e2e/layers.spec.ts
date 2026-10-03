@@ -112,7 +112,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     {
       type: "text",
       text: "Text",
-      box: { x: 64, y: 144, width: 512 },
+      box: { x: 64, y: 144, width: 512, height: 72 },
       align: "center",
       font: { family: "Noto Sans", size: 36 },
       color: "#ffffff",

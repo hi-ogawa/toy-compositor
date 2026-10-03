@@ -106,16 +106,16 @@ test("edit a text layer's content and styling and save them", async ({
   await clickTimelineButton(page, { name: "Title text" });
   const inspector = page.getByTestId("inspector");
 
-  // Rewrite the text over three lines and confirm the preview follows on blur.
+  // Rewrite the text over three lines and confirm the preview follows on blur,
+  // cutting the lines off at the box height as the render does.
   const textField = getInspectorField(page, { name: "text" });
   await expect(textField).toHaveValue("Synthetic\nsample");
   await textField.fill("Edited\nthree\nlines");
   await textField.blur();
-  // The selection outline repeats the text invisibly to size itself.
-  const text = canvas
-    .getByText("Edited\nthree\nlines", { exact: true })
-    .first();
+  const text = canvas.getByText("Edited\nthree\nlines", { exact: true });
   await expect(text).toBeVisible();
+  await expect(text).toHaveCSS("height", "50px");
+  await expect(text).toHaveCSS("overflow", "hidden");
 
   // Align right, restyle the font and color, and confirm the preview follows.
   await inspector
@@ -145,6 +145,10 @@ test("edit a text layer's content and styling and save them", async ({
     inspector.getByLabel("outline color", { exact: true }),
   ).toBeDisabled();
 
+  // Make the box taller, and confirm the preview follows.
+  await commitInspectorField(page, { name: "height", value: "120" });
+  await expect(text).toHaveCSS("height", "120px");
+
   // Save and confirm the edits reach the project file without an outline.
   const save = page.getByTestId("editor-save-button");
   await save.click();
@@ -160,6 +164,7 @@ test("edit a text layer's content and styling and save them", async ({
         align: "right",
         font: { family: "DejaVu Serif", size: 32, weight: 700, lineSpacing: 4 },
         color: "#ffcc00",
+        box: { x: 420, y: 260, width: 160, height: 120 },
       },
       {},
     ],
