@@ -85,11 +85,8 @@ export function CompositionPreview({
             {/* Dims everything outside the frame, below the selection outline,
                 and marks the frame edge with a 1px screen line just outside it. */}
             <div
-              className="pointer-events-none absolute inset-0 z-[5] outline outline-neutral-600"
-              style={{
-                boxShadow: "0 0 0 100000px rgb(23 23 23 / 0.7)",
-                outlineWidth: 1 / scale,
-              }}
+              className="pointer-events-none absolute inset-0 z-[5] outline outline-neutral-600 ring-[100000px] ring-neutral-900/70"
+              style={{ outlineWidth: 1 / scale }}
             />
           </div>
         </div>
