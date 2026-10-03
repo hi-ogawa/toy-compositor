@@ -4,7 +4,7 @@ export type Project = {
   output: Output;
   layers: Layer[];
   locators: Locator[];
-  /** Facts about every media file a layer uses, keyed by the layers' `src`. */
+  /** Facts about every media file a clip uses, keyed by the clips' `src`. */
   media: Record<string, MediaInfo>;
 };
 
@@ -53,30 +53,32 @@ export type CanvasPreset = (typeof CANVAS_PRESETS)[number];
 
 /**
  * Values that leave their property without effect, such as no crop or no fade.
- * New layers start from them, and migration fills them into older projects.
+ * New layers and clips start from them, and migration fills them into older
+ * projects.
  */
 export const NEUTRAL_VALUES = {
   canvas: { background: "#000000" },
+  layer: { muted: false },
   video: {
     crop: { left: 0, right: 0, top: 0, bottom: 0 },
-    muted: false,
     fadeIn: 0,
     fadeOut: 0,
     hold: { before: 0, after: 0 },
   },
-  audio: { muted: false, fadeIn: 0, fadeOut: 0 },
+  audio: { fadeIn: 0, fadeOut: 0 },
   image: { crop: { left: 0, right: 0, top: 0, bottom: 0 } },
   text: { align: "left", font: { weight: 400, lineSpacing: 0 } },
   color: { opacity: 1 },
 } satisfies {
   canvas: Pick<Canvas, "background">;
-  video: Pick<VideoLayer, "crop" | "muted" | "fadeIn" | "fadeOut" | "hold">;
-  audio: Pick<AudioLayer, "muted" | "fadeIn" | "fadeOut">;
-  image: Pick<ImageLayer, "crop">;
-  text: Pick<TextLayer, "align"> & {
-    font: Pick<TextLayer["font"], "weight" | "lineSpacing">;
+  layer: Pick<Layer, "muted">;
+  video: Pick<VideoClip, "crop" | "fadeIn" | "fadeOut" | "hold">;
+  audio: Pick<AudioClip, "fadeIn" | "fadeOut">;
+  image: Pick<ImageClip, "crop">;
+  text: Pick<TextClip, "align"> & {
+    font: Pick<TextClip["font"], "weight" | "lineSpacing">;
   };
-  color: Pick<ColorLayer, "opacity">;
+  color: Pick<ColorClip, "opacity">;
 };
 
 /**
@@ -98,20 +100,19 @@ export function createEmptyProject(preset: CanvasPreset): Project {
   };
 }
 
-export type Layer =
-  | VideoLayer
-  | AudioLayer
-  | ImageLayer
-  | TextLayer
-  | ColorLayer;
+/**
+ * A lane in the stack, like a track in a video editor, holding clips. The
+ * editor only creates layers with one clip so far.
+ */
+export type Layer = { name: string; muted: boolean; clips: Clip[] };
 
-type LayerBase = { name: string };
+export type Clip = VideoClip | AudioClip | ImageClip | TextClip | ColorClip;
 
 export type Box = { x: number; y: number; width: number; height: number };
 
 export type Crop = { left: number; right: number; top: number; bottom: number };
 
-export type VideoLayer = LayerBase & {
+export type VideoClip = {
   type: "video";
   src: string;
   start: number;
@@ -119,13 +120,12 @@ export type VideoLayer = LayerBase & {
   out: number;
   box: Box;
   crop: Crop;
-  muted: boolean;
   fadeIn: number;
   fadeOut: number;
   hold: { before: number; after: number };
 };
 
-export type AudioLayer = LayerBase & {
+export type AudioClip = {
   type: "audio";
   src: string;
   start: number;
@@ -133,10 +133,9 @@ export type AudioLayer = LayerBase & {
   out: number;
   fadeIn: number;
   fadeOut: number;
-  muted: boolean;
 };
 
-export type ImageLayer = LayerBase & {
+export type ImageClip = {
   type: "image";
   src: string;
   box: Box;
@@ -145,7 +144,7 @@ export type ImageLayer = LayerBase & {
   end: number;
 };
 
-export type TextLayer = LayerBase & {
+export type TextClip = {
   type: "text";
   text: string;
   box: Box;
@@ -157,7 +156,7 @@ export type TextLayer = LayerBase & {
   end: number;
 };
 
-export type ColorLayer = LayerBase & {
+export type ColorClip = {
   type: "color";
   color: string;
   opacity: number;

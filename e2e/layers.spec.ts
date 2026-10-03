@@ -33,7 +33,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
   await page
     .getByRole("button", { name: "Add video.mp4", exact: true })
     .click();
-  await expect(page.getByTestId("timeline-layer-5")).toBeVisible();
+  await expect(page.getByTestId("timeline-layer-5-clip-0")).toBeVisible();
   await expectInspectorFields(page, {
     start: "1",
     in: "0",
@@ -54,7 +54,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
   // the sample's own text and color layers.
   await page.getByRole("button", { name: "Add Text", exact: true }).click();
   await page.getByRole("button", { name: "Add Color", exact: true }).click();
-  await expect(page.getByTestId("timeline-layer-8")).toBeVisible();
+  await expect(page.getByTestId("timeline-layer-8-clip-0")).toBeVisible();
 
   // Drop a new file into the folder, focus the window as when switching back
   // from the file manager, and confirm the list picks it up.
@@ -74,7 +74,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
   await page
     .getByRole("button", { name: "Add extra.wav", exact: true })
     .click();
-  await expect(page.getByTestId("timeline-layer-9")).toBeVisible();
+  await expect(page.getByTestId("timeline-layer-9-clip-0")).toBeVisible();
 
   // Select the added video from its lane, then save, and confirm the new layers
   // reach the file on top of the existing five, without runtime ids, the
@@ -95,57 +95,80 @@ test("add layers from the Library tab", async ({ page, editor }) => {
   expect(project.layers.slice(5)).toEqual([
     {
       name: "video",
-      type: "video",
-      src: "media/video.mp4",
-      start: 1,
-      in: 0,
-      out: 3,
-      box: { x: 0, y: 0, width: 640, height: 360 },
-      crop: { left: 0, right: 0, top: 0, bottom: 0 },
       muted: false,
-      fadeIn: 0,
-      fadeOut: 0,
-      hold: { before: 0, after: 0 },
+      clips: [
+        {
+          type: "video",
+          src: "media/video.mp4",
+          start: 1,
+          in: 0,
+          out: 3,
+          box: { x: 0, y: 0, width: 640, height: 360 },
+          crop: { left: 0, right: 0, top: 0, bottom: 0 },
+          fadeIn: 0,
+          fadeOut: 0,
+          hold: { before: 0, after: 0 },
+        },
+      ],
     },
     {
       name: "image",
-      type: "image",
-      src: "media/image.png",
-      box: { x: 0, y: 0, width: 640, height: 360 },
-      crop: { left: 0, right: 0, top: 0, bottom: 0 },
-      start: 0,
-      end: 3,
+      muted: false,
+      clips: [
+        {
+          type: "image",
+          src: "media/image.png",
+          box: { x: 0, y: 0, width: 640, height: 360 },
+          crop: { left: 0, right: 0, top: 0, bottom: 0 },
+          start: 0,
+          end: 3,
+        },
+      ],
     },
     {
       name: "Text 2",
-      type: "text",
-      text: "Text",
-      box: { x: 64, y: 144, width: 512, height: 72 },
-      align: "center",
-      font: { family: "Noto Sans", size: 36, weight: 400, lineSpacing: 0 },
-      color: "#ffffff",
-      start: 0,
-      end: 3,
+      muted: false,
+      clips: [
+        {
+          type: "text",
+          text: "Text",
+          box: { x: 64, y: 144, width: 512, height: 72 },
+          align: "center",
+          font: { family: "Noto Sans", size: 36, weight: 400, lineSpacing: 0 },
+          color: "#ffffff",
+          start: 0,
+          end: 3,
+        },
+      ],
     },
     {
       name: "Color 2",
-      type: "color",
-      color: "#000000",
-      opacity: 0.5,
-      box: { x: 0, y: 0, width: 640, height: 360 },
-      start: 0,
-      end: 3,
+      muted: false,
+      clips: [
+        {
+          type: "color",
+          color: "#000000",
+          opacity: 0.5,
+          box: { x: 0, y: 0, width: 640, height: 360 },
+          start: 0,
+          end: 3,
+        },
+      ],
     },
     {
       name: "extra",
-      type: "audio",
-      src: "media/extra.wav",
-      start: 1,
-      in: 0,
-      out: 3,
-      fadeIn: 0,
-      fadeOut: 0,
       muted: false,
+      clips: [
+        {
+          type: "audio",
+          src: "media/extra.wav",
+          start: 1,
+          in: 0,
+          out: 3,
+          fadeIn: 0,
+          fadeOut: 0,
+        },
+      ],
     },
   ]);
 });
@@ -234,10 +257,10 @@ test("move the selected layer up and down in the stack", async ({
     "Tone 660 Hz",
     "Test pattern",
   ]);
-  const top = page.getByTestId("composition-layer-4");
+  const top = page.getByTestId("composition-layer-4-clip-0");
   await expect(top.getByRole("img", { name: "Label backdrop" })).toBeVisible();
   await expect(top.getByLabel("Selected layer outline")).toBeVisible();
-  await expect(page.getByTestId("composition-layer-2")).toHaveText(
+  await expect(page.getByTestId("composition-layer-2-clip-0")).toHaveText(
     "Synthetic sample",
   );
   await expect(moveUp).toBeDisabled();

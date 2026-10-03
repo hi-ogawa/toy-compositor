@@ -62,7 +62,7 @@ test("compose the output start, follow inspector edits, and save them", async ({
 
   // End the text at the playhead and confirm it hides, because its range
   // excludes its end.
-  const text = page.getByTestId("composition-layer-3");
+  const text = page.getByTestId("composition-layer-3-clip-0");
   await clickTimelineButton(page, { name: "Title text" });
   await commitInspectorField(page, { name: "end", value: "1" });
   await expect(text).toBeHidden();
@@ -75,10 +75,10 @@ test("compose the output start, follow inspector edits, and save them", async ({
   expect(await readJson(editor.projectFile)).toMatchObject({
     output: { start: 1 },
     layers: [
-      { start: 2, in: 0.2 },
+      { clips: [{ start: 2, in: 0.2 }] },
       {},
-      { crop: { left: 0.25, right: 0.25 } },
-      { end: 1 },
+      { clips: [{ crop: { left: 0.25, right: 0.25 } }] },
+      { clips: [{ end: 1 }] },
       {},
     ],
   });
@@ -160,16 +160,25 @@ test("edit a text layer's content and styling and save them", async ({
       {},
       {},
       {
-        text: "Edited\nthree\nlines",
-        align: "right",
-        font: { family: "DejaVu Serif", size: 32, weight: 700, lineSpacing: 4 },
-        color: "#ffcc00",
-        box: { x: 420, y: 260, width: 160, height: 120 },
+        clips: [
+          {
+            text: "Edited\nthree\nlines",
+            align: "right",
+            font: {
+              family: "DejaVu Serif",
+              size: 32,
+              weight: 700,
+              lineSpacing: 4,
+            },
+            color: "#ffcc00",
+            box: { x: 420, y: 260, width: 160, height: 120 },
+          },
+        ],
       },
       {},
     ],
   });
-  expect(project.layers[3]).not.toHaveProperty("outline");
+  expect(project.layers[3]!.clips[0]).not.toHaveProperty("outline");
 });
 
 test("edit layer names and a color layer's fill and box, and save them", async ({
@@ -180,7 +189,10 @@ test("edit layer names and a color layer's fill and box, and save them", async (
   // sample's tint, selected, and filling the canvas.
   await page.goto(editor.url);
   await page.getByRole("button", { name: "Add Color", exact: true }).click();
-  const fill = page.getByTestId("composition-layer-5").locator("div").first();
+  const fill = page
+    .getByTestId("composition-layer-5-clip-0")
+    .locator("div")
+    .first();
   await expect(fill).toHaveCSS("width", "640px");
 
   // Name the color layer and confirm its lane and the inspector title follow.
@@ -223,12 +235,17 @@ test("edit layer names and a color layer's fill and box, and save them", async (
   const project = await readJson<Project>(editor.projectFile);
   expect(project.layers[5]).toEqual({
     name: "Scrim",
-    type: "color",
-    color: "#ff0000",
-    opacity: 0.5,
-    start: 0,
-    end: 3,
-    box: { x: 0, y: 0, width: 320, height: 360 },
+    muted: false,
+    clips: [
+      {
+        type: "color",
+        color: "#ff0000",
+        opacity: 0.5,
+        start: 0,
+        end: 3,
+        box: { x: 0, y: 0, width: 320, height: 360 },
+      },
+    ],
   });
 });
 
@@ -367,10 +384,10 @@ test("hold a video layer's first and last frames in the preview", async ({
   await commitInspectorField(page, { name: "before", value: "1" });
   await expect(video).toBeVisible();
   await expect.poll(readVideoTime).toBeCloseTo(0);
-  const lane = page.getByTestId("timeline-layer-0");
+  const lane = page.getByTestId("timeline-layer-0-clip-0");
   await expect(lane).toHaveAttribute("title", "1.000–4.000 s");
   await expect(
-    page.getByTestId("timeline-layer-0-hold-before"),
+    page.getByTestId("timeline-layer-0-clip-0-hold-before"),
   ).toHaveAttribute("title", "hold 0.000–1.000 s");
 
   // Shorten its source range to 1 s and hold its last frame for 1 s, then seek
@@ -378,10 +395,9 @@ test("hold a video layer's first and last frames in the preview", async ({
   await commitInspectorField(page, { name: "out", value: "1" });
   await commitInspectorField(page, { name: "after", value: "1" });
   await expect(lane).toHaveAttribute("title", "1.000–2.000 s");
-  await expect(page.getByTestId("timeline-layer-0-hold-after")).toHaveAttribute(
-    "title",
-    "hold 2.000–3.000 s",
-  );
+  await expect(
+    page.getByTestId("timeline-layer-0-clip-0-hold-after"),
+  ).toHaveAttribute("title", "hold 2.000–3.000 s");
   await seekTimelineByPixels(page, {
     pixels: 2.5 * DEFAULT_PIXELS_PER_SECOND,
   });
@@ -395,7 +411,7 @@ test("hold a video layer's first and last frames in the preview", async ({
   await expect(save).toHaveAttribute("data-status", "saved");
   expect(await readJson(editor.projectFile)).toMatchObject({
     layers: [
-      { start: 1, in: 0, out: 1, hold: { before: 1, after: 1 } },
+      { clips: [{ start: 1, in: 0, out: 1, hold: { before: 1, after: 1 } }] },
       {},
       {},
       {},

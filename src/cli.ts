@@ -52,7 +52,7 @@ Usage:
   toy-compositor render <project.json> <output> [--dry-run]
       Render a project to a video or still with ffmpeg
   toy-compositor update-media <project.json...>
-      Record media info for the files that layers use in each project,
+      Record media info for the files that clips use in each project,
       which the editor and renderer need before they accept it
   toy-compositor migrate <project.json...> [--check]
       Rewrite each project from an older format to the current one.
@@ -250,7 +250,7 @@ async function runCommand(
 }
 
 /**
- * Migrate each project file in place and print its changed layers, or with
+ * Migrate each project file in place and print what changed, or with
  * `check`, only print them and fail if any file would change.
  */
 async function runMigrate(

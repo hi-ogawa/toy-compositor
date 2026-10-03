@@ -2,17 +2,22 @@ import { useEffect, useState } from "react";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import type {
   Canvas,
-  AudioLayer,
+  AudioClip,
   Box,
-  ColorLayer,
+  Clip,
+  ColorClip,
   Crop,
-  ImageLayer,
+  ImageClip,
   Layer,
   Output,
-  TextLayer,
-  VideoLayer,
+  TextClip,
+  VideoClip,
 } from "../lib/project";
-import type { EditorRuntime, EditorProject } from "../lib/runtime";
+import {
+  findClip,
+  type EditorRuntime,
+  type EditorProject,
+} from "../lib/runtime";
 import { cn } from "./ui/utils";
 import { useDraftInput } from "./use-draft-input";
 import type { EditorSelection } from "./use-layer-interaction";
@@ -50,19 +55,23 @@ export function Inspector({
         />
       );
     }
-    case "layer": {
+    case "clip": {
       const { id } = selection;
-      const index = project.layers.findIndex((layer) => layer.id === id);
-      const layer = project.layers[index]!;
+      const { layer, layerIndex, clip } = findClip(project.layers, id)!;
       return (
-        <LayerInspector
+        <ClipInspector
           layer={layer}
+          clip={clip}
           time={time}
-          onUpdate={(update) => runtime.updateLayer({ id, update })}
+          onLayerUpdate={(update) =>
+            runtime.updateLayer({ id: layer.id, update })
+          }
+          onClipUpdate={(update) => runtime.updateClip({ id, update })}
           move={{
-            canMoveUp: index < project.layers.length - 1,
-            canMoveDown: index > 0,
-            onMove: (direction) => runtime.moveLayer({ id, direction }),
+            canMoveUp: layerIndex < project.layers.length - 1,
+            canMoveDown: layerIndex > 0,
+            onMove: (direction) =>
+              runtime.moveLayer({ id: layer.id, direction }),
           }}
         />
       );
@@ -70,7 +79,9 @@ export function Inspector({
   }
 }
 
-type LayerUpdate = (update: Partial<Layer>) => void;
+type LayerUpdate = (update: Partial<Omit<Layer, "clips">>) => void;
+
+type ClipUpdate = (update: Partial<Clip>) => void;
 
 interface LayerMoveControls {
   canMoveUp: boolean;
@@ -177,25 +188,30 @@ function OutputInspector({
   );
 }
 
-function LayerInspector({
+/** A clip's fields, with its layer's name and stack position. */
+function ClipInspector({
   layer,
+  clip,
   time,
-  onUpdate,
+  onLayerUpdate,
+  onClipUpdate,
   move,
 }: {
-  layer: Layer;
+  layer: Omit<Layer, "clips">;
+  clip: Clip;
   time: TimeFieldOptions;
-  onUpdate: LayerUpdate;
+  onLayerUpdate: LayerUpdate;
+  onClipUpdate: ClipUpdate;
   move: LayerMoveControls;
 }) {
   return (
     <div data-testid="inspector">
-      <InspectorTitle title={layer.name} subtitle={layer.type} />
+      <InspectorTitle title={layer.name} subtitle={clip.type} />
       <div className="flex flex-col gap-4 p-3">
         <TextField
           label="name"
           value={layer.name}
-          onCommit={(name) => onUpdate({ name })}
+          onCommit={(name) => onLayerUpdate({ name })}
         />
         <Group title="Stack">
           {(["up", "down"] as const).map((direction) => (
@@ -212,32 +228,44 @@ function LayerInspector({
             </button>
           ))}
         </Group>
-        <LayerFields layer={layer} time={time} onUpdate={onUpdate} />
+        <ClipFields
+          clip={clip}
+          time={time}
+          onUpdate={onClipUpdate}
+          muted={layer.muted}
+          onMutedChange={(muted) => onLayerUpdate({ muted })}
+        />
       </div>
     </div>
   );
 }
 
-/** Lists each layer type's groups in display order. */
-function LayerFields({
-  layer,
+/** Lists each clip type's groups in display order. */
+function ClipFields({
+  clip,
   time,
   onUpdate,
+  muted,
+  onMutedChange,
 }: {
-  layer: Layer;
+  clip: Clip;
   time: TimeFieldOptions;
-  onUpdate: LayerUpdate;
+  onUpdate: ClipUpdate;
+  /** Whether the clip's layer is muted, which only sound shows. */
+  muted: boolean;
+  onMutedChange: (muted: boolean) => void;
 }) {
-  switch (layer.type) {
+  const audio = { muted, onMutedChange };
+  switch (clip.type) {
     case "video": {
       return (
         <>
-          <SourceTimingFields layer={layer} time={time} onUpdate={onUpdate} />
-          <HoldFields layer={layer} time={time} onUpdate={onUpdate} />
-          <AudioFields layer={layer} time={time} onUpdate={onUpdate} />
-          <BoxFields box={layer.box} onCommit={(box) => onUpdate({ box })} />
+          <SourceTimingFields clip={clip} time={time} onUpdate={onUpdate} />
+          <HoldFields clip={clip} time={time} onUpdate={onUpdate} />
+          <AudioFields clip={clip} time={time} onUpdate={onUpdate} {...audio} />
+          <BoxFields box={clip.box} onCommit={(box) => onUpdate({ box })} />
           <CropFields
-            crop={layer.crop}
+            crop={clip.crop}
             onCommit={(crop) => onUpdate({ crop })}
           />
         </>
@@ -246,18 +274,18 @@ function LayerFields({
     case "audio": {
       return (
         <>
-          <SourceTimingFields layer={layer} time={time} onUpdate={onUpdate} />
-          <AudioFields layer={layer} time={time} onUpdate={onUpdate} />
+          <SourceTimingFields clip={clip} time={time} onUpdate={onUpdate} />
+          <AudioFields clip={clip} time={time} onUpdate={onUpdate} {...audio} />
         </>
       );
     }
     case "image": {
       return (
         <>
-          <RangeTimingFields layer={layer} time={time} onUpdate={onUpdate} />
-          <BoxFields box={layer.box} onCommit={(box) => onUpdate({ box })} />
+          <RangeTimingFields clip={clip} time={time} onUpdate={onUpdate} />
+          <BoxFields box={clip.box} onCommit={(box) => onUpdate({ box })} />
           <CropFields
-            crop={layer.crop}
+            crop={clip.crop}
             onCommit={(crop) => onUpdate({ crop })}
           />
         </>
@@ -266,25 +294,25 @@ function LayerFields({
     case "text": {
       return (
         <>
-          <RangeTimingFields layer={layer} time={time} onUpdate={onUpdate} />
-          <TextFields layer={layer} onUpdate={onUpdate} />
-          <BoxFields box={layer.box} onCommit={(box) => onUpdate({ box })} />
+          <RangeTimingFields clip={clip} time={time} onUpdate={onUpdate} />
+          <TextFields clip={clip} onUpdate={onUpdate} />
+          <BoxFields box={clip.box} onCommit={(box) => onUpdate({ box })} />
         </>
       );
     }
     case "color": {
       return (
         <>
-          <RangeTimingFields layer={layer} time={time} onUpdate={onUpdate} />
+          <RangeTimingFields clip={clip} time={time} onUpdate={onUpdate} />
           <Group title="Fill">
             <ColorField
               label="color"
-              value={layer.color}
+              value={clip.color}
               onCommit={(color) => onUpdate({ color })}
             />
             <NumberField
               label="opacity"
-              value={layer.opacity}
+              value={clip.opacity}
               step={0.01}
               min={0}
               max={1}
@@ -292,40 +320,40 @@ function LayerFields({
               onCommit={(opacity) => onUpdate({ opacity })}
             />
           </Group>
-          <BoxFields box={layer.box} onCommit={(box) => onUpdate({ box })} />
+          <BoxFields box={clip.box} onCommit={(box) => onUpdate({ box })} />
         </>
       );
     }
   }
 }
 
-/** Timing for layers that play a source range: timeline start plus source in and out. */
+/** Timing for clips that play a source range: timeline start plus source in and out. */
 function SourceTimingFields({
-  layer,
+  clip,
   time,
   onUpdate,
 }: {
-  layer: VideoLayer | AudioLayer;
+  clip: VideoClip | AudioClip;
   time: TimeFieldOptions;
-  onUpdate: LayerUpdate;
+  onUpdate: ClipUpdate;
 }) {
   return (
     <Group title="Timing">
       <NumberField
         label="start"
-        value={layer.start}
+        value={clip.start}
         {...time}
         onCommit={(start) => onUpdate({ start })}
       />
       <NumberField
         label="in"
-        value={layer.in}
+        value={clip.in}
         {...time}
         onCommit={(value) => onUpdate({ in: value })}
       />
       <NumberField
         label="out"
-        value={layer.out}
+        value={clip.out}
         {...time}
         onCommit={(out) => onUpdate({ out })}
       />
@@ -335,53 +363,53 @@ function SourceTimingFields({
 
 /** Seconds to hold the first and last frames beyond the source range. */
 function HoldFields({
-  layer,
+  clip,
   time,
   onUpdate,
 }: {
-  layer: VideoLayer;
+  clip: VideoClip;
   time: TimeFieldOptions;
-  onUpdate: LayerUpdate;
+  onUpdate: ClipUpdate;
 }) {
   return (
     <Group title="Hold">
       <NumberField
         label="before"
-        value={layer.hold.before}
+        value={clip.hold.before}
         {...time}
-        onCommit={(before) => onUpdate({ hold: { ...layer.hold, before } })}
+        onCommit={(before) => onUpdate({ hold: { ...clip.hold, before } })}
       />
       <NumberField
         label="after"
-        value={layer.hold.after}
+        value={clip.hold.after}
         {...time}
-        onCommit={(after) => onUpdate({ hold: { ...layer.hold, after } })}
+        onCommit={(after) => onUpdate({ hold: { ...clip.hold, after } })}
       />
     </Group>
   );
 }
 
-/** Timing for layers without a source range, which span start to end. */
+/** Timing for clips without a source range, which span start to end. */
 function RangeTimingFields({
-  layer,
+  clip,
   time,
   onUpdate,
 }: {
-  layer: ImageLayer | TextLayer | ColorLayer;
+  clip: ImageClip | TextClip | ColorClip;
   time: TimeFieldOptions;
-  onUpdate: LayerUpdate;
+  onUpdate: ClipUpdate;
 }) {
   return (
     <Group title="Timing">
       <NumberField
         label="start"
-        value={layer.start}
+        value={clip.start}
         {...time}
         onCommit={(start) => onUpdate({ start })}
       />
       <NumberField
         label="end"
-        value={layer.end}
+        value={clip.end}
         {...time}
         onCommit={(end) => onUpdate({ end })}
       />
@@ -389,34 +417,39 @@ function RangeTimingFields({
   );
 }
 
+/** A clip's fades, beside its layer's mute, which applies to every clip on it. */
 function AudioFields({
-  layer,
+  clip,
   time,
   onUpdate,
+  muted,
+  onMutedChange,
 }: {
-  layer: VideoLayer | AudioLayer;
+  clip: VideoClip | AudioClip;
   time: TimeFieldOptions;
-  onUpdate: LayerUpdate;
+  onUpdate: ClipUpdate;
+  muted: boolean;
+  onMutedChange: (muted: boolean) => void;
 }) {
   return (
     <Group title="Audio">
       <label className="col-span-2 flex items-center gap-2 text-xs">
         <input
           type="checkbox"
-          checked={layer.muted}
-          onChange={(e) => onUpdate({ muted: e.target.checked })}
+          checked={muted}
+          onChange={(e) => onMutedChange(e.target.checked)}
         />
         muted
       </label>
       <NumberField
         label="fade in"
-        value={layer.fadeIn}
+        value={clip.fadeIn}
         {...time}
         onCommit={(fadeIn) => onUpdate({ fadeIn })}
       />
       <NumberField
         label="fade out"
-        value={layer.fadeOut}
+        value={clip.fadeOut}
         {...time}
         onCommit={(fadeOut) => onUpdate({ fadeOut })}
       />
@@ -425,19 +458,19 @@ function AudioFields({
 }
 
 function TextFields({
-  layer,
+  clip,
   onUpdate,
 }: {
-  layer: TextLayer;
-  onUpdate: LayerUpdate;
+  clip: TextClip;
+  onUpdate: ClipUpdate;
 }) {
-  const { align, font, outline } = layer;
+  const { align, font, outline } = clip;
   return (
     <>
       <Group title="Text">
         <TextField
           label="text"
-          value={layer.text}
+          value={clip.text}
           multiline
           onCommit={(text) => onUpdate({ text })}
         />
@@ -460,7 +493,7 @@ function TextFields({
         </div>
         <ColorField
           label="color"
-          value={layer.color}
+          value={clip.color}
           onCommit={(color) => onUpdate({ color })}
         />
       </Group>

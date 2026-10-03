@@ -4,29 +4,30 @@ import type { MediaType } from "./media-file.ts";
 import {
   NEUTRAL_VALUES,
   type Canvas,
-  type ColorLayer,
+  type Clip,
+  type ColorClip,
   type Layer,
   type MediaInfo,
-  type TextLayer,
+  type TextClip,
 } from "./project.ts";
 
-/** Numbers a layer by its type among the existing ones, such as `Text 2`. */
+/** Numbers a layer by a clip type among the layers holding it, such as `Text 2`. */
 export function createLayerName({
   layers,
   type,
 }: {
-  layers: readonly Pick<Layer, "name" | "type">[];
-  type: Layer["type"];
+  layers: readonly Layer[];
+  type: Clip["type"];
 }): string {
   return createNumberedName({
     names: layers
-      .filter((layer) => layer.type === type)
+      .filter((layer) => layer.clips.some((clip) => clip.type === type))
       .map((layer) => layer.name),
     prefix: type[0]!.toUpperCase() + type.slice(1),
   });
 }
 
-/** Video and images fit inside the canvas, so the box is the visible area. */
+/** A media file's layer is named after the file, and holds one clip of it. */
 export function createMediaLayer({
   src,
   type,
@@ -46,11 +47,35 @@ export function createMediaLayer({
     .split("/")
     .pop()!
     .replace(/\.[^.]+$/, "");
+  return {
+    name,
+    ...NEUTRAL_VALUES.layer,
+    clips: [
+      createMediaClip({ src, type, mediaInfo, canvas, start, stillRange }),
+    ],
+  };
+}
+
+/** Video and images fit inside the canvas, so the box is the visible area. */
+function createMediaClip({
+  src,
+  type,
+  mediaInfo,
+  canvas,
+  start,
+  stillRange,
+}: {
+  src: string;
+  type: MediaType;
+  mediaInfo: MediaInfo;
+  canvas: Canvas;
+  start: number;
+  stillRange: TimeRange;
+}): Clip {
   const canvasBox = { x: 0, y: 0, width: canvas.width, height: canvas.height };
   switch (type) {
     case "video": {
       return {
-        name,
         type,
         src,
         start,
@@ -66,7 +91,6 @@ export function createMediaLayer({
     }
     case "audio": {
       return {
-        name,
         type,
         src,
         start,
@@ -77,7 +101,6 @@ export function createMediaLayer({
     }
     case "image": {
       return {
-        name,
         type,
         src,
         box: fitBox({
@@ -100,9 +123,22 @@ export function createTextLayer({
   name: string;
   canvas: Canvas;
   range: TimeRange;
-}): TextLayer {
+}): Layer {
   return {
     name,
+    ...NEUTRAL_VALUES.layer,
+    clips: [createTextClip({ canvas, range })],
+  };
+}
+
+function createTextClip({
+  canvas,
+  range,
+}: {
+  canvas: Canvas;
+  range: TimeRange;
+}): TextClip {
+  return {
     type: "text",
     text: "Text",
     box: {
@@ -131,9 +167,22 @@ export function createColorLayer({
   name: string;
   canvas: Canvas;
   range: TimeRange;
-}): ColorLayer {
+}): Layer {
   return {
     name,
+    ...NEUTRAL_VALUES.layer,
+    clips: [createColorClip({ canvas, range })],
+  };
+}
+
+function createColorClip({
+  canvas,
+  range,
+}: {
+  canvas: Canvas;
+  range: TimeRange;
+}): ColorClip {
+  return {
     type: "color",
     color: "#000000",
     opacity: 0.5,

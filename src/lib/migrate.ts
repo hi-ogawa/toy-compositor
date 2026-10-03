@@ -1,16 +1,17 @@
 import { createLayerName } from "./layer-defaults.ts";
 import {
   NEUTRAL_VALUES,
-  type AudioLayer,
+  type AudioClip,
   type Box,
   type Canvas,
-  type ColorLayer,
+  type Clip,
+  type ColorClip,
   type Crop,
-  type ImageLayer,
+  type ImageClip,
   type Layer,
   type Project,
-  type TextLayer,
-  type VideoLayer,
+  type TextClip,
+  type VideoClip,
 } from "./project.ts";
 import { measureTextHeight } from "./render/text.ts";
 
@@ -26,50 +27,51 @@ export type SavedProject = Omit<
   media?: Project["media"];
 };
 
-type SavedLayer = WithOptionalName<
-  | SavedVideoLayer
-  | SavedAudioLayer
-  | SavedImageLayer
-  | SavedColorLayer
-  | SavedTextLayer
->;
+type SavedLayer = SavedFlatLayer | SavedClipsLayer;
 
-// Missing in projects saved before layer names were required.
-type WithOptionalName<T> = T extends unknown
-  ? Omit<T, "name"> & { name?: string }
-  : never;
+type SavedClipsLayer = Omit<Layer, "clips"> & { clips: SavedClip[] };
+
+// Saved before layers held clips, with the layer's one clip on the layer itself.
+// Missing name before layer names were required, and muted before neutral
+// values were.
+export type SavedFlatLayer = SavedClip & { name?: string; muted?: boolean };
+
+type SavedClip =
+  | SavedVideoClip
+  | SavedAudioClip
+  | SavedImageClip
+  | SavedColorClip
+  | SavedTextClip;
 
 // Neutral values are missing in projects saved before they were required.
-type SavedVideoLayer = Omit<
-  VideoLayer,
-  "crop" | "muted" | "fadeIn" | "fadeOut" | "hold"
+type SavedVideoClip = Omit<
+  VideoClip,
+  "crop" | "fadeIn" | "fadeOut" | "hold"
 > & {
   crop?: Partial<Crop>;
-  muted?: boolean;
   fadeIn?: number;
   fadeOut?: number;
-  hold?: Partial<VideoLayer["hold"]>;
+  hold?: Partial<VideoClip["hold"]>;
 };
 
-type SavedAudioLayer = Omit<AudioLayer, "muted" | "fadeIn" | "fadeOut"> & {
-  muted?: boolean;
+type SavedAudioClip = Omit<AudioClip, "fadeIn" | "fadeOut"> & {
   fadeIn?: number;
   fadeOut?: number;
 };
 
-type SavedImageLayer = Omit<ImageLayer, "crop"> & { crop?: Partial<Crop> };
+type SavedImageClip = Omit<ImageClip, "crop"> & { crop?: Partial<Crop> };
 
-type SavedColorLayer = Omit<ColorLayer, "box" | "opacity"> & {
-  // Missing in projects saved before a color layer's box was required.
+type SavedColorClip = Omit<ColorClip, "box" | "opacity"> & {
+  // Missing in projects saved before a color clip's box was required.
   box?: Box;
   opacity?: number;
 };
 
-type SavedTextLayer = Omit<TextLayer, "box" | "align" | "font"> & {
-  // Missing height in projects saved before a text layer's box had one.
+type SavedTextClip = Omit<TextClip, "box" | "align" | "font"> & {
+  // Missing height in projects saved before a text clip's box had one.
   box: Omit<Box, "height"> & { height?: number };
-  align?: TextLayer["align"];
-  font: Omit<TextLayer["font"], "weight" | "lineSpacing"> & {
+  align?: TextClip["align"];
+  font: Omit<TextClip["font"], "weight" | "lineSpacing"> & {
     weight?: number;
     lineSpacing?: number;
   };
@@ -90,30 +92,36 @@ export async function migrateAndValidateProject(project: SavedProject) {
 
 /**
  * Reject what loading cannot fix from the file alone, which needs update-media
- * or a different file. So far this only checks each layer's media info.
+ * or a different file. So far this only checks each clip's media info.
  */
 function validateProject(project: Project): void {
   for (const layer of project.layers) {
-    if (!("src" in layer)) {
-      continue;
+    for (const clip of layer.clips) {
+      if (!("src" in clip)) {
+        continue;
+      }
+      const label = `${clip.type} clip in layer "${layer.name}" (${clip.src})`;
+      const mediaInfo = project.media[clip.src];
+      if (!mediaInfo) {
+        throw new Error(`${label} has no media info, run update-media`);
+      }
+      if (clip.type !== "audio" && !mediaInfo.video) {
+        throw new Error(
+          `${label} has no video stream, use a file with video or run update-media if the file changed`,
+        );
+      }
     }
-    const label = `${layer.type} layer "${layer.name}" (${layer.src})`;
-    const mediaInfo = project.media[layer.src];
-    if (!mediaInfo) {
-      throw new Error(`${label} has no media info, run update-media`);
-    }
-    if (layer.type !== "audio" && !mediaInfo.video) {
-      throw new Error(
-        `${label} has no video stream, use a file with video or run update-media if the file changed`,
-      );
-    }
+    // TODO(multi-clip): Reject clips out of order by `start` or whose
+    // picture ranges overlap, once the editor can put several clips on a layer.
   }
 }
 
 /**
  * Bring a project to the current shape by filling what older files lack. It
  * does not read `media` or check it, so update-media also runs it on a project
- * whose media info is missing.
+ * whose media info is missing. Each layer is normalized to the clips shape
+ * first, and then each clip's fields are migrated, so a field migration works
+ * whichever shape the file started in.
  */
 export async function migrateProject(
   project: SavedProject,
@@ -121,48 +129,22 @@ export async function migrateProject(
   const changes: string[] = [];
   const layers: Layer[] = [];
   for (const savedLayer of project.layers) {
-    const name =
-      savedLayer.name ?? createLayerName({ layers, type: savedLayer.type });
-    const layer = { ...savedLayer, name };
-    const label = `${layer.type} layer "${name}"`;
-    if (savedLayer.name === undefined) {
-      changes.push(`${label} has no name`);
-    }
-    switch (layer.type) {
-      case "video": {
-        layers.push(fillDefaults(layer, NEUTRAL_VALUES.video));
-        break;
-      }
-      case "audio": {
-        layers.push(fillDefaults(layer, NEUTRAL_VALUES.audio));
-        break;
-      }
-      case "image": {
-        layers.push(fillDefaults(layer, NEUTRAL_VALUES.image));
-        break;
-      }
-      case "color": {
-        if (!layer.box) {
-          changes.push(`${label} has no box`);
-        }
-        // A color layer without a box covered the canvas.
-        const { width, height } = project.canvas;
-        const box = layer.box ?? { x: 0, y: 0, width, height };
-        layers.push(fillDefaults({ ...layer, box }, NEUTRAL_VALUES.color));
-        break;
-      }
-      case "text": {
-        const filled = fillDefaults(layer, NEUTRAL_VALUES.text);
-        let { height } = filled.box;
-        if (height === undefined) {
-          // The box followed the lines, which rendered at their natural height.
-          changes.push(`${label} has no box height`);
-          height = await measureTextHeight(filled);
-        }
-        layers.push({ ...filled, box: { ...filled.box, height } });
-        break;
-      }
-    }
+    const { clips, ...layer } = normalizeLayer(savedLayer, {
+      layers,
+      changes,
+    });
+    layers.push({
+      ...layer,
+      clips: await Promise.all(
+        clips.map((clip) =>
+          migrateClip(clip, {
+            label: `${clip.type} clip in layer "${layer.name}"`,
+            canvas: project.canvas,
+            changes,
+          }),
+        ),
+      ),
+    });
   }
   const canvas = fillDefaults(project.canvas, NEUTRAL_VALUES.canvas);
   const migrated: Project = {
@@ -173,6 +155,70 @@ export async function migrateProject(
     media: project.media ?? {},
   };
   return { project: migrated, changes };
+}
+
+/** A flat layer becomes a layer with its one clip, which is lossless. */
+function normalizeLayer(
+  savedLayer: SavedLayer,
+  {
+    layers,
+    changes,
+  }: {
+    /** The layers before it, which a missing name is numbered among. */
+    layers: Layer[];
+    changes: string[];
+  },
+): SavedClipsLayer {
+  if ("clips" in savedLayer) {
+    return savedLayer;
+  }
+  const { name: savedName, muted, ...clip } = savedLayer;
+  const name = savedName ?? createLayerName({ layers, type: clip.type });
+  if (savedName === undefined) {
+    changes.push(`${clip.type} layer "${name}" has no name`);
+  }
+  changes.push(`layer "${name}" has no clips`);
+  return fillDefaults({ name, muted, clips: [clip] }, NEUTRAL_VALUES.layer);
+}
+
+async function migrateClip(
+  clip: SavedClip,
+  {
+    label,
+    canvas,
+    changes,
+  }: { label: string; canvas: SavedProject["canvas"]; changes: string[] },
+): Promise<Clip> {
+  switch (clip.type) {
+    case "video": {
+      return fillDefaults(clip, NEUTRAL_VALUES.video);
+    }
+    case "audio": {
+      return fillDefaults(clip, NEUTRAL_VALUES.audio);
+    }
+    case "image": {
+      return fillDefaults(clip, NEUTRAL_VALUES.image);
+    }
+    case "color": {
+      if (!clip.box) {
+        changes.push(`${label} has no box`);
+      }
+      // A color clip without a box covered the canvas.
+      const { width, height } = canvas;
+      const box = clip.box ?? { x: 0, y: 0, width, height };
+      return fillDefaults({ ...clip, box }, NEUTRAL_VALUES.color);
+    }
+    case "text": {
+      const filled = fillDefaults(clip, NEUTRAL_VALUES.text);
+      let { height } = filled.box;
+      if (height === undefined) {
+        // The box followed the lines, which rendered at their natural height.
+        changes.push(`${label} has no box height`);
+        height = await measureTextHeight(filled);
+      }
+      return { ...filled, box: { ...filled.box, height } };
+    }
+  }
 }
 
 /**

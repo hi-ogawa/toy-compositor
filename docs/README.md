@@ -1,7 +1,7 @@
 # Docs
 
 - [getting-started.md](getting-started.md): installing and upgrading, project folders, and going from media to a render
-- [project-format.md](project-format.md): the project JSON, its layers, and `media`
+- [project-format.md](project-format.md): the project JSON, its layers and clips, and `media`
 - [compiler.md](compiler.md): how a project becomes one ffmpeg command
 - [editor.md](editor.md): the editor's components, how it composes a project in the DOM, and playback
 - [preprocessing.md](preprocessing.md): preparing camera footage before it goes into a project

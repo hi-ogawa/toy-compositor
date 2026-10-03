@@ -16,6 +16,7 @@ import {
   CANVAS_PRESETS,
   createEmptyProject,
   type Canvas,
+  type Clip,
   type Layer,
   type Locator,
   type Output,
@@ -26,13 +27,19 @@ import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
 import { VideoPlayback } from "./video-playback.ts";
 
-/** A project layer with an id that is stable for the session but never saved. */
-export type EditorLayer = Layer & { id: string };
+/** A project layer with ids for it and its clips that are stable for the session but never saved. */
+export type EditorLayer = Omit<Layer, "clips"> & {
+  id: string;
+  clips: EditorClip[];
+};
+
+/** A project clip with an id that is stable for the session but never saved. */
+export type EditorClip = Clip & { id: string };
 
 /** A project locator with an id that is stable for the session but never saved. */
 export type EditorLocator = Locator & { id: string };
 
-/** The project as the editor holds it, which saves without the layer and locator ids. */
+/** The project as the editor holds it, which saves without the layer, clip, and locator ids. */
 export type EditorProject = Omit<Project, "layers" | "locators"> & {
   layers: EditorLayer[];
   locators: EditorLocator[];
@@ -96,14 +103,21 @@ export class EditorRuntime {
     this.seek(playhead + frames / project.canvas.fps);
   }
 
-  updateLayer({ id, update }: { id: string; update: Partial<Layer> }): void {
+  /** Updates what applies to the whole layer, which a mute does for every clip's sound. */
+  updateLayer({
+    id,
+    update,
+  }: {
+    id: string;
+    update: Partial<Omit<Layer, "clips">>;
+  }): void {
     this.reschedulePlayback(() => {
       const { project } = this.store.get();
       this.store.update({
         project: {
           ...project,
           layers: project.layers.map((layer) =>
-            layer.id === id ? ({ ...layer, ...update } as EditorLayer) : layer,
+            layer.id === id ? { ...layer, ...update } : layer,
           ),
         },
       });
@@ -111,7 +125,35 @@ export class EditorRuntime {
     });
   }
 
-  /** Probes and records the file's media info first if the project has none. */
+  /** Updates a clip's timing, layout, or content. */
+  updateClip({ id, update }: { id: string; update: Partial<Clip> }): void {
+    this.reschedulePlayback(() => {
+      const { project } = this.store.get();
+      this.store.update({
+        project: {
+          ...project,
+          layers: project.layers.map((layer) =>
+            layer.clips.some((clip) => clip.id === id)
+              ? {
+                  ...layer,
+                  clips: layer.clips.map((clip) =>
+                    clip.id === id
+                      ? ({ ...clip, ...update } as EditorClip)
+                      : clip,
+                  ),
+                }
+              : layer,
+          ),
+        },
+      });
+      this.syncPlayback();
+    });
+  }
+
+  /**
+   * Adds a layer holding one clip of the file, and returns the clip's id.
+   * Probes and records the file's media info first if the project has none.
+   */
   async addMediaLayer({ src, type }: MediaFile): Promise<string> {
     const { file } = this.store.get();
     let mediaInfo = this.store.get().project.media[src];
@@ -252,7 +294,7 @@ export class EditorRuntime {
   }
 
   /**
-   * Makes a composition `<video>` follow the transport as the video layer
+   * Makes a composition `<video>` follow the transport as the video clip
    * `id`, like toy-midi's `attachYouTubePlayer`. Returns its detacher.
    */
   attachVideo({
@@ -273,19 +315,22 @@ export class EditorRuntime {
     };
   }
 
+  /** Adds a layer holding one clip on top of the stack, and returns the clip's id. */
   private insertLayer(layer: Layer): string {
-    const id = crypto.randomUUID();
+    const editorLayer = deserializeEditorLayer(layer);
     this.reschedulePlayback(() => {
       const { project } = this.store.get();
       this.store.update({
-        project: { ...project, layers: [...project.layers, { ...layer, id }] },
+        project: { ...project, layers: [...project.layers, editorLayer] },
       });
       this.syncPlayback();
     });
-    if (layer.type === "video" || layer.type === "audio") {
-      this.loadAudio(layer.src);
+    for (const clip of layer.clips) {
+      if (clip.type === "video" || clip.type === "audio") {
+        this.loadAudio(clip.src);
+      }
     }
-    return id;
+    return editorLayer.clips[0]!.id;
   }
 
   private getNewStillRange(): TimeRange {
@@ -309,27 +354,29 @@ export class EditorRuntime {
 
   private syncPlayback(): void {
     const { project, audioSources } = this.store.get();
-    const { layers } = project;
+    const clips = project.layers.flatMap((layer) =>
+      layer.clips.map((clip) => ({ clip, muted: layer.muted })),
+    );
     for (const [id, playback] of this.videoPlaybacks) {
-      const layer = layers.find((layer) => layer.id === id);
-      if (layer?.type === "video") {
-        playback.setLayer({ layer });
+      const clip = clips.find(({ clip }) => clip.id === id)?.clip;
+      if (clip?.type === "video") {
+        playback.setClip({ clip });
       }
     }
 
     const heard = new Set<string>();
-    for (const layer of layers) {
-      if (layer.type !== "video" && layer.type !== "audio") {
+    for (const { clip, muted } of clips) {
+      if (clip.type !== "video" && clip.type !== "audio") {
         continue;
       }
-      heard.add(layer.id);
-      let playback = this.audioPlaybacks.get(layer.id);
+      heard.add(clip.id);
+      let playback = this.audioPlaybacks.get(clip.id);
       if (!playback) {
         playback = new AudioBufferPlayback({ transport: this.transport });
-        this.audioPlaybacks.set(layer.id, playback);
+        this.audioPlaybacks.set(clip.id, playback);
       }
-      playback.setLayer({ layer });
-      const source = audioSources[layer.src];
+      playback.setClip({ clip, muted });
+      const source = audioSources[clip.src];
       if (source?.status === "fulfilled") {
         playback.setBuffer({ buffer: source.value.buffer });
       }
@@ -377,7 +424,9 @@ export class EditorRuntime {
     this.seek(getOutputRange(project).start);
     const sources = new Set(
       project.layers.flatMap((layer) =>
-        layer.type === "video" || layer.type === "audio" ? [layer.src] : [],
+        layer.clips.flatMap((clip) =>
+          clip.type === "video" || clip.type === "audio" ? [clip.src] : [],
+        ),
       ),
     );
     for (const src of sources) {
@@ -393,10 +442,34 @@ export class EditorRuntime {
   }
 }
 
+/** A clip with the layer holding it, and where each sits in the stack and the layer. */
+export type ClipLocation = {
+  layer: EditorLayer;
+  layerIndex: number;
+  clip: EditorClip;
+  clipIndex: number;
+};
+
+export function findClip(
+  layers: readonly EditorLayer[],
+  id: string,
+): ClipLocation | undefined {
+  for (const [layerIndex, layer] of layers.entries()) {
+    const clipIndex = layer.clips.findIndex((clip) => clip.id === id);
+    if (clipIndex !== -1) {
+      return { layer, layerIndex, clip: layer.clips[clipIndex]!, clipIndex };
+    }
+  }
+  return undefined;
+}
+
 function serializeEditorProject(project: EditorProject): Project {
   return {
     ...project,
-    layers: project.layers.map(({ id: _id, ...layer }) => layer),
+    layers: project.layers.map(({ id: _id, ...layer }) => ({
+      ...layer,
+      clips: layer.clips.map(({ id: _id, ...clip }) => clip),
+    })),
     locators: project.locators.map(({ id: _id, ...locator }) => locator),
   };
 }
@@ -404,12 +477,20 @@ function serializeEditorProject(project: EditorProject): Project {
 function deserializeEditorProject(project: Project): EditorProject {
   return {
     ...project,
-    layers: project.layers.map((layer): EditorLayer => ({
-      ...layer,
-      id: crypto.randomUUID(),
-    })),
+    layers: project.layers.map(deserializeEditorLayer),
     locators: project.locators.map((locator): EditorLocator => ({
       ...locator,
+      id: crypto.randomUUID(),
+    })),
+  };
+}
+
+function deserializeEditorLayer(layer: Layer): EditorLayer {
+  return {
+    ...layer,
+    id: crypto.randomUUID(),
+    clips: layer.clips.map((clip): EditorClip => ({
+      ...clip,
       id: crypto.randomUUID(),
     })),
   };

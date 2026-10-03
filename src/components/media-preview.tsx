@@ -1,37 +1,40 @@
 import { useState } from "react";
-import type { Layer } from "../lib/project";
-import type { EditorLayer } from "../lib/runtime";
+import type { Clip } from "../lib/project";
+import type { ClipLocation } from "../lib/runtime";
 
-/** The selected layer's whole source file, independent of project timing and layout. */
+/** The selected clip's whole source file, independent of project timing and layout. */
 export function MediaPreview({
-  layer,
+  selected,
   resolveMediaUrl,
 }: {
-  layer?: EditorLayer;
+  selected?: ClipLocation;
   resolveMediaUrl: (src: string) => string;
 }) {
-  const source = layer && "src" in layer ? layer : undefined;
-  return source ? (
-    // Remounts per layer so a load failure does not carry over.
+  return selected && "src" in selected.clip ? (
+    // Remounts per clip so a load failure does not carry over.
     <SourceMedia
-      key={source.id}
-      layer={source}
+      key={selected.clip.id}
+      clip={selected.clip}
+      name={selected.layer.name}
       resolveMediaUrl={resolveMediaUrl}
     />
   ) : (
     <p className="grid flex-1 place-items-center p-3 text-center text-xs text-neutral-500">
-      Select a video, audio, or image layer to preview its source.
+      Select a video, audio, or image clip to preview its source.
     </p>
   );
 }
 
-type SourceLayer = Extract<Layer, { src: string }>;
+type SourceClip = Extract<Clip, { src: string }>;
 
 function SourceMedia({
-  layer,
+  clip,
+  name,
   resolveMediaUrl,
 }: {
-  layer: SourceLayer;
+  clip: SourceClip;
+  /** The layer's name, which labels an image. */
+  name: string;
   resolveMediaUrl: (src: string) => string;
 }) {
   const [failed, setFailed] = useState(false);
@@ -39,14 +42,15 @@ function SourceMedia({
     <>
       {failed && (
         <p role="alert" className="px-3 pt-3 text-xs text-destructive">
-          Could not load {layer.src}. Check that the file exists and your
-          browser supports its format.
+          Could not load {clip.src}. Check that the file exists and your browser
+          supports its format.
         </p>
       )}
       <div className="flex min-h-0 flex-1 items-center justify-center p-3">
         <SourceElement
-          layer={layer}
-          src={resolveMediaUrl(layer.src)}
+          clip={clip}
+          name={name}
+          src={resolveMediaUrl(clip.src)}
           onError={() => setFailed(true)}
         />
       </div>
@@ -55,15 +59,17 @@ function SourceMedia({
 }
 
 function SourceElement({
-  layer,
+  clip,
+  name,
   src,
   onError,
 }: {
-  layer: SourceLayer;
+  clip: SourceClip;
+  name: string;
   src: string;
   onError: () => void;
 }) {
-  switch (layer.type) {
+  switch (clip.type) {
     case "video": {
       return (
         <video
@@ -91,7 +97,7 @@ function SourceElement({
       return (
         <img
           src={src}
-          alt={layer.name}
+          alt={name}
           onError={onError}
           className="max-h-full max-w-full object-contain"
         />
