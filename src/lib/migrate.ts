@@ -129,7 +129,8 @@ export async function migrateProject(
   const changes: string[] = [];
   const layers: Layer[] = [];
   for (const savedLayer of project.layers) {
-    const { clips, ...layer } = normalizeLayer(savedLayer, {
+    const { clips, ...layer } = normalizeLayer({
+      savedLayer,
       layers,
       changes,
     });
@@ -137,7 +138,8 @@ export async function migrateProject(
       ...layer,
       clips: await Promise.all(
         clips.map((clip) =>
-          migrateClip(clip, {
+          migrateClip({
+            clip,
             label: `${clip.type} clip in layer "${layer.name}"`,
             canvas: project.canvas,
             changes,
@@ -158,17 +160,16 @@ export async function migrateProject(
 }
 
 /** A flat layer becomes a layer with its one clip, which is lossless. */
-function normalizeLayer(
-  savedLayer: SavedLayer,
-  {
-    layers,
-    changes,
-  }: {
-    /** The layers before it, which a missing name is numbered among. */
-    layers: Layer[];
-    changes: string[];
-  },
-): SavedClipsLayer {
+function normalizeLayer({
+  savedLayer,
+  layers,
+  changes,
+}: {
+  savedLayer: SavedLayer;
+  /** The layers before it, which a missing name is numbered among. */
+  layers: Layer[];
+  changes: string[];
+}): SavedClipsLayer {
   if ("clips" in savedLayer) {
     return savedLayer;
   }
@@ -181,14 +182,17 @@ function normalizeLayer(
   return fillDefaults({ name, muted, clips: [clip] }, NEUTRAL_VALUES.layer);
 }
 
-async function migrateClip(
-  clip: SavedClip,
-  {
-    label,
-    canvas,
-    changes,
-  }: { label: string; canvas: SavedProject["canvas"]; changes: string[] },
-): Promise<Clip> {
+async function migrateClip({
+  clip,
+  label,
+  canvas,
+  changes,
+}: {
+  clip: SavedClip;
+  label: string;
+  canvas: SavedProject["canvas"];
+  changes: string[];
+}): Promise<Clip> {
   switch (clip.type) {
     case "video": {
       return fillDefaults(clip, NEUTRAL_VALUES.video);
