@@ -1,6 +1,6 @@
-# Project format (draft)
+# Project format
 
-A project is one JSON file that describes one deliverable: a canvas, what to render, and a stack of layers. Variants of a cover, such as the horizontal video and its thumbnail, are separate files that share timing values. This draft is derived from the [Kdenlive findings](https://github.com/hi-ogawa/toy-compositor/tree/e315663/research/kdenlive) and follows the composition model in the [roadmap](https://github.com/hi-ogawa/toy-compositor/issues/43). It is expected to change as prototypes run into gaps.
+A project is one JSON file that describes one deliverable: a canvas, an output, which is a video range or a still frame, and a stack of layers. Variants of a cover, such as the horizontal video and its thumbnail, are separate project files, and each one is self-contained.
 
 ```jsonc
 {
@@ -54,7 +54,7 @@ Every layer can have an optional `name`, such as `"camera"`, `"score"`, or `"mix
 }
 ```
 
-A video layer carries its file's audio, like a clip in Kdenlive, and the audio is trimmed and mixed the same way as an `audio` layer, including `fadeIn` and `fadeOut`, which fade only the audio. `muted` leaves the audio out of the mix. The camera is a muted video layer, so it moves as one thing and its audio stays available in the editor as a waveform for syncing against the mix. A video file without an audio stream contributes nothing to the mix.
+A video layer carries its file's audio, like a clip in other video editors, and the audio is trimmed and mixed the same way as an `audio` layer, including `fadeIn` and `fadeOut`, which fade only the audio. `muted` leaves the audio out of the mix. The camera is a muted video layer, so it moves as one thing and its audio stays available in the editor as a waveform for syncing against the mix. A video file without an audio stream contributes nothing to the mix.
 
 ### `audio`
 
@@ -70,7 +70,7 @@ A video layer carries its file's audio, like a clip in Kdenlive, and the audio i
 }
 ```
 
-`fadeIn` and `fadeOut` are durations in seconds at the edges of the layer's own range, from `start` to `start + out - in`. The output range only cuts a layer, so an output that starts or ends inside a fade renders that part of the fade and does not fade again at its own edges. To fade at the output's edges, trim the layer to them, as the vertical short does with its mix. `muted` leaves the layer out of the mix.
+`fadeIn` and `fadeOut` are durations in seconds at the edges of the layer's own range, from `start` to `start + out - in`. The output range only cuts a layer, so an output that starts or ends inside a fade renders that part of the fade and does not fade again at its own edges. To fade at the output's edges, trim the layer to them. `muted` leaves the layer out of the mix.
 
 ### `image`
 
@@ -123,7 +123,7 @@ A solid fill, used for the translucent dim under thumbnail titles. It covers the
 
 ## Locators
 
-Locators are labeled timeline times, like guides in Kdenlive. They do not affect rendering. They record judgment calls that belong to one project but are used elsewhere, such as which frame becomes a thumbnail or which range becomes a short, so scripts can look them up by label to generate other deliverables.
+Locators are labeled timeline times, like markers in other video editors. They do not affect rendering. They record judgment calls that belong to one project but are used elsewhere, such as which frame becomes a thumbnail or which range becomes a short, so scripts can look them up by label to generate other deliverables.
 
 ```jsonc
 "locators": [
@@ -165,15 +165,13 @@ An entry depends only on the file's contents, so a copied file has the same entr
 
 ## Box and crop
 
-`box` is where a visual layer goes on the canvas. The source is scaled to fit inside the box while keeping its aspect ratio and is centered in it, which matches Kdenlive's `qtblend` rect with distortion off. Anything outside the canvas is clipped.
+`box` is where a visual layer goes on the canvas. The source is scaled to fit inside the box while keeping its aspect ratio and is centered in it. Anything outside the canvas is clipped.
 
 `crop` removes a fraction of the source from each edge before fitting, with each side defaulting to 0.
 
 ## Hold
 
-The prototype does not implement this yet, so the compiler ignores `hold`.
-
-A video layer can keep showing its first frame before `start` and its last frame after its source range ends, so a clip without lead-in or tail, such as the toy-midi score video, still covers the whole output.
+A video layer can keep showing its first frame before `start` and its last frame after its source range ends, so a clip without lead-in or tail, such as a score video, still covers the whole output.
 
 ```jsonc
 {
@@ -187,4 +185,4 @@ A video layer can keep showing its first frame before `start` and its last frame
 }
 ```
 
-`before` and `after` are durations in seconds, and they will compile to `tpad` with `clone` mode.
+`before` and `after` are durations in seconds. They extend only the layer's picture, so its timing stays its source range and the held spans are silent.
