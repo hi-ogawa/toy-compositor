@@ -1,6 +1,6 @@
 import path from "node:path";
 import {
-  fitBox,
+  getVisibleBox,
   intersect,
   getClipRange,
   getOutputRange,
@@ -192,7 +192,11 @@ function compileVideo({
     return {};
   }
   const video = mediaInfo.video!;
-  const fit = fitBox({ source: video, crop: clip.crop, box: clip.box });
+  const box = getVisibleBox({
+    size: video,
+    crop: clip.crop,
+    transform: clip.transform,
+  });
   const read = getSourceRead({ clip, visible, scene });
   // The held spans are silent, so sound covers only the clip range.
   const audible = intersect(getClipRange(clip), scene.range);
@@ -212,10 +216,10 @@ function compileVideo({
           : []),
         `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
         ...buildCropFilters(clip.crop),
-        `scale=${fit.width}:${fit.height}`,
+        `scale=${box.width}:${box.height}`,
       ],
-      x: fit.x,
-      y: fit.y,
+      x: box.x,
+      y: box.y,
     },
     audio:
       audible && scene.withAudio && !muted && mediaInfo.audio
@@ -288,10 +292,10 @@ function compileImage({
   if (!visible) {
     return {};
   }
-  const fit = fitBox({
-    source: mediaInfo.video!,
+  const box = getVisibleBox({
+    size: mediaInfo.video!,
     crop: clip.crop,
-    box: clip.box,
+    transform: clip.transform,
   });
   return {
     video: {
@@ -302,11 +306,11 @@ function compileImage({
       }),
       filters: [
         ...buildCropFilters(clip.crop),
-        `scale=${fit.width}:${fit.height}`,
+        `scale=${box.width}:${box.height}`,
         `setpts=PTS-STARTPTS+${visible.start - scene.range.start}/TB`,
       ],
-      x: fit.x,
-      y: fit.y,
+      x: box.x,
+      y: box.y,
     },
   };
 }

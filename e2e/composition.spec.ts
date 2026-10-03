@@ -30,7 +30,8 @@ test("compose the output start, follow inspector edits, and save them", async ({
     canvas.getByText("Synthetic\nsample", { exact: true }),
   ).toBeVisible();
 
-  // Crop the image sides and confirm it refits inside its box with an outline.
+  // Crop the image sides and confirm the crop hides its edges without moving
+  // the rest, with an outline.
   await clickTimelineButton(page, { name: "Select Label backdrop region" });
   await expect(canvas.getByLabel("Selected layer outline")).toBeVisible();
   await commitInspectorField(page, { name: "left", value: "0.25" });
@@ -94,6 +95,75 @@ test("compose the output start, follow inspector edits, and save them", async ({
   await expect(video).toBeHidden();
   await expect(text).toBeHidden();
   await expect(save).toHaveAttribute("data-status", "saved");
+});
+
+test("place a media layer by position, scale, and size, and save them", async ({
+  page,
+  editor,
+}) => {
+  // Select the image and confirm the inspector shows its top-left corner, its
+  // scale, and its scaled size.
+  await page.goto(editor.url);
+  const canvas = page.getByTestId("composition-canvas");
+  const image = canvas.getByRole("img", {
+    name: "Label backdrop",
+    exact: true,
+  });
+  const placed = image.locator("..");
+  const outline = canvas.getByLabel("Selected layer outline");
+  await expectImageLoaded(image);
+  await clickTimelineButton(page, { name: "Select Label backdrop region" });
+  await expectInspectorFields(page, {
+    x: "420",
+    y: "240",
+    "scale %": "100",
+    width: "160",
+    height: "90",
+  });
+
+  // Move the image to the canvas center.
+  await commitInspectorField(page, { name: "x", value: "240" });
+  await commitInspectorField(page, { name: "y", value: "135" });
+  await expect(placed).toHaveCSS("left", "240px");
+  await expect(placed).toHaveCSS("top", "135px");
+
+  // Scale it by percentage and confirm it grows around its center, with the
+  // placed height rounding to even pixels.
+  await commitInspectorField(page, { name: "scale %", value: "150" });
+  await expectInspectorFields(page, { x: "200", width: "240", height: "135" });
+  await expect(placed).toHaveCSS("left", "200px");
+  await expect(placed).toHaveCSS("top", "113px");
+  await expect(placed).toHaveCSS("height", "136px");
+
+  // Set its width directly and confirm the scale and height follow.
+  await commitInspectorField(page, { name: "width", value: "320" });
+  await expectInspectorFields(page, { "scale %": "200", height: "180" });
+  await expect(placed).toHaveCSS("width", "320px");
+  await expect(outline).toHaveCSS("left", "160px");
+  await expect(outline).toHaveCSS("width", "320px");
+
+  // Crop its left half, then scale it back to 100%, and confirm what remains
+  // stays centered at x 400.
+  await commitInspectorField(page, { name: "left", value: "0.5" });
+  await expect(placed).toHaveCSS("left", "320px");
+  await expect(placed).toHaveCSS("width", "160px");
+  await commitInspectorField(page, { name: "scale %", value: "100" });
+  await expect(placed).toHaveCSS("left", "360px");
+  await expect(placed).toHaveCSS("width", "80px");
+
+  // Move it partly off the canvas, which clips it rather than limiting it.
+  await commitInspectorField(page, { name: "x", value: "-400" });
+  await expect(placed).toHaveCSS("left", "-320px");
+
+  // Save and confirm the transform stores the top-left corner and the scale.
+  const save = page.getByTestId("editor-save-button");
+  await save.click();
+  await expect(save).toHaveAttribute("data-status", "saved");
+  const project = await readJson<Project>(editor.projectFile);
+  expect(project.layers[2].clips[0]).toMatchObject({
+    transform: { x: -400, y: 136, scale: 1 },
+    crop: { left: 0.5, right: 0, top: 0, bottom: 0 },
+  });
 });
 
 test("edit a text layer's content and styling and save them", async ({

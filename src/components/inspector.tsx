@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { matchKeyboardEvent } from "../lib/keyboard";
+import { getRescaledTransform } from "../lib/layout";
 import type {
   Canvas,
   AudioClip,
@@ -9,8 +10,11 @@ import type {
   Crop,
   ImageClip,
   Layer,
+  MediaInfo,
   Output,
+  Size,
   TextClip,
+  Transform,
   VideoClip,
 } from "../lib/project";
 import {
@@ -62,6 +66,7 @@ export function Inspector({
         <ClipInspector
           layer={layer}
           clip={clip}
+          media={project.media}
           time={time}
           onLayerUpdate={(update) =>
             runtime.updateLayer({ id: layer.id, update })
@@ -192,6 +197,7 @@ function OutputInspector({
 function ClipInspector({
   layer,
   clip,
+  media,
   time,
   onLayerUpdate,
   onClipUpdate,
@@ -199,6 +205,7 @@ function ClipInspector({
 }: {
   layer: Omit<Layer, "clips">;
   clip: Clip;
+  media: Record<string, MediaInfo>;
   time: TimeFieldOptions;
   onLayerUpdate: LayerUpdate;
   onClipUpdate: ClipUpdate;
@@ -230,6 +237,7 @@ function ClipInspector({
         </Group>
         <ClipFields
           clip={clip}
+          media={media}
           time={time}
           onUpdate={onClipUpdate}
           muted={layer.muted}
@@ -243,12 +251,14 @@ function ClipInspector({
 /** Lists each clip type's groups in display order. */
 function ClipFields({
   clip,
+  media,
   time,
   onUpdate,
   muted,
   onMutedChange,
 }: {
   clip: Clip;
+  media: Record<string, MediaInfo>;
   time: TimeFieldOptions;
   onUpdate: ClipUpdate;
   /** Whether the clip's layer is muted, which only sound shows. */
@@ -263,7 +273,12 @@ function ClipFields({
           <SourceTimingFields clip={clip} time={time} onUpdate={onUpdate} />
           <HoldFields clip={clip} time={time} onUpdate={onUpdate} />
           <AudioFields clip={clip} time={time} onUpdate={onUpdate} {...audio} />
-          <BoxFields box={clip.box} onCommit={(box) => onUpdate({ box })} />
+          <TransformFields
+            transform={clip.transform}
+            source={media[clip.src].video!}
+            crop={clip.crop}
+            onCommit={(transform) => onUpdate({ transform })}
+          />
           <CropFields
             crop={clip.crop}
             onCommit={(crop) => onUpdate({ crop })}
@@ -283,7 +298,12 @@ function ClipFields({
       return (
         <>
           <RangeTimingFields clip={clip} time={time} onUpdate={onUpdate} />
-          <BoxFields box={clip.box} onCommit={(box) => onUpdate({ box })} />
+          <TransformFields
+            transform={clip.transform}
+            source={media[clip.src].video!}
+            crop={clip.crop}
+            onCommit={(transform) => onUpdate({ transform })}
+          />
           <CropFields
             crop={clip.crop}
             onCommit={(crop) => onUpdate({ crop })}
@@ -565,6 +585,66 @@ function TextFields({
         />
       </Group>
     </>
+  );
+}
+
+/**
+ * Position and size describe the whole scaled source, before the crop hides
+ * its edges. Scale, width, and height are linked views of the one stored
+ * scale, and editing any of them keeps what the crop leaves centered where it
+ * was.
+ */
+function TransformFields({
+  transform,
+  source,
+  crop,
+  onCommit,
+}: {
+  transform: Transform;
+  source: Size;
+  crop: Crop;
+  onCommit: (transform: Transform) => void;
+}) {
+  const commitScale = (scale: number) =>
+    onCommit(
+      getRescaledTransform({
+        size: source,
+        crop,
+        transform,
+        scale: roundTo(scale, 1e-6),
+      }),
+    );
+  return (
+    <Group title="Transform">
+      {(["x", "y"] as const).map((key) => (
+        <NumberField
+          key={key}
+          label={key}
+          value={transform[key]}
+          {...PIXEL_FIELD}
+          onCommit={(value) => onCommit({ ...transform, [key]: value })}
+        />
+      ))}
+      <NumberField
+        label="scale %"
+        value={roundTo(transform.scale * 100, 0.01)}
+        step={1}
+        min={1}
+        round={(value) => roundTo(value, 0.01)}
+        onCommit={(percent) => commitScale(percent / 100)}
+      />
+      <div />
+      {(["width", "height"] as const).map((key) => (
+        <NumberField
+          key={key}
+          label={key}
+          value={Math.round(source[key] * transform.scale)}
+          {...PIXEL_FIELD}
+          min={1}
+          onCommit={(size) => commitScale(size / source[key])}
+        />
+      ))}
+    </Group>
   );
 }
 

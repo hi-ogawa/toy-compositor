@@ -40,6 +40,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     out: "3",
     x: "0",
     y: "0",
+    "scale %": "200",
     width: "640",
     height: "360",
   });
@@ -103,7 +104,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
           start: 1,
           in: 0,
           out: 3,
-          box: { x: 0, y: 0, width: 640, height: 360 },
+          transform: { x: 0, y: 0, scale: 2 },
           crop: { left: 0, right: 0, top: 0, bottom: 0 },
           fadeIn: 0,
           fadeOut: 0,
@@ -118,7 +119,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
         {
           type: "image",
           src: "media/image.png",
-          box: { x: 0, y: 0, width: 640, height: 360 },
+          transform: { x: 0, y: 0, scale: 4 },
           crop: { left: 0, right: 0, top: 0, bottom: 0 },
           start: 0,
           end: 3,

@@ -8,9 +8,10 @@ export type Project = {
   media: Record<string, MediaInfo>;
 };
 
-export type Canvas = {
-  width: number;
-  height: number;
+/** A width and height in pixels, such as the canvas's or a media file's picture. */
+export type Size = { width: number; height: number };
+
+export type Canvas = Size & {
   fps: number;
   background: string;
 };
@@ -35,9 +36,7 @@ export type MediaInfo = {
 };
 
 /** A media file's video stream, which images have too. */
-export type VideoInfo = {
-  width: number;
-  height: number;
+export type VideoInfo = Size & {
   /** The video stream's own start time, which frame timing counts from. */
   startTime: number;
   frameRate: number;
@@ -110,6 +109,9 @@ export type Clip = VideoClip | AudioClip | ImageClip | TextClip | ColorClip;
 
 export type Box = { x: number; y: number; width: number; height: number };
 
+/** Where a media clip's whole source goes: its top-left corner in canvas pixels, at a uniform scale. */
+export type Transform = { x: number; y: number; scale: number };
+
 export type Crop = { left: number; right: number; top: number; bottom: number };
 
 export type VideoClip = {
@@ -118,7 +120,7 @@ export type VideoClip = {
   start: number;
   in: number;
   out: number;
-  box: Box;
+  transform: Transform;
   crop: Crop;
   fadeIn: number;
   fadeOut: number;
@@ -138,7 +140,7 @@ export type AudioClip = {
 export type ImageClip = {
   type: "image";
   src: string;
-  box: Box;
+  transform: Transform;
   crop: Crop;
   start: number;
   end: number;

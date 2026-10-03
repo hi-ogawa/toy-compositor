@@ -1,9 +1,9 @@
 import { useCallback, useState, type CSSProperties } from "react";
-import { fitBox } from "../lib/layout";
+import { getVisibleBox } from "../lib/layout";
 import type { ImageClip, MediaInfo, VideoClip } from "../lib/project";
 import type { EditorRuntime } from "../lib/runtime";
 
-/** Fit the cropped source into its canvas box, by the size its media info records. */
+/** Place the cropped source on the canvas, by the size its media info records. */
 export function CompositionMedia({
   clip,
   name,
@@ -24,17 +24,22 @@ export function CompositionMedia({
 
   const video = mediaInfo.video!;
   const { crop } = clip;
-  const fit = fitBox({ source: video, crop, box: clip.box });
+  const visible = getVisibleBox({
+    size: video,
+    crop,
+    transform: clip.transform,
+  });
   const mediaStyle: CSSProperties = {
     position: "absolute",
     maxWidth: "none",
     width:
-      (video.width * fit.width) / (video.width * (1 - crop.left - crop.right)),
+      (video.width * visible.width) /
+      (video.width * (1 - crop.left - crop.right)),
     height:
-      (video.height * fit.height) /
+      (video.height * visible.height) /
       (video.height * (1 - crop.top - crop.bottom)),
-    left: (-crop.left * fit.width) / (1 - crop.left - crop.right),
-    top: (-crop.top * fit.height) / (1 - crop.top - crop.bottom),
+    left: (-crop.left * visible.width) / (1 - crop.left - crop.right),
+    top: (-crop.top * visible.height) / (1 - crop.top - crop.bottom),
   };
   return (
     <>
@@ -42,7 +47,7 @@ export function CompositionMedia({
         <p
           role="alert"
           className="absolute bg-black p-2 text-sm text-destructive"
-          style={{ left: clip.box.x, top: clip.box.y }}
+          style={{ left: visible.x, top: visible.y }}
         >
           Could not load {clip.src}.
         </p>
@@ -50,10 +55,10 @@ export function CompositionMedia({
       <div
         className="absolute overflow-hidden"
         style={{
-          left: fit.x,
-          top: fit.y,
-          width: fit.width,
-          height: fit.height,
+          left: visible.x,
+          top: visible.y,
+          width: visible.width,
+          height: visible.height,
         }}
       >
         {clip.type === "video" ? (

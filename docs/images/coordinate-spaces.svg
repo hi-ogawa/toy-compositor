@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="410" viewBox="0 0 760 410" role="img" aria-labelledby="title desc">
 <title id="title">Layers are placed in canvas pixels, then the canvas is scaled, and media is cropped by a clipping wrapper</title>
-<desc id="desc">Left: the monitor viewport is 320 by 240 screen pixels, so the 640 by 360 canvas scales by 0.5 and is letterboxed. Layers keep project numbers, such as the image box at 420, 240. Right: the image box is 160 by 90. Cropping a quarter off each side leaves 80 by 90, which fitBox centers at x 460. A wrapper div with overflow hidden is that visible rectangle, and the image inside stays 160 wide, shifted left by 40, so the cropped sides fall outside the wrapper.</desc>
+<desc id="desc">Left: the monitor viewport is 320 by 240 screen pixels, so the 640 by 360 canvas scales by 0.5 and is letterboxed. Layers keep project numbers, such as the image's corner at 420, 240. Right: the image is 160 by 90 at scale 1. Cropping a quarter off each side hides 40 on each side without moving the rest, so getVisibleBox returns the visible 80 by 90 at x 460. A wrapper div with overflow hidden is that visible rectangle, and the image inside stays 160 wide, shifted left by 40, so the cropped sides fall outside the wrapper.</desc>
 <rect width="760" height="410" fill="#fcfaf5"/>
 <g font-family="Arial,sans-serif" font-size="15" fill="#263632">
 <text x="30" y="34" font-size="20" font-weight="700">Place in canvas pixels, scale once, crop by clipping</text>
@@ -14,12 +14,12 @@
 <text x="40" y="166" font-size="12" fill="#c6cfca">transform: scale(0.5)</text>
 <rect x="240" y="250" width="80" height="45" fill="none" stroke="#8fb4dd" stroke-dasharray="3 3"/>
 <rect x="260" y="250" width="40" height="45" fill="#2f6fb0"/>
-<text x="236" y="244" font-size="11" fill="#c6cfca" text-anchor="end">box x 420, y 240</text>
+<text x="236" y="244" font-size="11" fill="#c6cfca" text-anchor="end">transform x 420, y 240</text>
 <text x="30" y="362" font-size="13" fill="#52625d">scale = min(320 / 640, 240 / 360) = 0.5</text>
 <text x="30" y="380" font-size="13" fill="#52625d">An outer letterbox div takes the scaled size,</text>
 <text x="30" y="398" font-size="13" fill="#52625d">because transform does not change layout.</text>
 
-<text x="410" y="88" font-weight="700">2. Media fit inside layer.box (drawn 1.5×)</text>
+<text x="410" y="88" font-weight="700">2. Media placed by layer.transform (drawn 1.5×)</text>
 <rect x="440" y="130" width="240" height="135" fill="#eef1ef" stroke="#7d8a84" stroke-dasharray="5 4"/>
 <g fill="none" stroke="#c6cfca">
 <path d="M440 150 L460 130 M440 180 L490 130 M440 210 L500 150 M440 240 L500 180 M450 265 L500 215 M480 265 L500 245"/>
@@ -28,12 +28,12 @@
 <rect x="500" y="130" width="120" height="135" fill="#2f6fb0"/>
 <text x="560" y="194" font-size="13" fill="#ffffff" text-anchor="middle">visible</text>
 <text x="560" y="212" font-size="13" fill="#ffffff" text-anchor="middle">80 × 90</text>
-<text x="440" y="122" font-size="12" fill="#52625d">layer.box 160 × 90 at x 420</text>
+<text x="440" y="122" font-size="12" fill="#52625d">source 160 × 90 at scale 1, corner at x 420</text>
 <path d="M500 272 V282 M620 272 V282 M500 277 H620" stroke="#2f6fb0"/>
-<text x="560" y="297" font-size="12" fill="#2f6fb0" text-anchor="middle">wrapper div = fit {x 460, w 80}, overflow hidden</text>
+<text x="560" y="297" font-size="12" fill="#2f6fb0" text-anchor="middle">wrapper div = getVisibleBox {x 460, w 80}, overflow hidden</text>
 <path d="M440 306 V316 M680 306 V316 M440 311 H680" stroke="#7d8a84"/>
 <text x="560" y="331" font-size="12" fill="#52625d" text-anchor="middle">&lt;img&gt; stays 160 wide at left −40 inside the wrapper</text>
 <text x="410" y="362" font-size="13" fill="#52625d">Hatched: cropped away, clipped by the wrapper.</text>
-<text x="410" y="380" font-size="13" fill="#52625d">fitBox is the same function the compiler uses.</text>
+<text x="410" y="380" font-size="13" fill="#52625d">getVisibleBox is the same function the compiler uses.</text>
 </g>
 </svg>

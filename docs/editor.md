@@ -1,6 +1,6 @@
 # Editor
 
-The editor composes the project in the DOM at one project time. Each visual clip is an absolutely positioned `<video>`, `<img>`, or div, placed in canvas pixels inside a canvas-sized div, and the whole canvas is CSS-scaled to fit the monitor. The preview shares layout math with the [compiler](compiler.md) (`fitBox` and `getOutputRange` in [src/lib/layout.ts](../src/lib/layout.ts)), but not its rendering, so it differs from the render in the places listed [below](#differences-from-the-render).
+The editor composes the project in the DOM at one project time. Each visual clip is an absolutely positioned `<video>`, `<img>`, or div, placed in canvas pixels inside a canvas-sized div, and the whole canvas is CSS-scaled to fit the monitor. The preview shares layout math with the [compiler](compiler.md) (`getVisibleBox` and `getOutputRange` in [src/lib/layout.ts](../src/lib/layout.ts)), but not its rendering, so it differs from the render in the places listed [below](#differences-from-the-render).
 
 ## Components
 
@@ -16,13 +16,13 @@ Editor                     editor.tsx               runtime store, selection, pl
 │  │  └─ MediaPreview      media-preview.tsx        the selected clip's raw file
 │  └─ CompositionPreview   composition-preview.tsx  viewport scale, clips visible at time, audio
 │     └─ PreviewClip × N                            box to CSS, per-type rendering, outline
-│        └─ CompositionMedia  composition-media.tsx fit and crop by the stored size, video
+│        └─ CompositionMedia  composition-media.tsx transform and crop by the stored size, video
 ├─ Timeline                timeline.tsx             selection, seeking the playhead
 │  └─ AudioWaveformView    audio-waveform.tsx       a lane's audio peaks at the timeline scale
 └─ Inspector               inspector.tsx            project edits
 ```
 
-The Source monitor is deliberately separate from the composition. It shows the whole file with native controls and its own `currentTime`, ignoring the clip's timing, box, and crop, so scrubbing it never moves the composition.
+The Source monitor is deliberately separate from the composition. It shows the whole file with native controls and its own `currentTime`, ignoring the clip's timing, transform, and crop, so scrubbing it never moves the composition.
 
 ## Place in Canvas Pixels, Scale Once
 
@@ -30,7 +30,7 @@ Clips use the project's numbers directly as CSS pixels inside a canvas div of `c
 
 ![Layers are placed in canvas pixels, the canvas is scaled once, and media is cropped by a clipping wrapper](images/coordinate-spaces.svg)
 
-Video and image clips go through the compiler's `fitBox`, which returns the visible cropped rectangle inside `clip.box`. The DOM cannot crop an element directly, so a wrapper div with `overflow: hidden` is that rectangle, and the media element inside keeps its uncropped size at the fitted scale, shifted by the left and top crop. The source's size comes from the project's `media`, the same number the compiler fits with, so the layout is right before the media loads.
+Video and image clips go through the compiler's `getVisibleBox`, which returns the visible cropped rectangle that `clip.transform` places. The DOM cannot crop an element directly, so a wrapper div with `overflow: hidden` is that rectangle, and the media element inside keeps its uncropped size at the same scale, shifted by the left and top crop. The source's size comes from the project's `media`, the same number the compiler scales with, so the layout is right before the media loads.
 
 ## Pick Clips and Frames by Time
 
@@ -40,7 +40,7 @@ The preview time decides which clips show and which frame each video shows. A cl
 
 Every clip stays mounted and is hidden outside its range, so its media is loaded before playback reaches it. Clips draw in [layer order](project-format.md#layers), so later layers sit on top. Audio clips draw nothing, and their sound plays on the transport, described below.
 
-The selected clip gets a read-only outline, drawn as a second div with the same box.
+The selected clip gets a read-only outline, drawn as a second div with the same rectangle.
 
 ## Play Along the Transport
 

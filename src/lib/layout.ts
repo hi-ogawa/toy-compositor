@@ -1,4 +1,4 @@
-import type { Box, Clip, Crop, Project } from "./project.ts";
+import type { Box, Clip, Crop, Project, Size, Transform } from "./project.ts";
 
 export type TimeRange = { start: number; end: number };
 
@@ -49,29 +49,86 @@ export function intersect(a: TimeRange, b: TimeRange): TimeRange | undefined {
   return end > start ? { start, end } : undefined;
 }
 
-/** Scale the cropped source to fit inside the box, keeping its aspect ratio, centered. */
-export function fitBox({
-  source,
+/**
+ * The visible part of a crop on the canvas. The transform scales the whole size
+ * and puts its top-left corner at its position, and the crop then hides edges
+ * without moving the rest. The size rounds to even pixels for the encoder's
+ * chroma subsampling, and anything outside the canvas is clipped later.
+ */
+export function getVisibleBox({
+  size,
   crop,
-  box,
+  transform,
 }: {
-  source: { width: number; height: number };
+  size: Size;
   crop: Crop;
-  box: Box;
-}) {
-  const cw = source.width * (1 - crop.left - crop.right);
-  const ch = source.height * (1 - crop.top - crop.bottom);
-  const scale = Math.min(box.width / cw, box.height / ch);
-  const width = roundToEven(cw * scale);
-  const height = roundToEven(ch * scale);
+  transform: Transform;
+}): Box {
+  const cropped = getCroppedBox({ size, crop });
   return {
-    width,
-    height,
-    x: Math.round(box.x + (box.width - width) / 2),
-    y: Math.round(box.y + (box.height - height) / 2),
+    width: roundToEven(cropped.width * transform.scale),
+    height: roundToEven(cropped.height * transform.scale),
+    x: Math.round(transform.x + cropped.x * transform.scale),
+    y: Math.round(transform.y + cropped.y * transform.scale),
   };
 }
 
-function roundToEven(n: number) {
+/** Center the size on the canvas at the largest scale that keeps it inside. */
+export function getFitTransform({
+  size,
+  canvas,
+}: {
+  size: Size;
+  canvas: Size;
+}): Transform {
+  const scale = Math.min(
+    canvas.width / size.width,
+    canvas.height / size.height,
+  );
+  return {
+    x: Math.round((canvas.width - size.width * scale) / 2),
+    y: Math.round((canvas.height - size.height * scale) / 2),
+    scale,
+  };
+}
+
+/**
+ * Change the scale while the center of what the crop leaves stays where it is
+ * on the canvas.
+ */
+export function getRescaledTransform({
+  size,
+  crop,
+  transform,
+  scale,
+}: {
+  size: Size;
+  crop: Crop;
+  transform: Transform;
+  scale: number;
+}): Transform {
+  const cropped = getCroppedBox({ size, crop });
+  const center = {
+    x: cropped.x + cropped.width / 2,
+    y: cropped.y + cropped.height / 2,
+  };
+  return {
+    x: Math.round(transform.x + center.x * (transform.scale - scale)),
+    y: Math.round(transform.y + center.y * (transform.scale - scale)),
+    scale,
+  };
+}
+
+/** What the crop leaves of the source, in source pixels. */
+export function getCroppedBox({ size, crop }: { size: Size; crop: Crop }): Box {
+  return {
+    x: crop.left * size.width,
+    y: crop.top * size.height,
+    width: size.width * (1 - crop.left - crop.right),
+    height: size.height * (1 - crop.top - crop.bottom),
+  };
+}
+
+export function roundToEven(n: number) {
   return Math.max(2, 2 * Math.round(n / 2));
 }

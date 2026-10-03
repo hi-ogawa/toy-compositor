@@ -72,20 +72,20 @@ In ffmpeg terms, the cut is input options and the rest is a filter chain. The sy
 
 ```text
 [0:v]fps=30,setpts=PTS-STARTPTS+0/TB,scale=640:360[v0]
-     │      │                        └ fit to its box
+     │      │                        └ scale by its transform
      │      └ restart timestamps at 0, then shift by the offset from the output start (0 s here)
      └ resample to the canvas frame rate
 ```
 
 What each clip type turns into:
 
-| Clip  | Picture                                                                    | Sound                       |
-| ----- | -------------------------------------------------------------------------- | --------------------------- |
-| Video | Source frames at the canvas rate, cropped, then scaled to fit its box      | Its own audio, unless muted |
-| Image | The image repeated at the canvas rate, cropped, then scaled to fit its box | None                        |
-| Text  | The text PNG repeated at the canvas rate, placed at its box                | None                        |
-| Color | A generated solid fill with opacity, over its box                          | None                        |
-| Audio | None                                                                       | Its audio, unless muted     |
+| Clip  | Picture                                                                      | Sound                       |
+| ----- | ---------------------------------------------------------------------------- | --------------------------- |
+| Video | Source frames at the canvas rate, cropped, then scaled by its transform      | Its own audio, unless muted |
+| Image | The image repeated at the canvas rate, cropped, then scaled by its transform | None                        |
+| Text  | The text PNG repeated at the canvas rate, placed at its box                  | None                        |
+| Color | A generated solid fill with opacity, over its box                            | None                        |
+| Audio | None                                                                         | Its audio, unless muted     |
 
 Sound is normalized to 48 kHz stereo, faded in and out at the clip's own edges when the clip asks for it, trimmed to the visible part, and delayed to its offset. The output range only cuts a clip and never moves its fades, so a sound is read from the clip's start rather than the visible part's, because `afade` cannot start before its stream does.
 
@@ -97,7 +97,7 @@ The ffmpeg building blocks behind the table:
 | Repeat an image or text PNG               | input options `-loop 1 -framerate <fps> -t <duration>`                                                                                                       |
 | Match the canvas frame rate               | `fps=<fps>`                                                                                                                                                  |
 | Hold the first and last frames            | `tpad=start_duration=<seconds>:stop_duration=<seconds>:start_mode=clone:stop_mode=clone`                                                                     |
-| Crop, then fit to the box                 | `crop=iw*<w>:ih*<h>:iw*<left>:ih*<top>`, `scale=<width>:<height>`                                                                                            |
+| Crop, then scale by the transform         | `crop=iw*<w>:ih*<h>:iw*<left>:ih*<top>`, `scale=<width>:<height>`                                                                                            |
 | Generate a solid fill, as a source filter | `color=c=<color>@<opacity>:s=<width>x<height>:r=<fps>:d=<duration>`, `format=rgba`                                                                           |
 | Place on the output timeline              | `setpts=PTS-STARTPTS+<offset>/TB`                                                                                                                            |
 | Normalize, fade, cut, and place sound     | `aformat=sample_rates=48000:channel_layouts=stereo`, `afade=t=in` and `afade=t=out`, `atrim=start=<cut>`, `asetpts=PTS-STARTPTS`, `adelay=delays=<ms>:all=1` |

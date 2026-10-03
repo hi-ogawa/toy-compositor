@@ -8,13 +8,17 @@ import { test } from "./helper";
 test("read and migrate an older project file", async ({ page, editor }) => {
   const readProject = () => readJson<SavedProject>(editor.projectFile);
 
-  // Flatten every layer into its one clip, and remove the image's name, the
-  // tint's box, the title's box height, and neutral values, as in a project
-  // file from before layers held clips, layers required a name, color layers
-  // required a box, text layers stored a height, and neutral values were
-  // written out. The image then gets the editor's numbered name, the tint
+  // Flatten every layer into its one clip, replace the video's and the image's
+  // transforms with fit boxes, and remove the image's name, the tint's box, the
+  // title's box height, and neutral values, as in a project file from before
+  // layers held clips, media had transforms, layers required a name, color
+  // layers required a box, text layers stored a height, and neutral values
+  // were written out. The image then gets the editor's numbered name, the tint
   // covered the canvas, the title's box followed its lines, which is the height
-  // the sample stores, and the neutral values are the sample's.
+  // the sample stores, and the neutral values are the sample's. The image also
+  // crops its left quarter, and its box is wider than what remains, so the fit
+  // centers it with space on both sides, and its corner is the hidden
+  // quarter's left edge, 40 px before the visible part.
   const project = await readJson<Project>(editor.projectFile);
   const migratedProject = {
     ...project,
@@ -22,7 +26,17 @@ test("read and migrate an older project file", async ({ page, editor }) => {
       const clip = layer.clips[0]!;
       switch (clip.type) {
         case "image": {
-          return { ...layer, name: "Image 1" };
+          return {
+            ...layer,
+            name: "Image 1",
+            clips: [
+              {
+                ...clip,
+                transform: { x: 400, y: 240, scale: 1 },
+                crop: { left: 0.25, right: 0, top: 0, bottom: 0 },
+              },
+            ],
+          };
         }
         case "color": {
           return {
@@ -47,12 +61,17 @@ test("read and migrate an older project file", async ({ page, editor }) => {
           delete layer.muted;
         }
         if (layer.type === "video") {
+          delete layer.transform;
+          layer.box = { x: 0, y: 0, width: 640, height: 360 };
           delete layer.crop;
           delete layer.fadeIn;
           delete layer.fadeOut;
           delete layer.hold;
         }
         if (layer.type === "image") {
+          delete layer.transform;
+          layer.box = { x: 400, y: 240, width: 200, height: 90 };
+          layer.crop = { left: 0.25 };
           delete layer.name;
         }
         if (layer.type === "color") {
@@ -67,9 +86,11 @@ test("read and migrate an older project file", async ({ page, editor }) => {
     });
   const changes = [
     'layer "Test pattern" has no clips',
+    'video clip in layer "Test pattern" has a fit box instead of a transform',
     'layer "Tone 660 Hz" has no clips',
     'image layer "Image 1" has no name',
     'layer "Image 1" has no clips',
+    'image clip in layer "Image 1" has a fit box instead of a transform',
     'layer "Title" has no clips',
     'text clip in layer "Title" has no box height',
     'layer "Tint" has no clips',

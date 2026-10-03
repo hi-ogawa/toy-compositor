@@ -45,8 +45,8 @@ Layers stack in list order over the canvas `background`, so later layers sit on 
   "name": "camera",
   "muted": true,
   "clips": [
-    { "type": "video", "src": "media/take1.mp4", "start": 7.967, "in": 0, "out": 60, "box": { ... } },
-    { "type": "video", "src": "media/take2.mp4", "start": 67.967, "in": 3, "out": 120, "box": { ... } },
+    { "type": "video", "src": "media/take1.mp4", "start": 7.967, "in": 0, "out": 60, "transform": { ... } },
+    { "type": "video", "src": "media/take2.mp4", "start": 67.967, "in": 3, "out": 120, "transform": { ... } },
   ],
 }
 ```
@@ -68,7 +68,7 @@ Each clip has a `type`, and the type decides its other fields.
   "start": 7.967,
   "in": 0,
   "out": 189.499,
-  "box": { "x": 0, "y": 0, "width": 1920, "height": 1080 },
+  "transform": { "x": -96, "y": -54, "scale": 1.1 },
   "crop": { "left": 0.013, "right": 0, "top": 0.0065, "bottom": 0 },
   "fadeIn": 0,
   "fadeOut": 0,
@@ -102,7 +102,7 @@ A video clip carries its file's audio, like a clip in other video editors, and t
   "src": "media/mv-thumbnail.jpg",
   "start": 23.7,
   "end": 188.633,
-  "box": { "x": 960, "y": 540, "width": 960, "height": 540 },
+  "transform": { "x": 960, "y": 540, "scale": 0.5 },
   "crop": { "left": 0, "right": 0, "top": 0, "bottom": 0 },
 }
 ```
@@ -185,11 +185,11 @@ Locators are labeled timeline times, like markers in other video editors. They d
 
 An entry depends only on the file's contents, so a copied file has the same entry. Facts describe a file, not a clip, so clips that share a file share its entry. Each project file carries its own `media`, so variants such as the thumbnail repeat the entries they share and stay self-contained.
 
-## Box and crop
+## Transform and crop
 
-`box` is where a visual clip goes on the canvas. The source is scaled to fit inside the box while keeping its aspect ratio and is centered in it. Anything outside the canvas is clipped.
+`transform` is where a video or image clip goes on the canvas. `x` and `y` are where the source's top-left corner goes, in canvas pixels, like a text or color clip's `box`, and `scale` multiplies the source's own size, keeping its aspect ratio. A 1920×1080 camera zoomed in by 10% around the middle of a 1920×1080 canvas is `{ "x": -96, "y": -54, "scale": 1.1 }`. The placed size rounds to even pixels. Anything outside the canvas is clipped, so a clip can be larger than the canvas or partly off it.
 
-`crop` removes a fraction of the source from each edge before fitting.
+`crop` hides a fraction of the source at each edge. The transform still places the whole source, so cropping never moves what remains.
 
 ## Hold
 

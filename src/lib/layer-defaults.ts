@@ -1,5 +1,5 @@
 import { createNumberedName } from "../utils/name.ts";
-import { fitBox, type TimeRange } from "./layout.ts";
+import { getFitTransform, type TimeRange } from "./layout.ts";
 import type { MediaType } from "./media-file.ts";
 import {
   NEUTRAL_VALUES,
@@ -56,7 +56,7 @@ export function createMediaLayer({
   };
 }
 
-/** Video and images fit inside the canvas, so the box is the visible area. */
+/** Video and images start fitted inside the canvas, centered. */
 function createMediaClip({
   src,
   type,
@@ -72,7 +72,6 @@ function createMediaClip({
   start: number;
   stillRange: TimeRange;
 }): Clip {
-  const canvasBox = { x: 0, y: 0, width: canvas.width, height: canvas.height };
   switch (type) {
     case "video": {
       return {
@@ -81,11 +80,7 @@ function createMediaClip({
         start,
         in: mediaInfo.start,
         out: mediaInfo.end,
-        box: fitBox({
-          source: mediaInfo.video!,
-          crop: NEUTRAL_VALUES.video.crop,
-          box: canvasBox,
-        }),
+        transform: getFitTransform({ size: mediaInfo.video!, canvas }),
         ...NEUTRAL_VALUES.video,
       };
     }
@@ -103,11 +98,7 @@ function createMediaClip({
       return {
         type,
         src,
-        box: fitBox({
-          source: mediaInfo.video!,
-          crop: NEUTRAL_VALUES.image.crop,
-          box: canvasBox,
-        }),
+        transform: getFitTransform({ size: mediaInfo.video!, canvas }),
         ...NEUTRAL_VALUES.image,
         ...stillRange,
       };

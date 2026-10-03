@@ -1,4 +1,5 @@
 import { createLayerName } from "./layer-defaults.ts";
+import { getCroppedBox, roundToEven } from "./layout.ts";
 import {
   NEUTRAL_VALUES,
   type AudioClip,
@@ -10,7 +11,9 @@ import {
   type ImageClip,
   type Layer,
   type Project,
+  type Size,
   type TextClip,
+  type Transform,
   type VideoClip,
 } from "./project.ts";
 import { measureTextHeight } from "./render/text.ts";
@@ -43,23 +46,28 @@ type SavedClip =
   | SavedColorClip
   | SavedTextClip;
 
+// Projects saved before transforms fit the source inside a box instead.
+type SavedPlacement = { transform?: Transform; box?: Box };
+
 // Neutral values are missing in projects saved before they were required.
 type SavedVideoClip = Omit<
   VideoClip,
-  "crop" | "fadeIn" | "fadeOut" | "hold"
-> & {
-  crop?: Partial<Crop>;
-  fadeIn?: number;
-  fadeOut?: number;
-  hold?: Partial<VideoClip["hold"]>;
-};
+  "transform" | "crop" | "fadeIn" | "fadeOut" | "hold"
+> &
+  SavedPlacement & {
+    crop?: Partial<Crop>;
+    fadeIn?: number;
+    fadeOut?: number;
+    hold?: Partial<VideoClip["hold"]>;
+  };
 
 type SavedAudioClip = Omit<AudioClip, "fadeIn" | "fadeOut"> & {
   fadeIn?: number;
   fadeOut?: number;
 };
 
-type SavedImageClip = Omit<ImageClip, "crop"> & { crop?: Partial<Crop> };
+type SavedImageClip = Omit<ImageClip, "transform" | "crop"> &
+  SavedPlacement & { crop?: Partial<Crop> };
 
 type SavedColorClip = Omit<ColorClip, "box" | "opacity"> & {
   // Missing in projects saved before a color clip's box was required.
@@ -81,8 +89,9 @@ type SavedTextClip = Omit<TextClip, "box" | "align" | "font"> & {
 export type MigrateProjectResult = { project: Project; changes: string[] };
 
 /**
- * Migrate a project to the current shape, then validate it. Migration never
- * reads `media`, so it runs first, and validation only reads the current shape.
+ * Migrate a project to the current shape, then validate it. Migration reads
+ * `media` only for a fit box's source size, so it runs first, and validation
+ * only reads the current shape.
  */
 export async function migrateAndValidateProject(project: SavedProject) {
   const migrated = await migrateProject(project);
@@ -118,8 +127,8 @@ function validateProject(project: Project): void {
 
 /**
  * Bring a project to the current shape by filling what older files lack. It
- * does not read `media` or check it, so update-media also runs it on a project
- * whose media info is missing. Each layer is normalized to the clips shape
+ * reads `media` only for a fit box's source size and does not check it, so
+ * update-media also runs it on a project whose media info is missing. Each layer is normalized to the clips shape
  * first, and then each clip's fields are migrated, so a field migration works
  * whichever shape the file started in.
  */
@@ -142,6 +151,7 @@ export async function migrateProject(
             clip,
             label: `${clip.type} clip in layer "${layer.name}"`,
             canvas: project.canvas,
+            media: project.media,
             changes,
           }),
         ),
@@ -186,22 +196,38 @@ async function migrateClip({
   clip,
   label,
   canvas,
+  media,
   changes,
 }: {
   clip: SavedClip;
   label: string;
   canvas: SavedProject["canvas"];
+  media: SavedProject["media"];
   changes: string[];
 }): Promise<Clip> {
   switch (clip.type) {
     case "video": {
-      return fillDefaults(clip, NEUTRAL_VALUES.video);
+      const { box, ...filled } = fillDefaults(clip, NEUTRAL_VALUES.video);
+      const transform = migrateTransform({
+        clip: { ...filled, box },
+        label,
+        media,
+        changes,
+      });
+      return { ...filled, transform };
     }
     case "audio": {
       return fillDefaults(clip, NEUTRAL_VALUES.audio);
     }
     case "image": {
-      return fillDefaults(clip, NEUTRAL_VALUES.image);
+      const { box, ...filled } = fillDefaults(clip, NEUTRAL_VALUES.image);
+      const transform = migrateTransform({
+        clip: { ...filled, box },
+        label,
+        media,
+        changes,
+      });
+      return { ...filled, transform };
     }
     case "color": {
       if (!clip.box) {
@@ -223,6 +249,65 @@ async function migrateClip({
       return { ...filled, box: { ...filled.box, height } };
     }
   }
+}
+
+/**
+ * A media clip's transform, converted from a fit box when the clip has one: the
+ * transform that places the visible part where the fit put it.
+ */
+function migrateTransform({
+  clip,
+  label,
+  media,
+  changes,
+}: {
+  clip: { src: string; crop: Crop } & SavedPlacement;
+  label: string;
+  media: SavedProject["media"];
+  changes: string[];
+}): Transform {
+  if (clip.transform) {
+    return clip.transform;
+  }
+  changes.push(`${label} has a fit box instead of a transform`);
+  return convertFitBox({
+    box: clip.box!,
+    size: media![clip.src].video!,
+    crop: clip.crop,
+  });
+}
+
+/** The transform that puts what the crop leaves where the old fit drew it. */
+function convertFitBox({
+  box,
+  size,
+  crop,
+}: {
+  box: Box;
+  size: Size;
+  crop: Crop;
+}): Transform {
+  const cropped = getCroppedBox({ size, crop });
+  // The fit scaled the cropped region until it touched the box, keeping its
+  // aspect ratio.
+  const scale = Math.min(
+    box.width / cropped.width,
+    box.height / cropped.height,
+  );
+  // It then centered the region's even-rounded size in the box, which put the
+  // region's corner here.
+  const corner = {
+    x: Math.round(box.x + (box.width - roundToEven(cropped.width * scale)) / 2),
+    y: Math.round(
+      box.y + (box.height - roundToEven(cropped.height * scale)) / 2,
+    ),
+  };
+  // Solve for the transform that puts the region's corner there.
+  return {
+    x: corner.x - cropped.x * scale,
+    y: corner.y - cropped.y * scale,
+    scale,
+  };
 }
 
 /**

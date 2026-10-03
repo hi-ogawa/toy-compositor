@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
-import { getPictureRange } from "../lib/layout";
-import type { Clip, Project, TextClip } from "../lib/project";
+import { getPictureRange, getVisibleBox } from "../lib/layout";
+import type { Box, Clip, Project, TextClip } from "../lib/project";
 import type { EditorRuntime, EditorProject } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
 import type { EditorSelection } from "./use-layer-interaction";
@@ -120,7 +120,7 @@ function PreviewClip({
   mediaInfoMap: Project["media"];
   resolveMediaUrl: (src: string) => string;
 }) {
-  const { box } = clip;
+  const box = getPreviewBox({ clip, mediaInfoMap });
   const style: CSSProperties = {
     position: "absolute",
     left: box.x,
@@ -158,6 +158,30 @@ function PreviewClip({
       )}
     </div>
   );
+}
+
+/** The clip's rectangle in canvas pixels. */
+function getPreviewBox({
+  clip,
+  mediaInfoMap,
+}: {
+  clip: Exclude<Clip, { type: "audio" }>;
+  mediaInfoMap: Project["media"];
+}): Box {
+  switch (clip.type) {
+    case "video":
+    case "image": {
+      return getVisibleBox({
+        size: mediaInfoMap[clip.src].video!,
+        crop: clip.crop,
+        transform: clip.transform,
+      });
+    }
+    case "text":
+    case "color": {
+      return clip.box;
+    }
+  }
 }
 
 function getTextStyle(clip: TextClip): CSSProperties {
