@@ -248,12 +248,13 @@ function getSourceRead({
       after: visible.end - played.end,
     };
   }
-  // A visible part entirely in a hold reads the one frame it holds and clones
-  // it over the rest, such as a still at 0.5 s of the same layer:
+  // A visible part entirely in a hold, such as a still or rendering 0.25 s to
+  // 0.75 s of the same layer, reads the one frame it holds and clones it over
+  // the visible part:
   //
   //   0        1        2        3
   //   |  hold  |  play  |  hold  |
-  //       [-]                         visible, cloned
+  //     [----]                        visible, cloned
   //            ^                      read the first frame
   const frame = 1 / scene.canvas.fps;
   return {
