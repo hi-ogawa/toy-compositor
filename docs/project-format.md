@@ -26,6 +26,8 @@ This doc describes what a project means. The [renderer](compiler.md) turns it in
 }
 ```
 
+A video output needs an even canvas `width` and `height`, because it is encoded as 4:2:0, which stores one color sample per 2×2 block of pixels. Clips inside the canvas can have any size.
+
 ## Time
 
 All times are seconds. Timeline times (`start`, `end`, `output.*`) are positions on the project timeline. Source times (`in`, `out`) are positions in a media file, measured as presentation timestamps including the stream's start offset. The frame shown at a source time is the frame whose timestamp is nearest to it, because millisecond times rarely land exactly on a frame.
