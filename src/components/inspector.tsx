@@ -115,8 +115,8 @@ function OutputInspector({
       <InspectorTitle title="Composition settings" subtitle={output.type} />
       <div className="flex flex-col gap-4 p-3">
         <Group title="Canvas">
-          {/* Video output is encoded as yuv420p, which libx264 refuses at an odd
-              size ("width not divisible by 2"), so arrow keys step by two. */}
+          {/* Video output needs an even canvas (see renderProject),
+              so arrow keys step by two. */}
           {(["width", "height"] as const).map((key) => (
             <NumberField
               key={key}
