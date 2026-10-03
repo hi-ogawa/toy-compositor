@@ -12,7 +12,7 @@ import {
   installDesktopEntry,
 } from "./lib/desktop-entry.ts";
 import { updateProjectMedia } from "./lib/media-info.ts";
-import { migrateProjectFile } from "./lib/migrate.ts";
+import { readProjectFile } from "./lib/migrate.ts";
 import { renderProject } from "./lib/render/render.ts";
 import { createLiveConnections } from "./lib/server/live.ts";
 import { openWithDefaultApp } from "./lib/server/open-default.ts";
@@ -23,6 +23,7 @@ import {
   stopEditorServer,
 } from "./lib/server/serve.ts";
 import { execFileAsync } from "./utils/exec.ts";
+import { writeJson } from "./utils/fs.ts";
 
 const packageDir = path.dirname(
   fileURLToPath(import.meta.resolve("#package.json")),
@@ -159,22 +160,7 @@ async function main() {
         process.exitCode = 1;
         return;
       }
-      for (const projectFile of args) {
-        const changes = await migrateProjectFile(projectFile, {
-          check: values.check,
-        });
-        if (changes.length > 0) {
-          console.log(
-            `${values.check ? "Would migrate" : "Migrated"} ${projectFile}`,
-          );
-          for (const change of changes) {
-            console.log(`  ${change}`);
-          }
-          if (values.check) {
-            process.exitCode = 1;
-          }
-        }
-      }
+      await runMigrate(args, { check: values.check });
       break;
     }
     default: {
@@ -260,6 +246,31 @@ async function runCommand(
   const [code] = await once(child, "close");
   if (code !== 0) {
     throw new Error(`${command} ${args.join(" ")} exited with code ${code}`);
+  }
+}
+
+/**
+ * Migrate each project file in place and print its changed layers, or with
+ * `check`, only print them and fail if any file would change.
+ */
+async function runMigrate(
+  projectFiles: string[],
+  { check }: { check?: boolean },
+) {
+  for (const projectFile of projectFiles) {
+    const { project, changes } = await readProjectFile(projectFile);
+    if (changes.length === 0) {
+      continue;
+    }
+    console.log(`${check ? "Would migrate" : "Migrated"} ${projectFile}`);
+    for (const change of changes) {
+      console.log(`  ${change}`);
+    }
+    if (check) {
+      process.exitCode = 1;
+    } else {
+      await writeJson(projectFile, project);
+    }
   }
 }
 

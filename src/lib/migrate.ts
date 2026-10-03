@@ -1,4 +1,4 @@
-import { readJson, writeJson } from "../utils/fs.ts";
+import { readJson } from "../utils/fs.ts";
 import type { Box, ColorLayer, Layer, Project } from "./project.ts";
 
 /** A project file as saved, which may have an older format's shape. */
@@ -18,53 +18,13 @@ type SavedColorLayer = Omit<ColorLayer, "box"> & {
 };
 
 /**
- * Migrate a project file in place, or with `check`, leave it as is, and return
- * the layer changes.
+ * Read a project file in the current format, and describe each layer change
+ * from an older one. Throw when it lacks what only update-media can fill in.
  */
-export async function migrateProjectFile(
-  projectFile: string,
-  { check }: { check?: boolean },
-) {
-  const { project, changes } = migrateProject(
-    await readJson<SavedProject>(projectFile),
-  );
-  if (changes.length > 0 && !check) {
-    await writeJson(projectFile, project);
-  }
-  return changes;
-}
-
-/**
- * Bring a project from older formats to the current one, in the order the
- * format changed, and describe each layer change. Throw when it lacks what
- * only update-media can fill in.
- */
-export function migrateProject(project: SavedProject): {
-  project: Project;
-  changes: string[];
-} {
+export async function readProjectFile(projectFile: string) {
+  const project = await readJson<SavedProject>(projectFile);
   validateProject(project);
-  const changes: string[] = [];
-  const layers = project.layers.map((layer): Layer => {
-    const label = `${layer.type} layer "${layer.name ?? layer.type}"`;
-    if (layer.type === "color") {
-      if (!layer.box) {
-        changes.push(`${label} has no box`);
-      }
-      const { width, height } = project.canvas;
-      return { ...layer, box: layer.box ?? { x: 0, y: 0, width, height } };
-    }
-    return layer;
-  });
-  const migrated: Project = {
-    ...project,
-    layers,
-    locators: project.locators ?? [],
-    // Validation only lets a project without `media` through when no layer
-    // uses a file, so it has none to record.
-    media: project.media ?? {},
-  };
-  return { project: migrated, changes };
+  return migrateProject(project);
 }
 
 /**
@@ -87,4 +47,35 @@ function validateProject(project: SavedProject): void {
       );
     }
   }
+}
+
+/**
+ * Bring a project from older formats to the current one, in the order the
+ * format changed, and describe each layer change.
+ */
+function migrateProject(project: SavedProject): {
+  project: Project;
+  changes: string[];
+} {
+  const changes: string[] = [];
+  const layers = project.layers.map((layer): Layer => {
+    const label = `${layer.type} layer "${layer.name ?? layer.type}"`;
+    if (layer.type === "color") {
+      if (!layer.box) {
+        changes.push(`${label} has no box`);
+      }
+      const { width, height } = project.canvas;
+      return { ...layer, box: layer.box ?? { x: 0, y: 0, width, height } };
+    }
+    return layer;
+  });
+  const migrated: Project = {
+    ...project,
+    layers,
+    locators: project.locators ?? [],
+    // Validation only lets a project without `media` through when no layer
+    // uses a file, so it has none to record.
+    media: project.media ?? {},
+  };
+  return { project: migrated, changes };
 }
