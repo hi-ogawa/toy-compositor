@@ -167,13 +167,16 @@ test("hold a video layer's first and last frames beyond its source range", async
 
   // Check that the first second repeats the first played frame, the last
   // second repeats the last played frame, and the played frames still move.
+  const fps = 30;
   const frames = await readGrayFrames(output);
-  expect(frames).toHaveLength(90);
-  expect(diffFrames(frames[0], frames[30])).toBeLessThan(0.1);
-  expect(diffFrames(frames[29], frames[30])).toBeLessThan(0.1);
-  expect(diffFrames(frames[60], frames[59])).toBeLessThan(0.1);
-  expect(diffFrames(frames[89], frames[59])).toBeLessThan(0.1);
-  expect(diffFrames(frames[30], frames[59])).toBeGreaterThan(1);
+  expect(frames).toHaveLength(3 * fps);
+  expect(diffFrames(frames[0], frames[fps])).toBeLessThan(0.1);
+  expect(diffFrames(frames[fps - 1], frames[fps])).toBeLessThan(0.1);
+  expect(diffFrames(frames[2 * fps], frames[2 * fps - 1])).toBeLessThan(0.1);
+  expect(diffFrames(frames[3 * fps - 1], frames[2 * fps - 1])).toBeLessThan(
+    0.1,
+  );
+  expect(diffFrames(frames[fps], frames[2 * fps - 1])).toBeGreaterThan(1);
 
   // Render stills inside each hold and at the edge frames it holds, and check
   // that each held still matches its edge frame.
@@ -194,9 +197,9 @@ test("hold a video layer's first and last frames beyond its source range", async
     return frame;
   };
   expect(diffFrames(await renderStill(0.5), await renderStill(1))).toBe(0);
-  expect(diffFrames(await renderStill(2.5), await renderStill(59 / 30))).toBe(
-    0,
-  );
+  expect(
+    diffFrames(await renderStill(2.5), await renderStill((2 * fps - 1) / fps)),
+  ).toBe(0);
 });
 
 /** RMS level in dB of a 20ms window of a file's audio at a time. */
