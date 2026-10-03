@@ -219,17 +219,7 @@ function compileVideo({
 /**
  * Source span a video layer reads for its visible part, the part of its
  * picture inside the scene range, and the seconds of its first and last frames
- * to clone around it. For a layer playing 1 s to 2 s and holding 1 s on each
- * side:
- *
- *   0        1        2        3
- *   |  hold  |  play  |  hold  |
- *       [--------]                 (a)
- *       [-]                        (b)
- *
- * (a) Rendering 0.5 s to 1.5 s reads the source for 1 s to 1.5 s and clones
- * its first frame over the 0.5 s before it.
- * (b) A still at 0.5 s has no played part, so it reads only the first frame.
+ * to clone around it.
  */
 function getSourceRead({
   layer,
@@ -242,6 +232,14 @@ function getSourceRead({
 }) {
   const range = getLayerRange(layer);
   const played = intersect(range, visible);
+  // A visible part that overlaps the played part reads it and clones its edge
+  // frames over the rest, such as rendering 0.5 s to 1.5 s of a layer playing
+  // 1 s to 2 s with 1 s holds:
+  //
+  //   0        1        2        3
+  //   |  hold  |  play  |  hold  |
+  //       [--------]                  visible
+  //       [---][---]                  clone, read
   if (played) {
     return {
       time: layer.in + played.start - layer.start,
@@ -250,6 +248,13 @@ function getSourceRead({
       after: visible.end - played.end,
     };
   }
+  // A visible part entirely in a hold reads the one frame it holds and clones
+  // it over the rest, such as a still at 0.5 s of the same layer:
+  //
+  //   0        1        2        3
+  //   |  hold  |  play  |  hold  |
+  //       [-]                         visible, cloned
+  //            ^                      read the first frame
   const frame = 1 / scene.canvas.fps;
   return {
     time: visible.end <= range.start ? layer.in : layer.out - frame,
