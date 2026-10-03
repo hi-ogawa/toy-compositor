@@ -20,6 +20,8 @@ export default defineConfig({
       build: { outDir: "dist/client" },
     },
     ssr: {
+      // Bundle dependencies, so an unpacked build runs without installing any.
+      resolve: { noExternal: true },
       build: {
         outDir: "dist/server",
         target: "node24",

@@ -13,14 +13,15 @@ The [demo](https://toy-compositor.hiro18181.workers.dev) opens the editor on the
 ## Usage
 
 ```sh
-pnpm add -g https://pkg.pr.new/hi-ogawa/toy-compositor@main
+# install: download a build and let it install itself
+d=$(mktemp -d) && curl -sL https://pkg.pr.new/hi-ogawa/toy-compositor@main | tar -xz -C "$d" && node "$d/package/dist/server/cli.js" upgrade
+
 toy-compositor --help                          # commands, and paths of the bundled docs and sample
 toy-compositor serve [directory]               # open the editor, adding directory first
 toy-compositor serve --open                    # open it in the browser, exiting after the last tab
 toy-compositor stop                            # stop the running editor server
 toy-compositor status                          # show whether the editor server is running
-toy-compositor install-desktop                 # add an app launcher entry that runs serve --open (Linux)
-toy-compositor upgrade [source]                # install the latest build, or source, update the launcher, and stop the server
+toy-compositor upgrade [source]                # install the latest build, or a PR or commit build, and stop the server
 toy-compositor add <path>                      # add a project folder, or a project file's folder
 toy-compositor render <project.json> <output>  # .mp4 or .png
 toy-compositor update-media <project.json...>  # record the media info layers use

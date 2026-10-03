@@ -165,10 +165,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      srvx:
-        specifier: ^1.0.5
-        version: 1.0.5
     devDependencies:
       '@hiogawa/playwright-trace-pack':
         specifier: https://pkg.pr.new/hi-ogawa/playwright-trace-pack/@hiogawa/playwright-trace-pack@df95343
@@ -212,6 +208,9 @@ importers:
       sonner:
         specifier: ^2.0.8
         version: 2.0.8(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      srvx:
+        specifier: ^1.0.5
+        version: 1.0.5
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3

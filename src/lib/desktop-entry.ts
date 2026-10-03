@@ -38,7 +38,7 @@ Categories=AudioVideo;Video;
   return entryFile;
 }
 
-export function getDesktopEntryFile(): string {
+function getDesktopEntryFile(): string {
   return path.join(
     process.env.XDG_DATA_HOME || path.join(os.homedir(), ".local/share"),
     "applications/toy-compositor.desktop",

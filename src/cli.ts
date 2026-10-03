@@ -1,15 +1,9 @@
 #!/usr/bin/env node
-import { spawn } from "node:child_process";
-import { once } from "node:events";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import type { Server } from "srvx";
-import {
-  getDesktopEntryFile,
-  installDesktopEntry,
-} from "./lib/desktop-entry.ts";
 import { updateProjectMedia } from "./lib/media-info.ts";
 import { renderProject } from "./lib/render/render.ts";
 import { createLiveConnections } from "./lib/server/live.ts";
@@ -20,13 +14,11 @@ import {
   serveEditor,
   stopEditorServer,
 } from "./lib/server/serve.ts";
-import { execFileAsync } from "./utils/exec.ts";
+import { upgradeInstall } from "./lib/upgrade.ts";
 
 const packageDir = path.dirname(
   fileURLToPath(import.meta.resolve("#package.json")),
 );
-
-const UPGRADE_SOURCE = "https://pkg.pr.new/hi-ogawa/toy-compositor@main";
 
 const HELP = `\
 Usage:
@@ -38,12 +30,11 @@ Usage:
       Stop the running editor server, leaving another process on the port alone
   toy-compositor status [--port <port>]
       Show whether the editor server is running
-  toy-compositor install-desktop
-      Add an app launcher entry that runs serve --open (Linux)
   toy-compositor upgrade [source] [--port <port>]
-      Install the latest build globally with pnpm, or the build from source,
-      update the app launcher entry, and stop the running editor server,
-      so the next launch uses the new build
+      Install the latest build, or the pkg.pr.new build named by source, such
+      as a PR number or commit, with the toy-compositor command and an app
+      launcher entry (Linux), and stop the running editor server, so the next
+      launch uses the new build
   toy-compositor add <path>
       Add a project folder, given as the folder or a project file inside it
   toy-compositor render <project.json> <output> [--dry-run]
@@ -97,17 +88,8 @@ async function main() {
       );
       break;
     }
-    case "install-desktop": {
-      const iconFile = path.join(getClientDir(), "icon.svg");
-      const entryFile = await installDesktopEntry({
-        command: [process.execPath, import.meta.filename, "serve", "--open"],
-        iconFile,
-      });
-      console.log(`Installed ${entryFile}`);
-      break;
-    }
     case "upgrade": {
-      await upgradeGlobalInstall(args[0] ?? UPGRADE_SOURCE);
+      await upgradeInstall(args[0] ?? "main");
       if (await stopEditorServer(Number(values.port))) {
         console.log(
           "Stopped the running editor. Launch it again to use the new build.",
@@ -196,28 +178,6 @@ async function runServe({
     await live.waitForLastClose({ graceMs: 3000 });
     console.log("Closing after the last editor tab closed");
     await server.close(true);
-  }
-}
-
-/**
- * Install the package from `source` globally with pnpm, and rewrite the
- * desktop entry if one is installed. The entry names the package's CLI by its
- * versioned path, so the newly installed CLI writes it again.
- */
-async function upgradeGlobalInstall(source: string) {
-  await runCommand("pnpm", ["add", "-g", source]);
-  if (fs.existsSync(getDesktopEntryFile())) {
-    const { stdout } = await execFileAsync("pnpm", ["bin", "-g"]);
-    const cli = path.join(stdout.trim(), "toy-compositor");
-    await runCommand(cli, ["install-desktop"]);
-  }
-}
-
-async function runCommand(command: string, args: string[]) {
-  const child = spawn(command, args, { stdio: "inherit" });
-  const [code] = await once(child, "close");
-  if (code !== 0) {
-    throw new Error(`${command} ${args.join(" ")} exited with code ${code}`);
   }
 }
 
