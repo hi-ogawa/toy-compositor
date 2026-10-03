@@ -277,10 +277,7 @@ function migrateTransform({
   });
 }
 
-/**
- * The fit scaled the cropped source to fit inside the box, keeping its aspect
- * ratio, and centered it.
- */
+/** The transform that puts what the crop leaves where the old fit drew it. */
 function convertFitBox({
   box,
   size,
@@ -291,21 +288,24 @@ function convertFitBox({
   crop: Crop;
 }): Transform {
   const cropped = getCroppedBox({ size, crop });
+  // The fit scaled the cropped region until it touched the box, keeping its
+  // aspect ratio.
   const scale = Math.min(
     box.width / cropped.width,
     box.height / cropped.height,
   );
-  // The fitted rectangle is the visible part, so step back over the hidden
-  // left and top edges to the whole source's corner.
-  const width = roundToEven(cropped.width * scale);
-  const height = roundToEven(cropped.height * scale);
+  // It then centered the region's even-rounded size in the box, which put the
+  // region's corner here.
+  const corner = {
+    x: Math.round(box.x + (box.width - roundToEven(cropped.width * scale)) / 2),
+    y: Math.round(
+      box.y + (box.height - roundToEven(cropped.height * scale)) / 2,
+    ),
+  };
+  // Solve for the transform that puts the region's corner there.
   return {
-    x:
-      Math.round(box.x + (box.width - width) / 2) -
-      crop.left * size.width * scale,
-    y:
-      Math.round(box.y + (box.height - height) / 2) -
-      crop.top * size.height * scale,
+    x: corner.x - cropped.x * scale,
+    y: corner.y - cropped.y * scale,
     scale,
   };
 }
