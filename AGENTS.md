@@ -22,6 +22,7 @@
 - Do not add e2e checks for `--help` text, the bundled paths it prints, or package file lists. Verify packaging by hand
 - When an existing test fails, first verify from first principles whether its expectation is correct. Do not compensate in the implementation merely to preserve an incorrect test.
 - `pnpm test-e2e <test-file>` records traces by default locally and generates `test-results/trace-pack.html`. Use `E2E_TRACE=0` to disable tracing. CI leaves tracing off by default. `pnpm test-e2e-trace <test-file>` or `E2E_TRACE=1` explicitly enables tracing. For selected branch traces on GitHub Actions with artifact links, see [E2E traces on GitHub Actions](docs/e2e.md).
+- The e2e-trace workflow writes its trace links into the PR description between `<!-- e2e-trace:start -->` and `<!-- e2e-trace:end -->`. When editing a PR description, replace only the paragraphs you change and keep that block
 - Add short narrative comments before each logical phase of an E2E test, describing the user action and expected behavior so the comments alone convey the scenario. Use direct, verb-led wording for actions, such as “Render the synthetic sample project.”
 - Order functions by reading flow, with primary entry points and callers before their implementation helpers
 - Prefer `undefined` over `null`
