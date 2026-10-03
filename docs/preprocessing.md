@@ -1,6 +1,6 @@
-# Working media
+# Pre-processing footage
 
-Camera footage, especially from a phone, should be transcoded into a working file before it goes into a project. toy-compositor does not do this itself, so it is one ffmpeg command run by hand. The working file solves four problems:
+Camera footage, especially from a phone, should be transcoded before it goes into a project. toy-compositor does not do this itself, so it is one ffmpeg command run by hand. Pre-processing solves four problems:
 
 - **Frame timing goes wrong.** Phone footage has a variable frame rate, but the renderer picks frames assuming they are evenly spaced.
 - **The editor may not play the file.** The editor decodes media in the browser, which may not support a phone's codec, such as HEVC.
@@ -18,7 +18,7 @@ ffmpeg -i input.mp4 -vf fps=30 -c:v libx264 -b:v 8000k -g 30 -preset slow -c:a a
 | `-g 30`        | Seeking         | A keyframe every second, so a seek decodes at most one second of video. |
 | `-b:v 8000k`   | File size       | About 200MB for a 3-minute 1080p clip.                                  |
 
-The rest of this doc explains the frame timing and seeking problems, and how to check a working file.
+The rest of this doc explains the frame timing and seeking problems, and how to check a pre-processed file.
 
 ## Constant frame rate
 
@@ -28,7 +28,7 @@ A project's `media` records one frame rate per video file, and frame times are c
 
 A keyframe is a complete picture, and the frames after it only store what changed. To show an arbitrary frame, a decoder starts from the keyframe before it and decodes forward, so the gap between keyframes sets the worst-case seek time. Without `-g`, x264 allows up to 250 frames between keyframes, which is 8.33 seconds at 30fps.
 
-The editor seeks whenever the playhead moves while paused, so long keyframe intervals make timeline clicks lag and make any corrective seek during playback stall. A 60-second excerpt of a phone camera clip, whose working file came from this recipe without `-g`, was encoded again with and without `-g 30`, and compared against that working file:
+The editor seeks whenever the playhead moves while paused, so long keyframe intervals make timeline clicks lag and make any corrective seek during playback stall. A 60-second excerpt of a phone camera clip, whose pre-processed file came from this recipe without `-g`, was encoded again with and without `-g 30`, and compared against that pre-processed file:
 
 |                          | Keyframes | Size   | SSIM vs source | Seek in Chromium |
 | ------------------------ | --------- | ------ | -------------- | ---------------- |
@@ -37,7 +37,7 @@ The editor seeks whenever the playhead moves while paused, so long keyframe inte
 
 At a fixed bitrate, more keyframes leave slightly fewer bits for the other frames, but the SSIM difference above is far below what is visible. The seek time scales with the distance from the previous keyframe, so the default interval ranges from fast just after a keyframe to over half a second before the next.
 
-## Check a working file
+## Check a pre-processed file
 
 ```sh
 # Frame rate, which should be 30/1 for both
