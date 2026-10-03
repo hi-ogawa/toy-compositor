@@ -77,25 +77,6 @@ export function getVisibleBox({
   };
 }
 
-/** Center the size on the canvas at the largest scale that keeps it inside. */
-export function fitTransform({
-  size,
-  canvas,
-}: {
-  size: Size;
-  canvas: Size;
-}): Transform {
-  const scale = Math.min(
-    canvas.width / size.width,
-    canvas.height / size.height,
-  );
-  return {
-    x: Math.round((canvas.width - size.width * scale) / 2),
-    y: Math.round((canvas.height - size.height * scale) / 2),
-    scale,
-  };
-}
-
 /** Change the scale around the center of the scaled size, so it stays in place. */
 export function scaleTransform({
   size,
