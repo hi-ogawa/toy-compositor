@@ -1,4 +1,4 @@
-import type { TimeRange } from "./layout.ts";
+import { fitInsideCanvas, type TimeRange } from "./layout.ts";
 import type { MediaType } from "./media-file.ts";
 import type {
   Canvas,
@@ -6,7 +6,6 @@ import type {
   Layer,
   MediaInfo,
   TextLayer,
-  Transform,
 } from "./project.ts";
 
 /** Video and images start fitted inside the canvas, centered. */
@@ -38,7 +37,7 @@ export function createMediaLayer({
         start,
         in: mediaInfo.start,
         out: mediaInfo.end,
-        transform: fitInsideCanvas({ source: mediaInfo.video!, canvas }),
+        transform: fitInsideCanvas({ size: mediaInfo.video!, canvas }),
       };
     }
     case "audio": {
@@ -56,30 +55,11 @@ export function createMediaLayer({
         name,
         type,
         src,
-        transform: fitInsideCanvas({ source: mediaInfo.video!, canvas }),
+        transform: fitInsideCanvas({ size: mediaInfo.video!, canvas }),
         ...stillRange,
       };
     }
   }
-}
-
-/** Center the source on the canvas at the largest scale that keeps it inside. */
-function fitInsideCanvas({
-  source,
-  canvas,
-}: {
-  source: { width: number; height: number };
-  canvas: Canvas;
-}): Transform {
-  const scale = Math.min(
-    canvas.width / source.width,
-    canvas.height / source.height,
-  );
-  return {
-    x: Math.round((canvas.width - source.width * scale) / 2),
-    y: Math.round((canvas.height - source.height * scale) / 2),
-    scale,
-  };
 }
 
 export function createTextLayer({
