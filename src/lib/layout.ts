@@ -98,7 +98,7 @@ export function getFitTransform({
  * Change the scale while the center of a region of the source, such as what
  * the crop leaves, stays where it is on the canvas.
  */
-export function rescaleAroundCenter({
+export function getRescaledTransform({
   region,
   transform,
   scale,

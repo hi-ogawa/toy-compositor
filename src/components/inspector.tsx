@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { matchKeyboardEvent } from "../lib/keyboard";
-import { getCroppedBox, rescaleAroundCenter } from "../lib/layout";
+import { getCroppedBox, getRescaledTransform } from "../lib/layout";
 import type {
   Canvas,
   AudioClip,
@@ -606,7 +606,7 @@ function TransformFields({
 }) {
   const commitScale = (scale: number) =>
     onCommit(
-      rescaleAroundCenter({
+      getRescaledTransform({
         region: getCroppedBox({ size: source, crop }),
         transform,
         scale: roundTo(scale, 1e-6),
