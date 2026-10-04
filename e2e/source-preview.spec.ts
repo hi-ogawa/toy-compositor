@@ -8,7 +8,7 @@ import {
 } from "./helper";
 
 test("preview synthetic sources", async ({ page, editor }) => {
-  // Open the synthetic project and confirm it starts saved.
+  // Open the project and confirm it starts saved.
   await page.goto(editor.url);
   await expect(page.getByTestId("editor-project-file")).toContainText(
     "project.json",

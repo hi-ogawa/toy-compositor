@@ -6,7 +6,7 @@ import { editJson, readJson } from "../src/utils/fs.ts";
 import { test } from "./helper";
 
 test("update a project's media info", async ({ editor }) => {
-  // Remove the media and the canvas background from a copy of the synthetic
+  // Remove the media info and the canvas background from a copy of the
   // project, as in a project file from before both were saved.
   const project = await readJson<Project>(editor.projectFile);
   await editJson<SavedProject>(editor.projectFile, (savedProject) => {
@@ -14,8 +14,8 @@ test("update a project's media info", async ({ editor }) => {
     delete savedProject.canvas.background;
   });
 
-  // Run the update-media command, and confirm it writes back the committed
-  // media in the current shape.
+  // Run the update-media command, and confirm it writes back the media info
+  // in the current shape.
   await execFileAsync(process.execPath, [
     "src/cli.ts",
     "update-media",
