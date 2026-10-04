@@ -171,11 +171,11 @@ export function Editor({ projectPath }: { projectPath: string }) {
   );
 }
 
-const DEFAULT_INSPECTOR_WIDTH = 288;
-const MIN_INSPECTOR_WIDTH = 240;
-const MAX_INSPECTOR_WIDTH = 640;
-
 function InspectorPanel({ children }: { children: ReactNode }) {
+  const DEFAULT_INSPECTOR_WIDTH = 288;
+  const MIN_INSPECTOR_WIDTH = 200;
+  const MAX_INSPECTOR_WIDTH = 640;
+
   const [width, setWidth] = useState(DEFAULT_INSPECTOR_WIDTH);
   const resizeRef = usePointerDrag({
     onStart: (event) => {
