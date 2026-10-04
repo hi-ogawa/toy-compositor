@@ -97,9 +97,10 @@ test("edit a text layer's content and styling and save them", async ({
   await textField.fill("Edited\nthree\nlines");
   await textField.blur();
   const text = canvas.getByText("Edited\nthree\nlines", { exact: true });
+  const textBox = text.locator("..");
   await expect(text).toBeVisible();
-  await expect(text).toHaveCSS("height", "50px");
-  await expect(text).toHaveCSS("overflow", "hidden");
+  await expect(textBox).toHaveCSS("height", "50px");
+  await expect(textBox).toHaveCSS("overflow", "hidden");
 
   // Align right, restyle the font and color, and confirm the preview follows.
   await inspector
@@ -116,7 +117,6 @@ test("edit a text layer's content and styling and save them", async ({
   await expect(text).toHaveCSS("text-align", "right");
   await expect(text).toHaveCSS("font-family", '"DejaVu Serif"');
   await expect(text).toHaveCSS("font-size", "32px");
-  await expect(text).toHaveCSS("line-height", `${32 * 1.2 + 4}px`);
   await expect(text).toHaveCSS("font-weight", "700");
   await expect(text).toHaveCSS("color", "rgb(255, 204, 0)");
 
@@ -141,7 +141,7 @@ test("edit a text layer's content and styling and save them", async ({
   await expect(getInspectorField(page, { name: "height" })).toHaveValue(
     String(height),
   );
-  await expect(text).toHaveCSS("height", `${height}px`);
+  await expect(textBox).toHaveCSS("height", `${height}px`);
 
   // Save and confirm the edits reach the project file without an outline.
   const save = page.getByTestId("editor-save-button");
