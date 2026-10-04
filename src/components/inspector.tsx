@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { apiClient } from "../lib/api-client";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import { getRescaledTransform } from "../lib/layout";
 import type {
@@ -85,7 +86,6 @@ export function Inspector({
           media={project.media}
           time={time}
           onUpdate={(update) => runtime.updateClip({ id, update })}
-          onFitTextHeight={() => runtime.fitTextHeight(id)}
         />
       );
     }
@@ -270,26 +270,18 @@ function ClipInspector({
   media,
   time,
   onUpdate,
-  onFitTextHeight,
 }: {
   layerName: string;
   clip: Clip;
   media: Record<string, MediaInfo>;
   time: TimeFieldOptions;
   onUpdate: ClipUpdate;
-  onFitTextHeight: () => Promise<void>;
 }) {
   return (
     <div data-testid="inspector">
       <InspectorTitle title={layerName} subtitle={clip.type} />
       <div className="flex flex-col gap-4 p-3">
-        <ClipFields
-          clip={clip}
-          media={media}
-          time={time}
-          onUpdate={onUpdate}
-          onFitTextHeight={onFitTextHeight}
-        />
+        <ClipFields clip={clip} media={media} time={time} onUpdate={onUpdate} />
       </div>
     </div>
   );
@@ -300,13 +292,11 @@ function ClipFields({
   media,
   time,
   onUpdate,
-  onFitTextHeight,
 }: {
   clip: Clip;
   media: Record<string, MediaInfo>;
   time: TimeFieldOptions;
   onUpdate: ClipUpdate;
-  onFitTextHeight: () => Promise<void>;
 }) {
   switch (clip.type) {
     case "video": {
@@ -359,7 +349,7 @@ function ClipFields({
           <RangeTimingFields clip={clip} time={time} onUpdate={onUpdate} />
           <TextFields clip={clip} onUpdate={onUpdate} />
           <BoxFields box={clip.box} onCommit={(box) => onUpdate({ box })}>
-            <FitTextHeightButton onFit={onFitTextHeight} />
+            <FitTextHeightButton clip={clip} onUpdate={onUpdate} />
           </BoxFields>
         </>
       );
@@ -704,8 +694,19 @@ function BoxFields({
   );
 }
 
-function FitTextHeightButton({ onFit }: { onFit: () => Promise<void> }) {
-  const fitMutation = useMutation({ mutationFn: onFit });
+function FitTextHeightButton({
+  clip,
+  onUpdate,
+}: {
+  clip: TextClip;
+  onUpdate: ClipUpdate;
+}) {
+  const fitMutation = useMutation({
+    mutationFn: async () => {
+      const height = await apiClient.measureTextHeight({ drawing: clip });
+      onUpdate({ box: { ...clip.box, height } });
+    },
+  });
   return (
     <button
       type="button"

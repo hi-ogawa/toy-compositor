@@ -21,7 +21,6 @@ import {
   type Locator,
   type Output,
   type Project,
-  type TextClip,
 } from "./project.ts";
 import type { ProjectFile } from "./server/api.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
@@ -146,13 +145,6 @@ export class EditorRuntime {
       });
       this.syncPlayback();
     });
-  }
-
-  async fitTextHeight(id: string): Promise<void> {
-    const clip = findClip(this.store.get().project.layers, id)!
-      .clip as TextClip;
-    const height = await apiClient.measureTextHeight({ drawing: clip });
-    this.updateClip({ id, update: { box: { ...clip.box, height } } });
   }
 
   /** Probes and records the file's media info first if the project has none. */
