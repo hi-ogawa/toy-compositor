@@ -17,7 +17,6 @@ export function createLiveConnections() {
   }
 
   return {
-    /** Answer a tab with an event stream that stays open until the tab closes. */
     handleRequest(): Response {
       const body = new ReadableStream<Uint8Array>({
         start(controller) {

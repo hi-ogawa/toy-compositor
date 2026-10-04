@@ -4,7 +4,6 @@ import { startAnimationFrameLoop } from "../utils/timing.ts";
 /** Gives every participant time to schedule against the same future audio frame. */
 const PLAYBACK_LEAD_SECONDS = 0.03;
 
-/** A playback object whose lifecycle follows this transport. */
 export interface TransportParticipant {
   start(): void;
   stop(): void;
@@ -46,7 +45,7 @@ export class AudioContextTransport {
     this.context = context;
   }
 
-  /** Joins a participant to future transport starts and returns its disposer. */
+  /** Joins a participant to future transport starts. */
   register(participant: TransportParticipant): () => void {
     this.participants.add(participant);
     return () => {
@@ -84,7 +83,6 @@ export class AudioContextTransport {
     this.store.update({ isPlaying: false, position });
   }
 
-  /** Moves the playhead, continuing playback from there when it is running. */
   seek(position: number): void {
     const wasPlaying = this.store.get().isPlaying;
     this.pause();
@@ -94,13 +92,11 @@ export class AudioContextTransport {
     }
   }
 
-  /** Converts an `AudioContext` time to a project position in the current run. */
   getPositionAt(contextTime: number): number {
     const anchor = this.playbackAnchor!;
     return anchor.position + contextTime - anchor.contextTime;
   }
 
-  /** Publishes the heard position on animation frames while playing. */
   private startTicking(): void {
     this.disposeTicking = startAnimationFrameLoop(() => {
       this.store.update({ position: this.getPlaybackPosition() });

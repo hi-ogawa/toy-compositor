@@ -28,10 +28,6 @@ export function getDialogTool(): DialogTool | undefined {
   }
 }
 
-/**
- * Open the native picker for a project folder, or with `kind: "file"` for a
- * project file, and return the picked path, or `undefined` when cancelled.
- */
 export async function pickProjectPath({
   kind,
 }: {
