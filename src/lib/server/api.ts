@@ -18,17 +18,14 @@ import { openWithDefaultApp } from "./open-default.ts";
 import type { ProjectRegistry } from "./registry.ts";
 
 /**
- *
- * - `POST /api/rpc/<method>` calls one of `createEditorHandlers`' methods with
- *   the JSON body as its params, and answers with its JSON result.
- * - `GET /api/media?project=&src=` serves a layer source resolved against the
- *   project folder, as the renderer does, with range requests.
+ * - `POST /api/rpc/<method>` calls one of `createEditorHandlers`' methods.
+ * - `GET /api/media?project=&src=` serves a layer source with range requests.
  * - `GET /api/live` holds an event stream open for as long as the tab that
  *   requested it is open.
- * - `GET /api/server` answers `{ "name": "toy-compositor" }`, so the CLI can
- *   tell an editor server apart from another process on its port.
- * - `POST /api/server/stop` calls `stop`, so `toy-compositor stop` can shut
- *   down a server started by the CLI. The dev server passes no `stop`.
+ * - `GET /api/server` lets the CLI tell an editor server apart from another
+ *   process on its port.
+ * - `POST /api/server/stop` lets `toy-compositor stop` shut down a server
+ *   started by the CLI. The dev server passes no `stop`.
  */
 export function createEditorHandler({
   registry,
@@ -96,7 +93,7 @@ export type ProjectEntry = {
   output: Output["type"];
 };
 
-/** A registered project folder with its project files, or `missing` when it no longer exists. */
+/** `missing` when the registered folder no longer exists. */
 export type ProjectFolder = {
   directory: string;
   missing?: boolean;
@@ -142,7 +139,7 @@ async function handleRpc({
   return Response.json(result ?? null);
 }
 
-/** The editor's RPC methods, each taking one params object. */
+/** The editor's RPC methods. */
 export function createEditorHandlers({
   registry,
 }: {
@@ -183,7 +180,6 @@ export function createEditorHandlers({
       await registry.removeFolder(directory);
     },
 
-    /** Open a registered project folder in the desktop's file manager. */
     async openProjectFolder({
       directory,
     }: {
@@ -254,7 +250,7 @@ export function createEditorHandlers({
       }
     },
 
-    /** Probe a layer source into its media info, the entry that the project's `media` keeps for it. */
+    /** Returns the entry that the project's `media` keeps for a layer source. */
     async loadMediaInfo({
       src,
       projectPath,
@@ -267,7 +263,6 @@ export function createEditorHandlers({
       );
     },
 
-    /** List the media files in the project's `media/` folder. */
     async listMediaFiles({
       projectPath,
     }: {
@@ -288,7 +283,6 @@ export function createEditorHandlers({
       return files.sort((a, b) => a.src.localeCompare(b.src));
     },
 
-    /** Open the project's `media/` folder in the desktop's file manager, creating it first if needed. */
     async openMediaFolder({
       projectPath,
     }: {
@@ -301,7 +295,6 @@ export function createEditorHandlers({
   };
 }
 
-/** List each registered folder with its top-level `*.json` files that parse as projects. */
 async function listProjectFolders(registry: ProjectRegistry) {
   const folders: ProjectFolder[] = [];
   for (const directory of await registry.readFolders()) {
@@ -340,7 +333,6 @@ async function readProject(file: string) {
   } catch {}
 }
 
-/** Serve a layer source resolved against the project folder, as the renderer does. */
 async function handleMedia({
   registry,
   url,
@@ -391,7 +383,7 @@ async function resolveMediaFolder({
   });
 }
 
-/** Resolve an absolute project file path, which must be a `.json` file in a registered folder. */
+/** The project path must be absolute and name a `.json` file in a registered folder. */
 async function resolveProjectFile({
   registry,
   projectPath,

@@ -18,7 +18,7 @@ export function AudioWaveformView({
   /** Drawn faintly when the layer's audio does not reach the mix. */
   dimmed: boolean;
 }) {
-  // Expand culling to source-anchored 256 px windows. Small scrolls keep the
+  // Expand culling to source-anchored windows. Small scrolls keep the
   // same query and SVG bounds, and the parent clips the excess waveform.
   const cullStep = 256;
   const slice = queryAudioView(audioView, {

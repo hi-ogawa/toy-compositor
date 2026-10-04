@@ -2,7 +2,6 @@ import fs from "node:fs";
 import { Readable } from "node:stream";
 import { getMediaContentType } from "../media-file.ts";
 
-/** An error that becomes a response with its status and message. */
 export class HttpError extends Error {
   status: number;
   constructor({ status, message }: { status: number; message: string }) {
@@ -11,7 +10,6 @@ export class HttpError extends Error {
   }
 }
 
-/** A required query parameter, or a 400 error. */
 export function getParam(url: URL, name: string): string {
   const value = url.searchParams.get(name);
   if (!value) {
@@ -20,7 +18,6 @@ export function getParam(url: URL, name: string): string {
   return value;
 }
 
-/** Turn a thrown error into a response, keeping an `HttpError`'s status. */
 export function toErrorResponse(error: unknown): Response {
   if (error instanceof HttpError) {
     return new Response(error.message, { status: error.status });
@@ -31,9 +28,8 @@ export function toErrorResponse(error: unknown): Response {
 }
 
 /**
- * Stream a file, honoring the single `bytes=<start>-[<end>]` ranges that media
- * elements send when seeking. Other ranges get the whole file, which HTTP
- * allows.
+ * Honor the single ranges that media elements send when seeking. Other ranges
+ * get the whole file, which HTTP allows.
  */
 export async function serveFile({
   file,

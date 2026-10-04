@@ -13,15 +13,8 @@ type UseDraftInputOptions = {
 };
 
 /**
- * Hook for numeric inputs that only commit on Enter or blur.
- * Arrow keys step the committed value, which is the main way to nudge layout.
- *
- * @example
- * ```tsx
- * const xInput = useDraftInput({ value: box.x, onCommit: setX, step: 1 });
- *
- * <input type="text" inputMode="decimal" {...xInput.props} />
- * ```
+ * Commits only on Enter or blur. Arrow keys step the committed value, which is
+ * the main way to nudge layout.
  */
 export function useDraftInput({
   value,
@@ -47,7 +40,7 @@ export function useDraftInput({
     if (!Number.isNaN(n)) {
       onCommit(clamp(n, min, max));
     } else {
-      setDraft(format(value)); // Reset on invalid input
+      setDraft(format(value));
     }
   };
 

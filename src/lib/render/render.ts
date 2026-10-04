@@ -7,7 +7,6 @@ import { migrateAndValidateProject, type SavedProject } from "../migrate.ts";
 import { compile } from "./compile.ts";
 import { resolveProject } from "./resolve.ts";
 
-/** Render a project file to a video or still with ffmpeg. */
 export async function renderProject({
   projectFile,
   outFile,

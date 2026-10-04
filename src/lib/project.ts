@@ -4,7 +4,7 @@ export type Project = {
   output: Output;
   layers: Layer[];
   locators: Locator[];
-  /** Facts about every media file a clip uses, keyed by the clips' `src`. */
+  /** Keyed by the clips' `src`. */
   media: Record<string, MediaInfo>;
 };
 
@@ -80,10 +80,7 @@ export const NEUTRAL_VALUES = {
   color: Pick<ColorClip, "opacity">;
 };
 
-/**
- * Create a project without layers. Its output starts as a short range from 0,
- * because no media exists yet to size it by.
- */
+/** Its output starts as a short range because no media exists yet to size it by. */
 export function createEmptyProject(preset: CanvasPreset): Project {
   return {
     canvas: {
