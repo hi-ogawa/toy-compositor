@@ -35,9 +35,29 @@ export function ProjectList() {
 
       <div className="relative mx-auto flex h-full w-full max-w-4xl flex-col px-8 py-12">
         <header className="shrink-0">
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-100">
-            Toy Compositor
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight text-neutral-100">
+              Toy Compositor
+            </h1>
+            {apiClient.isDemo() && (
+              <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">
+                Demo
+              </span>
+            )}
+          </div>
+          {apiClient.isDemo() && (
+            <p className="mt-2 text-sm text-neutral-400">
+              Runs in your browser on a bundled sample, and edits stay in this
+              tab. To edit your own projects,{" "}
+              <a
+                href="https://github.com/hi-ogawa/toy-compositor#readme"
+                className="text-neutral-200 underline underline-offset-2 hover:text-neutral-100"
+              >
+                install the editor
+              </a>
+              .
+            </p>
+          )}
         </header>
 
         <main className="mt-10 min-h-0 flex-1">

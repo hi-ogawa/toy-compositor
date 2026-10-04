@@ -91,6 +91,10 @@ export const apiClient: typeof serverApiClient = {
     throw new Error("The demo has no server to measure text.");
   },
 
+  isDemo() {
+    return true;
+  },
+
   /** The static demo has no server to keep running. */
   openLiveConnection() {},
 

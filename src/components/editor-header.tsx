@@ -7,6 +7,7 @@ import {
   SaveCheckIcon,
   SaveIcon,
 } from "lucide-react";
+import { apiClient } from "../lib/api-client";
 import { getHomePageUrl } from "../lib/routes";
 import { Button } from "./ui/button";
 import {
@@ -41,6 +42,14 @@ export function EditorHeader({
         {file.split(/[\\/]/).slice(-2).join("/")}
       </span>
       <EditorSaveButton status={saveStatus} onSave={onSave} />
+      {apiClient.isDemo() && (
+        <span
+          className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300"
+          title="Edits stay in this browser tab"
+        >
+          Demo
+        </span>
+      )}
       <div className="flex-1" />
       <Button
         aria-label="Composition settings"
