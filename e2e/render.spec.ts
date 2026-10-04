@@ -238,9 +238,9 @@ test("leave out a muted layer's sound and a hidden layer's picture", async ({}, 
   expect(plain.streams).toEqual(["video", "audio"]);
   expect(diffFrames(plain.frame, blackFrame)).toBeGreaterThan(10);
   expect(muted.streams).toEqual(["video"]);
-  expect(diffFrames(muted.frame, plain.frame)).toBeLessThan(1);
+  expect(diffFrames(muted.frame, plain.frame)).toBeLessThan(0.1);
   expect(hidden.streams).toEqual(["video", "audio"]);
-  expect(diffFrames(hidden.frame, blackFrame)).toBeLessThan(1);
+  expect(diffFrames(hidden.frame, blackFrame)).toBeLessThan(0.1);
 });
 
 /** A file's stream types in order, such as `["video", "audio"]`. */
