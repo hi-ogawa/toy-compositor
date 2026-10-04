@@ -11,7 +11,7 @@ pnpm render <project.json> <output> --dry-run   # print the command only
 ## Timing and Frames
 
 - The project file's numbers are the timing truth. Offsets are set on waveforms, which are exact data, and playback only confirms them, so preview drift never shifts the final render.
-- The frame shown at a source time is the one [nearest to it](project-format.md#time). A paused editor preview can be [one frame off](editor.md#differences-from-the-render), so check frame choices such as the thumbnail on a render.
+- The frame shown at a source time is the one [nearest to it](project-format.md#time), and the editor preview follows the same rule.
 - A video clip's [hold](project-format.md#hold) clones the first frame the clip reads before it and the last frame it reads after it. Audio is not held, so the held spans are silent.
 - Camera footage is pre-processed outside toy-compositor to a constant frame rate, a browser-playable codec, and a one-second keyframe interval, so the compiler can assume evenly spaced frames and the editor can play and seek it ([pre-processing](preprocessing.md)).
 

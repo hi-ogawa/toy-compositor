@@ -1,7 +1,8 @@
 import { clamp } from "../utils/math.ts";
 import { throttle } from "../utils/timing.ts";
-import type { VideoClip } from "./project.ts";
+import type { VideoClip, VideoInfo } from "./project.ts";
 import type { AudioContextTransport } from "./transport.ts";
+import { getFrameTimeShownAt } from "./video-frame.ts";
 
 type PlaybackMode = "paused" | "before" | "playing" | "after";
 
@@ -17,17 +18,21 @@ const RATE_CATCH_UP_SECONDS = 2;
 const MAX_RATE_CHANGE = 0.1;
 
 /**
- * While playing it closes drift by nudging `playbackRate` rather than seeking,
- * because a corrective seek lands behind by however long the seek took, which
- * on long keyframe intervals is longer than the drift it corrects. Outside the
- * source range it rests on the clip's edge frames, so the element shows what a
- * hold shows wherever it is drawn. The element is always muted because audio
- * plays on the transport.
+ * It shows the frame the render shows, the one nearest the source time. The
+ * element shows the last frame at or before its current time, so a paused
+ * element seeks just past the nearest frame's timestamp, and a playing element
+ * runs half a frame ahead of the source time. While playing it closes drift by
+ * nudging `playbackRate` rather than seeking, because a corrective seek lands
+ * behind by however long the seek took, which on long keyframe intervals is
+ * longer than the drift it corrects. Outside the source range it rests on the
+ * clip's edge frames, so the element shows what a hold shows wherever it is
+ * drawn. The element is always muted because audio plays on the transport.
  */
 export class VideoPlayback {
   private readonly transport: AudioContextTransport;
   private readonly element: HTMLVideoElement;
   private clip?: VideoClip;
+  private video?: VideoInfo;
   private mode?: PlaybackMode;
   private readonly unsubscribe: () => void;
   private readonly correctDriftThrottled = throttle(
@@ -50,8 +55,9 @@ export class VideoPlayback {
     element.addEventListener("loadedmetadata", this.resync);
   }
 
-  setClip({ clip }: { clip: VideoClip }): void {
+  setClip({ clip, video }: { clip: VideoClip; video: VideoInfo }): void {
     this.clip = clip;
+    this.video = video;
     // A moved clip re-enters its mode instead of being corrected as drift.
     this.mode = undefined;
     this.sync();
@@ -69,15 +75,15 @@ export class VideoPlayback {
   };
 
   private sync = (): void => {
-    const clip = this.clip;
-    if (!clip) {
+    const { clip, video } = this;
+    if (!clip || !video) {
       return;
     }
     const { position, isPlaying } = this.transport.store.get();
     const expectedTime = clip.in + position - clip.start;
     if (!isPlaying) {
       this.mode = "paused";
-      this.pause(clamp(expectedTime, clip.in, clip.out));
+      this.pause(clamp(expectedTime, clip.in, clip.out), video);
       return;
     }
 
@@ -89,22 +95,22 @@ export class VideoPlayback {
           : "playing";
     if (mode === this.mode) {
       if (mode === "playing") {
-        this.correctDriftThrottled.run(expectedTime);
+        this.correctDriftThrottled.run(expectedTime + 0.5 / video.frameRate);
       }
       return;
     }
     this.mode = mode;
     switch (mode) {
       case "before": {
-        this.pause(clip.in);
+        this.pause(clip.in, video);
         break;
       }
       case "playing": {
-        this.play(expectedTime);
+        this.play(expectedTime + 0.5 / video.frameRate, video);
         break;
       }
       case "after": {
-        this.pause(clip.out);
+        this.pause(clip.out, video);
         break;
       }
     }
@@ -132,11 +138,11 @@ export class VideoPlayback {
           );
   }
 
-  private play(time: number): void {
+  private play(time: number, video: VideoInfo): void {
     this.correctDriftThrottled.reset();
-    // A paused element already shows the playhead's frame, and seeking it
-    // again would stall playback on the decode.
-    if (Math.abs(this.element.currentTime - time) > RATE_DEADBAND_SECONDS) {
+    // A paused element already shows the playhead's frame, within a frame of
+    // the time, and seeking it again would stall playback on the decode.
+    if (Math.abs(this.element.currentTime - time) > 1 / video.frameRate) {
       this.element.currentTime = time;
     }
     this.element.playbackRate = 1;
@@ -144,12 +150,13 @@ export class VideoPlayback {
     this.element.play().catch(() => {});
   }
 
-  private pause(time: number): void {
+  private pause(time: number, video: VideoInfo): void {
     this.correctDriftThrottled.reset();
     this.element.pause();
     this.element.playbackRate = 1;
-    if (this.element.currentTime !== time) {
-      this.element.currentTime = time;
+    const frameTime = getFrameTimeShownAt(video, time) + 0.1 / video.frameRate;
+    if (this.element.currentTime !== frameTime) {
+      this.element.currentTime = frameTime;
     }
   }
 }
