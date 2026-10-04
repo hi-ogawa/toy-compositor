@@ -203,6 +203,21 @@ function InspectorPanel({ children }: { children: ReactNode }) {
   );
 }
 
+const TABS = [
+  {
+    id: "library",
+    label: "Library",
+    title: "Media files and built-in layers to add.",
+  },
+  {
+    id: "source",
+    label: "Source",
+    title: "Full source file, independent of project timing and layout.",
+  },
+] as const;
+
+type LibrarySourceTab = (typeof TABS)[number]["id"];
+
 function LibrarySourceTabs({
   selected,
   runtime,
@@ -288,18 +303,3 @@ function LibrarySourceTabs({
     </>
   );
 }
-
-const TABS = [
-  {
-    id: "library",
-    label: "Library",
-    title: "Media files and built-in layers to add.",
-  },
-  {
-    id: "source",
-    label: "Source",
-    title: "Full source file, independent of project timing and layout.",
-  },
-] as const;
-
-type LibrarySourceTab = (typeof TABS)[number]["id"];
