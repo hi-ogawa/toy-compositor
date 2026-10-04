@@ -4,12 +4,9 @@ The editor composes the project in the DOM at one project time. Each visual clip
 
 ## Screen
 
-The screen has four regions around one project:
+The screen has four regions around one project.
 
-- **Side panel:** the library of the project's media files and built-in text and color layers to add, or the Source monitor for the selected clip's file. It collapses to a strip.
-- **Composition preview:** the project at the playhead, placed and timed as the render does.
-- **Timeline:** one lane per layer with a region per clip, the locators and render range, and the playhead.
-- **Inspector:** the fields of the selected clip and its layer, or the composition settings when they are selected.
+![The editor screen as its regions, each with what it is for, and the runtime that every edit goes through and every region renders from](images/editor-screen.svg)
 
 The runtime holds the project in a store, and the regions hold no project state of their own. An edit from any region goes through the runtime into the project, and every region re-renders from it, so a change in the inspector or a drag on the timeline shows up everywhere without extra wiring. Selection and gestures live in the UI, which decides placement and snapping before it calls the runtime.
 
