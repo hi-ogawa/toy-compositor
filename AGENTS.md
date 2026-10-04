@@ -32,4 +32,3 @@
 Remove a note when the code moves on or the lesson is absorbed.
 
 - Write repeated UI chrome, such as panel bands, inline with its classes at each site, like toy-midi. Name components for a region or behavior, such as `InspectorTitle`, rather than extracting styling wrappers whose props only vary styling (#86)
-- Keep `EditorRuntime` methods generic, taking explicit values such as `addLocator(time)`. The `use-*-interaction` hooks own placement and snapping policy, such as reading the playhead and snapping it to a frame (#132)
