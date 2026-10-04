@@ -1,4 +1,4 @@
-import { createLocalStorageStore } from "../utils/local-storage-store.ts";
+import { LocalStorageStore } from "../utils/local-storage-store.ts";
 import { DEFAULT_PIXELS_PER_SECOND } from "./timeline.ts";
 
 /** Editor state for one project file that stays in this browser, outside the project file. */
@@ -9,12 +9,12 @@ type ProjectClientState = {
   playhead?: number;
 };
 
-export type ProjectClientStorage = ReturnType<
-  typeof createProjectClientStorage
->;
+export type ProjectClientStorage = LocalStorageStore<ProjectClientState>;
 
-export function createProjectClientStorage(projectPath: string) {
-  return createLocalStorageStore<ProjectClientState>({
+export function createProjectClientStorage(
+  projectPath: string,
+): ProjectClientStorage {
+  return new LocalStorageStore<ProjectClientState>({
     key: `toy-compositor:project-client:${projectPath}`,
     defaults: { viewportStart: 0, pixelsPerSecond: DEFAULT_PIXELS_PER_SECOND },
   });
