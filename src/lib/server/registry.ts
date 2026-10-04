@@ -28,10 +28,15 @@ export function createProjectRegistry({ configDir }: { configDir: string }) {
       ? JSON.parse(fs.readFileSync(file, "utf-8")).folders
       : [];
     fs.mkdirSync(configDir, { recursive: true });
+    // Writing in place truncates the file first, so a concurrent
+    // `readFolders` could parse half of it. Renaming a finished temp file over
+    // it means readers see either the old list or the new one.
+    const tempFile = `${file}.${process.pid}.tmp`;
     fs.writeFileSync(
-      file,
+      tempFile,
       JSON.stringify({ folders: update(folders) }, null, 2) + "\n",
     );
+    fs.renameSync(tempFile, file);
   }
 
   return {
