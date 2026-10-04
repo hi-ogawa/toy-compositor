@@ -21,6 +21,7 @@ import {
   type Locator,
   type Output,
   type Project,
+  type TextClip,
 } from "./project.ts";
 import type { ProjectFile } from "./server/api.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
@@ -148,16 +149,10 @@ export class EditorRuntime {
   }
 
   async fitTextHeight(id: string): Promise<void> {
-    const { clip } = findClip(this.store.get().project.layers, id)!;
-    if (clip.type !== "text") {
-      throw new Error("Only a text clip's height fits its lines");
-    }
+    const clip = findClip(this.store.get().project.layers, id)!
+      .clip as TextClip;
     const height = await apiClient.measureTextHeight({ drawing: clip });
-    // Read the box again, because it may have been edited while measuring.
-    const current = findClip(this.store.get().project.layers, id)?.clip;
-    if (current?.type === "text") {
-      this.updateClip({ id, update: { box: { ...current.box, height } } });
-    }
+    this.updateClip({ id, update: { box: { ...clip.box, height } } });
   }
 
   /** Probes and records the file's media info first if the project has none. */
