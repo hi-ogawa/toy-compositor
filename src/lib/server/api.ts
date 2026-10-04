@@ -264,7 +264,6 @@ export function createEditorHandlers({
       );
     },
 
-    /** Measures a text clip's lines with ImageMagick, as the render draws them. */
     async measureTextHeight({
       drawing,
     }: {
