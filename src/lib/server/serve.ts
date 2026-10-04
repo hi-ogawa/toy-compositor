@@ -5,10 +5,7 @@ import { createEditorHandler, SERVER_NAME } from "./api.ts";
 import type { LiveConnections } from "./live.ts";
 import type { ProjectRegistry } from "./registry.ts";
 
-/**
- * Serve the prebuilt editor client and the editor API over the registered
- * project folders on localhost, with the same `/api/` handler that the dev server mounts.
- */
+/** Serve the prebuilt client with the same `/api/` handler that the dev server mounts. */
 export async function serveEditor({
   registry,
   live,
@@ -67,7 +64,6 @@ function isLocalHost(host: string | null) {
 }
 
 /**
- * Stop the editor server on `port` and wait until it no longer answers.
  * Resolve to false when no editor server, but possibly another process, was
  * on the port, which is left alone.
  */

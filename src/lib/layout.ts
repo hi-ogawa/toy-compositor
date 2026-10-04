@@ -9,7 +9,6 @@ export function getOutputRange(project: Project): TimeRange {
     : { start: output.time, end: output.time + 1 / canvas.fps };
 }
 
-/** Timeline span covering every clip, from the earliest start to the latest end. */
 export function getContentRange(project: Project): TimeRange {
   const ranges = project.layers.flatMap((layer) =>
     layer.clips.map(getClipRange),
@@ -23,7 +22,6 @@ export function getContentRange(project: Project): TimeRange {
   };
 }
 
-/** Timeline span of a clip, from its source range for video and audio. */
 export function getClipRange(clip: Clip): TimeRange {
   if (clip.type === "video" || clip.type === "audio") {
     return { start: clip.start, end: clip.start + clip.out - clip.in };
@@ -52,8 +50,7 @@ export function intersect(a: TimeRange, b: TimeRange): TimeRange | undefined {
 /**
  * The visible part of a crop on the canvas. The transform scales the whole size
  * and puts its top-left corner at its position, and the crop then hides edges
- * without moving the rest. The size rounds to whole pixels, and anything
- * outside the canvas is clipped later.
+ * without moving the rest. Anything outside the canvas is clipped later.
  */
 export function getVisibleBox({
   size,

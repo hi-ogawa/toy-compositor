@@ -5,9 +5,8 @@ import { migrateProject, type SavedProject } from "./migrate.ts";
 import type { Project, MediaInfo } from "./project.ts";
 
 /**
- * Probe every media file a project file's clips use and write their media info
- * into the project's `media`, replacing what was there. The project is written
- * in the current shape, migrated as on load.
+ * Replaces what the project's `media` held, and writes the project back in the
+ * current shape because it is migrated as on load.
  */
 export async function updateProjectMedia(projectFile: string) {
   const { project } = await migrateProject(
@@ -25,7 +24,6 @@ export async function updateProjectMedia(projectFile: string) {
   await writeJson(projectFile, { ...project, media: mediaInfoMap });
 }
 
-/** Read a media file's time range, video size and frame timing, and whether it has audio. */
 export async function probeMediaInfo(file: string): Promise<MediaInfo> {
   const { stdout } = await execFileAsync("ffprobe", [
     "-v",

@@ -2,11 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-/**
- * Install a desktop entry that runs `command` from the desktop's app launcher,
- * with the icon copied next to it, and return the entry's path. Linux only,
- * following the XDG desktop entry spec.
- */
+/** Follows the XDG desktop entry spec. */
 export async function installDesktopEntry({
   command,
   iconFile,
@@ -45,8 +41,7 @@ export function getDesktopEntryFile(): string {
   );
 }
 
-// The spec's Exec quoting for paths that may hold spaces: double quotes,
-// escaping `"`, `` ` ``, and `$` inside them, and `%%` for `%`, which would
+// The spec's Exec quoting for paths that may hold spaces. A bare `%` would
 // start a field code.
 function quoteExecArg(arg: string) {
   return `"${arg.replace(/["`$]/g, "\\$&").replaceAll("%", "%%")}"`;

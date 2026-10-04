@@ -85,13 +85,11 @@ type SavedTextClip = Omit<TextClip, "box" | "align" | "font"> & {
   };
 };
 
-/** A project in the current shape, and what changed to get there. */
 export type MigrateProjectResult = { project: Project; changes: string[] };
 
 /**
- * Migrate a project to the current shape, then validate it. Migration reads
- * `media` only for a fit box's source size, so it runs first, and validation
- * only reads the current shape.
+ * Migration runs first because it reads `media` only for a fit box's source
+ * size, and validation reads only the current shape.
  */
 export async function migrateAndValidateProject(project: SavedProject) {
   const migrated = await migrateProject(project);
@@ -101,7 +99,7 @@ export async function migrateAndValidateProject(project: SavedProject) {
 
 /**
  * Reject what loading cannot fix from the file alone, which needs update-media
- * or a different file. So far this only checks each clip's media info.
+ * or a different file.
  */
 function validateProject(project: Project): void {
   for (const layer of project.layers) {
@@ -126,11 +124,10 @@ function validateProject(project: Project): void {
 }
 
 /**
- * Bring a project to the current shape by filling what older files lack. It
- * reads `media` only for a fit box's source size and does not check it, so
- * update-media also runs it on a project whose media info is missing. Each layer is normalized to the clips shape
- * first, and then each clip's fields are migrated, so a field migration works
- * whichever shape the file started in.
+ * It reads `media` only for a fit box's source size and does not check it, so
+ * update-media also runs it on a project whose media info is missing. Layers
+ * are normalized to the clips shape before clip fields migrate, so a field
+ * migration works whichever shape the file started in.
  */
 export async function migrateProject(
   project: SavedProject,
@@ -251,10 +248,6 @@ async function migrateClip({
   }
 }
 
-/**
- * A media clip's transform, converted from a fit box when the clip has one: the
- * transform that places the visible part where the fit put it.
- */
 function migrateTransform({
   clip,
   label,
@@ -302,7 +295,6 @@ function convertFitBox({
       box.y + (box.height - roundToEven(cropped.height * scale)) / 2,
     ),
   };
-  // Solve for the transform that puts the region's corner there.
   return {
     x: corner.x - cropped.x * scale,
     y: corner.y - cropped.y * scale,
@@ -310,10 +302,6 @@ function convertFitBox({
   };
 }
 
-/**
- * Fills each missing property with its neutral value, recursing into objects
- * that are present.
- */
 function fillDefaults<T extends object, D extends object>(
   value: T,
   defaults: D,

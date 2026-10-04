@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="560" viewBox="0 0 760 560" role="img" aria-labelledby="title desc">
+<title id="title">The editor screen as regions around one project</title>
+<desc id="desc">The editor screen drawn as its regions, where they sit on screen. The side panel shows the library of media and built-in layers to add, or the Source monitor, which plays the selected clip's file independent of the project. The composition preview shows the project at the playhead, placing and timing each clip as the render does. The timeline shows one lane per layer with a region per clip, and selects clips and moves the playhead. The inspector edits the selected clip and its layer, or the composition settings. Every edit goes through the runtime into the project, and every region renders from the project and the playhead.</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7d8a84"/></marker>
+</defs>
+<rect width="760" height="560" fill="#fcfaf5"/>
+<g font-family="Arial,sans-serif" font-size="15" fill="#263632">
+<text x="30" y="34" font-size="20" font-weight="700">The editor screen as regions around one project</text>
+<text x="30" y="56" font-size="13" fill="#52625d">Each box is a region, drawn where it sits on screen, with what it is for.</text>
+
+<rect x="30" y="72" width="700" height="368" rx="8" fill="#ffffff" stroke="#a3b0a9"/>
+
+<rect x="46" y="88" width="170" height="236" rx="6" fill="#f0ebf8" stroke="#6b4fa0"/>
+<text x="58" y="110" font-weight="700">Side panel</text>
+<text x="58" y="128" font-size="13" fill="#52625d">collapses to a strip</text>
+<text x="58" y="158" font-size="13" font-weight="700">Library</text>
+<text x="58" y="176" font-size="13">media files and text</text>
+<text x="58" y="192" font-size="13">and color layers to add</text>
+<text x="58" y="222" font-size="13" font-weight="700">Source</text>
+<text x="58" y="240" font-size="13">the selected clip's file</text>
+<text x="58" y="256" font-size="13">with native controls,</text>
+<text x="58" y="272" font-size="13">ignoring the clip's</text>
+<text x="58" y="288" font-size="13">timing and placement</text>
+
+<rect x="228" y="88" width="318" height="236" rx="6" fill="#ffffff" stroke="#2f6fb0" stroke-width="1.5"/>
+<text x="240" y="110" font-weight="700">Composition preview</text>
+<text x="240" y="128" font-size="13" fill="#52625d">the project at the playhead, scaled to fit</text>
+<rect x="240" y="140" width="294" height="172" rx="6" fill="#263632"/>
+<text x="252" y="162" font-size="13" fill="#eef1ef" font-weight="700">canvas, in canvas pixels</text>
+<rect x="252" y="174" width="270" height="28" rx="4" fill="#dce8f5" stroke="#2f6fb0"/>
+<text x="262" y="193" font-size="13">video and image, placed and cropped</text>
+<rect x="252" y="208" width="270" height="28" rx="4" fill="#eef1ef"/>
+<text x="262" y="227" font-size="13">text and color</text>
+<text x="252" y="262" font-size="12" fill="#c6cfca">clips show inside their time range,</text>
+<text x="252" y="278" font-size="12" fill="#c6cfca">placed and timed as the render does,</text>
+<text x="252" y="294" font-size="12" fill="#c6cfca">later layers on top</text>
+
+<rect x="46" y="340" width="500" height="88" rx="6" fill="#f6f7f5" stroke="#a3b0a9"/>
+<text x="58" y="362" font-weight="700">Timeline</text>
+<text x="136" y="362" font-size="13" fill="#52625d">one lane per layer, a region per clip</text>
+<text x="58" y="388" font-size="13">select, move, and trim clips</text>
+<text x="58" y="408" font-size="13">move the playhead, locators, and render range</text>
+
+<rect x="562" y="88" width="152" height="340" rx="6" fill="#f6f7f5" stroke="#a3b0a9"/>
+<text x="574" y="110" font-weight="700">Inspector</text>
+<text x="574" y="138" font-size="13">the selected clip</text>
+<text x="574" y="154" font-size="13">and its layer, or the</text>
+<text x="574" y="170" font-size="13">composition settings</text>
+<text x="574" y="198" font-size="13">edits each field</text>
+
+<rect x="30" y="460" width="700" height="52" rx="8" fill="#263632"/>
+<text x="46" y="483" font-size="15" fill="#eef1ef" font-weight="700">Runtime</text>
+<text x="46" y="501" font-size="13" fill="#c6cfca">holds the project and the playhead, and plays them on the audio clock</text>
+
+<path d="M640 428 V458" fill="none" stroke="#7d8a84" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="648" y="448" font-size="12" fill="#52625d">edits</text>
+<path d="M300 428 V458" fill="none" stroke="#7d8a84" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="308" y="448" font-size="12" fill="#52625d">edits, seeks</text>
+<path d="M480 458 V430" fill="none" stroke="#7d8a84" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="488" y="448" font-size="12" fill="#52625d">project, playhead</text>
+
+<rect x="30" y="528" width="12" height="12" rx="2" fill="#ffffff" stroke="#2f6fb0"/>
+<text x="50" y="539" font-size="13" fill="#52625d">driven by project and time</text>
+<rect x="240" y="528" width="12" height="12" rx="2" fill="#f0ebf8" stroke="#6b4fa0"/>
+<text x="260" y="539" font-size="13" fill="#52625d">independent of project timing and placement</text>
+<rect x="560" y="528" width="12" height="12" rx="2" fill="#f6f7f5" stroke="#a3b0a9"/>
+<text x="580" y="539" font-size="13" fill="#52625d">controls</text>
+</g>
+</svg>

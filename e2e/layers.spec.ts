@@ -13,8 +13,8 @@ import {
 } from "./helper";
 
 test("add layers from the Library tab", async ({ page, editor }) => {
-  // Put a non-media file into the synthetic project's media folder, then open
-  // the project, whose output spans 0 to 3 s.
+  // Put a non-media file into the project's media folder, then open the
+  // project.
   const mediaDir = path.join(path.dirname(editor.projectFile), "media");
   await writeFile(path.join(mediaDir, "notes.txt"), "not media");
   await page.goto(editor.url);
@@ -27,8 +27,8 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     /video\.mp4$/,
   ]);
 
-  // Move the playhead to 1 s and add the video, and confirm it lands on top,
-  // selected, playing its whole source from the playhead.
+  // Move the playhead and add a video, and confirm it lands on top, selected,
+  // playing its whole source from the playhead.
   await seekTimelineByPixels(page, { pixels: DEFAULT_PIXELS_PER_SECOND });
   await page
     .getByRole("button", { name: "Add video.mp4", exact: true })
@@ -45,14 +45,14 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     height: "360",
   });
 
-  // Add the image, and confirm it spans the output.
+  // Add an image, and confirm it spans the output.
   await page
     .getByRole("button", { name: "Add image.png", exact: true })
     .click();
   await expectInspectorFields(page, { start: "0", end: "3" });
 
-  // Add the built-in text and color layers, which take the next number after
-  // the sample's own text and color layers.
+  // Add the built-in text and color layers, and confirm they are numbered
+  // after the existing ones.
   await page.getByRole("button", { name: "Add Text", exact: true }).click();
   await page.getByRole("button", { name: "Add Color", exact: true }).click();
   await expect(page.getByTestId("timeline-layer-8-clip-0")).toBeVisible();
@@ -78,8 +78,8 @@ test("add layers from the Library tab", async ({ page, editor }) => {
   await expect(page.getByTestId("timeline-layer-9-clip-0")).toBeVisible();
 
   // Select the added video from its lane, then save, and confirm the new layers
-  // reach the file on top of the existing five, without runtime ids, the
-  // existing media info is reused as is, and the new file's info is probed.
+  // reach the file on top of the existing ones, existing media info is reused,
+  // and the new file's info is probed.
   await clickTimelineButton(page, { name: "Select video region" });
   await expectInspectorFields(page, { start: "1" });
   await page.getByTestId("editor-save-button").click();
@@ -175,7 +175,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
 });
 
 test("remove the selected layer", async ({ page, editor }) => {
-  // Open the synthetic project and select the title text layer.
+  // Open the project and select the text layer.
   await page.goto(editor.url);
   const lanes = page.getByTestId("editor-timeline");
   await clickTimelineButton(page, { name: "Select Title region" });
@@ -204,7 +204,7 @@ test("remove the selected layer", async ({ page, editor }) => {
     lanes.getByRole("button", { name: "Select Tone 660 Hz region" }),
   ).toHaveCount(0);
 
-  // Save and confirm the file keeps only the video, the image, and the tint.
+  // Save and confirm the file keeps only the remaining layers.
   await page.getByTestId("editor-save-button").click();
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
     "data-status",
@@ -224,8 +224,7 @@ test("move the selected layer up and down in the stack", async ({
   page,
   editor,
 }) => {
-  // Open the synthetic project, whose stack from the bottom is the video, the
-  // audio, the image, the title text, and the tint, and select the image.
+  // Open the project and select a layer in the middle of the stack.
   await page.goto(editor.url);
   const regions = page
     .getByTestId("editor-timeline")
@@ -249,8 +248,8 @@ test("move the selected layer up and down in the stack", async ({
   const moveUp = page.getByRole("button", { name: "Move up", exact: true });
   const moveDown = page.getByRole("button", { name: "Move down", exact: true });
 
-  // Move it up twice, and confirm it takes the top lane and draws above the
-  // title and the tint while staying selected, with nothing left above it.
+  // Move it up to the top, and confirm it takes the top lane and draws above
+  // the others while staying selected, with nothing left above it.
   await moveUp.click();
   await moveUp.click();
   await expectLaneOrder([
@@ -270,8 +269,7 @@ test("move the selected layer up and down in the stack", async ({
   );
   await expect(moveUp).toBeDisabled();
 
-  // Move it down three times to just above the video, and confirm the
-  // inspector still shows it.
+  // Move it down, and confirm the inspector still shows it.
   await moveDown.click();
   await moveDown.click();
   await moveDown.click();

@@ -57,9 +57,8 @@ const rawClient = {
 };
 
 /**
- * Client for the editor server's RPC methods at `/api/rpc/<method>`, plus the
- * raw routes. The RPC proxy is the prototype, so any method not on
- * `rawClient` becomes an RPC call.
+ * The RPC proxy is the prototype, so any method not on `rawClient` becomes an
+ * RPC call.
  */
 export const apiClient = Object.assign(
   Object.create(rpcClient) as typeof rpcClient,

@@ -275,7 +275,6 @@ function ClipInspector({
   );
 }
 
-/** Lists each clip type's groups in display order. */
 function ClipFields({
   clip,
   media,

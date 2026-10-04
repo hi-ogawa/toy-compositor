@@ -23,13 +23,9 @@ import type {
 import type { Resolved } from "./resolve.ts";
 
 /**
- * Compile a project, with the media info it carries and its resolved text
- * images, into the ffmpeg inputs, filter graph, and output options, without
- * any I/O. The caller adds the output file.
- * Each clip compiles on its own into the streams it contributes, and then one
- * graph overlays the visual streams on a solid canvas in layer order and mixes
- * the audio streams. Clips in a layer never overlap, so their streams overlay
- * at the layer's position in any order.
+ * Compile without any I/O, so the caller adds the output file.
+ * Clips in a layer never overlap, so their streams overlay at the layer's
+ * position in any order.
  */
 export function compile({
   project,
@@ -122,7 +118,6 @@ type AudioStream = {
   filters: string[];
 };
 
-/** Look up the files and media info a clip needs, and compile it by type. */
 function compileClip({
   clip,
   muted,
@@ -388,9 +383,8 @@ function compileAudio({
 }
 
 /**
- * Fade the audio of a video or audio clip at the clip's own edges, then trim
- * it to its visible range and delay it into place, so the output range only
- * cuts a clip and never reshapes it.
+ * Fade at the clip's own edges before trimming to the visible range, so the
+ * output range only cuts a clip and never reshapes it.
  */
 function compileAudioStream({
   clip,
@@ -428,11 +422,6 @@ function compileAudioStream({
   };
 }
 
-/**
- * Wire the clips' streams into one filter graph. Inputs are numbered in stack
- * order, each visual stream is overlaid on the previous result starting from a
- * solid canvas, and the audio streams are mixed and padded to the output duration.
- */
 function assembleGraph({
   canvas,
   duration,

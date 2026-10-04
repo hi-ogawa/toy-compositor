@@ -3,10 +3,9 @@ import { getMediaType, type MediaFile } from "./media-file.ts";
 import type { MediaInfo, Project } from "./project.ts";
 
 // The demo build uses this module in place of `api-client.ts`, so the editor
-// runs as a static site over the bundled synthetic sample.
+// runs as a static site over the bundled sample.
 
 export const apiClient: typeof serverApiClient = {
-  /** Lists the bundled sample as one folder, and adding folders is disabled. */
   async listProjects() {
     return {
       folders: [

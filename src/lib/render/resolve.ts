@@ -7,11 +7,7 @@ export type Resolved = {
   texts: Map<TextClip, string>;
 };
 
-/**
- * Render the derived assets a project needs before compiling. Each text clip
- * is drawn to a PNG in textDir, so compile() can build ffmpeg arguments
- * without any I/O.
- */
+/** Render derived assets ahead of compiling, so compiling needs no I/O. */
 export async function resolveProject({
   project,
   textDir,
