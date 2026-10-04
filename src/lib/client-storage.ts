@@ -7,11 +7,22 @@ type ProjectClientState = {
   pixelsPerSecond: number;
   /** Absent until stored, so a project opens at its output start the first time. */
   playhead?: number;
+  sideOpen: boolean;
+  /** The side panel's share of the editor's width, in percent. */
+  sidePercent: number;
+  inspectorWidth: number;
+  timelineHeight: number;
+  clipToCanvas: boolean;
 };
 
 const DEFAULT_PROJECT_CLIENT_STATE: ProjectClientState = {
   viewportStart: 0,
   pixelsPerSecond: DEFAULT_PIXELS_PER_SECOND,
+  sideOpen: true,
+  sidePercent: 35,
+  inspectorWidth: 288,
+  timelineHeight: 320,
+  clipToCanvas: false,
 };
 
 export type ProjectClientStorage = LocalStorageStore<ProjectClientState>;

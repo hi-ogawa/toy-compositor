@@ -1,5 +1,6 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
+import type { ProjectClientStorage } from "../lib/client-storage";
 import { cn } from "./ui/utils";
 
 /**
@@ -7,6 +8,7 @@ import { cn } from "./ui/utils";
  * finds the side as it was.
  */
 export function CollapsibleSplit({
+  clientStorage,
   open,
   sideId,
   sideLabel,
@@ -14,6 +16,7 @@ export function CollapsibleSplit({
   strip,
   main,
 }: {
+  clientStorage: ProjectClientStorage;
   open: boolean;
   sideId: string;
   sideLabel: string;
@@ -21,7 +24,7 @@ export function CollapsibleSplit({
   strip: ReactNode;
   main: ReactNode;
 }) {
-  const [sideShare, setSideShare] = useState(35);
+  const [sideShare, setSideShare] = clientStorage.useValue("sidePercent");
   const containerRef = useRef<HTMLDivElement>(null);
   const resize = (share: number) =>
     setSideShare(Math.max(20, Math.min(60, share)));
