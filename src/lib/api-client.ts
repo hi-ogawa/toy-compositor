@@ -47,6 +47,10 @@ const rawClient = {
     return res.arrayBuffer();
   },
 
+  isDemo(): boolean {
+    return false;
+  },
+
   /**
    * Keeps an event stream open for the tab's lifetime, so a server started
    * with `serve --open` exits after the last tab closes.
