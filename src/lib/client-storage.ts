@@ -24,3 +24,26 @@ export function createProjectClientStorage(
     defaults: DEFAULT_PROJECT_CLIENT_STATE,
   });
 }
+
+/** The editor's panel layout, which follows the browser rather than each project. */
+type LayoutClientState = {
+  sideOpen: boolean;
+  /** The side panel's share of the editor's width, in percent. */
+  sidePercent: number;
+  inspectorWidth: number;
+  timelineHeight: number;
+  clipToCanvas: boolean;
+};
+
+const DEFAULT_LAYOUT_CLIENT_STATE: LayoutClientState = {
+  sideOpen: true,
+  sidePercent: 35,
+  inspectorWidth: 288,
+  timelineHeight: 320,
+  clipToCanvas: false,
+};
+
+export const layoutClientStorage = new LocalStorageStore<LayoutClientState>({
+  key: "toy-compositor:layout-client",
+  defaults: DEFAULT_LAYOUT_CLIENT_STATE,
+});

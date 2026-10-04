@@ -9,6 +9,7 @@ import {
 import { useState, type ReactNode } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { usePointerGesture } from "../hooks/use-pointer-gesture";
+import { layoutClientStorage } from "../lib/client-storage";
 import type { ClipEditType } from "../lib/clip-edit";
 import {
   getClipRange,
@@ -35,9 +36,9 @@ import type {
   LayerInteraction,
 } from "./use-layer-interaction";
 import type { LocatorInteraction } from "./use-locator-interaction";
+import { useStoredState } from "./use-stored-state";
 import { TIMELINE_LABEL_WIDTH, type TimelineView } from "./use-timeline";
 
-const DEFAULT_TIMELINE_HEIGHT = 320;
 const MIN_TIMELINE_HEIGHT = 160;
 const MIN_MONITOR_HEIGHT = 160;
 
@@ -64,7 +65,10 @@ export function Timeline({
   audioSources: Record<string, PromiseState<DecodedAudio>>;
   onClearSelection: () => void;
 }) {
-  const [height, setHeight] = useState(DEFAULT_TIMELINE_HEIGHT);
+  const [height, setHeight] = useStoredState(
+    layoutClientStorage,
+    "timelineHeight",
+  );
   const resizeRef = usePointerDrag({
     onStart: (event) => {
       event.preventDefault();

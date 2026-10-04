@@ -6,7 +6,10 @@ import {
   type ReactNode,
 } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
-import { createProjectClientStorage } from "../lib/client-storage";
+import {
+  createProjectClientStorage,
+  layoutClientStorage,
+} from "../lib/client-storage";
 import { isShortcutTextInputTarget, matchKeyboardEvent } from "../lib/keyboard";
 import { EditorRuntime, findClip, type ClipLocation } from "../lib/runtime";
 import { clamp } from "../utils/math";
@@ -21,6 +24,7 @@ import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { useEditorInteraction } from "./use-editor-interaction";
 import { useEditorProject } from "./use-editor-project";
+import { useStoredState } from "./use-stored-state";
 import { useTimeline } from "./use-timeline";
 import { useWindowEvent } from "./use-window-event";
 
@@ -37,7 +41,10 @@ export function Editor({ projectPath }: { projectPath: string }) {
   const timeline = useTimeline({ runtime, clientStorage });
   const { layerInteraction, locatorInteraction, clearSelection } =
     useEditorInteraction({ runtime, state });
-  const [sideOpen, setSideOpen] = useState(true);
+  const [sideOpen, setSideOpen] = useStoredState(
+    layoutClientStorage,
+    "sideOpen",
+  );
 
   useEffect(() => {
     document.title = state.file
@@ -176,11 +183,13 @@ export function Editor({ projectPath }: { projectPath: string }) {
 }
 
 function InspectorPanel({ children }: { children: ReactNode }) {
-  const DEFAULT_INSPECTOR_WIDTH = 288;
   const MIN_INSPECTOR_WIDTH = 200;
   const MAX_INSPECTOR_WIDTH = 640;
 
-  const [width, setWidth] = useState(DEFAULT_INSPECTOR_WIDTH);
+  const [width, setWidth] = useStoredState(
+    layoutClientStorage,
+    "inspectorWidth",
+  );
   const resizeRef = usePointerDrag({
     onStart: (event) => {
       event.preventDefault();

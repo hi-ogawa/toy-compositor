@@ -1,11 +1,13 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
+import { layoutClientStorage } from "../lib/client-storage";
 import { getPictureRange, getVisibleBox } from "../lib/layout";
 import type { Box, Clip, Project, TextClip } from "../lib/project";
 import type { EditorRuntime, EditorProject } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
 import { cn } from "./ui/utils";
 import type { EditorSelection } from "./use-layer-interaction";
+import { useStoredState } from "./use-stored-state";
 
 export function CompositionPreview({
   project,
@@ -24,7 +26,10 @@ export function CompositionPreview({
   const viewportRef = useResizeObserver((element) =>
     setSize({ width: element.clientWidth, height: element.clientHeight }),
   );
-  const [clipToCanvas, setClipToCanvas] = useState(false);
+  const [clipToCanvas, setClipToCanvas] = useStoredState(
+    layoutClientStorage,
+    "clipToCanvas",
+  );
   const { canvas } = project;
   // Leaves a margin around the frame, so layers overflowing it stay visible.
   const scale =
