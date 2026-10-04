@@ -96,10 +96,10 @@ export function CompositionPreview({
                 );
               }),
             )}
-            {/* Dims or hides everything outside the frame, below the selection
-                outline, and marks the frame edge with a 1px screen line just
-                outside it. Hiding paints the ring opaque instead of clipping
-                the canvas, so the selection outline still shows past the frame. */}
+            {/* A box-shadow ring spread far past the panel covers everything
+                outside the frame without clipping the canvas, so the selection
+                outline above it still shows past the frame. The outline width
+                undoes the canvas scale to stay one screen pixel. */}
             <div
               className={cn(
                 "pointer-events-none absolute inset-0 z-[5] outline outline-neutral-600 ring-[100000px]",
