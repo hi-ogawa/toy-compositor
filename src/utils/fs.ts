@@ -20,11 +20,11 @@ export async function writeJson(
 }
 
 /**
- * Write JSON by renaming a finished temp file over `file`, so a concurrent
- * reader sees the old or the new contents, never a truncated file.
+ * Write by renaming a finished temp file over `file`, so a concurrent reader
+ * sees the old or the new contents, never a truncated file.
  */
-export function writeJsonAtomicSync(file: string, json: unknown) {
+export function writeFileAtomicSync(file: string, data: string) {
   const tempFile = `${file}.${process.pid}.tmp`;
-  fs.writeFileSync(tempFile, JSON.stringify(json, null, 2) + "\n");
+  fs.writeFileSync(tempFile, data);
   fs.renameSync(tempFile, file);
 }
