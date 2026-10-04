@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test";
 import type { SavedProject } from "../src/lib/migrate.ts";
 import type { Project } from "../src/lib/project.ts";
-import { execFileAsync } from "../src/utils/exec.ts";
 import { editJson, readJson } from "../src/utils/fs.ts";
+import { runCli } from "./cli";
 import { test } from "./helper";
 
 test("update a project's media info", async ({ editor }) => {
@@ -16,11 +16,7 @@ test("update a project's media info", async ({ editor }) => {
 
   // Run the update-media command, and confirm it writes back the media info
   // in the current shape.
-  await execFileAsync(process.execPath, [
-    "src/cli.ts",
-    "update-media",
-    editor.projectFile,
-  ]);
+  await runCli(["update-media", editor.projectFile]);
   expect(await readJson<Project>(editor.projectFile)).toEqual(project);
 });
 
@@ -39,8 +35,7 @@ test("reject a clip whose file has no media info", async ({ page, editor }) => {
 
   // Render, and confirm it fails with the same error.
   await expect(
-    execFileAsync(process.execPath, [
-      "src/cli.ts",
+    runCli([
       "render",
       editor.projectFile,
       `${editor.projectFile}.mp4`,
