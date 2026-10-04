@@ -4,6 +4,7 @@ import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
 import { readJson } from "../src/utils/fs.ts";
 import {
   commitInspectorField,
+  dragBy,
   expectImageLoaded,
   expectInspectorFields,
   clickTimelineButton,
@@ -487,4 +488,23 @@ test("hold a video layer's first and last frames in the preview", async ({
       {},
     ],
   });
+});
+
+test("resize the inspector by dragging its border", async ({
+  page,
+  editor,
+}) => {
+  // Open the synthetic project.
+  await page.goto(editor.url);
+  const inspector = page.getByRole("complementary", { name: "Inspector" });
+  const initialWidth = (await inspector.boundingBox())!.width;
+
+  // Drag the inspector border left and confirm the inspector widens without
+  // changing the project.
+  await dragBy(page, page.getByTitle("Resize inspector"), { deltaX: -100 });
+  expect((await inspector.boundingBox())!.width).toBeGreaterThan(initialWidth);
+  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
 });
