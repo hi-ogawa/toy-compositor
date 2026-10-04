@@ -4,6 +4,7 @@ import { getPictureRange, getVisibleBox } from "../lib/layout";
 import type { Box, Clip, Project, TextClip } from "../lib/project";
 import type { EditorRuntime, EditorProject } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
+import { cn } from "./ui/utils";
 import type { EditorSelection } from "./use-layer-interaction";
 
 export function CompositionPreview({
@@ -23,6 +24,8 @@ export function CompositionPreview({
   const viewportRef = useResizeObserver((element) =>
     setSize({ width: element.clientWidth, height: element.clientHeight }),
   );
+  // Hard cut hides everything outside the frame, as the render does.
+  const [hardCut, setHardCut] = useState(false);
   const { canvas } = project;
   // Leaves a margin around the frame, so layers overflowing it stay visible.
   const scale =
@@ -37,6 +40,15 @@ export function CompositionPreview({
         >
           {canvas.width} × {canvas.height} · {canvas.fps} fps
         </span>
+        <button
+          type="button"
+          title="Hide content outside the canvas, as in the render"
+          aria-pressed={hardCut}
+          className="ml-auto rounded px-1.5 text-[10px] text-neutral-400 hover:bg-neutral-700/50 hover:text-neutral-100 aria-pressed:bg-neutral-700 aria-pressed:text-neutral-100"
+          onClick={() => setHardCut(!hardCut)}
+        >
+          Hard cut
+        </button>
       </div>
       <div
         ref={viewportRef}
@@ -85,10 +97,14 @@ export function CompositionPreview({
                 );
               }),
             )}
-            {/* Dims everything outside the frame, below the selection outline,
-                and marks the frame edge with a 1px screen line just outside it. */}
+            {/* Dims or hides everything outside the frame, below the selection
+                outline, and marks the frame edge with a 1px screen line just
+                outside it. The opaque ring matches the panel background. */}
             <div
-              className="pointer-events-none absolute inset-0 z-[5] outline outline-neutral-600 ring-[100000px] ring-neutral-900/70"
+              className={cn(
+                "pointer-events-none absolute inset-0 z-[5] outline outline-neutral-600 ring-[100000px]",
+                hardCut ? "ring-neutral-900" : "ring-neutral-900/70",
+              )}
               style={{ outlineWidth: 1 / scale }}
             />
           </div>
