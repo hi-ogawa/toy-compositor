@@ -1,9 +1,12 @@
 import {
+  EyeIcon,
+  EyeOffIcon,
   LoaderCircleIcon,
   PauseIcon,
   PencilIcon,
   PlayIcon,
   PlusIcon,
+  Volume2Icon,
   VolumeXIcon,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
@@ -155,6 +158,9 @@ export function Timeline({
                 layer={layer}
                 index={index}
                 audioSources={audioSources}
+                onUpdate={(update) =>
+                  runtime.updateLayer({ id: layer.id, update })
+                }
                 selectedClipId={
                   selection?.type === "clip" ? selection.id : undefined
                 }
@@ -378,6 +384,7 @@ function TimelineLayerLane({
   layer,
   index,
   audioSources,
+  onUpdate,
   selectedClipId,
 }: {
   timeline: TimelineView;
@@ -386,9 +393,12 @@ function TimelineLayerLane({
   /** Position in the project, for test ids. */
   index: number;
   audioSources: Record<string, PromiseState<DecodedAudio>>;
+  onUpdate: (update: Partial<Pick<EditorLayer, "hidden" | "muted">>) => void;
   selectedClipId?: string;
 }) {
   const { name } = layer;
+  const toggleClassName =
+    "shrink-0 rounded p-0.5 text-muted-foreground outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-1 focus-visible:ring-sky-300";
   return (
     <TimelineRow
       timeline={timeline}
@@ -397,9 +407,37 @@ function TimelineLayerLane({
       label={
         <div
           title={name}
-          className="flex h-full items-center px-3 text-xs font-semibold"
+          className="flex h-full items-center gap-1 px-3 text-xs font-semibold"
         >
-          <span className="truncate">{name}</span>
+          <span className="flex-1 truncate">{name}</span>
+          <button
+            type="button"
+            aria-label="hidden"
+            aria-pressed={layer.hidden}
+            title={layer.hidden ? "Show picture" : "Hide picture"}
+            onClick={() => onUpdate({ hidden: !layer.hidden })}
+            className={toggleClassName}
+          >
+            {layer.hidden ? (
+              <EyeOffIcon className="size-3.5" />
+            ) : (
+              <EyeIcon className="size-3.5" />
+            )}
+          </button>
+          <button
+            type="button"
+            aria-label="muted"
+            aria-pressed={layer.muted}
+            title={layer.muted ? "Unmute sound" : "Mute sound"}
+            onClick={() => onUpdate({ muted: !layer.muted })}
+            className={toggleClassName}
+          >
+            {layer.muted ? (
+              <VolumeXIcon className="size-3.5" />
+            ) : (
+              <Volume2Icon className="size-3.5" />
+            )}
+          </button>
         </div>
       }
     >

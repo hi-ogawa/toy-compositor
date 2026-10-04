@@ -54,7 +54,10 @@ test("read and migrate an older project file", async ({ page, editor }) => {
     editJson<SavedProject>(editor.projectFile, (savedProject) => {
       delete savedProject.canvas.background;
       const layers: SavedFlatLayer[] = project.layers.map(
-        ({ clips, ...layer }) => ({ ...layer, ...structuredClone(clips[0]!) }),
+        ({ clips, hidden: _hidden, ...layer }) => ({
+          ...layer,
+          ...structuredClone(clips[0]!),
+        }),
       );
       for (const layer of layers) {
         if (!layer.muted) {

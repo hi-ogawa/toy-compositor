@@ -238,6 +238,18 @@ function ClipInspector({
             </button>
           ))}
         </Group>
+        {clip.type !== "audio" && (
+          <Group title="Picture">
+            <label className="col-span-2 flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={layer.hidden}
+                onChange={(e) => onLayerUpdate({ hidden: e.target.checked })}
+              />
+              hidden
+            </label>
+          </Group>
+        )}
         <ClipFields
           clip={clip}
           media={media}

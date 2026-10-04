@@ -97,6 +97,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     {
       name: "video",
       muted: false,
+      hidden: false,
       clips: [
         {
           type: "video",
@@ -115,6 +116,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     {
       name: "image",
       muted: false,
+      hidden: false,
       clips: [
         {
           type: "image",
@@ -129,6 +131,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     {
       name: "Text 2",
       muted: false,
+      hidden: false,
       clips: [
         {
           type: "text",
@@ -145,6 +148,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     {
       name: "Color 2",
       muted: false,
+      hidden: false,
       clips: [
         {
           type: "color",
@@ -159,6 +163,7 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     {
       name: "extra",
       muted: false,
+      hidden: false,
       clips: [
         {
           type: "audio",

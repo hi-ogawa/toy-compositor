@@ -305,6 +305,7 @@ test("edit layer names and a color layer's fill and box, and save them", async (
   expect(project.layers[5]).toEqual({
     name: "Scrim",
     muted: false,
+    hidden: false,
     clips: [
       {
         type: "color",

@@ -57,7 +57,7 @@ export type CanvasPreset = (typeof CANVAS_PRESETS)[number];
  */
 export const NEUTRAL_VALUES = {
   canvas: { background: "#000000" },
-  layer: { muted: false },
+  layer: { muted: false, hidden: false },
   video: {
     crop: { left: 0, right: 0, top: 0, bottom: 0 },
     fadeIn: 0,
@@ -70,7 +70,7 @@ export const NEUTRAL_VALUES = {
   color: { opacity: 1 },
 } satisfies {
   canvas: Pick<Canvas, "background">;
-  layer: Pick<Layer, "muted">;
+  layer: Pick<Layer, "muted" | "hidden">;
   video: Pick<VideoClip, "crop" | "fadeIn" | "fadeOut" | "hold">;
   audio: Pick<AudioClip, "fadeIn" | "fadeOut">;
   image: Pick<ImageClip, "crop">;
@@ -103,7 +103,12 @@ export function createEmptyProject(preset: CanvasPreset): Project {
  * A lane in the stack, like a track in a video editor, holding clips. The
  * editor only creates layers with one clip so far.
  */
-export type Layer = { name: string; muted: boolean; clips: Clip[] };
+export type Layer = {
+  name: string;
+  muted: boolean;
+  hidden: boolean;
+  clips: Clip[];
+};
 
 export type Clip = VideoClip | AudioClip | ImageClip | TextClip | ColorClip;
 

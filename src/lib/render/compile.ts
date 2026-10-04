@@ -49,16 +49,17 @@ export function compile({
     withAudio: project.output.type === "video",
   };
   const clips = project.layers.flatMap((layer) =>
-    layer.clips.map((clip) =>
-      compileClip({
+    layer.clips.map((clip) => {
+      const streams = compileClip({
         clip,
         muted: layer.muted,
         projectDir,
         mediaInfoMap: project.media,
         resolved,
         scene,
-      }),
-    ),
+      });
+      return layer.hidden ? { audio: streams.audio } : streams;
+    }),
   );
   const graph = assembleGraph({ canvas, duration, clips });
 

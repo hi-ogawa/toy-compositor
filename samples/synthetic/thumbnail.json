@@ -14,6 +14,7 @@
     {
       "name": "Test pattern",
       "muted": true,
+      "hidden": false,
       "clips": [
         {
           "type": "video",
@@ -44,6 +45,7 @@
     {
       "name": "Tone 660 Hz",
       "muted": false,
+      "hidden": false,
       "clips": [
         {
           "type": "audio",
@@ -59,6 +61,7 @@
     {
       "name": "Label backdrop",
       "muted": false,
+      "hidden": false,
       "clips": [
         {
           "type": "image",
@@ -82,6 +85,7 @@
     {
       "name": "Title",
       "muted": false,
+      "hidden": false,
       "clips": [
         {
           "type": "text",
@@ -112,6 +116,7 @@
     {
       "name": "Tint",
       "muted": false,
+      "hidden": false,
       "clips": [
         {
           "type": "color",

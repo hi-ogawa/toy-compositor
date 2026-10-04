@@ -46,6 +46,7 @@ Layers stack in list order over the canvas `background`, so later layers sit on 
 {
   "name": "camera",
   "muted": true,
+  "hidden": false,
   "clips": [
     { "type": "video", "src": "media/take1.mp4", "start": 7.967, "in": 0, "out": 60, "transform": { ... } },
     { "type": "video", "src": "media/take2.mp4", "start": 67.967, "in": 3, "out": 120, "transform": { ... } },
@@ -53,7 +54,7 @@ Layers stack in list order over the canvas `background`, so later layers sit on 
 }
 ```
 
-Every layer has a `name`, such as `"camera"`, `"score"`, or `"mix"`. Names do not affect rendering. They label layers in the editor and let scripts find a layer by its role instead of its position in the list. `muted` leaves the sound of every clip on the layer out of the mix.
+Every layer has a `name`, such as `"camera"`, `"score"`, or `"mix"`. Names do not affect rendering. They label layers in the editor and let scripts find a layer by its role instead of its position in the list. `muted` leaves the sound of every clip on the layer out of the mix, and `hidden` leaves their picture out of the frame.
 
 A layer can mix clip types. The editor only creates layers with one clip so far.
 
