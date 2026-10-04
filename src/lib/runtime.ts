@@ -147,7 +147,6 @@ export class EditorRuntime {
     });
   }
 
-  /** Sets a text clip's box height to its lines' height in the render. */
   async fitTextHeight(id: string): Promise<void> {
     const { clip } = findClip(this.store.get().project.layers, id)!;
     if (clip.type !== "text") {
