@@ -2,7 +2,7 @@ import { useRef, type ReactNode } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { layoutClientStorage } from "../lib/client-storage";
 import { cn } from "./ui/utils";
-import { useStoredState } from "./use-stored-state";
+import { useStorageState } from "./use-storage-state";
 
 /**
  * Closing the side hides it and leaves `strip` at the same edge, so reopening
@@ -23,7 +23,7 @@ export function CollapsibleSplit({
   strip: ReactNode;
   main: ReactNode;
 }) {
-  const [sideShare, setSideShare] = useStoredState(
+  const [sideShare, setSideShare] = useStorageState(
     layoutClientStorage,
     "sidePercent",
   );

@@ -24,7 +24,7 @@ import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { useEditorInteraction } from "./use-editor-interaction";
 import { useEditorProject } from "./use-editor-project";
-import { useStoredState } from "./use-stored-state";
+import { useStorageState } from "./use-storage-state";
 import { useTimeline } from "./use-timeline";
 import { useWindowEvent } from "./use-window-event";
 
@@ -41,7 +41,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
   const timeline = useTimeline({ runtime, clientStorage });
   const { layerInteraction, locatorInteraction, clearSelection } =
     useEditorInteraction({ runtime, state });
-  const [sideOpen, setSideOpen] = useStoredState(
+  const [sideOpen, setSideOpen] = useStorageState(
     layoutClientStorage,
     "sideOpen",
   );
@@ -186,7 +186,7 @@ function InspectorPanel({ children }: { children: ReactNode }) {
   const MIN_INSPECTOR_WIDTH = 200;
   const MAX_INSPECTOR_WIDTH = 640;
 
-  const [width, setWidth] = useStoredState(
+  const [width, setWidth] = useStorageState(
     layoutClientStorage,
     "inspectorWidth",
   );

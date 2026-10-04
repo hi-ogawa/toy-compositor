@@ -7,7 +7,7 @@ import type { EditorRuntime, EditorProject } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
 import { cn } from "./ui/utils";
 import type { EditorSelection } from "./use-layer-interaction";
-import { useStoredState } from "./use-stored-state";
+import { useStorageState } from "./use-storage-state";
 
 export function CompositionPreview({
   project,
@@ -26,7 +26,7 @@ export function CompositionPreview({
   const viewportRef = useResizeObserver((element) =>
     setSize({ width: element.clientWidth, height: element.clientHeight }),
   );
-  const [clipToCanvas, setClipToCanvas] = useStoredState(
+  const [clipToCanvas, setClipToCanvas] = useStorageState(
     layoutClientStorage,
     "clipToCanvas",
   );
