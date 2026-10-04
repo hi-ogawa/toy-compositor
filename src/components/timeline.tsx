@@ -155,6 +155,9 @@ export function Timeline({
                 layer={layer}
                 index={index}
                 audioSources={audioSources}
+                selected={
+                  selection?.type === "layer" && selection.id === layer.id
+                }
                 selectedClipId={
                   selection?.type === "clip" ? selection.id : undefined
                 }
@@ -378,6 +381,7 @@ function TimelineLayerLane({
   layer,
   index,
   audioSources,
+  selected,
   selectedClipId,
 }: {
   timeline: TimelineView;
@@ -386,21 +390,31 @@ function TimelineLayerLane({
   /** Position in the project, for test ids. */
   index: number;
   audioSources: Record<string, PromiseState<DecodedAudio>>;
+  selected: boolean;
   selectedClipId?: string;
 }) {
   const { name } = layer;
   return (
     <TimelineRow
       timeline={timeline}
-      className="h-12"
+      className={cn("h-12", selected && "bg-sky-300/10")}
       subdivisions
       label={
-        <div
+        <button
+          type="button"
+          aria-label={`Select ${name} layer`}
+          aria-pressed={selected}
           title={name}
-          className="flex h-full items-center px-3 text-xs font-semibold"
+          onClick={() =>
+            layerInteraction.select({ type: "layer", id: layer.id })
+          }
+          className={cn(
+            "flex h-full w-full cursor-pointer items-center px-3 text-left text-xs font-semibold outline-none hover:bg-neutral-800 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-sky-300",
+            selected && "bg-sky-300/20 text-sky-200 hover:bg-sky-300/20",
+          )}
         >
           <span className="truncate">{name}</span>
-        </div>
+        </button>
       }
     >
       {layer.clips.map((clip, clipIndex) => (

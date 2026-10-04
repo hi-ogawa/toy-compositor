@@ -264,21 +264,24 @@ test("edit layer names and a color layer's fill and box, and save them", async (
     .first();
   await expect(fill).toHaveCSS("width", "640px");
 
-  // Name the color layer and confirm its lane and the inspector title follow.
-  const name = page
-    .getByTestId("inspector")
-    .getByLabel("name", { exact: true });
+  // Select the color layer from its lane header, rename it, and confirm its
+  // lane and the inspector title follow.
+  await clickTimelineButton(page, { name: "Select Color 2 layer" });
+  const name = getInspectorField(page, { name: "name" });
   await expect(name).toHaveValue("Color 2");
   await name.fill("Scrim");
   await name.press("Enter");
   await expect(
     page.getByTestId("inspector").getByRole("heading", { name: "Scrim" }),
   ).toBeVisible();
+
+  // Select its clip, and confirm the clip inspector names the layer but
+  // leaves the layer's fields to the layer inspector.
+  await clickTimelineButton(page, { name: "Select Scrim region" });
   await expect(
-    page
-      .getByTestId("editor-timeline")
-      .getByRole("button", { name: "Select Scrim region", exact: true }),
+    page.getByTestId("inspector").getByRole("heading", { name: "Scrim" }),
   ).toBeVisible();
+  await expect(getInspectorField(page, { name: "name" })).toHaveCount(0);
 
   // Change the fill color and confirm the preview paints it.
   await page

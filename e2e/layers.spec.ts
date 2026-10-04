@@ -245,7 +245,7 @@ test("move the selected layer up and down in the stack", async ({
     "Tone 660 Hz",
     "Test pattern",
   ]);
-  await clickTimelineButton(page, { name: "Select Label backdrop region" });
+  await clickTimelineButton(page, { name: "Select Label backdrop layer" });
   const moveUp = page.getByRole("button", { name: "Move up", exact: true });
   const moveDown = page.getByRole("button", { name: "Move down", exact: true });
 
@@ -262,7 +262,9 @@ test("move the selected layer up and down in the stack", async ({
   ]);
   const top = page.getByTestId("composition-layer-4-clip-0");
   await expect(top.getByRole("img", { name: "Label backdrop" })).toBeVisible();
-  await expect(top.getByLabel("Selected layer outline")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Select Label backdrop layer" }),
+  ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByTestId("composition-layer-2-clip-0")).toHaveText(
     "Synthetic sample",
   );
@@ -280,7 +282,7 @@ test("move the selected layer up and down in the stack", async ({
     "Label backdrop",
     "Test pattern",
   ]);
-  await expectInspectorFields(page, { start: "0", end: "3", x: "420" });
+  await expectInspectorFields(page, { name: "Label backdrop" });
 
   // Move it to the bottom, and confirm nothing is left below it.
   await moveDown.click();
