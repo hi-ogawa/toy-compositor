@@ -10,11 +10,13 @@ test("restore the panel layout when reopening the editor", async ({
   await page.goto(editor.url);
   const inspector = page.getByRole("complementary", { name: "Inspector" });
   const timeline = page.getByTestId("editor-timeline");
+  const initialInspectorWidth = (await inspector.boundingBox())!.width;
   const initialTimelineHeight = (await timeline.boundingBox())!.height;
   await dragBy(page, page.getByTitle("Resize inspector"), { deltaX: -100 });
   await dragBy(page, page.getByTitle("Resize timeline"), { deltaY: -50 });
   const inspectorWidth = (await inspector.boundingBox())!.width;
   const timelineHeight = (await timeline.boundingBox())!.height;
+  expect(inspectorWidth).toBeGreaterThan(initialInspectorWidth);
   expect(timelineHeight).toBeGreaterThan(initialTimelineHeight);
   const clipToCanvas = page.getByTitle(
     "Hide content outside the canvas, as in the render",
