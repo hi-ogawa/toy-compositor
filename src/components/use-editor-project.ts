@@ -82,20 +82,10 @@ export function useEditorProject({
     }
     return runtime.store.subscribeWithSelector({
       selector: (state) => (state.playing ? undefined : state.playhead),
-      listener: storePlayhead,
+      listener: () =>
+        clientStorage.update({ playhead: runtime.store.get().playhead }),
     });
   }, [projectQuery.isSuccess, runtime]);
-
-  function storePlayhead() {
-    clientStorage.update({ playhead: runtime.store.get().playhead });
-  }
-
-  // Closing the tab during playback keeps where it was.
-  useWindowEvent("pagehide", () => {
-    if (projectQuery.isSuccess) {
-      storePlayhead();
-    }
-  });
 
   useWindowEvent("beforeunload", (event) => {
     if (dirty) {
