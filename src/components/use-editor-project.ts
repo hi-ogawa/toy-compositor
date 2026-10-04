@@ -2,9 +2,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { apiClient } from "../lib/api-client";
-import type { ProjectClientState } from "../lib/project-client-store";
+import type { ProjectClientStorage } from "../lib/project-client-storage";
 import type { EditorRuntime } from "../lib/runtime";
-import type { LocalStorageStore } from "../utils/local-storage-store";
 import { useWindowEvent } from "./use-window-event";
 
 export type SaveStatus = "saved" | "unsaved" | "saving" | "error";
@@ -12,11 +11,11 @@ export type SaveStatus = "saved" | "unsaved" | "saving" | "error";
 export function useEditorProject({
   projectPath,
   runtime,
-  clientStore,
+  clientStorage,
 }: {
   projectPath: string;
   runtime: EditorRuntime;
-  clientStore: LocalStorageStore<ProjectClientState>;
+  clientStorage: ProjectClientStorage;
 }) {
   const [dirty, setDirty] = useState(false);
   const revisionRef = useRef(0);
@@ -33,7 +32,7 @@ export function useEditorProject({
       runtime.deserializeProject(result.value);
       // Loading seeks to the output start, so return to where the project was
       // last left instead.
-      const { playhead } = clientStore.store.get();
+      const { playhead } = clientStorage.store.get();
       if (playhead !== undefined) {
         runtime.seek(playhead);
       }
@@ -88,7 +87,7 @@ export function useEditorProject({
   }, [projectQuery.isSuccess, runtime]);
 
   function storePlayhead() {
-    clientStore.update({ playhead: runtime.store.get().playhead });
+    clientStorage.update({ playhead: runtime.store.get().playhead });
   }
 
   // Closing the tab during playback keeps where it was.

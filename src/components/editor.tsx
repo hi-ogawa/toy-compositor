@@ -7,7 +7,7 @@ import {
 } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { isShortcutTextInputTarget, matchKeyboardEvent } from "../lib/keyboard";
-import { createProjectClientStore } from "../lib/project-client-store";
+import { createProjectClientStorage } from "../lib/project-client-storage";
 import { EditorRuntime, findClip, type ClipLocation } from "../lib/runtime";
 import { clamp } from "../utils/math";
 import { CollapsibleSplit } from "./collapsible-split";
@@ -30,9 +30,11 @@ export function Editor({ projectPath }: { projectPath: string }) {
     runtime.store.subscribe,
     runtime.store.get,
   );
-  const [clientStore] = useState(() => createProjectClientStore(projectPath));
-  const project = useEditorProject({ projectPath, runtime, clientStore });
-  const timeline = useTimeline(runtime, { clientStore });
+  const [clientStorage] = useState(() =>
+    createProjectClientStorage(projectPath),
+  );
+  const project = useEditorProject({ projectPath, runtime, clientStorage });
+  const timeline = useTimeline(runtime, { clientStorage });
   const { layerInteraction, locatorInteraction, clearSelection } =
     useEditorInteraction({ runtime, state });
   const [sideOpen, setSideOpen] = useState(true);
