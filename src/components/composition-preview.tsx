@@ -24,7 +24,6 @@ export function CompositionPreview({
   const viewportRef = useResizeObserver((element) =>
     setSize({ width: element.clientWidth, height: element.clientHeight }),
   );
-  // Clipping to the canvas hides everything outside the frame, as the render does.
   const [clipToCanvas, setClipToCanvas] = useState(false);
   const { canvas } = project;
   // Leaves a margin around the frame, so layers overflowing it stay visible.
@@ -99,7 +98,8 @@ export function CompositionPreview({
             )}
             {/* Dims or hides everything outside the frame, below the selection
                 outline, and marks the frame edge with a 1px screen line just
-                outside it. The opaque ring matches the panel background. */}
+                outside it. Hiding paints the ring opaque instead of clipping
+                the canvas, so the selection outline still shows past the frame. */}
             <div
               className={cn(
                 "pointer-events-none absolute inset-0 z-[5] outline outline-neutral-600 ring-[100000px]",
