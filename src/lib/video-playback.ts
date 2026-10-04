@@ -1,8 +1,11 @@
 import { clamp } from "../utils/math.ts";
 import { throttle } from "../utils/timing.ts";
-import type { VideoClip, VideoInfo } from "./project.ts";
+import {
+  getFrameTimeShownAt,
+  type VideoClip,
+  type VideoInfo,
+} from "./project.ts";
 import type { AudioContextTransport } from "./transport.ts";
-import { getFrameTimeShownAt } from "./video-frame.ts";
 
 type PlaybackMode = "paused" | "before" | "playing" | "after";
 

@@ -7,20 +7,20 @@ import {
   getPictureRange,
   type TimeRange,
 } from "../layout.ts";
-import type {
-  Canvas,
-  AudioClip,
-  Clip,
-  ColorClip,
-  Crop,
-  ImageClip,
-  Project,
-  MediaInfo,
-  VideoInfo,
-  TextClip,
-  VideoClip,
+import {
+  getFrameTimeShownAt,
+  type Canvas,
+  type AudioClip,
+  type Clip,
+  type ColorClip,
+  type Crop,
+  type ImageClip,
+  type Project,
+  type MediaInfo,
+  type VideoInfo,
+  type TextClip,
+  type VideoClip,
 } from "../project.ts";
-import { getFrameTimeShownAt } from "../video-frame.ts";
 import type { Resolved } from "./resolve.ts";
 
 /**
