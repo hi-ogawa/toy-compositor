@@ -1,7 +1,14 @@
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
+import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { isShortcutTextInputTarget, matchKeyboardEvent } from "../lib/keyboard";
 import { EditorRuntime, findClip, type ClipLocation } from "../lib/runtime";
+import { clamp } from "../utils/math";
 import { CollapsibleSplit } from "./collapsible-split";
 import { CompositionPreview } from "./composition-preview";
 import { EditorHeader } from "./editor-header";
@@ -152,18 +159,47 @@ export function Editor({ projectPath }: { projectPath: string }) {
             onClearSelection={clearSelection}
           />
         </main>
-        <aside
-          className="w-72 shrink-0 overflow-y-auto border-l border-neutral-700 bg-neutral-800"
-          aria-label="Inspector"
-        >
+        <InspectorPanel>
           <Inspector
             runtime={runtime}
             project={state.project}
             selection={selection}
           />
-        </aside>
+        </InspectorPanel>
       </div>
     </div>
+  );
+}
+
+const DEFAULT_INSPECTOR_WIDTH = 288;
+const MIN_INSPECTOR_WIDTH = 240;
+const MAX_INSPECTOR_WIDTH = 640;
+
+function InspectorPanel({ children }: { children: ReactNode }) {
+  const [width, setWidth] = useState(DEFAULT_INSPECTOR_WIDTH);
+  const resizeRef = usePointerDrag({
+    onStart: (event) => {
+      event.preventDefault();
+      return width;
+    },
+    onMove: (_event, { data, deltaX }) =>
+      setWidth(clamp(data - deltaX, MIN_INSPECTOR_WIDTH, MAX_INSPECTOR_WIDTH)),
+  });
+  return (
+    <>
+      <div
+        ref={resizeRef}
+        title="Resize inspector"
+        className="relative z-40 w-px shrink-0 cursor-ew-resize touch-none bg-neutral-700 after:absolute after:inset-y-0 after:-left-1 after:w-2 hover:bg-neutral-500"
+      />
+      <aside
+        className="shrink-0 overflow-y-auto bg-neutral-800"
+        aria-label="Inspector"
+        style={{ width }}
+      >
+        {children}
+      </aside>
+    </>
   );
 }
 
