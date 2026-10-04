@@ -24,8 +24,8 @@ export function CompositionPreview({
   const viewportRef = useResizeObserver((element) =>
     setSize({ width: element.clientWidth, height: element.clientHeight }),
   );
-  // Hard cut hides everything outside the frame, as the render does.
-  const [hardCut, setHardCut] = useState(false);
+  // Clipping to the canvas hides everything outside the frame, as the render does.
+  const [clipToCanvas, setClipToCanvas] = useState(false);
   const { canvas } = project;
   // Leaves a margin around the frame, so layers overflowing it stay visible.
   const scale =
@@ -43,11 +43,11 @@ export function CompositionPreview({
         <button
           type="button"
           title="Hide content outside the canvas, as in the render"
-          aria-pressed={hardCut}
+          aria-pressed={clipToCanvas}
           className="ml-auto rounded px-1.5 text-[10px] text-neutral-400 hover:bg-neutral-700/50 hover:text-neutral-100 aria-pressed:bg-neutral-700 aria-pressed:text-neutral-100"
-          onClick={() => setHardCut(!hardCut)}
+          onClick={() => setClipToCanvas(!clipToCanvas)}
         >
-          Hard cut
+          Clip to canvas
         </button>
       </div>
       <div
@@ -103,7 +103,7 @@ export function CompositionPreview({
             <div
               className={cn(
                 "pointer-events-none absolute inset-0 z-[5] outline outline-neutral-600 ring-[100000px]",
-                hardCut ? "ring-neutral-900" : "ring-neutral-900/70",
+                clipToCanvas ? "ring-neutral-900" : "ring-neutral-900/70",
               )}
               style={{ outlineWidth: 1 / scale }}
             />
