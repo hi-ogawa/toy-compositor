@@ -17,16 +17,15 @@ export function useProjectClientStorage(
   return storage;
 }
 
-export type WithStorageState<State extends object> =
-  LocalStorageStore<State> & {
-    /** useStorageState for this storage. */
-    useValue<Key extends keyof State>(
-      key: Key,
-    ): readonly [State[Key], (next: SetStateAction<State[Key]>) => void];
-  };
+type WithStorageState<State extends object> = LocalStorageStore<State> & {
+  /** useStorageState for this storage. */
+  useValue<Key extends keyof State>(
+    key: Key,
+  ): readonly [State[Key], (next: SetStateAction<State[Key]>) => void];
+};
 
 /** Adds `useValue(key)` to a storage, so call sites read `storage.useValue("key")`. */
-export function withStorageState<State extends object>(
+function withStorageState<State extends object>(
   storage: LocalStorageStore<State>,
 ): WithStorageState<State> {
   return Object.assign(storage, {
@@ -36,7 +35,7 @@ export function withStorageState<State extends object>(
 }
 
 /** Like useState, for one value of a localStorage store, which stores each change. */
-export function useStorageState<State extends object, Key extends keyof State>(
+function useStorageState<State extends object, Key extends keyof State>(
   storage: LocalStorageStore<State>,
   key: Key,
 ) {
