@@ -2,7 +2,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { apiClient } from "../lib/api-client";
+import type { ProjectView } from "../lib/project-view";
 import type { EditorRuntime } from "../lib/runtime";
+import type { LocalStorageStore } from "../utils/local-storage-store";
 import { useWindowEvent } from "./use-window-event";
 
 export type SaveStatus = "saved" | "unsaved" | "saving" | "error";
@@ -10,9 +12,11 @@ export type SaveStatus = "saved" | "unsaved" | "saving" | "error";
 export function useEditorProject({
   projectPath,
   runtime,
+  projectView,
 }: {
   projectPath: string;
   runtime: EditorRuntime;
+  projectView: LocalStorageStore<ProjectView>;
 }) {
   const [dirty, setDirty] = useState(false);
   const revisionRef = useRef(0);
@@ -27,6 +31,12 @@ export function useEditorProject({
         throw new Error(result.error);
       }
       runtime.deserializeProject(result.value);
+      // Loading seeks to the output start, so return to where the project was
+      // last left instead.
+      const { playhead } = projectView.store.get();
+      if (playhead !== undefined) {
+        runtime.seek(playhead);
+      }
       const { changes } = result.value;
       if (changes.length > 0) {
         toast.info("Migrated the project file", {
@@ -64,6 +74,29 @@ export function useEditorProject({
       setDirty(true);
     });
   }, [projectQuery.isSuccess, runtime]);
+
+  // Store the playhead where it stops, skipping playback, which moves it every
+  // animation frame.
+  useEffect(() => {
+    if (!projectQuery.isSuccess) {
+      return;
+    }
+    return runtime.store.subscribeWithSelector({
+      selector: (state) => (state.playing ? undefined : state.playhead),
+      listener: storePlayhead,
+    });
+  }, [projectQuery.isSuccess, runtime]);
+
+  function storePlayhead() {
+    projectView.update({ playhead: runtime.store.get().playhead });
+  }
+
+  // Closing the tab during playback keeps where it was.
+  useWindowEvent("pagehide", () => {
+    if (projectQuery.isSuccess) {
+      storePlayhead();
+    }
+  });
 
   useWindowEvent("beforeunload", (event) => {
     if (dirty) {
