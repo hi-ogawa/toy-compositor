@@ -1,4 +1,6 @@
+import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { apiClient } from "../lib/api-client";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import { getRescaledTransform } from "../lib/layout";
 import type {
@@ -346,7 +348,9 @@ function ClipFields({
         <>
           <RangeTimingFields clip={clip} time={time} onUpdate={onUpdate} />
           <TextFields clip={clip} onUpdate={onUpdate} />
-          <BoxFields box={clip.box} onCommit={(box) => onUpdate({ box })} />
+          <BoxFields box={clip.box} onCommit={(box) => onUpdate({ box })}>
+            <FitTextHeightButton clip={clip} onUpdate={onUpdate} />
+          </BoxFields>
         </>
       );
     }
@@ -668,9 +672,11 @@ function TransformFields({
 function BoxFields({
   box,
   onCommit,
+  children,
 }: {
   box: Box;
   onCommit: (box: Box) => void;
+  children?: React.ReactNode;
 }) {
   return (
     <Group title="Box">
@@ -683,7 +689,33 @@ function BoxFields({
           onCommit={(value) => onCommit({ ...box, [key]: value })}
         />
       ))}
+      {children}
     </Group>
+  );
+}
+
+function FitTextHeightButton({
+  clip,
+  onUpdate,
+}: {
+  clip: TextClip;
+  onUpdate: ClipUpdate;
+}) {
+  const fitMutation = useMutation({
+    mutationFn: async () => {
+      const height = await apiClient.measureTextHeight({ drawing: clip });
+      onUpdate({ box: { ...clip.box, height } });
+    },
+  });
+  return (
+    <button
+      type="button"
+      disabled={fitMutation.isPending}
+      onClick={() => fitMutation.mutate()}
+      className="col-span-2 h-8 rounded border border-neutral-600 bg-neutral-900 text-xs text-neutral-400 outline-none hover:bg-neutral-800 focus-visible:border-ring disabled:opacity-50"
+    >
+      Fit height to text
+    </button>
   );
 }
 

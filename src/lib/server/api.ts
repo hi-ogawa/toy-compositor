@@ -11,6 +11,7 @@ import {
   type SavedProject,
 } from "../migrate.ts";
 import type { MediaInfo, Output, Project } from "../project.ts";
+import { measureTextHeight, type TextDrawing } from "../render/text.ts";
 import { getDialogTool, pickProjectPath } from "./dialog.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
 import type { LiveConnections } from "./live.ts";
@@ -261,6 +262,14 @@ export function createEditorHandlers({
       return await probeMediaInfo(
         await resolveMediaFile({ registry, projectPath, src }),
       );
+    },
+
+    async measureTextHeight({
+      drawing,
+    }: {
+      drawing: TextDrawing;
+    }): Promise<number> {
+      return await measureTextHeight(drawing);
     },
 
     async listMediaFiles({
