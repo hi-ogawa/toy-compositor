@@ -8,7 +8,7 @@ import {
   getRulerStep,
   getRulerSubdivisionStep,
 } from "../lib/timeline";
-import type { ProjectClientStorage } from "./editor";
+import type { ProjectClientStorage } from "./use-storage-state";
 
 export const TIMELINE_LABEL_WIDTH = 176;
 

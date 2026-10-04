@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { apiClient } from "../lib/api-client";
 import type { EditorRuntime } from "../lib/runtime";
-import type { ProjectClientStorage } from "./editor";
+import type { ProjectClientStorage } from "./use-storage-state";
 import { useWindowEvent } from "./use-window-event";
 
 export type SaveStatus = "saved" | "unsaved" | "saving" | "error";
