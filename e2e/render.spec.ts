@@ -70,11 +70,14 @@ test("render the synthetic thumbnail", async ({}, testInfo) => {
 test("fade audio at the layer's own edges when the output cuts into them", async ({}, testInfo) => {
   // Keep only an audio layer that fades in and out, then cut the output into
   // both fades.
-  const projectFile = await copySample(testInfo, (project) => {
-    project.layers = project.layers.filter(
-      (layer) => layer.clips[0]!.type === "audio",
-    );
-    project.output = { type: "video", start: 0.1, end: 2.8 };
+  const projectFile = await copySample({
+    testInfo,
+    edit: (project) => {
+      project.layers = project.layers.filter(
+        (layer) => layer.clips[0]!.type === "audio",
+      );
+      project.output = { type: "video", start: 0.1, end: 2.8 };
+    },
   });
   const output = testInfo.outputPath("cut.mp4");
   await runCli(["render", projectFile, output]);
@@ -91,19 +94,22 @@ test("fade audio at the layer's own edges when the output cuts into them", async
 test("hold a video layer's first and last frames beyond its source range", async ({}, testInfo) => {
   // Keep only a video layer that plays in the middle of the output and holds
   // its first and last frames on each side.
-  const projectFile = await copySample(testInfo, (project) => {
-    project.layers = project.layers
-      .filter((layer) => layer.clips[0]!.type === "video")
-      .map((layer) => ({
-        ...layer,
-        clips: layer.clips.map((clip) => ({
-          ...clip,
-          start: 1,
-          in: 1,
-          out: 2,
-          hold: { before: 1, after: 1 },
-        })),
-      }));
+  const projectFile = await copySample({
+    testInfo,
+    edit: (project) => {
+      project.layers = project.layers
+        .filter((layer) => layer.clips[0]!.type === "video")
+        .map((layer) => ({
+          ...layer,
+          clips: layer.clips.map((clip) => ({
+            ...clip,
+            start: 1,
+            in: 1,
+            out: 2,
+            hold: { before: 1, after: 1 },
+          })),
+        }));
+    },
   });
   const output = testInfo.outputPath("hold.mp4");
   await runCli(["render", projectFile, output]);
@@ -125,7 +131,8 @@ test("hold a video layer's first and last frames beyond its source range", async
   // Render stills inside each hold, and check that each matches the render's
   // frames there, within the video encode's loss.
   const renderStill = async (time: number) => {
-    const file = await copyProject(projectFile, {
+    const file = await copyProject({
+      projectFile,
       name: `still-${time}`,
       edit: (project) => {
         project.output = { type: "still", time };
@@ -143,12 +150,13 @@ test("hold a video layer's first and last frames beyond its source range", async
 test("leave out a muted layer's sound and a hidden layer's picture", async ({}, testInfo) => {
   // Keep only the video layer, whose source has its own audio, and render it
   // plain, muted, and hidden.
-  const projectFile = await copySample(testInfo);
+  const projectFile = await copySample({ testInfo });
   const render = async (
     name: string,
     flags: { muted: boolean; hidden: boolean },
   ) => {
-    const file = await copyProject(projectFile, {
+    const file = await copyProject({
+      projectFile,
       name,
       edit: (project) => {
         project.layers = project.layers

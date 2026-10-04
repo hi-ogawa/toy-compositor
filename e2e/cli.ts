@@ -11,10 +11,13 @@ export function runCli(args: string[]) {
 }
 
 /** Copy the synthetic sample into the test's output folder, and return its project file. */
-export async function copySample(
-  testInfo: TestInfo,
-  edit?: (project: Project) => void,
-) {
+export async function copySample({
+  testInfo,
+  edit,
+}: {
+  testInfo: TestInfo;
+  edit?: (project: Project) => void;
+}) {
   const directory = testInfo.outputPath("project");
   await cp("samples/synthetic", directory, { recursive: true });
   const projectFile = path.join(directory, "project.json");
@@ -28,10 +31,15 @@ export async function copySample(
  * Copy a project file to a sibling named `name`, so the copy resolves the same
  * media, and return the copy.
  */
-export async function copyProject(
-  projectFile: string,
-  { name, edit }: { name: string; edit: (project: Project) => void },
-) {
+export async function copyProject({
+  projectFile,
+  name,
+  edit,
+}: {
+  projectFile: string;
+  name: string;
+  edit: (project: Project) => void;
+}) {
   const file = path.join(path.dirname(projectFile), `${name}.json`);
   await cp(projectFile, file);
   await editJson<Project>(file, edit);
