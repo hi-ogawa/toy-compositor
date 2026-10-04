@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import type { ProjectClientStorage } from "../lib/client-storage";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import { intersect, type TimeRange } from "../lib/layout";
 import type { EditorRuntime } from "../lib/runtime";
@@ -8,7 +9,6 @@ import {
   getRulerStep,
   getRulerSubdivisionStep,
 } from "../lib/timeline";
-import type { ProjectClientStorage } from "./use-storage-state";
 
 export const TIMELINE_LABEL_WIDTH = 176;
 

@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
+import { createProjectClientStorage } from "../lib/client-storage";
 import { isShortcutTextInputTarget, matchKeyboardEvent } from "../lib/keyboard";
 import { EditorRuntime, findClip, type ClipLocation } from "../lib/runtime";
 import { clamp } from "../utils/math";
@@ -20,7 +21,6 @@ import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { useEditorInteraction } from "./use-editor-interaction";
 import { useEditorProject } from "./use-editor-project";
-import { useProjectClientStorage } from "./use-storage-state";
 import { useTimeline } from "./use-timeline";
 import { useWindowEvent } from "./use-window-event";
 
@@ -30,7 +30,9 @@ export function Editor({ projectPath }: { projectPath: string }) {
     runtime.store.subscribe,
     runtime.store.get,
   );
-  const clientStorage = useProjectClientStorage(projectPath);
+  const [clientStorage] = useState(() =>
+    createProjectClientStorage(projectPath),
+  );
   const project = useEditorProject({ projectPath, runtime, clientStorage });
   const timeline = useTimeline({ runtime, clientStorage });
   const { layerInteraction, locatorInteraction, clearSelection } =

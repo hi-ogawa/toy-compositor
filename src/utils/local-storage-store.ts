@@ -1,3 +1,4 @@
+import { useSyncExternalStore, type SetStateAction } from "react";
 import { createStore } from "./store.ts";
 
 /** A store kept in one localStorage entry, read once and written on each update. */
@@ -27,5 +28,25 @@ export class LocalStorageStore<State extends object> {
     try {
       localStorage.setItem(this.key, JSON.stringify(this.store.get()));
     } catch {}
+  }
+
+  /** Like useState, for one value of the store, which stores each change. */
+  useValue<Key extends keyof State>(
+    key: Key,
+  ): readonly [State[Key], (next: SetStateAction<State[Key]>) => void] {
+    const value = useSyncExternalStore(
+      this.store.subscribe,
+      () => this.store.get()[key],
+    );
+    const setValue = (next: SetStateAction<State[Key]>) => {
+      const current = this.store.get()[key];
+      const update: Partial<State> = {};
+      update[key] =
+        typeof next === "function"
+          ? (next as (value: State[Key]) => State[Key])(current)
+          : next;
+      this.update(update);
+    };
+    return [value, setValue];
   }
 }
