@@ -257,8 +257,9 @@ test("draw audio waveforms in lanes", async ({ page, editor }) => {
   await expect(audioWaveform).not.toHaveAttribute("data-dimmed");
   await expect(videoWaveform).toHaveAttribute("data-dimmed", "true");
 
-  // Select the video and unmute it, and confirm its waveform is no longer dimmed.
-  await clickTimelineButton(page, { name: "Select Test pattern region" });
+  // Select the video layer and unmute it, and confirm its waveform is no
+  // longer dimmed.
+  await clickTimelineButton(page, { name: "Select Test pattern layer" });
   await page
     .getByTestId("inspector")
     .getByRole("checkbox", { name: "muted", exact: true })

@@ -59,25 +59,31 @@ export function Inspector({
         />
       );
     }
-    case "clip": {
+    case "layer": {
       const { id } = selection;
-      const { layer, layerIndex, clip } = findClip(project.layers, id)!;
+      const layerIndex = project.layers.findIndex((layer) => layer.id === id);
       return (
-        <ClipInspector
-          layer={layer}
-          clip={clip}
-          media={project.media}
-          time={time}
-          onLayerUpdate={(update) =>
-            runtime.updateLayer({ id: layer.id, update })
-          }
-          onClipUpdate={(update) => runtime.updateClip({ id, update })}
+        <LayerInspector
+          layer={project.layers[layerIndex]!}
+          onUpdate={(update) => runtime.updateLayer({ id, update })}
           move={{
             canMoveUp: layerIndex < project.layers.length - 1,
             canMoveDown: layerIndex > 0,
-            onMove: (direction) =>
-              runtime.moveLayer({ id: layer.id, direction }),
+            onMove: (direction) => runtime.moveLayer({ id, direction }),
           }}
+        />
+      );
+    }
+    case "clip": {
+      const { id } = selection;
+      const { layer, clip } = findClip(project.layers, id)!;
+      return (
+        <ClipInspector
+          layerName={layer.name}
+          clip={clip}
+          media={project.media}
+          time={time}
+          onUpdate={(update) => runtime.updateClip({ id, update })}
         />
       );
     }
@@ -196,32 +202,24 @@ function OutputInspector({
   );
 }
 
-/** A clip's fields, with its layer's name and stack position. */
-function ClipInspector({
+/** A layer's own fields, which apply to every clip on it. */
+function LayerInspector({
   layer,
-  clip,
-  media,
-  time,
-  onLayerUpdate,
-  onClipUpdate,
+  onUpdate,
   move,
 }: {
   layer: Omit<Layer, "clips">;
-  clip: Clip;
-  media: Record<string, MediaInfo>;
-  time: TimeFieldOptions;
-  onLayerUpdate: LayerUpdate;
-  onClipUpdate: ClipUpdate;
+  onUpdate: LayerUpdate;
   move: LayerMoveControls;
 }) {
   return (
     <div data-testid="inspector">
-      <InspectorTitle title={layer.name} subtitle={clip.type} />
+      <InspectorTitle title={layer.name} subtitle="layer" />
       <div className="flex flex-col gap-4 p-3">
         <TextField
           label="name"
           value={layer.name}
-          onCommit={(name) => onLayerUpdate({ name })}
+          onCommit={(name) => onUpdate({ name })}
         />
         <Group title="Stack">
           {(["up", "down"] as const).map((direction) => (
@@ -238,14 +236,40 @@ function ClipInspector({
             </button>
           ))}
         </Group>
-        <ClipFields
-          clip={clip}
-          media={media}
-          time={time}
-          onUpdate={onClipUpdate}
-          muted={layer.muted}
-          onMutedChange={(muted) => onLayerUpdate({ muted })}
-        />
+        <Group title="Audio">
+          <label className="col-span-2 flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={layer.muted}
+              onChange={(e) => onUpdate({ muted: e.target.checked })}
+            />
+            muted
+          </label>
+        </Group>
+      </div>
+    </div>
+  );
+}
+
+/** A clip's fields, titled by its layer's name. */
+function ClipInspector({
+  layerName,
+  clip,
+  media,
+  time,
+  onUpdate,
+}: {
+  layerName: string;
+  clip: Clip;
+  media: Record<string, MediaInfo>;
+  time: TimeFieldOptions;
+  onUpdate: ClipUpdate;
+}) {
+  return (
+    <div data-testid="inspector">
+      <InspectorTitle title={layerName} subtitle={clip.type} />
+      <div className="flex flex-col gap-4 p-3">
+        <ClipFields clip={clip} media={media} time={time} onUpdate={onUpdate} />
       </div>
     </div>
   );
@@ -256,25 +280,19 @@ function ClipFields({
   media,
   time,
   onUpdate,
-  muted,
-  onMutedChange,
 }: {
   clip: Clip;
   media: Record<string, MediaInfo>;
   time: TimeFieldOptions;
   onUpdate: ClipUpdate;
-  /** Whether the clip's layer is muted, which only sound shows. */
-  muted: boolean;
-  onMutedChange: (muted: boolean) => void;
 }) {
-  const audio = { muted, onMutedChange };
   switch (clip.type) {
     case "video": {
       return (
         <>
           <SourceTimingFields clip={clip} time={time} onUpdate={onUpdate} />
           <HoldFields clip={clip} time={time} onUpdate={onUpdate} />
-          <AudioFields clip={clip} time={time} onUpdate={onUpdate} {...audio} />
+          <AudioFields clip={clip} time={time} onUpdate={onUpdate} />
           <TransformFields
             transform={clip.transform}
             source={media[clip.src].video!}
@@ -292,7 +310,7 @@ function ClipFields({
       return (
         <>
           <SourceTimingFields clip={clip} time={time} onUpdate={onUpdate} />
-          <AudioFields clip={clip} time={time} onUpdate={onUpdate} {...audio} />
+          <AudioFields clip={clip} time={time} onUpdate={onUpdate} />
         </>
       );
     }
@@ -439,30 +457,17 @@ function RangeTimingFields({
   );
 }
 
-/** A clip's fades, beside its layer's mute, which applies to every clip on it. */
 function AudioFields({
   clip,
   time,
   onUpdate,
-  muted,
-  onMutedChange,
 }: {
   clip: VideoClip | AudioClip;
   time: TimeFieldOptions;
   onUpdate: ClipUpdate;
-  muted: boolean;
-  onMutedChange: (muted: boolean) => void;
 }) {
   return (
     <Group title="Audio">
-      <label className="col-span-2 flex items-center gap-2 text-xs">
-        <input
-          type="checkbox"
-          checked={muted}
-          onChange={(e) => onMutedChange(e.target.checked)}
-        />
-        muted
-      </label>
       <NumberField
         label="fade in"
         value={clip.fadeIn}
