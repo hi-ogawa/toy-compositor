@@ -19,10 +19,13 @@ export function useProjectClientStorage(
 
 type WithStorageState<State extends object> = LocalStorageStore<State> & {
   /** useStorageState for this storage. */
-  useValue<Key extends keyof State>(
-    key: Key,
-  ): readonly [State[Key], (next: SetStateAction<State[Key]>) => void];
+  useValue<Key extends keyof State>(key: Key): StorageState<State[Key]>;
 };
+
+type StorageState<Value> = readonly [
+  Value,
+  (next: SetStateAction<Value>) => void,
+];
 
 /** Adds `useValue(key)` to a storage, so call sites read `storage.useValue("key")`. */
 function withStorageState<State extends object>(
@@ -38,7 +41,7 @@ function withStorageState<State extends object>(
 function useStorageState<State extends object, Key extends keyof State>(
   storage: LocalStorageStore<State>,
   key: Key,
-) {
+): StorageState<State[Key]> {
   const value = useSyncExternalStore(
     storage.store.subscribe,
     () => storage.store.get()[key],
