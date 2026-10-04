@@ -9,7 +9,7 @@
 <rect x="240" y="72" width="280" height="186" fill="#eef1ef"/>
 <text x="380" y="90" font-size="13" fill="#52625d" text-anchor="middle">output range [1, 3)</text>
 
-<text x="100" y="116" font-size="13">video layer · getLayerRange = [start, start + out − in) = [0.5, 3.25)</text>
+<text x="100" y="116" font-size="13">video clip · range = [start, start + out − in) = [0.5, 3.25)</text>
 <rect x="170" y="124" width="385" height="18" rx="4" fill="#2f6fb0"/>
 
 <text x="100" y="180" font-size="13">source file (media/video.mp4), aligned to the project</text>
@@ -24,7 +24,7 @@
 
 <circle cx="240" cy="133" r="4" fill="#b0502f"/>
 <circle cx="240" cy="197" r="4" fill="#b0502f"/>
-<text x="248" y="162" font-size="13" fill="#b0502f">preview time 1 → visible, so render</text>
+<text x="248" y="162" font-size="13" fill="#b0502f">preview time 1 → visible, so show</text>
 <text x="248" y="244" font-size="13" fill="#b0502f">sourceTime = in + time − start = 0.25 + 1 − 0.5 = 0.75</text>
 
 <path d="M100 282 H680" stroke="#a3b0a9"/>
@@ -32,6 +32,6 @@
 <path d="M100 278 V286 M240 278 V286 M380 278 V286 M520 278 V286 M660 278 V286" stroke="#a3b0a9"/>
 <text x="100" y="302">0</text><text x="240" y="302">1</text><text x="380" y="302">2</text><text x="520" y="302">3</text><text x="660" y="302">4 s project</text>
 </g>
-<text x="30" y="330" font-size="13" fill="#52625d">Setting start to 2 moves the layer to [2, 4.75), so time 1 falls outside and the &lt;video&gt; unmounts.</text>
+<text x="30" y="330" font-size="13" fill="#52625d">Setting start to 2 moves the clip to [2, 4.75), so time 1 falls outside and the &lt;video&gt; is hidden.</text>
 </g>
 </svg>

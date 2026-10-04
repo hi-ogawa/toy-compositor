@@ -9,10 +9,7 @@ type TextDrawing = Pick<
   "text" | "align" | "font" | "color" | "outline"
 >;
 
-/**
- * Render a text clip to a transparent PNG with ImageMagick.
- * The PNG is the box's size, so the compiler places it at box.x, box.y.
- */
+/** The PNG is the box's size, so the compiler places it at the box's top-left. */
 export async function renderText({
   clip,
   file,

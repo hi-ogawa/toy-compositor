@@ -6,12 +6,11 @@ import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 export type ClipEditType = "move" | "trim-start" | "trim-end";
 
 /**
- * Moves or trims a clip by a timeline delta, like toy-midi's clip move and
- * trims. The dragged edge snaps to the frame grid, the clip keeps at least one
- * frame and starts at or after 0, and a video or audio clip stays within its
- * source's time range, as its media info records it. A start trim on a video
- * or audio clip moves `start` and `in` together, so its source stays in place
- * against the rest of the timeline.
+ * The dragged edge snaps to the frame grid, the clip keeps at least one frame
+ * and starts at or after 0, and a video or audio clip stays within its
+ * source's time range. A start trim on a video or audio clip shifts its source
+ * in point with it, so the source stays in place against the rest of the
+ * timeline.
  *
  * TODO(multi-clip): Clamp at the neighboring clips on the layer, once the
  * editor can put several clips on a layer.

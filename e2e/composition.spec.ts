@@ -17,7 +17,7 @@ test("compose the output start, follow inspector edits, and save them", async ({
   page,
   editor,
 }) => {
-  // Open the synthetic project and confirm the preview composes its visual layers.
+  // Open the project and confirm the preview composes its visual layers.
   await page.goto(editor.url);
   const canvas = page.getByTestId("composition-canvas");
   const video = canvas.locator("video");
@@ -41,7 +41,7 @@ test("compose the output start, follow inspector edits, and save them", async ({
   await expect(image.locator("..")).toHaveCSS("width", "80px");
 
   // Offset the output start, video start, and trim, and confirm the video seeks
-  // to in + time - start.
+  // to the matching source time.
   await page
     .getByRole("button", { name: "Composition settings", exact: true })
     .click();
@@ -143,7 +143,7 @@ test("place a media layer by position, scale, and size, and save them", async ({
   await expect(outline).toHaveCSS("width", "320px");
 
   // Crop its left half, then scale it back to 100%, and confirm what remains
-  // stays centered at x 400.
+  // stays centered.
   await commitInspectorField(page, { name: "left", value: "0.5" });
   await expect(placed).toHaveCSS("left", "320px");
   await expect(placed).toHaveCSS("width", "160px");
@@ -170,7 +170,7 @@ test("edit a text layer's content and styling and save them", async ({
   page,
   editor,
 }) => {
-  // Open the synthetic project and select the title text.
+  // Open the project and select the text layer.
   await page.goto(editor.url);
   const canvas = page.getByTestId("composition-canvas");
   await clickTimelineButton(page, { name: "Select Title region" });
@@ -255,8 +255,8 @@ test("edit layer names and a color layer's fill and box, and save them", async (
   page,
   editor,
 }) => {
-  // Add a color layer from the Library tab, which starts numbered after the
-  // sample's tint, selected, and filling the canvas.
+  // Add a color layer from the Library tab, and confirm it is numbered after
+  // the existing one, selected, and fills the canvas.
   await page.goto(editor.url);
   await page.getByRole("button", { name: "Add Color", exact: true }).click();
   const fill = page
@@ -323,7 +323,7 @@ test("edit the canvas in composition settings and save it", async ({
   page,
   editor,
 }) => {
-  // Open the synthetic project and open Composition settings from the header.
+  // Open the project and open Composition settings from the header.
   await page.goto(editor.url);
   const canvas = page.getByTestId("composition-canvas");
   await page
@@ -344,8 +344,8 @@ test("edit the canvas in composition settings and save it", async ({
   await expect(canvas).toHaveCSS("width", "800px");
   await expect(canvas).toHaveCSS("background-color", "rgb(51, 102, 153)");
 
-  // Click the ruler at 1.12 s, step one frame, and edit the render end, and
-  // confirm each snaps to the new 10 fps grid.
+  // Click the ruler, step one frame, and edit the render end, and confirm
+  // each snaps to the new frame grid.
   const time = page.getByTestId("timeline-time");
   await seekTimelineByPixels(page, {
     pixels: 1.12 * DEFAULT_PIXELS_PER_SECOND,
@@ -367,7 +367,7 @@ test("edit the canvas in composition settings and save it", async ({
 });
 
 test("compose a still project at its output time", async ({ page, editor }) => {
-  // Open the still-output sample and seek its video to the requested thumbnail time.
+  // Open a still-output project and confirm its video seeks to the still's time.
   await page.goto(
     `/?${new URLSearchParams({ project: `${editor.projectDir}/thumbnail.json` })}`,
   );
@@ -391,16 +391,16 @@ test("compose a still project at its output time", async ({ page, editor }) => {
 });
 
 test("switch the output between video and still", async ({ page, editor }) => {
-  // Open the synthetic project, open Composition settings, and trim the render
-  // end so the video range no longer spans every layer.
+  // Open the project, open Composition settings, and trim the render end so
+  // the video range no longer spans every layer.
   await page.goto(editor.url);
   await page
     .getByRole("button", { name: "Composition settings", exact: true })
     .click();
   await commitInspectorField(page, { name: "end", value: "2" });
 
-  // Seek to 1.5 s, switch to a still, and confirm it takes the playhead's
-  // frame with a single render marker.
+  // Seek, switch to a still, and confirm it takes the playhead's frame with a
+  // single render marker.
   const outputType = page.getByRole("group", { name: "Output type" });
   await seekTimelineByPixels(page, {
     pixels: 1.5 * DEFAULT_PIXELS_PER_SECOND,
@@ -439,8 +439,8 @@ test("hold a video layer's first and last frames in the preview", async ({
   page,
   editor,
 }) => {
-  // Open the synthetic project, start the test pattern at 1 s, and confirm
-  // it hides at the output start.
+  // Open the project, start the video later, and confirm it hides at the
+  // output start.
   await page.goto(editor.url);
   const video = page.getByTestId("composition-canvas").locator("video");
   const readVideoTime = () =>
@@ -449,8 +449,8 @@ test("hold a video layer's first and last frames in the preview", async ({
   await commitInspectorField(page, { name: "start", value: "1" });
   await expect(video).toBeHidden();
 
-  // Hold its first frame for 1 s, and confirm the preview shows that frame at
-  // the output start and the lane draws the hold beside the unchanged region.
+  // Hold its first frame, and confirm the preview shows that frame at the
+  // output start and the lane draws the hold beside the unchanged region.
   await commitInspectorField(page, { name: "before", value: "1" });
   await expect(video).toBeVisible();
   await expect.poll(readVideoTime).toBeCloseTo(0);
@@ -460,8 +460,8 @@ test("hold a video layer's first and last frames in the preview", async ({
     page.getByTestId("timeline-layer-0-clip-0-hold-before"),
   ).toHaveAttribute("title", "hold 0.000–1.000 s");
 
-  // Shorten its source range to 1 s and hold its last frame for 1 s, then seek
-  // into that hold and confirm the preview stays at the source range's end.
+  // Shorten its source range and hold its last frame, then seek into that
+  // hold and confirm the preview stays at the source range's end.
   await commitInspectorField(page, { name: "out", value: "1" });
   await commitInspectorField(page, { name: "after", value: "1" });
   await expect(lane).toHaveAttribute("title", "1.000–2.000 s");

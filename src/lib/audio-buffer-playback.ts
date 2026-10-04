@@ -9,9 +9,7 @@ import type {
 /**
  * Plays one clip's decoded audio on the transport's clock, like toy-midi's
  * `AudioBufferPlayback`, so it stays sample-aligned with the playhead instead of
- * being steered like a media element. A clip is heard wherever its own range
- * covers the playhead unless its layer is muted, and its fades are gain
- * automation at the range edges.
+ * being steered like a media element.
  */
 export class AudioBufferPlayback implements TransportParticipant {
   private readonly transport: AudioContextTransport;
@@ -47,7 +45,6 @@ export class AudioBufferPlayback implements TransportParticipant {
     this.buffer = buffer;
   }
 
-  /** Schedules the rest of the clip from the transport's playback anchor. */
   start(): void {
     const { clip, buffer } = this;
     if (!clip || !buffer || this.muted) {

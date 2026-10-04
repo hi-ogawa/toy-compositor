@@ -439,7 +439,6 @@ function TimelineClip({
   clip: EditorClip;
   /** The layer's name, which labels its clips. */
   name: string;
-  /** Whether the clip's layer is muted. */
   muted: boolean;
   testId: string;
   audioSource?: PromiseState<DecodedAudio>;

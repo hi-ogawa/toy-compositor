@@ -20,7 +20,7 @@ export function getRulerStep(pixelsPerSecond: number) {
     .find((step) => step >= target)!;
 }
 
-/** Split a 1-2-5 ruler step into minor grid steps: fifths of 1 and 5, quarters of 2. */
+/** Split a 1-2-5 ruler step into minor grid steps. */
 export function getRulerSubdivisionStep(step: number) {
   const leading = Math.round(step / 10 ** Math.floor(Math.log10(step)));
   return step / (leading === 2 ? 4 : 5);

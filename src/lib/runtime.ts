@@ -27,19 +27,18 @@ import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
 import { VideoPlayback } from "./video-playback.ts";
 
-/** A project layer with ids for it and its clips that are stable for the session but never saved. */
+/** Ids are stable for the session but never saved. */
 export type EditorLayer = Omit<Layer, "clips"> & {
   id: string;
   clips: EditorClip[];
 };
 
-/** A project clip with an id that is stable for the session but never saved. */
+/** The id is stable for the session but never saved. */
 export type EditorClip = Clip & { id: string };
 
-/** A project locator with an id that is stable for the session but never saved. */
+/** The id is stable for the session but never saved. */
 export type EditorLocator = Locator & { id: string };
 
-/** The project as the editor holds it, which saves without the layer, clip, and locator ids. */
 export type EditorProject = Omit<Project, "layers" | "locators"> & {
   layers: EditorLayer[];
   locators: EditorLocator[];
@@ -97,13 +96,12 @@ export class EditorRuntime {
     this.transport.seek(Math.max(0, snapToFrame(time, project.canvas.fps)));
   }
 
-  /** Steps the playhead by whole frames. */
   seekFrames(frames: number): void {
     const { project, playhead } = this.store.get();
     this.seek(playhead + frames / project.canvas.fps);
   }
 
-  /** Updates what applies to the whole layer, which a mute does for every clip's sound. */
+  /** A mute applies to every clip's sound in the layer. */
   updateLayer({
     id,
     update,
@@ -125,7 +123,6 @@ export class EditorRuntime {
     });
   }
 
-  /** Updates a clip's timing, layout, or content. */
   updateClip({ id, update }: { id: string; update: Partial<Clip> }): void {
     this.reschedulePlayback(() => {
       const { project } = this.store.get();
@@ -150,10 +147,7 @@ export class EditorRuntime {
     });
   }
 
-  /**
-   * Adds a layer holding one clip of the file, and returns the clip's id.
-   * Probes and records the file's media info first if the project has none.
-   */
+  /** Probes and records the file's media info first if the project has none. */
   async addMediaLayer({ src, type }: MediaFile): Promise<string> {
     const { file } = this.store.get();
     let mediaInfo = this.store.get().project.media[src];
@@ -212,7 +206,7 @@ export class EditorRuntime {
     });
   }
 
-  /** Swaps a layer with its neighbor, where "up" is toward the top of the stack. */
+  /** "up" is toward the top of the stack. */
   moveLayer({ id, direction }: { id: string; direction: "up" | "down" }): void {
     const { layers } = this.store.get().project;
     const index = layers.findIndex((layer) => layer.id === id);
@@ -239,8 +233,8 @@ export class EditorRuntime {
   }
 
   /**
-   * Switches between video and still output. A still takes the playhead's
-   * frame, and a video spans every layer so its markers trim inward.
+   * A still takes the playhead's frame, and a video spans every layer so its
+   * markers trim inward.
    */
   setOutputType(type: Output["type"]): void {
     const { project, playhead } = this.store.get();
@@ -295,7 +289,7 @@ export class EditorRuntime {
 
   /**
    * Makes a composition `<video>` follow the transport as the video clip
-   * `id`, like toy-midi's `attachYouTubePlayer`. Returns its detacher.
+   * `id`, like toy-midi's `attachYouTubePlayer`.
    */
   attachVideo({
     id,
@@ -315,7 +309,7 @@ export class EditorRuntime {
     };
   }
 
-  /** Adds a layer holding one clip on top of the stack, and returns the clip's id. */
+  /** Adds the layer on top of the stack. */
   private insertLayer(layer: Layer): string {
     const editorLayer = deserializeEditorLayer(layer);
     this.reschedulePlayback(() => {
@@ -389,7 +383,6 @@ export class EditorRuntime {
     }
   }
 
-  /** Starts decoding a source, and syncs playback once its buffer arrives. */
   private loadAudio(src: string): void {
     if (this.store.get().audioSources[src]) {
       return;
@@ -442,7 +435,6 @@ export class EditorRuntime {
   }
 }
 
-/** A clip with the layer holding it, and where each sits in the stack and the layer. */
 export type ClipLocation = {
   layer: EditorLayer;
   layerIndex: number;

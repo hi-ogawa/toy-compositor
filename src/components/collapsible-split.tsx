@@ -3,8 +3,8 @@ import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { cn } from "./ui/utils";
 
 /**
- * A resizable side panel beside a main panel. Closing the side hides it and
- * leaves `strip` at the same edge, so reopening finds the side as it was.
+ * Closing the side hides it and leaves `strip` at the same edge, so reopening
+ * finds the side as it was.
  */
 export function CollapsibleSplit({
   open,

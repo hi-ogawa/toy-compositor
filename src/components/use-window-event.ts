@@ -1,8 +1,7 @@
 import { useEffect, useEffectEvent } from "react";
 
 /**
- * Thin wrapper for window event listeners.
- * Uses useEffectEvent for stable callbacks - no deps needed.
+ * The handler goes through useEffectEvent, so callers need not memoize it.
  */
 export function useWindowEvent<K extends keyof WindowEventMap>(
   type: K,

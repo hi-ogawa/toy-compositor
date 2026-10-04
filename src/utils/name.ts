@@ -1,4 +1,3 @@
-/** Find an unused numbered name, starting at one more than the existing name count. */
 export function createNumberedName({
   names,
   prefix,
