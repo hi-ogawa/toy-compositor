@@ -9,7 +9,7 @@ import {
   getRulerStep,
   getRulerSubdivisionStep,
 } from "../lib/timeline";
-import { useStoredState } from "./use-stored-state";
+import { useStorageState } from "./use-storage-state";
 
 export const TIMELINE_LABEL_WIDTH = 176;
 
@@ -23,11 +23,11 @@ export function useTimeline({
   runtime: EditorRuntime;
   clientStorage: ProjectClientStorage;
 }) {
-  const [viewportStart, setViewportStart] = useStoredState(
+  const [viewportStart, setViewportStart] = useStorageState(
     clientStorage,
     "viewportStart",
   );
-  const [pixelsPerSecond, setPixelsPerSecond] = useStoredState(
+  const [pixelsPerSecond, setPixelsPerSecond] = useStorageState(
     clientStorage,
     "pixelsPerSecond",
   );

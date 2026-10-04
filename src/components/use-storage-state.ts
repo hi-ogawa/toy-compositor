@@ -2,7 +2,7 @@ import { useSyncExternalStore, type SetStateAction } from "react";
 import type { LocalStorageStore } from "../utils/local-storage-store";
 
 /** Like useState, for one value of a localStorage store, which stores each change. */
-export function useStoredState<State extends object, Key extends keyof State>(
+export function useStorageState<State extends object, Key extends keyof State>(
   storage: LocalStorageStore<State>,
   key: Key,
 ) {
