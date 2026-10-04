@@ -22,11 +22,6 @@ type WithStorageState<State extends object> = LocalStorageStore<State> & {
   useValue<Key extends keyof State>(key: Key): StorageState<State[Key]>;
 };
 
-type StorageState<Value> = readonly [
-  Value,
-  (next: SetStateAction<Value>) => void,
-];
-
 /** Adds `useValue(key)` to a storage, so call sites read `storage.useValue("key")`. */
 function withStorageState<State extends object>(
   storage: LocalStorageStore<State>,
@@ -36,6 +31,11 @@ function withStorageState<State extends object>(
       useStorageState(storage, key),
   });
 }
+
+type StorageState<Value> = readonly [
+  Value,
+  (next: SetStateAction<Value>) => void,
+];
 
 /** Like useState, for one value of a localStorage store, which stores each change. */
 function useStorageState<State extends object, Key extends keyof State>(
