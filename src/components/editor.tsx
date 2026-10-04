@@ -21,6 +21,7 @@ import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { useEditorInteraction } from "./use-editor-interaction";
 import { useEditorProject } from "./use-editor-project";
+import { withStorageState } from "./use-storage-state";
 import { useTimeline } from "./use-timeline";
 import { useWindowEvent } from "./use-window-event";
 
@@ -31,7 +32,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
     runtime.store.get,
   );
   const [clientStorage] = useState(() =>
-    createProjectClientStorage(projectPath),
+    withStorageState(createProjectClientStorage(projectPath)),
   );
   const project = useEditorProject({ projectPath, runtime, clientStorage });
   const timeline = useTimeline({ runtime, clientStorage });

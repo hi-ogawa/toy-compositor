@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import type { ProjectClientStorage } from "../lib/client-storage";
+import type { ProjectClientState } from "../lib/client-storage";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import { intersect, type TimeRange } from "../lib/layout";
 import type { EditorRuntime } from "../lib/runtime";
@@ -9,7 +9,7 @@ import {
   getRulerStep,
   getRulerSubdivisionStep,
 } from "../lib/timeline";
-import { useStorageState } from "./use-storage-state";
+import type { WithStorageState } from "./use-storage-state";
 
 export const TIMELINE_LABEL_WIDTH = 176;
 
@@ -21,16 +21,12 @@ export function useTimeline({
   clientStorage,
 }: {
   runtime: EditorRuntime;
-  clientStorage: ProjectClientStorage;
+  clientStorage: WithStorageState<ProjectClientState>;
 }) {
-  const [viewportStart, setViewportStart] = useStorageState(
-    clientStorage,
-    "viewportStart",
-  );
-  const [pixelsPerSecond, setPixelsPerSecond] = useStorageState(
-    clientStorage,
-    "pixelsPerSecond",
-  );
+  const [viewportStart, setViewportStart] =
+    clientStorage.useValue("viewportStart");
+  const [pixelsPerSecond, setPixelsPerSecond] =
+    clientStorage.useValue("pixelsPerSecond");
   const [viewportWidth, setViewportWidth] = useState(0);
   const visible = {
     start: viewportStart,

@@ -2,7 +2,7 @@ import { LocalStorageStore } from "../utils/local-storage-store.ts";
 import { DEFAULT_PIXELS_PER_SECOND } from "./timeline.ts";
 
 /** Editor state for one project file that stays in this browser, outside the project file. */
-type ProjectClientState = {
+export type ProjectClientState = {
   viewportStart: number;
   pixelsPerSecond: number;
   /** Absent until stored, so a project opens at its output start the first time. */
