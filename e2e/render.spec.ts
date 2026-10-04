@@ -202,6 +202,56 @@ test("hold a video layer's first and last frames beyond its source range", async
   expect(diffFrames(await renderStill(2.5), frames.at(-1)!)).toBeLessThan(1);
 });
 
+test("leave out a muted layer's sound and a hidden layer's picture", async ({}, testInfo) => {
+  // Keep only the video layer, whose source has its own audio, and render it
+  // plain, muted, and hidden.
+  const directory = testInfo.outputPath("project");
+  await cp("samples/synthetic", directory, { recursive: true });
+  const render = async (
+    name: string,
+    flags: { muted: boolean; hidden: boolean },
+  ) => {
+    const file = `${directory}/${name}.json`;
+    await cp(`${directory}/project.json`, file);
+    await editJson<Project>(file, (project) => {
+      project.layers = project.layers
+        .filter((layer) => layer.clips[0]!.type === "video")
+        .map((layer) => ({ ...layer, ...flags }));
+    });
+    const output = testInfo.outputPath(`${name}.mp4`);
+    await execFileAsync(process.execPath, [
+      "src/cli.ts",
+      "render",
+      file,
+      output,
+    ]);
+    const { stdout } = await execFileAsync("ffprobe", [
+      "-v",
+      "error",
+      "-show_entries",
+      "stream=codec_type",
+      "-of",
+      "csv=p=0",
+      output,
+    ]);
+    const [frame] = (await readGrayFrames(output)).slice(45);
+    return { streams: stdout.trim().split("\n"), frame };
+  };
+  const plain = await render("plain", { muted: false, hidden: false });
+  const muted = await render("muted", { muted: true, hidden: false });
+  const hidden = await render("hidden", { muted: false, hidden: true });
+
+  // Check that muting drops only the sound and hiding drops only the picture,
+  // leaving the black canvas.
+  const canvas = new Uint8Array(plain.frame.length);
+  expect(plain.streams).toEqual(["video", "audio"]);
+  expect(diffFrames(plain.frame, canvas)).toBeGreaterThan(10);
+  expect(muted.streams).toEqual(["video"]);
+  expect(diffFrames(muted.frame, plain.frame)).toBeLessThan(1);
+  expect(hidden.streams).toEqual(["video", "audio"]);
+  expect(diffFrames(hidden.frame, canvas)).toBeLessThan(1);
+});
+
 /** RMS level in dB of a 20ms window of a file's audio at a time. */
 async function measureRmsLevel(file: string, { time }: { time: number }) {
   const { stdout } = await execFileAsync("ffmpeg", [
