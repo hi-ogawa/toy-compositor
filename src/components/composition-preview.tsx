@@ -96,10 +96,10 @@ export function CompositionPreview({
                 );
               }),
             )}
-            {/* Paints over the area outside the frame instead of clipping the
-                canvas, so the selection outline above it can still extend past
-                the frame. The outline width undoes the canvas scale to stay one
-                screen pixel. */}
+            {/* Sits above the clips and below the selection outline in
+                PreviewClip, and paints over the area outside the frame instead
+                of clipping the canvas, so a selected clip's outline still shows
+                past the frame. */}
             <div
               className={cn(
                 "pointer-events-none absolute inset-0 z-[5] outline outline-neutral-600 ring-[100000px]",
@@ -166,6 +166,7 @@ function PreviewClip({
         />
       )}
       {selected && (
+        // Above the mask over the area outside the frame.
         <div
           className="pointer-events-none z-10 outline outline-2 outline-primary"
           aria-label="Selected layer outline"
