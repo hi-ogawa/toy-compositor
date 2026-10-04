@@ -12,13 +12,7 @@ test("restore the panel layout when reopening the editor", async ({
   const timeline = page.getByTestId("editor-timeline");
   const initialTimelineHeight = (await timeline.boundingBox())!.height;
   await dragBy(page, page.getByTitle("Resize inspector"), { deltaX: -100 });
-  const timelineBorder = (await page
-    .getByTitle("Resize timeline")
-    .boundingBox())!;
-  await page.mouse.move(timelineBorder.x + 100, timelineBorder.y);
-  await page.mouse.down();
-  await page.mouse.move(timelineBorder.x + 100, timelineBorder.y - 50);
-  await page.mouse.up();
+  await dragBy(page, page.getByTitle("Resize timeline"), { deltaY: -50 });
   const inspectorWidth = (await inspector.boundingBox())!.width;
   const timelineHeight = (await timeline.boundingBox())!.height;
   expect(timelineHeight).toBeGreaterThan(initialTimelineHeight);

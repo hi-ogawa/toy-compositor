@@ -84,10 +84,14 @@ export async function seekVideo(video: Locator, { time }: { time: number }) {
 export async function dragBy(
   page: Page,
   locator: Locator,
-  { deltaX, release = true }: { deltaX: number; release?: boolean },
+  {
+    deltaX = 0,
+    deltaY = 0,
+    release = true,
+  }: { deltaX?: number; deltaY?: number; release?: boolean },
 ) {
   return await test.step(
-    `Drag by ${deltaX}px${release ? "" : " without releasing"}`,
+    `Drag by (${deltaX}, ${deltaY})px${release ? "" : " without releasing"}`,
     async () => {
       const bounds = await locator.boundingBox();
       expect(bounds).not.toBeNull();
@@ -95,7 +99,7 @@ export async function dragBy(
       const y = bounds!.y + bounds!.height / 2;
       await page.mouse.move(x, y);
       await page.mouse.down();
-      await page.mouse.move(x + deltaX, y, { steps: 4 });
+      await page.mouse.move(x + deltaX, y + deltaY, { steps: 4 });
       if (release) {
         await page.mouse.up();
       }
