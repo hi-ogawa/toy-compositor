@@ -48,13 +48,15 @@ export function compile({
     layer.clips.map((clip) => {
       const streams = compileClip({
         clip,
-        muted: layer.muted,
         projectDir,
         mediaInfoMap: project.media,
         resolved,
         scene,
       });
-      return layer.hidden ? { audio: streams.audio } : streams;
+      return {
+        video: layer.hidden ? undefined : streams.video,
+        audio: layer.muted ? undefined : streams.audio,
+      };
     }),
   );
   const graph = assembleGraph({ canvas, duration, clips });
@@ -121,15 +123,12 @@ type AudioStream = {
 
 function compileClip({
   clip,
-  muted,
   projectDir,
   mediaInfoMap,
   resolved,
   scene,
 }: {
   clip: Clip;
-  /** Whether the clip's layer is muted. */
-  muted: boolean;
   projectDir: string;
   mediaInfoMap: Project["media"];
   resolved: Resolved;
@@ -139,7 +138,6 @@ function compileClip({
     case "video": {
       return compileVideo({
         clip,
-        muted,
         file: path.resolve(projectDir, clip.src),
         mediaInfo: mediaInfoMap[clip.src],
         scene,
@@ -162,7 +160,6 @@ function compileClip({
     case "audio": {
       return compileAudio({
         clip,
-        muted,
         file: path.resolve(projectDir, clip.src),
         scene,
       });
@@ -172,13 +169,11 @@ function compileClip({
 
 function compileVideo({
   clip,
-  muted,
   file,
   mediaInfo,
   scene,
 }: {
   clip: VideoClip;
-  muted: boolean;
   file: string;
   mediaInfo: MediaInfo;
   scene: Scene;
@@ -218,7 +213,7 @@ function compileVideo({
       y: box.y,
     },
     audio:
-      audible && scene.withAudio && !muted && mediaInfo.audio
+      audible && scene.withAudio && mediaInfo.audio
         ? compileAudioStream({ clip, file, visible: audible, scene })
         : undefined,
   };
@@ -367,17 +362,15 @@ function compileColor({
 
 function compileAudio({
   clip,
-  muted,
   file,
   scene,
 }: {
   clip: AudioClip;
-  muted: boolean;
   file: string;
   scene: Scene;
 }): ClipStreams {
   const visible = intersect(getClipRange(clip), scene.range);
-  if (!visible || !scene.withAudio || muted) {
+  if (!visible || !scene.withAudio) {
     return {};
   }
   return { audio: compileAudioStream({ clip, file, visible, scene }) };
