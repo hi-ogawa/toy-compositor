@@ -193,6 +193,50 @@ test("scroll and zoom the timeline with the wheel", async ({
   await expect(time).toContainText("3.500 s");
 });
 
+test("restore the timeline view when reopening the project", async ({
+  page,
+  editor,
+}) => {
+  // Open the project, scroll right, zoom in, and seek with the ruler.
+  await page.goto(editor.url);
+  const time = page.getByTestId("timeline-time");
+  const ruler = page
+    .getByTestId("editor-timeline")
+    .getByRole("button", { name: "Timeline ruler", exact: true });
+  const firstLabel = ruler.locator("span").first();
+  const box = (await ruler.boundingBox())!;
+  await page.mouse.move(
+    box.x + 0.5 * DEFAULT_PIXELS_PER_SECOND,
+    box.y + box.height / 2,
+  );
+  await page.mouse.wheel(0, 1 * DEFAULT_PIXELS_PER_SECOND);
+  await expect(firstLabel).toHaveText("1");
+  await page.keyboard.down("Control");
+  await page.mouse.wheel(0, -100);
+  await page.keyboard.up("Control");
+  const seekX = 2 * DEFAULT_PIXELS_PER_SECOND;
+  await seekTimelineByPixels(page, { pixels: seekX });
+  const seekedTime = (await time.textContent())!;
+  const label = (await firstLabel.textContent())!;
+  expect(seekedTime).not.toContain("0.000 s");
+
+  // Reopen the project, and confirm the playhead, the scroll, and the zoom
+  // come back, so the same ruler point seeks to the same time.
+  await page.reload();
+  await expect(time).toHaveText(seekedTime);
+  await expect(firstLabel).toHaveText(label);
+  await seekTimelineByPixels(page, { pixels: 0 });
+  await seekTimelineByPixels(page, { pixels: seekX });
+  await expect(time).toHaveText(seekedTime);
+
+  // Confirm the view change did not mark the project as having unsaved
+  // changes.
+  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
+});
+
 test("play the composition and step by frames", async ({ page, editor }) => {
   // Open the project, where the video starts at the output start.
   await page.goto(editor.url);
