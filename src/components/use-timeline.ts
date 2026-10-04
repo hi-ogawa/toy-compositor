@@ -16,10 +16,13 @@ export const TIMELINE_LABEL_WIDTH = 176;
 export type TimelineView = ReturnType<typeof useTimeline>;
 
 /** A viewport over project time that every row maps through, scrolled and zoomed with the wheel. */
-export function useTimeline(
-  runtime: EditorRuntime,
-  { clientStorage }: { clientStorage: ProjectClientStorage },
-) {
+export function useTimeline({
+  runtime,
+  clientStorage,
+}: {
+  runtime: EditorRuntime;
+  clientStorage: ProjectClientStorage;
+}) {
   const [viewportStart, setViewportStart] = useStoredState(
     clientStorage,
     "viewportStart",

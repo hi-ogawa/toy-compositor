@@ -34,7 +34,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
     createProjectClientStorage(projectPath),
   );
   const project = useEditorProject({ projectPath, runtime, clientStorage });
-  const timeline = useTimeline(runtime, { clientStorage });
+  const timeline = useTimeline({ runtime, clientStorage });
   const { layerInteraction, locatorInteraction, clearSelection } =
     useEditorInteraction({ runtime, state });
   const [sideOpen, setSideOpen] = useState(true);
