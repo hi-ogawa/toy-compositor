@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { readJson } from "../../utils/fs.ts";
+import { readJson, writeFileAtomicSync } from "../../utils/fs.ts";
 import { HttpError } from "./http.ts";
 
 export type ProjectRegistry = ReturnType<typeof createProjectRegistry>;
@@ -28,7 +28,8 @@ export function createProjectRegistry({ configDir }: { configDir: string }) {
       ? JSON.parse(fs.readFileSync(file, "utf-8")).folders
       : [];
     fs.mkdirSync(configDir, { recursive: true });
-    fs.writeFileSync(
+    // Requests read the file concurrently through `readFolders`.
+    writeFileAtomicSync(
       file,
       JSON.stringify({ folders: update(folders) }, null, 2) + "\n",
     );
