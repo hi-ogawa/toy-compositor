@@ -43,7 +43,7 @@ The transport owns the clock and the playhead, and plays, pauses, and seeks. Eac
 - **Playbacks start only at the anchor.** An edit, or a buffer that arrives during playback, restarts the transport around the change.
 - **Sources load in the background.** Loading a project decodes each source once, shared by its clips' playback and lane waveforms, so opening never waits on a long source.
 - **Pausing snaps the playhead to the frame grid,** so a paused preview shows the same time as a rendered frame.
-- **Video shows the source frame the render picks,** the one nearest the source time. The element shows the last frame at or before its `currentTime`, so a paused video seeks just past the nearest frame's timestamp, and a playing video runs half a frame ahead of the source time.
+- **A paused video shows the source frame the render picks,** the one nearest the source time. The element shows the last frame at or before its `currentTime`, so it seeks just past that frame's timestamp.
 
 ## Differences from the render
 
