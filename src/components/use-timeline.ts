@@ -1,5 +1,4 @@
 import { useCallback, useState } from "react";
-import type { ProjectClientState } from "../lib/client-storage";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import { intersect, type TimeRange } from "../lib/layout";
 import type { EditorRuntime } from "../lib/runtime";
@@ -9,7 +8,7 @@ import {
   getRulerStep,
   getRulerSubdivisionStep,
 } from "../lib/timeline";
-import type { WithStorageState } from "./use-storage-state";
+import type { ProjectClientStorage } from "./editor";
 
 export const TIMELINE_LABEL_WIDTH = 176;
 
@@ -21,7 +20,7 @@ export function useTimeline({
   clientStorage,
 }: {
   runtime: EditorRuntime;
-  clientStorage: WithStorageState<ProjectClientState>;
+  clientStorage: ProjectClientStorage;
 }) {
   const [viewportStart, setViewportStart] =
     clientStorage.useValue("viewportStart");

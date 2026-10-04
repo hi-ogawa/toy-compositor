@@ -14,11 +14,7 @@ const DEFAULT_PROJECT_CLIENT_STATE: ProjectClientState = {
   pixelsPerSecond: DEFAULT_PIXELS_PER_SECOND,
 };
 
-export type ProjectClientStorage = LocalStorageStore<ProjectClientState>;
-
-export function createProjectClientStorage(
-  projectPath: string,
-): ProjectClientStorage {
+export function createProjectClientStorage(projectPath: string) {
   return new LocalStorageStore<ProjectClientState>({
     key: `toy-compositor:project-client:${projectPath}`,
     defaults: DEFAULT_PROJECT_CLIENT_STATE,

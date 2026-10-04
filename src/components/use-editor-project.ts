@@ -2,8 +2,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { apiClient } from "../lib/api-client";
-import type { ProjectClientStorage } from "../lib/client-storage";
 import type { EditorRuntime } from "../lib/runtime";
+import type { ProjectClientStorage } from "./editor";
 import { useWindowEvent } from "./use-window-event";
 
 export type SaveStatus = "saved" | "unsaved" | "saving" | "error";
