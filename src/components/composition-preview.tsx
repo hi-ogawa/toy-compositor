@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
 import type { ProjectClientStorage } from "../lib/client-storage";
+import { measureFontMetrics } from "../lib/font-metrics";
 import { getPictureRange, getVisibleBox } from "../lib/layout";
 import type { Box, Clip, Project, TextClip } from "../lib/project";
 import type { EditorRuntime, EditorProject } from "../lib/runtime";
@@ -163,8 +164,8 @@ function PreviewClip({
         />
       ) : clip.type === "text" ? (
         // Text past the box is cut off, as in the render.
-        <div style={{ ...style, ...getTextStyle(clip), overflow: "hidden" }}>
-          {clip.text}
+        <div style={{ ...style, overflow: "hidden" }}>
+          <div style={getTextStyle(clip)}>{clip.text}</div>
         </div>
       ) : (
         <div
@@ -207,12 +208,20 @@ function getPreviewBox({
   }
 }
 
+/** Lay the lines out the way the render's ImageMagick label: does. */
 function getTextStyle(clip: TextClip): CSSProperties {
+  const { ascent, descent } = measureFontMetrics(clip.font);
+  const { lineSpacing } = clip.font;
   return {
     fontFamily: clip.font.family,
     fontSize: clip.font.size,
     fontWeight: clip.font.weight,
-    lineHeight: `${clip.font.size * 1.2 + clip.font.lineSpacing}px`,
+    // Lines are spaced by the font's ascent and descent, which puts the first
+    // baseline at the ascent from the top of the box.
+    lineHeight: `${ascent + descent + lineSpacing}px`,
+    // CSS splits the line spacing above and below each line, but the render
+    // adds it only between lines, so pull the half above the first line back.
+    marginTop: -lineSpacing / 2,
     whiteSpace: "pre",
     textAlign: clip.align,
     color: clip.color,
