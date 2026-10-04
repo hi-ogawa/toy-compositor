@@ -6,8 +6,8 @@ import {
   type ReactNode,
 } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
+import { createProjectClientStorage } from "../lib/client-storage";
 import { isShortcutTextInputTarget, matchKeyboardEvent } from "../lib/keyboard";
-import { createProjectClientStorage } from "../lib/project-client-storage";
 import { EditorRuntime, findClip, type ClipLocation } from "../lib/runtime";
 import { clamp } from "../utils/math";
 import { CollapsibleSplit } from "./collapsible-split";

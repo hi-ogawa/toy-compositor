@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
+import type { ProjectClientStorage } from "../lib/client-storage";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import { intersect, type TimeRange } from "../lib/layout";
-import type { ProjectClientStorage } from "../lib/project-client-storage";
 import type { EditorRuntime } from "../lib/runtime";
 import {
   MAX_PIXELS_PER_SECOND,
