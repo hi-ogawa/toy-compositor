@@ -24,7 +24,6 @@ import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { useEditorInteraction } from "./use-editor-interaction";
 import { useEditorProject } from "./use-editor-project";
-import { useStorageState } from "./use-storage-state";
 import { useTimeline } from "./use-timeline";
 import { useWindowEvent } from "./use-window-event";
 
@@ -41,7 +40,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
   const timeline = useTimeline({ runtime, clientStorage });
   const { layerInteraction, locatorInteraction, clearSelection } =
     useEditorInteraction({ runtime, state });
-  const [sideOpen, setSideOpen] = useStorageState(clientStorage, "sideOpen");
+  const [sideOpen, setSideOpen] = clientStorage.useValue("sideOpen");
 
   useEffect(() => {
     document.title = state.file
@@ -192,7 +191,7 @@ function InspectorPanel({
   const MIN_INSPECTOR_WIDTH = 200;
   const MAX_INSPECTOR_WIDTH = 640;
 
-  const [width, setWidth] = useStorageState(clientStorage, "inspectorWidth");
+  const [width, setWidth] = clientStorage.useValue("inspectorWidth");
   const resizeRef = usePointerDrag({
     onStart: (event) => {
       event.preventDefault();

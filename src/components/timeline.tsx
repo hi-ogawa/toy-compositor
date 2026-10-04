@@ -36,7 +36,6 @@ import type {
   LayerInteraction,
 } from "./use-layer-interaction";
 import type { LocatorInteraction } from "./use-locator-interaction";
-import { useStorageState } from "./use-storage-state";
 import { TIMELINE_LABEL_WIDTH, type TimelineView } from "./use-timeline";
 
 const MIN_TIMELINE_HEIGHT = 160;
@@ -67,7 +66,7 @@ export function Timeline({
   audioSources: Record<string, PromiseState<DecodedAudio>>;
   onClearSelection: () => void;
 }) {
-  const [height, setHeight] = useStorageState(clientStorage, "timelineHeight");
+  const [height, setHeight] = clientStorage.useValue("timelineHeight");
   const resizeRef = usePointerDrag({
     onStart: (event) => {
       event.preventDefault();

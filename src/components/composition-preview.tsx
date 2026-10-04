@@ -7,7 +7,6 @@ import type { EditorRuntime, EditorProject } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
 import { cn } from "./ui/utils";
 import type { EditorSelection } from "./use-layer-interaction";
-import { useStorageState } from "./use-storage-state";
 
 export function CompositionPreview({
   clientStorage,
@@ -28,10 +27,8 @@ export function CompositionPreview({
   const viewportRef = useResizeObserver((element) =>
     setSize({ width: element.clientWidth, height: element.clientHeight }),
   );
-  const [clipToCanvas, setClipToCanvas] = useStorageState(
-    clientStorage,
-    "clipToCanvas",
-  );
+  const [clipToCanvas, setClipToCanvas] =
+    clientStorage.useValue("clipToCanvas");
   const { canvas } = project;
   // Leaves a margin around the frame, so layers overflowing it stay visible.
   const scale =
