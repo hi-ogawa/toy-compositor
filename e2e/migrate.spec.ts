@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test";
 import type { SavedFlatLayer, SavedProject } from "../src/lib/migrate.ts";
 import type { Project } from "../src/lib/project.ts";
-import { execFileAsync } from "../src/utils/exec.ts";
 import { editJson, readJson } from "../src/utils/fs.ts";
+import { runCli } from "./cli";
 import { test } from "./helper";
 
 test("read and migrate an older project file", async ({ page, editor }) => {
@@ -96,12 +96,7 @@ test("read and migrate an older project file", async ({ page, editor }) => {
   const savedProject = await readProject();
 
   // Check it, and confirm it reports each change and fails without writing.
-  const check = execFileAsync(process.execPath, [
-    "src/cli.ts",
-    "migrate",
-    editor.projectFile,
-    "--check",
-  ]);
+  const check = runCli(["migrate", editor.projectFile, "--check"]);
   for (const change of changes) {
     await expect(check).rejects.toMatchObject({
       stdout: expect.stringContaining(change),
@@ -121,8 +116,7 @@ test("read and migrate an older project file", async ({ page, editor }) => {
   // Remove the fields again and render, and confirm it reports each change and
   // rewrites the file too.
   await removeFields();
-  const { stdout } = await execFileAsync(process.execPath, [
-    "src/cli.ts",
+  const { stdout } = await runCli([
     "render",
     editor.projectFile,
     `${editor.projectFile}.mp4`,
@@ -134,10 +128,5 @@ test("read and migrate an older project file", async ({ page, editor }) => {
   expect(await readProject()).toEqual(migratedProject);
 
   // Check it again, and confirm nothing is left to migrate.
-  await execFileAsync(process.execPath, [
-    "src/cli.ts",
-    "migrate",
-    editor.projectFile,
-    "--check",
-  ]);
+  await runCli(["migrate", editor.projectFile, "--check"]);
 });
