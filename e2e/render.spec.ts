@@ -225,17 +225,8 @@ test("leave out a muted layer's sound and a hidden layer's picture", async ({}, 
       file,
       output,
     ]);
-    const { stdout } = await execFileAsync("ffprobe", [
-      "-v",
-      "error",
-      "-show_entries",
-      "stream=codec_type",
-      "-of",
-      "csv=p=0",
-      output,
-    ]);
     const [frame] = (await readGrayFrames(output)).slice(45);
-    return { streams: stdout.trim().split("\n"), frame };
+    return { streams: await readStreamTypes(output), frame };
   };
   const plain = await render("plain", { muted: false, hidden: false });
   const muted = await render("muted", { muted: true, hidden: false });
@@ -251,6 +242,20 @@ test("leave out a muted layer's sound and a hidden layer's picture", async ({}, 
   expect(hidden.streams).toEqual(["video", "audio"]);
   expect(diffFrames(hidden.frame, canvas)).toBeLessThan(1);
 });
+
+/** A file's stream types in order, such as `["video", "audio"]`. */
+async function readStreamTypes(file: string) {
+  const { stdout } = await execFileAsync("ffprobe", [
+    "-v",
+    "error",
+    "-show_entries",
+    "stream=codec_type",
+    "-of",
+    "csv=p=0",
+    file,
+  ]);
+  return stdout.trim().split("\n");
+}
 
 /** RMS level in dB of a 20ms window of a file's audio at a time. */
 async function measureRmsLevel(file: string, { time }: { time: number }) {
