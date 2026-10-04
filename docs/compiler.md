@@ -56,7 +56,7 @@ Clips and inputs are not one to one. A color clip has no input, a video clip wit
 
 ## Cut Each Clip to the Output
 
-Every clip is compiled on its own, into at most one picture stream and one sound stream. A clip does not need to know which other clips exist, and a clip compiles the same whether its layer holds one clip or several. Only the layer's `muted` reaches the clip, to leave out its sound, and a `hidden` layer drops each clip's picture stream.
+Every clip is compiled on its own, into at most one picture stream and one sound stream. A clip does not need to know which other clips exist, and a clip compiles the same whether its layer holds one clip or several. The clip does not see its layer either. After each clip compiles, the layer's `muted` drops its sound stream and `hidden` drops its picture stream.
 
 First, a clip is cut to the part that falls inside the output range. A video or audio clip spans from its `start` for the length of its source range, and a video clip's picture extends by its hold on both sides. An image, text, or color clip spans from `start` to `end`. A clip with no visible part contributes nothing.
 
