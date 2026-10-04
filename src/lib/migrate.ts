@@ -32,8 +32,8 @@ export type SavedProject = Omit<
 
 type SavedLayer = SavedFlatLayer | SavedClipsLayer;
 
-// Projects saved before layers could be hidden have no `hidden`.
 type SavedClipsLayer = Omit<Layer, "clips" | "hidden"> & {
+  // Projects saved before layers could be hidden have none.
   hidden?: boolean;
   clips: SavedClip[];
 };
