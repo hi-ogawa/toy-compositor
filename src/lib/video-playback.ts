@@ -17,14 +17,12 @@ const RATE_CATCH_UP_SECONDS = 2;
 const MAX_RATE_CHANGE = 0.1;
 
 /**
- * Makes one video clip's `<video>` follow the transport. While paused it seeks
- * to the playhead. While playing it plays natively and closes any drift by
- * nudging `playbackRate`, because a corrective seek lands behind by however
- * long the seek took, which on long keyframe intervals is longer than the drift
- * it corrects. Outside the source range it rests on `in` before and `out`
- * after, so the element shows the clip's edge frames wherever it is drawn,
- * which is what a hold shows. The element is always muted, since audio plays on
- * the transport.
+ * While playing it closes drift by nudging `playbackRate` rather than seeking,
+ * because a corrective seek lands behind by however long the seek took, which
+ * on long keyframe intervals is longer than the drift it corrects. Outside the
+ * source range it rests on the clip's edge frames, so the element shows what a
+ * hold shows wherever it is drawn. The element is always muted because audio
+ * plays on the transport.
  */
 export class VideoPlayback {
   private readonly transport: AudioContextTransport;

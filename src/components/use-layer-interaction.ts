@@ -15,9 +15,9 @@ type ClipEdit = {
 export type LayerInteraction = ReturnType<typeof useLayerInteraction>;
 
 /**
- * Moves and trims the selected clip on the timeline, like toy-midi's
- * `useRecorderClipInteraction` for a single clip. A drag shows as a draft and
- * commits on release, so playback reschedules once rather than on every move.
+ * Like toy-midi's `useRecorderClipInteraction` for a single clip, a drag shows
+ * as a draft and commits on release, so playback reschedules once rather than
+ * on every move.
  * It also holds the output selection, because Composition settings is the
  * other thing the inspector edits.
  */
