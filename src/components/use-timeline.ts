@@ -1,9 +1,9 @@
 import { useCallback, useState } from "react";
+import type { ProjectClientStorage } from "../lib/client-storage";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import { intersect, type TimeRange } from "../lib/layout";
 import type { EditorRuntime } from "../lib/runtime";
 import {
-  DEFAULT_PIXELS_PER_SECOND,
   MAX_PIXELS_PER_SECOND,
   MIN_PIXELS_PER_SECOND,
   getRulerStep,
@@ -15,11 +15,17 @@ export const TIMELINE_LABEL_WIDTH = 176;
 export type TimelineView = ReturnType<typeof useTimeline>;
 
 /** A viewport over project time that every row maps through, scrolled and zoomed with the wheel. */
-export function useTimeline(runtime: EditorRuntime) {
-  const [viewportStart, setViewportStart] = useState(0);
-  const [pixelsPerSecond, setPixelsPerSecond] = useState(
-    DEFAULT_PIXELS_PER_SECOND,
-  );
+export function useTimeline({
+  runtime,
+  clientStorage,
+}: {
+  runtime: EditorRuntime;
+  clientStorage: ProjectClientStorage;
+}) {
+  const [viewportStart, setViewportStart] =
+    clientStorage.useValue("viewportStart");
+  const [pixelsPerSecond, setPixelsPerSecond] =
+    clientStorage.useValue("pixelsPerSecond");
   const [viewportWidth, setViewportWidth] = useState(0);
   const visible = {
     start: viewportStart,

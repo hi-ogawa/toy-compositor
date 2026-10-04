@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { apiClient } from "../lib/api-client";
+import type { ProjectClientStorage } from "../lib/client-storage";
 import type { EditorRuntime } from "../lib/runtime";
 import { useWindowEvent } from "./use-window-event";
 
@@ -10,9 +11,11 @@ export type SaveStatus = "saved" | "unsaved" | "saving" | "error";
 export function useEditorProject({
   projectPath,
   runtime,
+  clientStorage,
 }: {
   projectPath: string;
   runtime: EditorRuntime;
+  clientStorage: ProjectClientStorage;
 }) {
   const [dirty, setDirty] = useState(false);
   const revisionRef = useRef(0);
@@ -27,6 +30,12 @@ export function useEditorProject({
         throw new Error(result.error);
       }
       runtime.deserializeProject(result.value);
+      // Loading seeks to the output start, so return to where the project was
+      // last left instead.
+      const { playhead } = clientStorage.store.get();
+      if (playhead !== undefined) {
+        runtime.seek(playhead);
+      }
       const { changes } = result.value;
       if (changes.length > 0) {
         toast.info("Migrated the project file", {
@@ -62,6 +71,19 @@ export function useEditorProject({
     return runtime.subscribePersistableState(() => {
       revisionRef.current += 1;
       setDirty(true);
+    });
+  }, [projectQuery.isSuccess, runtime]);
+
+  // Store the playhead where it stops, skipping playback, which moves it every
+  // animation frame.
+  useEffect(() => {
+    if (!projectQuery.isSuccess) {
+      return;
+    }
+    return runtime.store.subscribeWithSelector({
+      selector: (state) => (state.playing ? undefined : state.playhead),
+      listener: () =>
+        clientStorage.update({ playhead: runtime.store.get().playhead }),
     });
   }, [projectQuery.isSuccess, runtime]);
 

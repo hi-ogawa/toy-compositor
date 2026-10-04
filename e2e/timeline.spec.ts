@@ -191,6 +191,19 @@ test("scroll and zoom the timeline with the wheel", async ({
     pixels: zoomAnchorX + zoomedPixelsPerSecond,
   });
   await expect(time).toContainText("3.500 s");
+
+  // Reopen the project, and confirm the scroll, the zoom, and the playhead come
+  // back, so the same ruler point still seeks to the same time, without
+  // marking the project as having unsaved changes.
+  await page.reload();
+  await expect(time).toContainText("3.500 s");
+  await expect(ruler.locator("span").first()).toHaveText("2");
+  await seekTimelineByPixels(page, { pixels: zoomAnchorX });
+  await expect(time).toContainText("2.500 s");
+  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
 });
 
 test("play the composition and step by frames", async ({ page, editor }) => {
