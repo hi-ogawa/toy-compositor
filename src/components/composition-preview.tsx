@@ -96,10 +96,10 @@ export function CompositionPreview({
                 );
               }),
             )}
-            {/* A box-shadow ring spread far past the panel covers everything
-                outside the frame without clipping the canvas, so the selection
-                outline above it still shows past the frame. The outline width
-                undoes the canvas scale to stay one screen pixel. */}
+            {/* Paints over the area outside the frame instead of clipping the
+                canvas, so the selection outline above it can still extend past
+                the frame. The outline width undoes the canvas scale to stay one
+                screen pixel. */}
             <div
               className={cn(
                 "pointer-events-none absolute inset-0 z-[5] outline outline-neutral-600 ring-[100000px]",
