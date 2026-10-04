@@ -234,13 +234,13 @@ test("leave out a muted layer's sound and a hidden layer's picture", async ({}, 
 
   // Check that muting drops only the sound and hiding drops only the picture,
   // leaving the black canvas.
-  const canvas = new Uint8Array(plain.frame.length);
+  const blackFrame = new Uint8Array(plain.frame.length);
   expect(plain.streams).toEqual(["video", "audio"]);
-  expect(diffFrames(plain.frame, canvas)).toBeGreaterThan(10);
+  expect(diffFrames(plain.frame, blackFrame)).toBeGreaterThan(10);
   expect(muted.streams).toEqual(["video"]);
   expect(diffFrames(muted.frame, plain.frame)).toBeLessThan(1);
   expect(hidden.streams).toEqual(["video", "audio"]);
-  expect(diffFrames(hidden.frame, canvas)).toBeLessThan(1);
+  expect(diffFrames(hidden.frame, blackFrame)).toBeLessThan(1);
 });
 
 /** A file's stream types in order, such as `["video", "audio"]`. */
