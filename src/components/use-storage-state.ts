@@ -5,27 +5,27 @@ import {
 } from "../lib/client-storage";
 import type { LocalStorageStore } from "../utils/local-storage-store";
 
-export type ProjectClientStorage = WithStorageState<ProjectClientState>;
+export type ProjectClientStorage = StorageWithUseValue<ProjectClientState>;
 
 /** The project's client storage, created once for the editor's lifetime. */
 export function useProjectClientStorage(
   projectPath: string,
 ): ProjectClientStorage {
   const [storage] = useState(() =>
-    withStorageState(createProjectClientStorage(projectPath)),
+    attachUseValue(createProjectClientStorage(projectPath)),
   );
   return storage;
 }
 
-type WithStorageState<State extends object> = LocalStorageStore<State> & {
+type StorageWithUseValue<State extends object> = LocalStorageStore<State> & {
   /** useStorageState for this storage. */
   useValue<Key extends keyof State>(key: Key): StorageState<State[Key]>;
 };
 
 /** Adds `useValue(key)` to a storage, so call sites read `storage.useValue("key")`. */
-function withStorageState<State extends object>(
+function attachUseValue<State extends object>(
   storage: LocalStorageStore<State>,
-): WithStorageState<State> {
+): StorageWithUseValue<State> {
   return Object.assign(storage, {
     useValue: <Key extends keyof State>(key: Key) =>
       useStorageState(storage, key),
