@@ -25,7 +25,7 @@
 - Make props/params required when all call sites always pass them
 - Shape arguments the way a reader expects from the operation. Take a value positionally when the operation conventionally takes just that value. Use an options object when a call site would be ambiguous without names
 - Use braces for every `switch` case body (`case "x": { ... }`, `default: { ... }`)
-- Docs hold only durable, high-level architecture and existing facts. Decisions and their reasons belong in issues and PRs. A change updates docs only when one of those facts changes. Logic that lives in one or two files gets no doc section of its own
+- Docs hold only durable, high-level architecture and existing facts, such as what each part is responsible for, how data and control flow between parts, and rules that span files. Write them so a reader can skim the design without the code open, and do not inventory component trees, function names, or file lists, which the code already shows and which churn with every refactor. Decisions and their reasons belong in issues and PRs. A change updates docs only when one of those facts changes
 
 ## Provisional Notes
 
