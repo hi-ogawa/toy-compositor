@@ -8,7 +8,7 @@ import {
 import { usePointerDrag } from "../hooks/use-pointer-drag";
 import {
   createProjectClientStorage,
-  layoutClientStorage,
+  type ProjectClientStorage,
 } from "../lib/client-storage";
 import { isShortcutTextInputTarget, matchKeyboardEvent } from "../lib/keyboard";
 import { EditorRuntime, findClip, type ClipLocation } from "../lib/runtime";
@@ -41,10 +41,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
   const timeline = useTimeline({ runtime, clientStorage });
   const { layerInteraction, locatorInteraction, clearSelection } =
     useEditorInteraction({ runtime, state });
-  const [sideOpen, setSideOpen] = useStorageState(
-    layoutClientStorage,
-    "sideOpen",
-  );
+  const [sideOpen, setSideOpen] = useStorageState(clientStorage, "sideOpen");
 
   useEffect(() => {
     document.title = state.file
@@ -120,6 +117,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
       <div className="flex min-h-0 flex-1">
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">
           <CollapsibleSplit
+            clientStorage={clientStorage}
             open={sideOpen}
             sideId="side-panel"
             sideLabel="side panel"
@@ -149,6 +147,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
             }
             main={
               <CompositionPreview
+                clientStorage={clientStorage}
                 project={state.project}
                 selection={selection}
                 time={state.playhead}
@@ -158,6 +157,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
             }
           />
           <Timeline
+            clientStorage={clientStorage}
             timeline={timeline}
             layerInteraction={layerInteraction}
             locatorInteraction={locatorInteraction}
@@ -170,7 +170,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
             onClearSelection={clearSelection}
           />
         </main>
-        <InspectorPanel>
+        <InspectorPanel clientStorage={clientStorage}>
           <Inspector
             runtime={runtime}
             project={state.project}
@@ -182,14 +182,17 @@ export function Editor({ projectPath }: { projectPath: string }) {
   );
 }
 
-function InspectorPanel({ children }: { children: ReactNode }) {
+function InspectorPanel({
+  clientStorage,
+  children,
+}: {
+  clientStorage: ProjectClientStorage;
+  children: ReactNode;
+}) {
   const MIN_INSPECTOR_WIDTH = 200;
   const MAX_INSPECTOR_WIDTH = 640;
 
-  const [width, setWidth] = useStorageState(
-    layoutClientStorage,
-    "inspectorWidth",
-  );
+  const [width, setWidth] = useStorageState(clientStorage, "inspectorWidth");
   const resizeRef = usePointerDrag({
     onStart: (event) => {
       event.preventDefault();
