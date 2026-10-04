@@ -1,5 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FolderOpenIcon, FolderPlusIcon, PlusIcon, XIcon } from "lucide-react";
+import {
+  FolderOpenIcon,
+  FolderPlusIcon,
+  GitForkIcon,
+  PlusIcon,
+  XIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { apiClient } from "../lib/api-client";
 import {
@@ -34,30 +40,43 @@ export function ProjectList() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(ellipse_70%_70%_at_50%_0%,#10b9811f_0%,transparent_70%)]" />
 
       <div className="relative mx-auto flex h-full w-full max-w-4xl flex-col px-8 py-12">
-        <header className="shrink-0">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight text-neutral-100">
-              Toy Compositor
-            </h1>
+        <header className="flex shrink-0 items-start justify-between gap-8">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold tracking-tight text-neutral-100">
+                Toy Compositor
+              </h1>
+              {apiClient.isDemo() && (
+                <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">
+                  Demo
+                </span>
+              )}
+            </div>
             {apiClient.isDemo() && (
-              <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">
-                Demo
-              </span>
+              <p className="mt-2 text-sm text-neutral-400">
+                Runs in your browser on a bundled sample, and edits stay in this
+                tab. To edit your own projects,{" "}
+                <a
+                  href="https://github.com/hi-ogawa/toy-compositor#readme"
+                  className="text-neutral-200 underline underline-offset-2 hover:text-neutral-100"
+                >
+                  install the editor
+                </a>
+                .
+              </p>
             )}
           </div>
-          {apiClient.isDemo() && (
-            <p className="mt-2 text-sm text-neutral-400">
-              Runs in your browser on a bundled sample, and edits stay in this
-              tab. To edit your own projects,{" "}
-              <a
-                href="https://github.com/hi-ogawa/toy-compositor#readme"
-                className="text-neutral-200 underline underline-offset-2 hover:text-neutral-100"
-              >
-                install the editor
-              </a>
-              .
-            </p>
-          )}
+          <nav className="flex items-center gap-4 text-sm text-neutral-500">
+            <a
+              href="https://github.com/hi-ogawa/toy-compositor/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 hover:text-emerald-400 transition-colors"
+            >
+              <GitForkIcon className="size-4" />
+              GitHub
+            </a>
+          </nav>
         </header>
 
         <main className="mt-10 min-h-0 flex-1">
