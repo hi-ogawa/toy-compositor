@@ -5,7 +5,11 @@ import { readJson, writeJson } from "../../utils/fs.ts";
 import type { Result } from "../../utils/result.ts";
 import { getMediaType, type MediaFile } from "../media-file.ts";
 import { probeMediaInfo } from "../media-info.ts";
-import { validateAndMigrateProject, type SavedProject } from "../migrate.ts";
+import {
+  migrateAndValidateProject,
+  type MigrateProjectResult,
+  type SavedProject,
+} from "../migrate.ts";
 import type { MediaInfo, Output, Project } from "../project.ts";
 import { getDialogTool, pickProjectPath } from "./dialog.ts";
 import { getParam, HttpError, serveFile, toErrorResponse } from "./http.ts";
@@ -192,18 +196,27 @@ export function createEditorHandlers({
       path: projectPath,
     }: {
       path: string;
-    }): Promise<Result<ProjectFile, string>> {
+    }): Promise<Result<ProjectFile & { changes: string[] }, string>> {
       const file = await resolveProjectFile({ registry, projectPath });
       if (!fs.existsSync(file)) {
         throw new HttpError({ status: 404, message: "Project not found" });
       }
       const savedProject = await readJson<SavedProject>(file);
+      let migrated: MigrateProjectResult;
       try {
-        const { project } = validateAndMigrateProject(savedProject);
-        return { ok: true, value: { file: projectPath, project } };
+        migrated = await migrateAndValidateProject(savedProject);
       } catch (error) {
         return { ok: false, error: (error as Error).message };
       }
+      const { project, changes } = migrated;
+      if (changes.length > 0) {
+        await writeJson(file, project);
+        console.log(`Migrated ${file}`);
+        for (const change of changes) {
+          console.log(`  ${change}`);
+        }
+      }
+      return { ok: true, value: { file: projectPath, project, changes } };
     },
 
     async saveProject({

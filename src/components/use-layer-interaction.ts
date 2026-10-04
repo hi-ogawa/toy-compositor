@@ -1,23 +1,21 @@
 import { useState } from "react";
+import { applyClipEdit, type ClipEditType } from "../lib/clip-edit";
 import { matchKeyboardEvent } from "../lib/keyboard";
-import { applyLayerEdit, type LayerEditType } from "../lib/layer-edit";
-import type { Layer } from "../lib/project";
-import type { EditorRuntime, EditorState } from "../lib/runtime";
+import type { Clip } from "../lib/project";
+import { findClip, type EditorRuntime, type EditorState } from "../lib/runtime";
 
-export type EditorSelection =
-  | { type: "output" }
-  | { type: "layer"; id: string };
+export type EditorSelection = { type: "output" } | { type: "clip"; id: string };
 
-type LayerEdit = {
-  type: LayerEditType;
+type ClipEdit = {
+  type: ClipEditType;
   id: string;
-  layer: Layer;
+  clip: Clip;
 };
 
 export type LayerInteraction = ReturnType<typeof useLayerInteraction>;
 
 /**
- * Moves and trims the selected layer on the timeline, like toy-midi's
+ * Moves and trims the selected clip on the timeline, like toy-midi's
  * `useRecorderClipInteraction` for a single clip. A drag shows as a draft and
  * commits on release, so playback reschedules once rather than on every move.
  * It also holds the output selection, because Composition settings is the
@@ -33,23 +31,22 @@ export function useLayerInteraction({
   /** Only coordinates selection domains by clearing selection in the other domain. */
   onSelect: () => void;
 }) {
-  const [edit, setEdit] = useState<LayerEdit>();
+  const [edit, setEdit] = useState<ClipEdit>();
   const [selection, setSelection] = useState<EditorSelection>();
   const { layers, canvas, media: mediaInfoMap } = state.project;
-  const getLayer = (id: string) => layers.find((layer) => layer.id === id)!;
 
   function select(selection: EditorSelection) {
     onSelect();
     setSelection(selection);
   }
 
-  function startEdit({ type, id }: { type: LayerEditType; id: string }) {
-    select({ type: "layer", id });
-    setEdit({ type, id, layer: getLayer(id) });
+  function startEdit({ type, id }: { type: ClipEditType; id: string }) {
+    select({ type: "clip", id });
+    setEdit({ type, id, clip: findClip(layers, id)!.clip });
   }
 
-  function getEditedLayer(edit: LayerEdit, delta: number): Layer {
-    return applyLayerEdit(getLayer(edit.id), {
+  function getEditedClip(edit: ClipEdit, delta: number): Clip {
+    return applyClipEdit(findClip(layers, edit.id)!.clip, {
       type: edit.type,
       delta,
       fps: canvas.fps,
@@ -61,7 +58,7 @@ export function useLayerInteraction({
     if (!edit) {
       return;
     }
-    setEdit({ ...edit, layer: getEditedLayer(edit, delta) });
+    setEdit({ ...edit, clip: getEditedClip(edit, delta) });
   }
 
   function finishEdit(delta: number) {
@@ -69,15 +66,16 @@ export function useLayerInteraction({
       return;
     }
     setEdit(undefined);
-    runtime.updateLayer({
+    runtime.updateClip({
       id: edit.id,
-      update: getEditedLayer(edit, delta),
+      update: getEditedClip(edit, delta),
     });
   }
 
+  /** Removes the selected clip's layer, the only removal the editor has. */
   function handleRemoveShortcut(event: KeyboardEvent): boolean {
     if (
-      selection?.type !== "layer" ||
+      selection?.type !== "clip" ||
       edit ||
       !(
         matchKeyboardEvent(event, "Delete") ||
@@ -86,16 +84,19 @@ export function useLayerInteraction({
     ) {
       return false;
     }
-    runtime.removeLayer(selection.id);
+    runtime.removeLayer(findClip(layers, selection.id)!.layer.id);
     setSelection(undefined);
     return true;
   }
 
   return {
     layers: edit
-      ? layers.map((layer) =>
-          layer.id === edit.id ? { ...edit.layer, id: edit.id } : layer,
-        )
+      ? layers.map((layer) => ({
+          ...layer,
+          clips: layer.clips.map((clip) =>
+            clip.id === edit.id ? { ...edit.clip, id: edit.id } : clip,
+          ),
+        }))
       : layers,
     editing: edit !== undefined,
     selection,

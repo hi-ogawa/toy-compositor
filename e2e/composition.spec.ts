@@ -30,8 +30,9 @@ test("compose the output start, follow inspector edits, and save them", async ({
     canvas.getByText("Synthetic\nsample", { exact: true }),
   ).toBeVisible();
 
-  // Crop the image sides and confirm it refits inside its box with an outline.
-  await clickTimelineButton(page, { name: "Label backdrop image" });
+  // Crop the image sides and confirm the crop hides its edges without moving
+  // the rest, with an outline.
+  await clickTimelineButton(page, { name: "Select Label backdrop region" });
   await expect(canvas.getByLabel("Selected layer outline")).toBeVisible();
   await commitInspectorField(page, { name: "left", value: "0.25" });
   await commitInspectorField(page, { name: "right", value: "0.25" });
@@ -46,7 +47,7 @@ test("compose the output start, follow inspector edits, and save them", async ({
   await commitInspectorField(page, { name: "start", value: "1" });
   await clickTimelineButton(page, { name: "Render start" });
   await expect(page.getByTestId("timeline-time")).toContainText("1.000 s");
-  await clickTimelineButton(page, { name: "Test pattern video" });
+  await clickTimelineButton(page, { name: "Select Test pattern region" });
   await commitInspectorField(page, { name: "start", value: "0.3" });
   await commitInspectorField(page, { name: "in", value: "0.2" });
   await expect
@@ -62,8 +63,8 @@ test("compose the output start, follow inspector edits, and save them", async ({
 
   // End the text at the playhead and confirm it hides, because its range
   // excludes its end.
-  const text = page.getByTestId("composition-layer-3");
-  await clickTimelineButton(page, { name: "Title text" });
+  const text = page.getByTestId("composition-layer-3-clip-0");
+  await clickTimelineButton(page, { name: "Select Title region" });
   await commitInspectorField(page, { name: "end", value: "1" });
   await expect(text).toBeHidden();
 
@@ -75,10 +76,10 @@ test("compose the output start, follow inspector edits, and save them", async ({
   expect(await readJson(editor.projectFile)).toMatchObject({
     output: { start: 1 },
     layers: [
-      { start: 2, in: 0.2 },
+      { clips: [{ start: 2, in: 0.2 }] },
       {},
-      { crop: { left: 0.25, right: 0.25 } },
-      { end: 1 },
+      { clips: [{ crop: { left: 0.25, right: 0.25 } }] },
+      { clips: [{ end: 1 }] },
       {},
     ],
   });
@@ -96,6 +97,74 @@ test("compose the output start, follow inspector edits, and save them", async ({
   await expect(save).toHaveAttribute("data-status", "saved");
 });
 
+test("place a media layer by position, scale, and size, and save them", async ({
+  page,
+  editor,
+}) => {
+  // Select the image and confirm the inspector shows its top-left corner, its
+  // scale, and its scaled size.
+  await page.goto(editor.url);
+  const canvas = page.getByTestId("composition-canvas");
+  const image = canvas.getByRole("img", {
+    name: "Label backdrop",
+    exact: true,
+  });
+  const placed = image.locator("..");
+  const outline = canvas.getByLabel("Selected layer outline");
+  await expectImageLoaded(image);
+  await clickTimelineButton(page, { name: "Select Label backdrop region" });
+  await expectInspectorFields(page, {
+    x: "420",
+    y: "240",
+    "scale %": "100",
+    width: "160",
+    height: "90",
+  });
+
+  // Move the image to the canvas center.
+  await commitInspectorField(page, { name: "x", value: "240" });
+  await commitInspectorField(page, { name: "y", value: "135" });
+  await expect(placed).toHaveCSS("left", "240px");
+  await expect(placed).toHaveCSS("top", "135px");
+
+  // Scale it by percentage and confirm it grows around its center.
+  await commitInspectorField(page, { name: "scale %", value: "150" });
+  await expectInspectorFields(page, { x: "200", width: "240", height: "135" });
+  await expect(placed).toHaveCSS("left", "200px");
+  await expect(placed).toHaveCSS("top", "113px");
+  await expect(placed).toHaveCSS("height", "135px");
+
+  // Set its width directly and confirm the scale and height follow.
+  await commitInspectorField(page, { name: "width", value: "320" });
+  await expectInspectorFields(page, { "scale %": "200", height: "180" });
+  await expect(placed).toHaveCSS("width", "320px");
+  await expect(outline).toHaveCSS("left", "160px");
+  await expect(outline).toHaveCSS("width", "320px");
+
+  // Crop its left half, then scale it back to 100%, and confirm what remains
+  // stays centered at x 400.
+  await commitInspectorField(page, { name: "left", value: "0.5" });
+  await expect(placed).toHaveCSS("left", "320px");
+  await expect(placed).toHaveCSS("width", "160px");
+  await commitInspectorField(page, { name: "scale %", value: "100" });
+  await expect(placed).toHaveCSS("left", "360px");
+  await expect(placed).toHaveCSS("width", "80px");
+
+  // Move it partly off the canvas, which clips it rather than limiting it.
+  await commitInspectorField(page, { name: "x", value: "-400" });
+  await expect(placed).toHaveCSS("left", "-320px");
+
+  // Save and confirm the transform stores the top-left corner and the scale.
+  const save = page.getByTestId("editor-save-button");
+  await save.click();
+  await expect(save).toHaveAttribute("data-status", "saved");
+  const project = await readJson<Project>(editor.projectFile);
+  expect(project.layers[2].clips[0]).toMatchObject({
+    transform: { x: -400, y: 136, scale: 1 },
+    crop: { left: 0.5, right: 0, top: 0, bottom: 0 },
+  });
+});
+
 test("edit a text layer's content and styling and save them", async ({
   page,
   editor,
@@ -103,19 +172,19 @@ test("edit a text layer's content and styling and save them", async ({
   // Open the synthetic project and select the title text.
   await page.goto(editor.url);
   const canvas = page.getByTestId("composition-canvas");
-  await clickTimelineButton(page, { name: "Title text" });
+  await clickTimelineButton(page, { name: "Select Title region" });
   const inspector = page.getByTestId("inspector");
 
-  // Rewrite the text over three lines and confirm the preview follows on blur.
+  // Rewrite the text over three lines and confirm the preview follows on blur,
+  // cutting the lines off at the box height as the render does.
   const textField = getInspectorField(page, { name: "text" });
   await expect(textField).toHaveValue("Synthetic\nsample");
   await textField.fill("Edited\nthree\nlines");
   await textField.blur();
-  // The selection outline repeats the text invisibly to size itself.
-  const text = canvas
-    .getByText("Edited\nthree\nlines", { exact: true })
-    .first();
+  const text = canvas.getByText("Edited\nthree\nlines", { exact: true });
   await expect(text).toBeVisible();
+  await expect(text).toHaveCSS("height", "50px");
+  await expect(text).toHaveCSS("overflow", "hidden");
 
   // Align right, restyle the font and color, and confirm the preview follows.
   await inspector
@@ -145,6 +214,10 @@ test("edit a text layer's content and styling and save them", async ({
     inspector.getByLabel("outline color", { exact: true }),
   ).toBeDisabled();
 
+  // Make the box taller, and confirm the preview follows.
+  await commitInspectorField(page, { name: "height", value: "120" });
+  await expect(text).toHaveCSS("height", "120px");
+
   // Save and confirm the edits reach the project file without an outline.
   const save = page.getByTestId("editor-save-button");
   await save.click();
@@ -156,33 +229,46 @@ test("edit a text layer's content and styling and save them", async ({
       {},
       {},
       {
-        text: "Edited\nthree\nlines",
-        align: "right",
-        font: { family: "DejaVu Serif", size: 32, weight: 700, lineSpacing: 4 },
-        color: "#ffcc00",
+        clips: [
+          {
+            text: "Edited\nthree\nlines",
+            align: "right",
+            font: {
+              family: "DejaVu Serif",
+              size: 32,
+              weight: 700,
+              lineSpacing: 4,
+            },
+            color: "#ffcc00",
+            box: { x: 420, y: 260, width: 160, height: 120 },
+          },
+        ],
       },
       {},
     ],
   });
-  expect(project.layers[3]).not.toHaveProperty("outline");
+  expect(project.layers[3]!.clips[0]).not.toHaveProperty("outline");
 });
 
 test("edit layer names and a color layer's fill and box, and save them", async ({
   page,
   editor,
 }) => {
-  // Add a color layer from the Library tab, which starts unnamed, selected, and
-  // filling the canvas.
+  // Add a color layer from the Library tab, which starts numbered after the
+  // sample's tint, selected, and filling the canvas.
   await page.goto(editor.url);
   await page.getByRole("button", { name: "Add Color", exact: true }).click();
-  const fill = page.getByTestId("composition-layer-5").locator("div").first();
+  const fill = page
+    .getByTestId("composition-layer-5-clip-0")
+    .locator("div")
+    .first();
   await expect(fill).toHaveCSS("width", "640px");
 
   // Name the color layer and confirm its lane and the inspector title follow.
   const name = page
     .getByTestId("inspector")
     .getByLabel("name", { exact: true });
-  await expect(name).toHaveValue("");
+  await expect(name).toHaveValue("Color 2");
   await name.fill("Scrim");
   await name.press("Enter");
   await expect(
@@ -191,7 +277,7 @@ test("edit layer names and a color layer's fill and box, and save them", async (
   await expect(
     page
       .getByTestId("editor-timeline")
-      .getByRole("button", { name: "Scrim color", exact: true }),
+      .getByRole("button", { name: "Select Scrim region", exact: true }),
   ).toBeVisible();
 
   // Change the fill color and confirm the preview paints it.
@@ -211,28 +297,25 @@ test("edit layer names and a color layer's fill and box, and save them", async (
   await commitInspectorField(page, { name: "width", value: "320" });
   await expect(fill).toHaveCSS("width", "320px");
 
-  // Clear the text layer's name and confirm its lane falls back to the type.
-  await clickTimelineButton(page, { name: "Title text" });
-  await name.fill("");
-  await name.press("Enter");
-  await clickTimelineButton(page, { name: "text text" });
-
-  // Save and confirm the name, color, and box reach the project file, and the
-  // cleared name is removed.
+  // Save and confirm the name, color, and box reach the project file.
   const save = page.getByTestId("editor-save-button");
   await save.click();
   await expect(save).toHaveAttribute("data-status", "saved");
   const project = await readJson<Project>(editor.projectFile);
   expect(project.layers[5]).toEqual({
     name: "Scrim",
-    type: "color",
-    color: "#ff0000",
-    opacity: 0.5,
-    start: 0,
-    end: 3,
-    box: { x: 0, y: 0, width: 320, height: 360 },
+    muted: false,
+    clips: [
+      {
+        type: "color",
+        color: "#ff0000",
+        opacity: 0.5,
+        start: 0,
+        end: 3,
+        box: { x: 0, y: 0, width: 320, height: 360 },
+      },
+    ],
   });
-  expect(project.layers[3]).not.toHaveProperty("name");
 });
 
 test("edit the canvas in composition settings and save it", async ({
@@ -361,7 +444,7 @@ test("hold a video layer's first and last frames in the preview", async ({
   const video = page.getByTestId("composition-canvas").locator("video");
   const readVideoTime = () =>
     video.evaluate((element: HTMLVideoElement) => element.currentTime);
-  await clickTimelineButton(page, { name: "Test pattern video" });
+  await clickTimelineButton(page, { name: "Select Test pattern region" });
   await commitInspectorField(page, { name: "start", value: "1" });
   await expect(video).toBeHidden();
 
@@ -370,10 +453,10 @@ test("hold a video layer's first and last frames in the preview", async ({
   await commitInspectorField(page, { name: "before", value: "1" });
   await expect(video).toBeVisible();
   await expect.poll(readVideoTime).toBeCloseTo(0);
-  const lane = page.getByTestId("timeline-layer-0");
+  const lane = page.getByTestId("timeline-layer-0-clip-0");
   await expect(lane).toHaveAttribute("title", "1.000–4.000 s");
   await expect(
-    page.getByTestId("timeline-layer-0-hold-before"),
+    page.getByTestId("timeline-layer-0-clip-0-hold-before"),
   ).toHaveAttribute("title", "hold 0.000–1.000 s");
 
   // Shorten its source range to 1 s and hold its last frame for 1 s, then seek
@@ -381,10 +464,9 @@ test("hold a video layer's first and last frames in the preview", async ({
   await commitInspectorField(page, { name: "out", value: "1" });
   await commitInspectorField(page, { name: "after", value: "1" });
   await expect(lane).toHaveAttribute("title", "1.000–2.000 s");
-  await expect(page.getByTestId("timeline-layer-0-hold-after")).toHaveAttribute(
-    "title",
-    "hold 2.000–3.000 s",
-  );
+  await expect(
+    page.getByTestId("timeline-layer-0-clip-0-hold-after"),
+  ).toHaveAttribute("title", "hold 2.000–3.000 s");
   await seekTimelineByPixels(page, {
     pixels: 2.5 * DEFAULT_PIXELS_PER_SECOND,
   });
@@ -398,7 +480,7 @@ test("hold a video layer's first and last frames in the preview", async ({
   await expect(save).toHaveAttribute("data-status", "saved");
   expect(await readJson(editor.projectFile)).toMatchObject({
     layers: [
-      { start: 1, in: 0, out: 1, hold: { before: 1, after: 1 } },
+      { clips: [{ start: 1, in: 0, out: 1, hold: { before: 1, after: 1 } }] },
       {},
       {},
       {},

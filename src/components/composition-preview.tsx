@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import { useResizeObserver } from "../hooks/use-resize-observer";
-import { getPictureRange } from "../lib/layout";
-import type { Layer, Project, TextLayer } from "../lib/project";
+import { getPictureRange, getVisibleBox } from "../lib/layout";
+import type { Box, Clip, Project, TextClip } from "../lib/project";
 import type { EditorRuntime, EditorProject } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
 import type { EditorSelection } from "./use-layer-interaction";
@@ -57,31 +57,34 @@ export function CompositionPreview({
               width: canvas.width,
               height: canvas.height,
               transform: `scale(${scale})`,
-              background: canvas.background ?? "#000000",
+              background: canvas.background,
             }}
           >
-            {/* Every layer stays mounted, so media is ready when playback reaches it. */}
-            {project.layers.map((layer, index) => {
-              if (layer.type === "audio") {
-                return undefined;
-              }
-              const range = getPictureRange(layer);
-              return (
-                <PreviewLayer
-                  key={layer.id}
-                  layer={layer}
-                  visible={time >= range.start && time < range.end}
-                  runtime={runtime}
-                  selected={
-                    selection?.type === "layer" && selection.id === layer.id
-                  }
-                  id={layer.id}
-                  index={index}
-                  mediaInfoMap={project.media}
-                  resolveMediaUrl={resolveMediaUrl}
-                />
-              );
-            })}
+            {/* Every clip stays mounted, so media is ready when playback reaches it. */}
+            {project.layers.flatMap((layer, index) =>
+              layer.clips.map((clip, clipIndex) => {
+                if (clip.type === "audio") {
+                  return undefined;
+                }
+                const range = getPictureRange(clip);
+                return (
+                  <PreviewClip
+                    key={clip.id}
+                    clip={clip}
+                    name={layer.name}
+                    visible={time >= range.start && time < range.end}
+                    runtime={runtime}
+                    selected={
+                      selection?.type === "clip" && selection.id === clip.id
+                    }
+                    id={clip.id}
+                    testId={`composition-layer-${index}-clip-${clipIndex}`}
+                    mediaInfoMap={project.media}
+                    resolveMediaUrl={resolveMediaUrl}
+                  />
+                );
+              }),
+            )}
             {/* Dims everything outside the frame, below the selection outline,
                 and marks the frame edge with a 1px screen line just outside it. */}
             <div
@@ -95,27 +98,29 @@ export function CompositionPreview({
   );
 }
 
-function PreviewLayer({
-  layer,
+function PreviewClip({
+  clip,
+  name,
   visible,
   runtime,
   selected,
   id,
-  index,
+  testId,
   mediaInfoMap,
   resolveMediaUrl,
 }: {
-  layer: Exclude<Layer, { type: "audio" }>;
+  clip: Exclude<Clip, { type: "audio" }>;
+  /** The layer's name, which labels a video. */
+  name: string;
   visible: boolean;
   runtime: EditorRuntime;
   selected: boolean;
   id: string;
-  /** Position in the project, for test ids. */
-  index: number;
+  testId: string;
   mediaInfoMap: Project["media"];
   resolveMediaUrl: (src: string) => string;
 }) {
-  const box: TextLayer["box"] & { height?: number } = layer.box;
+  const box = getPreviewBox({ clip, mediaInfoMap });
   const style: CSSProperties = {
     position: "absolute",
     left: box.x,
@@ -124,20 +129,24 @@ function PreviewLayer({
     height: box.height,
   };
   return (
-    <div data-testid={`composition-layer-${index}`} hidden={!visible}>
-      {layer.type === "video" || layer.type === "image" ? (
+    <div data-testid={testId} hidden={!visible}>
+      {clip.type === "video" || clip.type === "image" ? (
         <CompositionMedia
-          layer={layer}
-          mediaInfo={mediaInfoMap[layer.src]}
+          clip={clip}
+          name={name}
+          mediaInfo={mediaInfoMap[clip.src]}
           runtime={runtime}
           id={id}
           resolveMediaUrl={resolveMediaUrl}
         />
-      ) : layer.type === "text" ? (
-        <div style={{ ...style, ...getTextStyle(layer) }}>{layer.text}</div>
+      ) : clip.type === "text" ? (
+        // Text past the box is cut off, as in the render.
+        <div style={{ ...style, ...getTextStyle(clip), overflow: "hidden" }}>
+          {clip.text}
+        </div>
       ) : (
         <div
-          style={{ ...style, background: layer.color, opacity: layer.opacity }}
+          style={{ ...style, background: clip.color, opacity: clip.opacity }}
         />
       )}
       {selected && (
@@ -145,29 +154,47 @@ function PreviewLayer({
           className="pointer-events-none z-10 outline outline-2 outline-primary"
           aria-label="Selected layer outline"
           style={style}
-        >
-          {layer.type === "text" && (
-            <div className="invisible" style={getTextStyle(layer)}>
-              {layer.text}
-            </div>
-          )}
-        </div>
+        />
       )}
     </div>
   );
 }
 
-function getTextStyle(layer: TextLayer): CSSProperties {
+/** The clip's rectangle in canvas pixels. */
+function getPreviewBox({
+  clip,
+  mediaInfoMap,
+}: {
+  clip: Exclude<Clip, { type: "audio" }>;
+  mediaInfoMap: Project["media"];
+}): Box {
+  switch (clip.type) {
+    case "video":
+    case "image": {
+      return getVisibleBox({
+        size: mediaInfoMap[clip.src].video!,
+        crop: clip.crop,
+        transform: clip.transform,
+      });
+    }
+    case "text":
+    case "color": {
+      return clip.box;
+    }
+  }
+}
+
+function getTextStyle(clip: TextClip): CSSProperties {
   return {
-    fontFamily: layer.font.family,
-    fontSize: layer.font.size,
-    fontWeight: layer.font.weight ?? 400,
-    lineHeight: `${layer.font.size * 1.2 + (layer.font.lineSpacing ?? 0)}px`,
+    fontFamily: clip.font.family,
+    fontSize: clip.font.size,
+    fontWeight: clip.font.weight,
+    lineHeight: `${clip.font.size * 1.2 + clip.font.lineSpacing}px`,
     whiteSpace: "pre",
-    textAlign: layer.align ?? "left",
-    color: layer.color,
-    WebkitTextStroke: layer.outline
-      ? `${layer.outline.width}px ${layer.outline.color}`
+    textAlign: clip.align,
+    color: clip.color,
+    WebkitTextStroke: clip.outline
+      ? `${clip.outline.width}px ${clip.outline.color}`
       : undefined,
     paintOrder: "stroke fill",
   };

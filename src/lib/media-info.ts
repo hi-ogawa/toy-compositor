@@ -1,21 +1,24 @@
 import path from "node:path";
 import { execFileAsync } from "../utils/exec.ts";
 import { readJson, writeJson } from "../utils/fs.ts";
-import type { SavedProject } from "./migrate.ts";
+import { migrateProject, type SavedProject } from "./migrate.ts";
 import type { Project, MediaInfo } from "./project.ts";
 
 /**
- * Probe every media file a project file's layers use and write their media info
- * into the project's `media`, replacing what was there.
+ * Probe every media file a project file's clips use and write their media info
+ * into the project's `media`, replacing what was there. The project is written
+ * in the current shape, migrated as on load.
  */
 export async function updateProjectMedia(projectFile: string) {
-  const project = await readJson<SavedProject>(projectFile);
+  const { project } = await migrateProject(
+    await readJson<SavedProject>(projectFile),
+  );
   const projectDir = path.dirname(path.resolve(projectFile));
   const mediaInfoMap: Project["media"] = {};
-  for (const layer of project.layers) {
-    if ("src" in layer && !mediaInfoMap[layer.src]) {
-      mediaInfoMap[layer.src] = await probeMediaInfo(
-        path.resolve(projectDir, layer.src),
+  for (const clip of project.layers.flatMap((layer) => layer.clips)) {
+    if ("src" in clip && !mediaInfoMap[clip.src]) {
+      mediaInfoMap[clip.src] = await probeMediaInfo(
+        path.resolve(projectDir, clip.src),
       );
     }
   }

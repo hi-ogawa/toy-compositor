@@ -13,77 +13,120 @@
   "layers": [
     {
       "name": "Test pattern",
-      "type": "video",
-      "src": "media/video.mp4",
-      "start": 0,
-      "in": 0,
-      "out": 3,
-      "box": {
-        "x": 0,
-        "y": 0,
-        "width": 640,
-        "height": 360
-      },
-      "muted": true
+      "muted": true,
+      "clips": [
+        {
+          "type": "video",
+          "src": "media/video.mp4",
+          "start": 0,
+          "in": 0,
+          "out": 3,
+          "transform": {
+            "x": 0,
+            "y": 0,
+            "scale": 2
+          },
+          "crop": {
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0
+          },
+          "fadeIn": 0,
+          "fadeOut": 0,
+          "hold": {
+            "before": 0,
+            "after": 0
+          }
+        }
+      ]
     },
     {
       "name": "Tone 660 Hz",
-      "type": "audio",
-      "src": "media/audio.wav",
-      "start": 0,
-      "in": 0,
-      "out": 3,
-      "fadeIn": 0.2,
-      "fadeOut": 0.5
+      "muted": false,
+      "clips": [
+        {
+          "type": "audio",
+          "src": "media/audio.wav",
+          "start": 0,
+          "in": 0,
+          "out": 3,
+          "fadeIn": 0.2,
+          "fadeOut": 0.5
+        }
+      ]
     },
     {
       "name": "Label backdrop",
-      "type": "image",
-      "src": "media/image.png",
-      "start": 0,
-      "end": 3,
-      "box": {
-        "x": 420,
-        "y": 240,
-        "width": 160,
-        "height": 90
-      }
+      "muted": false,
+      "clips": [
+        {
+          "type": "image",
+          "src": "media/image.png",
+          "start": 0,
+          "end": 3,
+          "transform": {
+            "x": 420,
+            "y": 240,
+            "scale": 1
+          },
+          "crop": {
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0
+          }
+        }
+      ]
     },
     {
       "name": "Title",
-      "type": "text",
-      "text": "Synthetic\nsample",
-      "start": 0,
-      "end": 3,
-      "box": {
-        "x": 420,
-        "y": 260,
-        "width": 160
-      },
-      "align": "center",
-      "font": {
-        "family": "DejaVu Sans",
-        "size": 20
-      },
-      "color": "#ffffff",
-      "outline": {
-        "width": 2,
-        "color": "#000000"
-      }
+      "muted": false,
+      "clips": [
+        {
+          "type": "text",
+          "text": "Synthetic\nsample",
+          "start": 0,
+          "end": 3,
+          "box": {
+            "x": 420,
+            "y": 260,
+            "width": 160,
+            "height": 50
+          },
+          "align": "center",
+          "font": {
+            "family": "DejaVu Sans",
+            "size": 20,
+            "weight": 400,
+            "lineSpacing": 0
+          },
+          "color": "#ffffff",
+          "outline": {
+            "width": 2,
+            "color": "#000000"
+          }
+        }
+      ]
     },
     {
       "name": "Tint",
-      "type": "color",
-      "color": "#0080ff",
-      "opacity": 0.5,
-      "start": 0,
-      "end": 3,
-      "box": {
-        "x": 40,
-        "y": 100,
-        "width": 240,
-        "height": 135
-      }
+      "muted": false,
+      "clips": [
+        {
+          "type": "color",
+          "color": "#0080ff",
+          "opacity": 0.5,
+          "start": 0,
+          "end": 3,
+          "box": {
+            "x": 40,
+            "y": 100,
+            "width": 240,
+            "height": 135
+          }
+        }
+      ]
     }
   ],
   "media": {

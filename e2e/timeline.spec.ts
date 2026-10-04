@@ -85,7 +85,7 @@ test("clear the selection with Escape or the locator row", async ({
   const emptyInspector = page
     .getByRole("complementary", { name: "Inspector" })
     .getByText("Select composition settings or a layer.");
-  const video = page.getByTestId("timeline-layer-0");
+  const video = page.getByTestId("timeline-layer-0-clip-0");
   const thumbnail = page
     .getByTestId("editor-timeline")
     .getByRole("button", { name: "thumbnail", exact: true });
@@ -249,17 +249,17 @@ test("draw audio waveforms in lanes", async ({ page, editor }) => {
   // and the muted video draws its own audio dimmed.
   await page.goto(editor.url);
   const videoWaveform = page
-    .getByTestId("timeline-layer-0")
+    .getByTestId("timeline-layer-0-clip-0")
     .getByTestId("timeline-waveform");
   const audioWaveform = page
-    .getByTestId("timeline-layer-1")
+    .getByTestId("timeline-layer-1-clip-0")
     .getByTestId("timeline-waveform");
   await expect(audioWaveform).toBeVisible();
   await expect(audioWaveform).not.toHaveAttribute("data-dimmed");
   await expect(videoWaveform).toHaveAttribute("data-dimmed", "true");
 
   // Select the video and unmute it, and confirm its waveform is no longer dimmed.
-  await clickTimelineButton(page, { name: "Test pattern video" });
+  await clickTimelineButton(page, { name: "Select Test pattern region" });
   await page
     .getByTestId("inspector")
     .getByRole("checkbox", { name: "muted", exact: true })
@@ -273,9 +273,9 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
   await page.goto(editor.url);
   const secondsToPixels = (seconds: number) =>
     seconds * DEFAULT_PIXELS_PER_SECOND;
-  const video = page.getByTestId("timeline-layer-0");
-  const videoTrimStart = page.getByTestId("timeline-layer-0-trim-start");
-  const videoTrimEnd = page.getByTestId("timeline-layer-0-trim-end");
+  const video = page.getByTestId("timeline-layer-0-clip-0");
+  const videoTrimStart = page.getByTestId("timeline-layer-0-clip-0-trim-start");
+  const videoTrimEnd = page.getByTestId("timeline-layer-0-clip-0-trim-end");
 
   // Drag the video region 1 s right, a little off the frame grid, and confirm
   // it selects the layer and moves its start to the nearest frame.
@@ -299,7 +299,7 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
   await expectInspectorFields(page, { start: "1", in: "0", out: "3" });
 
   // Drag the image region 0.5 s right, and confirm its end moves with it.
-  const image = page.getByTestId("timeline-layer-2");
+  const image = page.getByTestId("timeline-layer-2-clip-0");
   await dragBy(page, image, { deltaX: secondsToPixels(0.5) });
   await expectInspectorFields(page, { start: "0.5", end: "3.5" });
 
@@ -308,7 +308,7 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
   await expectInspectorFields(page, { start: "0", end: "3" });
 
   // Trim the image's end 1 s earlier, which changes only its end.
-  await dragBy(page, page.getByTestId("timeline-layer-2-trim-end"), {
+  await dragBy(page, page.getByTestId("timeline-layer-2-clip-0-trim-end"), {
     deltaX: secondsToPixels(-1),
   });
   await expectInspectorFields(page, { start: "0", end: "2" });
@@ -343,10 +343,10 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
   );
   expect(await readJson(editor.projectFile)).toMatchObject({
     layers: [
-      { start: 1, in: 0, out: 3 },
-      { start: 0, in: 0, out: 3 },
-      { start: 0, end: 2 },
-      { start: 0, end: 3 },
+      { clips: [{ start: 1, in: 0, out: 3 }] },
+      { clips: [{ start: 0, in: 0, out: 3 }] },
+      { clips: [{ start: 0, end: 2 }] },
+      { clips: [{ start: 0, end: 3 }] },
       {},
     ],
   });
@@ -379,13 +379,13 @@ test("add, move, rename, and delete locators", async ({ page, editor }) => {
 
   // Select the video layer, then click the thumbnail locator, which takes
   // over the selection and seeks, and delete it without removing the layer.
-  await clickTimelineButton(page, { name: "Test pattern video" });
+  await clickTimelineButton(page, { name: "Select Test pattern region" });
   await clickTimelineButton(page, { name: "thumbnail" });
   await expect(page.getByTestId("timeline-time")).toContainText("1.500 s");
   await expect(getMarker("shorts")).toHaveAttribute("aria-pressed", "false");
   await page.keyboard.press("Delete");
   await expect(getMarker("thumbnail")).toHaveCount(0);
-  await expect(page.getByTestId("timeline-layer-0")).toBeVisible();
+  await expect(page.getByTestId("timeline-layer-0-clip-0")).toBeVisible();
 
   // Save and confirm the locators reach the project file.
   await page.getByTestId("editor-save-button").click();

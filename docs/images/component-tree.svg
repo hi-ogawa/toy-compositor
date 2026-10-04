@@ -40,11 +40,11 @@
 <text x="254" y="273" font-size="13">color → div background, opacity</text>
 <rect x="244" y="288" width="266" height="42" rx="4" fill="#dce8f5" stroke="#2f6fb0"/>
 <text x="254" y="306" font-size="13" font-weight="700">video / image → CompositionMedia</text>
-<text x="254" y="322" font-size="12" fill="#52625d">natural size · fitBox + crop · seek</text>
+<text x="254" y="322" font-size="12" fill="#52625d">natural size · getVisibleBox + crop · seek</text>
 
 <rect x="46" y="380" width="500" height="84" rx="6" fill="#f6f7f5" stroke="#a3b0a9"/>
 <text x="58" y="402" font-weight="700">Timeline</text>
-<text x="136" y="402" font-size="13" fill="#52625d">lane labels select · ruler and locators seek</text>
+<text x="136" y="402" font-size="13" fill="#52625d">clip regions select · ruler and locators seek</text>
 <text x="58" y="444" font-size="13">runtime.select() · runtime.seek()</text>
 
 <rect x="562" y="106" width="152" height="358" rx="6" fill="#f6f7f5" stroke="#a3b0a9"/>

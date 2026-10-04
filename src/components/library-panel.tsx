@@ -2,9 +2,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
 import { apiClient } from "../lib/api-client";
 import type { MediaFile } from "../lib/media-file";
-import type { Layer } from "../lib/project";
+import type { Clip } from "../lib/project";
 import type { EditorRuntime } from "../lib/runtime";
-import { LayerTypeIcon } from "./layer-type-icon";
+import { ClipTypeIcon } from "./clip-type-icon";
 import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { useWindowEvent } from "./use-window-event";
@@ -21,7 +21,8 @@ export function LibraryPanel({
 }: {
   runtime: EditorRuntime;
   projectPath: string;
-  onLayerAdd: (id: string) => void;
+  /** Receives the id of the new layer's clip. */
+  onLayerAdd: (clipId: string) => void;
 }) {
   const filesQuery = useQuery({
     queryKey: ["media-files", projectPath],
@@ -95,14 +96,14 @@ function LibraryItem({
   mono = false,
   onAdd,
 }: {
-  type: Layer["type"];
+  type: Clip["type"];
   label: string;
   mono?: boolean;
   onAdd: () => void;
 }) {
   return (
     <li className="flex h-7 cursor-default select-none items-center gap-2 pl-3 pr-1.5 hover:bg-neutral-700/40">
-      <LayerTypeIcon type={type} />
+      <ClipTypeIcon type={type} />
       <span className={cn("truncate", mono && "font-mono")} title={label}>
         {label}
       </span>

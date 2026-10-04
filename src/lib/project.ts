@@ -4,15 +4,16 @@ export type Project = {
   output: Output;
   layers: Layer[];
   locators: Locator[];
-  /** Facts about every media file a layer uses, keyed by the layers' `src`. */
+  /** Facts about every media file a clip uses, keyed by the clips' `src`. */
   media: Record<string, MediaInfo>;
 };
 
-export type Canvas = {
-  width: number;
-  height: number;
+/** A width and height in pixels, such as the canvas's or a media file's picture. */
+export type Size = { width: number; height: number };
+
+export type Canvas = Size & {
   fps: number;
-  background?: string;
+  background: string;
 };
 
 export type Output =
@@ -35,9 +36,7 @@ export type MediaInfo = {
 };
 
 /** A media file's video stream, which images have too. */
-export type VideoInfo = {
-  width: number;
-  height: number;
+export type VideoInfo = Size & {
   /** The video stream's own start time, which frame timing counts from. */
   startTime: number;
   frameRate: number;
@@ -52,6 +51,36 @@ export const CANVAS_PRESETS = [
 export type CanvasPreset = (typeof CANVAS_PRESETS)[number];
 
 /**
+ * Values that leave their property without effect, such as no crop or no fade.
+ * New layers and clips start from them, and migration fills them into older
+ * projects.
+ */
+export const NEUTRAL_VALUES = {
+  canvas: { background: "#000000" },
+  layer: { muted: false },
+  video: {
+    crop: { left: 0, right: 0, top: 0, bottom: 0 },
+    fadeIn: 0,
+    fadeOut: 0,
+    hold: { before: 0, after: 0 },
+  },
+  audio: { fadeIn: 0, fadeOut: 0 },
+  image: { crop: { left: 0, right: 0, top: 0, bottom: 0 } },
+  text: { align: "left", font: { weight: 400, lineSpacing: 0 } },
+  color: { opacity: 1 },
+} satisfies {
+  canvas: Pick<Canvas, "background">;
+  layer: Pick<Layer, "muted">;
+  video: Pick<VideoClip, "crop" | "fadeIn" | "fadeOut" | "hold">;
+  audio: Pick<AudioClip, "fadeIn" | "fadeOut">;
+  image: Pick<ImageClip, "crop">;
+  text: Pick<TextClip, "align"> & {
+    font: Pick<TextClip["font"], "weight" | "lineSpacing">;
+  };
+  color: Pick<ColorClip, "opacity">;
+};
+
+/**
  * Create a project without layers. Its output starts as a short range from 0,
  * because no media exists yet to size it by.
  */
@@ -61,7 +90,7 @@ export function createEmptyProject(preset: CanvasPreset): Project {
       width: preset.width,
       height: preset.height,
       fps: 30,
-      background: "#000000",
+      ...NEUTRAL_VALUES.canvas,
     },
     output: { type: "video", start: 0, end: 10 },
     layers: [],
@@ -70,74 +99,69 @@ export function createEmptyProject(preset: CanvasPreset): Project {
   };
 }
 
-export type Layer =
-  | VideoLayer
-  | AudioLayer
-  | ImageLayer
-  | TextLayer
-  | ColorLayer;
+/**
+ * A lane in the stack, like a track in a video editor, holding clips. The
+ * editor only creates layers with one clip so far.
+ */
+export type Layer = { name: string; muted: boolean; clips: Clip[] };
 
-type LayerBase = { name?: string };
+export type Clip = VideoClip | AudioClip | ImageClip | TextClip | ColorClip;
 
 export type Box = { x: number; y: number; width: number; height: number };
 
-export type Crop = {
-  left?: number;
-  right?: number;
-  top?: number;
-  bottom?: number;
-};
+/** Where a media clip's whole source goes: its top-left corner in canvas pixels, at a uniform scale. */
+export type Transform = { x: number; y: number; scale: number };
 
-export type VideoLayer = LayerBase & {
+export type Crop = { left: number; right: number; top: number; bottom: number };
+
+export type VideoClip = {
   type: "video";
   src: string;
   start: number;
   in: number;
   out: number;
-  box: Box;
-  crop?: Crop;
-  muted?: boolean;
-  fadeIn?: number;
-  fadeOut?: number;
-  hold?: { before?: number; after?: number };
+  transform: Transform;
+  crop: Crop;
+  fadeIn: number;
+  fadeOut: number;
+  hold: { before: number; after: number };
 };
 
-export type AudioLayer = LayerBase & {
+export type AudioClip = {
   type: "audio";
   src: string;
   start: number;
   in: number;
   out: number;
-  fadeIn?: number;
-  fadeOut?: number;
-  muted?: boolean;
+  fadeIn: number;
+  fadeOut: number;
 };
 
-export type ImageLayer = LayerBase & {
+export type ImageClip = {
   type: "image";
   src: string;
-  box: Box;
-  crop?: Crop;
+  transform: Transform;
+  crop: Crop;
   start: number;
   end: number;
 };
 
-export type TextLayer = LayerBase & {
+export type TextClip = {
   type: "text";
   text: string;
-  box: { x: number; y: number; width: number };
-  align?: "left" | "center" | "right";
-  font: { family: string; size: number; weight?: number; lineSpacing?: number };
+  box: Box;
+  align: "left" | "center" | "right";
+  font: { family: string; size: number; weight: number; lineSpacing: number };
   color: string;
   outline?: { width: number; color: string };
   start: number;
   end: number;
 };
 
-export type ColorLayer = LayerBase & {
+export type ColorClip = {
   type: "color";
   color: string;
-  opacity?: number;
+  opacity: number;
   box: Box;
   start: number;
   end: number;

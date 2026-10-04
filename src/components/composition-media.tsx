@@ -1,17 +1,20 @@
 import { useCallback, useState, type CSSProperties } from "react";
-import { fitBox } from "../lib/layout";
-import type { ImageLayer, MediaInfo, VideoLayer } from "../lib/project";
+import { getVisibleBox } from "../lib/layout";
+import type { ImageClip, MediaInfo, VideoClip } from "../lib/project";
 import type { EditorRuntime } from "../lib/runtime";
 
-/** Fit the cropped source into its canvas box, by the size its media info records. */
+/** Place the cropped source on the canvas, by the size its media info records. */
 export function CompositionMedia({
-  layer,
+  clip,
+  name,
   mediaInfo,
   runtime,
   id,
   resolveMediaUrl,
 }: {
-  layer: ImageLayer | VideoLayer;
+  clip: ImageClip | VideoClip;
+  /** The layer's name, which labels the media element. */
+  name: string;
   mediaInfo: MediaInfo;
   runtime: EditorRuntime;
   id: string;
@@ -20,23 +23,23 @@ export function CompositionMedia({
   const [failed, setFailed] = useState(false);
 
   const video = mediaInfo.video!;
-  const crop = layer.crop ?? {};
-  const fit = fitBox({ source: video, crop, box: layer.box });
+  const { crop } = clip;
+  const visible = getVisibleBox({
+    size: video,
+    crop,
+    transform: clip.transform,
+  });
   const mediaStyle: CSSProperties = {
     position: "absolute",
     maxWidth: "none",
     width:
-      (video.width * fit.width) /
-      (video.width * (1 - (crop.left ?? 0) - (crop.right ?? 0))),
+      (video.width * visible.width) /
+      (video.width * (1 - crop.left - crop.right)),
     height:
-      (video.height * fit.height) /
-      (video.height * (1 - (crop.top ?? 0) - (crop.bottom ?? 0))),
-    left:
-      (-(crop.left ?? 0) * fit.width) /
-      (1 - (crop.left ?? 0) - (crop.right ?? 0)),
-    top:
-      (-(crop.top ?? 0) * fit.height) /
-      (1 - (crop.top ?? 0) - (crop.bottom ?? 0)),
+      (video.height * visible.height) /
+      (video.height * (1 - crop.top - crop.bottom)),
+    left: (-crop.left * visible.width) / (1 - crop.left - crop.right),
+    top: (-crop.top * visible.height) / (1 - crop.top - crop.bottom),
   };
   return (
     <>
@@ -44,33 +47,33 @@ export function CompositionMedia({
         <p
           role="alert"
           className="absolute bg-black p-2 text-sm text-destructive"
-          style={{ left: layer.box.x, top: layer.box.y }}
+          style={{ left: visible.x, top: visible.y }}
         >
-          Could not load {layer.src}.
+          Could not load {clip.src}.
         </p>
       )}
       <div
         className="absolute overflow-hidden"
         style={{
-          left: fit.x,
-          top: fit.y,
-          width: fit.width,
-          height: fit.height,
+          left: visible.x,
+          top: visible.y,
+          width: visible.width,
+          height: visible.height,
         }}
       >
-        {layer.type === "video" ? (
+        {clip.type === "video" ? (
           <CompositionVideo
-            layer={layer}
+            name={name}
             runtime={runtime}
             id={id}
-            src={resolveMediaUrl(layer.src)}
+            src={resolveMediaUrl(clip.src)}
             style={mediaStyle}
             onError={() => setFailed(true)}
           />
         ) : (
           <img
-            src={resolveMediaUrl(layer.src)}
-            alt={layer.name ?? layer.src}
+            src={resolveMediaUrl(clip.src)}
+            alt={name}
             style={mediaStyle}
             onError={() => setFailed(true)}
           />
@@ -81,14 +84,14 @@ export function CompositionMedia({
 }
 
 function CompositionVideo({
-  layer,
+  name,
   runtime,
   id,
   src,
   style,
   onError,
 }: {
-  layer: VideoLayer;
+  name: string;
   runtime: EditorRuntime;
   id: string;
   src: string;
@@ -106,7 +109,7 @@ function CompositionVideo({
       src={src}
       playsInline
       preload="auto"
-      aria-label={layer.name ?? layer.src}
+      aria-label={name}
       style={style}
       onError={onError}
     />

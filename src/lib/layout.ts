@@ -1,4 +1,4 @@
-import type { Box, Crop, Layer, Project } from "./project.ts";
+import type { Box, Clip, Crop, Project, Size, Transform } from "./project.ts";
 
 export type TimeRange = { start: number; end: number };
 
@@ -9,35 +9,37 @@ export function getOutputRange(project: Project): TimeRange {
     : { start: output.time, end: output.time + 1 / canvas.fps };
 }
 
-/** Timeline span covering every layer, from the earliest start to the latest end. */
+/** Timeline span covering every clip, from the earliest start to the latest end. */
 export function getContentRange(project: Project): TimeRange {
-  if (project.layers.length === 0) {
+  const ranges = project.layers.flatMap((layer) =>
+    layer.clips.map(getClipRange),
+  );
+  if (ranges.length === 0) {
     return { start: 0, end: 0 };
   }
-  const ranges = project.layers.map(getLayerRange);
   return {
     start: Math.min(...ranges.map((range) => range.start)),
     end: Math.max(...ranges.map((range) => range.end)),
   };
 }
 
-/** Timeline span of a layer, from its source range for video and audio. */
-export function getLayerRange(layer: Layer): TimeRange {
-  if (layer.type === "video" || layer.type === "audio") {
-    return { start: layer.start, end: layer.start + layer.out - layer.in };
+/** Timeline span of a clip, from its source range for video and audio. */
+export function getClipRange(clip: Clip): TimeRange {
+  if (clip.type === "video" || clip.type === "audio") {
+    return { start: clip.start, end: clip.start + clip.out - clip.in };
   }
-  return { start: layer.start, end: layer.end };
+  return { start: clip.start, end: clip.end };
 }
 
-/** Timeline span of a layer's picture, extended by a video layer's hold. */
-export function getPictureRange(layer: Layer): TimeRange {
-  const range = getLayerRange(layer);
-  if (layer.type !== "video" || !layer.hold) {
+/** Timeline span of a clip's picture, extended by a video clip's hold. */
+export function getPictureRange(clip: Clip): TimeRange {
+  const range = getClipRange(clip);
+  if (clip.type !== "video") {
     return range;
   }
   return {
-    start: range.start - (layer.hold.before ?? 0),
-    end: range.end + (layer.hold.after ?? 0),
+    start: range.start - clip.hold.before,
+    end: range.end + clip.hold.after,
   };
 }
 
@@ -47,29 +49,82 @@ export function intersect(a: TimeRange, b: TimeRange): TimeRange | undefined {
   return end > start ? { start, end } : undefined;
 }
 
-/** Scale the cropped source to fit inside the box, keeping its aspect ratio, centered. */
-export function fitBox({
-  source,
-  crop = {},
-  box,
+/**
+ * The visible part of a crop on the canvas. The transform scales the whole size
+ * and puts its top-left corner at its position, and the crop then hides edges
+ * without moving the rest. The size rounds to whole pixels, and anything
+ * outside the canvas is clipped later.
+ */
+export function getVisibleBox({
+  size,
+  crop,
+  transform,
 }: {
-  source: { width: number; height: number };
-  crop?: Crop;
-  box: Box;
-}) {
-  const cw = source.width * (1 - (crop.left ?? 0) - (crop.right ?? 0));
-  const ch = source.height * (1 - (crop.top ?? 0) - (crop.bottom ?? 0));
-  const scale = Math.min(box.width / cw, box.height / ch);
-  const width = roundToEven(cw * scale);
-  const height = roundToEven(ch * scale);
+  size: Size;
+  crop: Crop;
+  transform: Transform;
+}): Box {
+  const cropped = getCroppedBox({ size, crop });
   return {
-    width,
-    height,
-    x: Math.round(box.x + (box.width - width) / 2),
-    y: Math.round(box.y + (box.height - height) / 2),
+    width: Math.round(cropped.width * transform.scale),
+    height: Math.round(cropped.height * transform.scale),
+    x: Math.round(transform.x + cropped.x * transform.scale),
+    y: Math.round(transform.y + cropped.y * transform.scale),
   };
 }
 
-function roundToEven(n: number) {
-  return Math.max(2, 2 * Math.round(n / 2));
+/** Center the size on the canvas at the largest scale that keeps it inside. */
+export function getFitTransform({
+  size,
+  canvas,
+}: {
+  size: Size;
+  canvas: Size;
+}): Transform {
+  const scale = Math.min(
+    canvas.width / size.width,
+    canvas.height / size.height,
+  );
+  return {
+    x: Math.round((canvas.width - size.width * scale) / 2),
+    y: Math.round((canvas.height - size.height * scale) / 2),
+    scale,
+  };
+}
+
+/**
+ * Change the scale while the center of what the crop leaves stays where it is
+ * on the canvas.
+ */
+export function getRescaledTransform({
+  size,
+  crop,
+  transform,
+  scale,
+}: {
+  size: Size;
+  crop: Crop;
+  transform: Transform;
+  scale: number;
+}): Transform {
+  const cropped = getCroppedBox({ size, crop });
+  const center = {
+    x: cropped.x + cropped.width / 2,
+    y: cropped.y + cropped.height / 2,
+  };
+  return {
+    x: Math.round(transform.x + center.x * (transform.scale - scale)),
+    y: Math.round(transform.y + center.y * (transform.scale - scale)),
+    scale,
+  };
+}
+
+/** What the crop leaves of the source, in source pixels. */
+export function getCroppedBox({ size, crop }: { size: Size; crop: Crop }): Box {
+  return {
+    x: crop.left * size.width,
+    y: crop.top * size.height,
+    width: size.width * (1 - crop.left - crop.right),
+    height: size.height * (1 - crop.top - crop.bottom),
+  };
 }
