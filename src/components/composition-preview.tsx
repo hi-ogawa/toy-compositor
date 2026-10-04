@@ -83,7 +83,9 @@ export function CompositionPreview({
                     key={clip.id}
                     clip={clip}
                     name={layer.name}
-                    visible={time >= range.start && time < range.end}
+                    visible={
+                      !layer.hidden && time >= range.start && time < range.end
+                    }
                     runtime={runtime}
                     selected={
                       selection?.type === "clip" && selection.id === clip.id

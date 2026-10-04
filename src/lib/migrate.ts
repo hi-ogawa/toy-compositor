@@ -32,7 +32,11 @@ export type SavedProject = Omit<
 
 type SavedLayer = SavedFlatLayer | SavedClipsLayer;
 
-type SavedClipsLayer = Omit<Layer, "clips"> & { clips: SavedClip[] };
+type SavedClipsLayer = Omit<Layer, "clips" | "hidden"> & {
+  // Projects saved before layers could be hidden have none.
+  hidden?: boolean;
+  clips: SavedClip[];
+};
 
 // Saved before layers held clips, with the layer's one clip on the layer itself.
 // Missing name before layer names were required, and muted before neutral
@@ -176,9 +180,9 @@ function normalizeLayer({
   /** The layers before it, which a missing name is numbered among. */
   layers: Layer[];
   changes: string[];
-}): SavedClipsLayer {
+}): Omit<Layer, "clips"> & { clips: SavedClip[] } {
   if ("clips" in savedLayer) {
-    return savedLayer;
+    return fillDefaults(savedLayer, NEUTRAL_VALUES.layer);
   }
   const { name: savedName, muted, ...clip } = savedLayer;
   const name = savedName ?? createLayerName({ layers, type: clip.type });

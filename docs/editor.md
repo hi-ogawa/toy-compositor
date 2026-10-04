@@ -26,7 +26,7 @@ The preview time decides which clips show and which frame each video shows. A cl
 
 ![One project time picks which layers are visible and which source frame each video shows](images/time-mapping.svg)
 
-Every clip stays mounted and is hidden outside its range, so its media is loaded before playback reaches it. Clips draw in [layer order](project-format.md#layers), so later layers sit on top. Audio clips draw nothing, and their sound plays on the transport, described below.
+Every clip stays mounted and is hidden outside its range or on a `hidden` layer, so its media is loaded before playback reaches it. Clips draw in [layer order](project-format.md#layers), so later layers sit on top. Audio clips draw nothing, and their sound plays on the transport, described below.
 
 The selected clip gets a read-only outline, drawn as a second div with the same rectangle.
 

@@ -236,6 +236,16 @@ function LayerInspector({
             </button>
           ))}
         </Group>
+        <Group title="Picture">
+          <label className="col-span-2 flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={layer.hidden}
+              onChange={(e) => onUpdate({ hidden: e.target.checked })}
+            />
+            hidden
+          </label>
+        </Group>
         <Group title="Audio">
           <label className="col-span-2 flex items-center gap-2 text-xs">
             <input
