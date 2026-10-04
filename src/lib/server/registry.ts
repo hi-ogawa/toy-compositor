@@ -7,9 +7,8 @@ import { HttpError } from "./http.ts";
 export type ProjectRegistry = ReturnType<typeof createProjectRegistry>;
 
 /**
- * The project folders that the user opened, by absolute path, kept in
- * `projects.json` under the config directory. It is read on every call, so a
- * folder that `toy-compositor add` registers shows up in a running server.
+ * The project folders that the user opened. The file is read on every call, so
+ * a folder that `toy-compositor add` registers shows up in a running server.
  */
 export function createProjectRegistry({ configDir }: { configDir: string }) {
   const file = path.join(configDir, "projects.json");
@@ -38,10 +37,7 @@ export function createProjectRegistry({ configDir }: { configDir: string }) {
   return {
     readFolders,
 
-    /**
-     * Register a folder, or the folder of a project file inside it, and return
-     * the folder. Registering a folder again keeps its place in the list.
-     */
+    /** Registering a folder again keeps its place in the list. */
     async addFolder(target: string): Promise<string> {
       const resolved = path.resolve(target);
       const stat = fs.existsSync(resolved)
@@ -71,7 +67,6 @@ export function createProjectRegistry({ configDir }: { configDir: string }) {
       );
     },
 
-    /** Return `directory` when it is registered, or throw a 403 error. */
     async resolveFolder(directory: string): Promise<string> {
       if (!(await readFolders()).includes(directory)) {
         throw new HttpError({
@@ -85,9 +80,8 @@ export function createProjectRegistry({ configDir }: { configDir: string }) {
 }
 
 /**
- * The user's config directory for toy-compositor, following the platform's
- * conventions. `TOY_COMPOSITOR_CONFIG_DIR` overrides it, so development and
- * tests keep their own registry.
+ * `TOY_COMPOSITOR_CONFIG_DIR` overrides the platform's config directory, so
+ * development and tests keep their own registry.
  */
 export function getConfigDir(): string {
   if (process.env.TOY_COMPOSITOR_CONFIG_DIR) {

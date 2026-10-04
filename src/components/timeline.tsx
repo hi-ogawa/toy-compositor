@@ -1,12 +1,9 @@
 import {
-  EyeIcon,
-  EyeOffIcon,
   LoaderCircleIcon,
   PauseIcon,
   PencilIcon,
   PlayIcon,
   PlusIcon,
-  Volume2Icon,
   VolumeXIcon,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
@@ -158,8 +155,8 @@ export function Timeline({
                 layer={layer}
                 index={index}
                 audioSources={audioSources}
-                onUpdate={(update) =>
-                  runtime.updateLayer({ id: layer.id, update })
+                selected={
+                  selection?.type === "layer" && selection.id === layer.id
                 }
                 selectedClipId={
                   selection?.type === "clip" ? selection.id : undefined
@@ -384,7 +381,7 @@ function TimelineLayerLane({
   layer,
   index,
   audioSources,
-  onUpdate,
+  selected,
   selectedClipId,
 }: {
   timeline: TimelineView;
@@ -393,52 +390,31 @@ function TimelineLayerLane({
   /** Position in the project, for test ids. */
   index: number;
   audioSources: Record<string, PromiseState<DecodedAudio>>;
-  onUpdate: (update: Partial<Pick<EditorLayer, "hidden" | "muted">>) => void;
+  selected: boolean;
   selectedClipId?: string;
 }) {
   const { name } = layer;
-  const toggleClassName =
-    "shrink-0 rounded p-0.5 text-muted-foreground outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-1 focus-visible:ring-sky-300";
   return (
     <TimelineRow
       timeline={timeline}
-      className="h-12"
+      className={cn("h-12", selected && "bg-sky-300/10")}
       subdivisions
       label={
-        <div
+        <button
+          type="button"
+          aria-label={`Select ${name} layer`}
+          aria-pressed={selected}
           title={name}
-          className="flex h-full items-center gap-1 px-3 text-xs font-semibold"
+          onClick={() =>
+            layerInteraction.select({ type: "layer", id: layer.id })
+          }
+          className={cn(
+            "flex h-full w-full cursor-pointer items-center px-3 text-left text-xs font-semibold outline-none hover:bg-neutral-800 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-sky-300",
+            selected && "bg-sky-300/20 text-sky-200 hover:bg-sky-300/20",
+          )}
         >
-          <span className="flex-1 truncate">{name}</span>
-          <button
-            type="button"
-            aria-label="hidden"
-            aria-pressed={layer.hidden}
-            title={layer.hidden ? "Show picture" : "Hide picture"}
-            onClick={() => onUpdate({ hidden: !layer.hidden })}
-            className={toggleClassName}
-          >
-            {layer.hidden ? (
-              <EyeOffIcon className="size-3.5" />
-            ) : (
-              <EyeIcon className="size-3.5" />
-            )}
-          </button>
-          <button
-            type="button"
-            aria-label="muted"
-            aria-pressed={layer.muted}
-            title={layer.muted ? "Unmute sound" : "Mute sound"}
-            onClick={() => onUpdate({ muted: !layer.muted })}
-            className={toggleClassName}
-          >
-            {layer.muted ? (
-              <VolumeXIcon className="size-3.5" />
-            ) : (
-              <Volume2Icon className="size-3.5" />
-            )}
-          </button>
-        </div>
+          <span className="truncate">{name}</span>
+        </button>
       }
     >
       {layer.clips.map((clip, clipIndex) => (
@@ -477,7 +453,6 @@ function TimelineClip({
   clip: EditorClip;
   /** The layer's name, which labels its clips. */
   name: string;
-  /** Whether the clip's layer is muted. */
   muted: boolean;
   testId: string;
   audioSource?: PromiseState<DecodedAudio>;

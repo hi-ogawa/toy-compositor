@@ -5,7 +5,7 @@ import { execFileAsync } from "../src/utils/exec.ts";
 import { editJson } from "../src/utils/fs.ts";
 
 test("render the synthetic sample", async ({}, testInfo) => {
-  // Render the synthetic sample project to an MP4.
+  // Render a project to an MP4.
   const output = testInfo.outputPath("preview.mp4");
   await execFileAsync(process.execPath, [
     "src/cli.ts",
@@ -66,7 +66,7 @@ test("render the synthetic sample", async ({}, testInfo) => {
 });
 
 test("render the synthetic thumbnail", async ({}, testInfo) => {
-  // Render the synthetic thumbnail project to a PNG still.
+  // Render a still-output project to a PNG.
   const output = testInfo.outputPath("thumbnail.png");
   await execFileAsync(process.execPath, [
     "src/cli.ts",
@@ -112,8 +112,8 @@ test("render the synthetic thumbnail", async ({}, testInfo) => {
 });
 
 test("fade audio at the layer's own edges when the output cuts into them", async ({}, testInfo) => {
-  // Copy the synthetic sample and keep only its tone, which fades in over 0.2s
-  // and out over 0.5s across 0 to 3s, then cut the output into both fades.
+  // Keep only an audio layer that fades in and out, then cut the output into
+  // both fades.
   const directory = testInfo.outputPath("project");
   await cp("samples/synthetic", directory, { recursive: true });
   await editJson<Project>(`${directory}/project.json`, (project) => {
@@ -140,12 +140,8 @@ test("fade audio at the layer's own edges when the output cuts into them", async
 });
 
 test("hold a video layer's first and last frames beyond its source range", async ({}, testInfo) => {
-  // Copy the synthetic sample and keep only its test pattern, playing source
-  // 1s to 2s at 1s and holding its first and last frames for 1s on each side.
-  //
-  //   |  hold  |  play  |  hold  |
-  //   0        1        2        3
-  //               1.5
+  // Keep only a video layer that plays in the middle of the output and holds
+  // its first and last frames on each side.
   const directory = testInfo.outputPath("project");
   await cp("samples/synthetic", directory, { recursive: true });
   await editJson<Project>(`${directory}/project.json`, (project) => {
@@ -174,8 +170,8 @@ test("hold a video layer's first and last frames beyond its source range", async
     contentType: "video/mp4",
   });
 
-  // Check that 0 s shows the same frame as 1 s and 2 s the same as the end,
-  // while 1.5 s differs from both.
+  // Check that each hold shows its edge frame, while the played part differs
+  // from both.
   const fps = 30;
   const frames = await readGrayFrames(output);
   expect(frames).toHaveLength(3 * fps);

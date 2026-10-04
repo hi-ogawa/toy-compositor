@@ -4,7 +4,10 @@ import { matchKeyboardEvent } from "../lib/keyboard";
 import type { Clip } from "../lib/project";
 import { findClip, type EditorRuntime, type EditorState } from "../lib/runtime";
 
-export type EditorSelection = { type: "output" } | { type: "clip"; id: string };
+export type EditorSelection =
+  | { type: "output" }
+  | { type: "layer"; id: string }
+  | { type: "clip"; id: string };
 
 type ClipEdit = {
   type: ClipEditType;
@@ -15,11 +18,11 @@ type ClipEdit = {
 export type LayerInteraction = ReturnType<typeof useLayerInteraction>;
 
 /**
- * Moves and trims the selected clip on the timeline, like toy-midi's
- * `useRecorderClipInteraction` for a single clip. A drag shows as a draft and
- * commits on release, so playback reschedules once rather than on every move.
- * It also holds the output selection, because Composition settings is the
- * other thing the inspector edits.
+ * Like toy-midi's `useRecorderClipInteraction` for a single clip, a drag shows
+ * as a draft and commits on release, so playback reschedules once rather than
+ * on every move.
+ * It also holds the layer and output selections, because the inspector edits
+ * those too.
  */
 export function useLayerInteraction({
   runtime,
@@ -72,10 +75,10 @@ export function useLayerInteraction({
     });
   }
 
-  /** Removes the selected clip's layer, the only removal the editor has. */
+  /** Removes the selected layer, or the selected clip's layer, the only removal the editor has. */
   function handleRemoveShortcut(event: KeyboardEvent): boolean {
     if (
-      selection?.type !== "clip" ||
+      !(selection?.type === "layer" || selection?.type === "clip") ||
       edit ||
       !(
         matchKeyboardEvent(event, "Delete") ||
@@ -84,7 +87,11 @@ export function useLayerInteraction({
     ) {
       return false;
     }
-    runtime.removeLayer(findClip(layers, selection.id)!.layer.id);
+    runtime.removeLayer(
+      selection.type === "layer"
+        ? selection.id
+        : findClip(layers, selection.id)!.layer.id,
+    );
     setSelection(undefined);
     return true;
   }

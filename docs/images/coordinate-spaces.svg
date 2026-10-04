@@ -8,7 +8,7 @@
 
 <text x="30" y="88" font-weight="700">1. Canvas in the viewport</text>
 <rect x="30" y="100" width="320" height="240" fill="none" stroke="#7d8a84" stroke-dasharray="5 4"/>
-<text x="36" y="116" font-size="12" fill="#52625d">viewport 320 × 240 screen px (ResizeObserver)</text>
+<text x="36" y="116" font-size="12" fill="#52625d">viewport 320 × 240 screen px</text>
 <rect x="30" y="130" width="320" height="180" fill="#263632"/>
 <text x="40" y="150" font-size="12" fill="#eef1ef">canvas div 640 × 360 canvas px</text>
 <text x="40" y="166" font-size="12" fill="#c6cfca">transform: scale(0.5)</text>
@@ -19,7 +19,7 @@
 <text x="30" y="380" font-size="13" fill="#52625d">An outer letterbox div takes the scaled size,</text>
 <text x="30" y="398" font-size="13" fill="#52625d">because transform does not change layout.</text>
 
-<text x="410" y="88" font-weight="700">2. Media placed by layer.transform (drawn 1.5×)</text>
+<text x="410" y="88" font-weight="700">2. Media placed by clip.transform (drawn 1.5×)</text>
 <rect x="440" y="130" width="240" height="135" fill="#eef1ef" stroke="#7d8a84" stroke-dasharray="5 4"/>
 <g fill="none" stroke="#c6cfca">
 <path d="M440 150 L460 130 M440 180 L490 130 M440 210 L500 150 M440 240 L500 180 M450 265 L500 215 M480 265 L500 245"/>
@@ -30,10 +30,10 @@
 <text x="560" y="212" font-size="13" fill="#ffffff" text-anchor="middle">80 × 90</text>
 <text x="440" y="122" font-size="12" fill="#52625d">source 160 × 90 at scale 1, corner at x 420</text>
 <path d="M500 272 V282 M620 272 V282 M500 277 H620" stroke="#2f6fb0"/>
-<text x="560" y="297" font-size="12" fill="#2f6fb0" text-anchor="middle">wrapper div = getVisibleBox {x 460, w 80}, overflow hidden</text>
+<text x="560" y="297" font-size="12" fill="#2f6fb0" text-anchor="middle">wrapper div = visible box {x 460, w 80}, overflow hidden</text>
 <path d="M440 306 V316 M680 306 V316 M440 311 H680" stroke="#7d8a84"/>
 <text x="560" y="331" font-size="12" fill="#52625d" text-anchor="middle">&lt;img&gt; stays 160 wide at left −40 inside the wrapper</text>
 <text x="410" y="362" font-size="13" fill="#52625d">Hatched: cropped away, clipped by the wrapper.</text>
-<text x="410" y="380" font-size="13" fill="#52625d">getVisibleBox is the same function the compiler uses.</text>
+<text x="410" y="380" font-size="13" fill="#52625d">The compiler places the same visible box.</text>
 </g>
 </svg>

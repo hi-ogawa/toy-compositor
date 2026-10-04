@@ -170,10 +170,6 @@ async function main() {
   }
 }
 
-/**
- * Serve the editor, and with `open`, open it in the browser, reusing an editor
- * server already on the port, and close after the last editor tab closes.
- */
 async function runServe({
   directory,
   port,
@@ -217,9 +213,8 @@ async function runServe({
 }
 
 /**
- * Install the package from `source` globally with pnpm, and rewrite the
- * desktop entry if one is installed. The entry names the package's CLI by its
- * versioned path, so the newly installed CLI writes it again.
+ * The desktop entry names the package's CLI by its versioned path, so the newly
+ * installed CLI writes it again.
  */
 async function upgradeGlobalInstall(source: string) {
   // pnpm picks its version from the current directory's packageManager field,
@@ -249,10 +244,6 @@ async function runCommand(
   }
 }
 
-/**
- * Migrate each project file in place and print what changed, or with
- * `check`, only print them and fail if any file would change.
- */
 async function runMigrate(
   projectFiles: string[],
   { check }: { check?: boolean },

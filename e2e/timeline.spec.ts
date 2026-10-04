@@ -16,7 +16,7 @@ test("navigate the timeline without editing the project", async ({
   page,
   editor,
 }) => {
-  // Open the synthetic project.
+  // Open the project.
   await page.goto(editor.url);
   const time = page.getByTestId("timeline-time");
 
@@ -39,14 +39,14 @@ test("navigate the timeline without editing the project", async ({
     )
     .toBeCloseTo(1.5);
 
-  // Click the ruler at 1.12 s and confirm the playhead snaps to frame 34 (1.133 s).
+  // Click the ruler between frames and confirm the playhead snaps to the nearest frame.
   await seekTimelineByPixels(page, {
     pixels: 1.12 * DEFAULT_PIXELS_PER_SECOND,
   });
   await expect(time).toContainText("1.133 s");
 
   // Step one frame forward with ArrowRight and ten frames back with
-  // Shift+ArrowLeft, landing on frames 35 (1.167 s) and 25 (0.833 s).
+  // Shift+ArrowLeft.
   await page.keyboard.press("ArrowRight");
   await expect(time).toContainText("1.167 s");
   await page.keyboard.press("Shift+ArrowLeft");
@@ -60,8 +60,8 @@ test("navigate the timeline without editing the project", async ({
   await page.keyboard.press("ArrowLeft");
   await expect(time).toContainText("0.000 s");
 
-  // Click empty space in the locator row at 5 s, past the markers, and confirm
-  // it seeks like the ruler.
+  // Click empty space in the locator row, past the markers, and confirm it
+  // seeks like the ruler.
   await seekTimelineByPixels(page, {
     pixels: 5 * DEFAULT_PIXELS_PER_SECOND,
     name: "Locator row",
@@ -79,7 +79,7 @@ test("clear the selection with Escape or the locator row", async ({
   page,
   editor,
 }) => {
-  // Open the synthetic project.
+  // Open the project.
   await page.goto(editor.url);
   const time = page.getByTestId("timeline-time");
   const emptyInspector = page
@@ -112,7 +112,7 @@ test("clear the selection with Escape or the locator row", async ({
   await expect(emptyInspector).toBeVisible();
 
   // Click the render end marker, which selects the output, then click the
-  // ruler at 1 s, and confirm it seeks but keeps the output selected.
+  // ruler, and confirm it seeks but keeps the output selected.
   await clickTimelineButton(page, { name: "Render end" });
   await expect(time).toContainText("3.000 s");
   await expect(emptyInspector).toBeHidden();
@@ -122,8 +122,8 @@ test("clear the selection with Escape or the locator row", async ({
   await page.keyboard.press("Escape");
   await expect(emptyInspector).toBeVisible();
 
-  // Select the thumbnail locator, then click empty space in the locator row at
-  // 5 s, and confirm it deselects the locator and seeks.
+  // Select a locator, then click empty space in the locator row, and confirm
+  // it deselects the locator and seeks.
   await thumbnail.click();
   await expect(thumbnail).toHaveAttribute("aria-pressed", "true");
   await seekTimelineByPixels(page, {
@@ -153,8 +153,8 @@ test("scroll and zoom the timeline with the wheel", async ({
   page,
   editor,
 }) => {
-  // Open the synthetic project and scroll left past the start, and confirm the
-  // viewport stays at 0 so the ruler point 0.5 s in still seeks to 0.5 s.
+  // Open the project and scroll left past the start, and confirm the viewport
+  // stays at the start, so a ruler point still seeks to the same time.
   await page.goto(editor.url);
   const time = page.getByTestId("timeline-time");
   const ruler = page
@@ -168,17 +168,16 @@ test("scroll and zoom the timeline with the wheel", async ({
   await seekTimelineByPixels(page, { pixels: pointerX });
   await expect(time).toContainText("0.500 s");
 
-  // Scroll right by 1 s at the default zoom, and confirm the same ruler point
-  // now seeks to 1.5 s.
+  // Scroll right, and confirm the same ruler point now seeks later by the
+  // scrolled time.
   const scrollX = 1 * DEFAULT_PIXELS_PER_SECOND;
   await page.mouse.wheel(0, scrollX);
   await expect(ruler.locator("span").first()).toHaveText("1");
   await seekTimelineByPixels(page, { pixels: pointerX });
   await expect(time).toContainText("1.500 s");
 
-  // Zoom in by 10% with Ctrl+wheel 1.5 s into the viewport, which is 2.5 s.
-  // The point under the pointer stays at 2.5 s, and one second to its right
-  // at the zoomed scale is 3.5 s.
+  // Zoom in with Ctrl+wheel, and confirm the point under the pointer stays at
+  // the same time while the scale around it changes.
   const zoomAnchorX = 1.5 * DEFAULT_PIXELS_PER_SECOND;
   const zoomedPixelsPerSecond = 1.1 * DEFAULT_PIXELS_PER_SECOND;
   await page.mouse.move(box.x + zoomAnchorX, y);
@@ -195,7 +194,7 @@ test("scroll and zoom the timeline with the wheel", async ({
 });
 
 test("play the composition and step by frames", async ({ page, editor }) => {
-  // Open the synthetic project, where the video starts at 0.
+  // Open the project, where the video starts at the output start.
   await page.goto(editor.url);
   const time = page.getByTestId("timeline-time");
   const video = page.getByTestId("composition-canvas").locator("video");
@@ -245,8 +244,8 @@ test("play the composition and step by frames", async ({ page, editor }) => {
 });
 
 test("draw audio waveforms in lanes", async ({ page, editor }) => {
-  // Open the synthetic project and confirm the audio layer draws a waveform,
-  // and the muted video draws its own audio dimmed.
+  // Open the project and confirm the audio layer draws a waveform, and the
+  // muted video draws its own audio dimmed.
   await page.goto(editor.url);
   const videoWaveform = page
     .getByTestId("timeline-layer-0-clip-0")
@@ -258,8 +257,9 @@ test("draw audio waveforms in lanes", async ({ page, editor }) => {
   await expect(audioWaveform).not.toHaveAttribute("data-dimmed");
   await expect(videoWaveform).toHaveAttribute("data-dimmed", "true");
 
-  // Select the video and unmute it, and confirm its waveform is no longer dimmed.
-  await clickTimelineButton(page, { name: "Select Test pattern region" });
+  // Select the video layer and unmute it, and confirm its waveform is no
+  // longer dimmed.
+  await clickTimelineButton(page, { name: "Select Test pattern layer" });
   await page
     .getByTestId("inspector")
     .getByRole("checkbox", { name: "muted", exact: true })
@@ -268,8 +268,7 @@ test("draw audio waveforms in lanes", async ({ page, editor }) => {
 });
 
 test("move and trim layers on the timeline", async ({ page, editor }) => {
-  // Open the synthetic project, where every layer spans 0 to 3 s and the video
-  // source is 3 s long.
+  // Open the project, where the video already plays its whole source.
   await page.goto(editor.url);
   const secondsToPixels = (seconds: number) =>
     seconds * DEFAULT_PIXELS_PER_SECOND;
@@ -277,44 +276,43 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
   const videoTrimStart = page.getByTestId("timeline-layer-0-clip-0-trim-start");
   const videoTrimEnd = page.getByTestId("timeline-layer-0-clip-0-trim-end");
 
-  // Drag the video region 1 s right, a little off the frame grid, and confirm
-  // it selects the layer and moves its start to the nearest frame.
+  // Drag the video region right, a little off the frame grid, and confirm it
+  // selects the layer and moves its start to the nearest frame.
   await dragBy(page, video, { deltaX: secondsToPixels(1.01) });
   await expectInspectorFields(page, { start: "1", in: "0", out: "3" });
 
-  // Trim the video's start 0.5 s later, and confirm `in` follows `start` so the
-  // source stays in place.
+  // Trim the video's start later, and confirm the source stays in place.
   await dragBy(page, videoTrimStart, { deltaX: secondsToPixels(0.5) });
   await expectInspectorFields(page, { start: "1.5", in: "0.5", out: "3" });
 
-  // Trim the start 1 s earlier, and confirm it stops where the source begins.
+  // Trim the start earlier, and confirm it stops where the source begins.
   await dragBy(page, videoTrimStart, { deltaX: secondsToPixels(-1) });
   await expectInspectorFields(page, { start: "1", in: "0", out: "3" });
 
-  // Trim the end 1 s earlier, then 2 s later, and confirm it stops where the
-  // source ends.
+  // Trim the end earlier, then past the source, and confirm it stops where
+  // the source ends.
   await dragBy(page, videoTrimEnd, { deltaX: secondsToPixels(-1) });
   await expectInspectorFields(page, { start: "1", in: "0", out: "2" });
   await dragBy(page, videoTrimEnd, { deltaX: secondsToPixels(2) });
   await expectInspectorFields(page, { start: "1", in: "0", out: "3" });
 
-  // Drag the image region 0.5 s right, and confirm its end moves with it.
+  // Drag the image region right, and confirm its end moves with it.
   const image = page.getByTestId("timeline-layer-2-clip-0");
   await dragBy(page, image, { deltaX: secondsToPixels(0.5) });
   await expectInspectorFields(page, { start: "0.5", end: "3.5" });
 
-  // Drag it 2 s left, and confirm it stops at the timeline start.
+  // Drag it left past zero, and confirm it stops at the timeline start.
   await dragBy(page, image, { deltaX: secondsToPixels(-2) });
   await expectInspectorFields(page, { start: "0", end: "3" });
 
-  // Trim the image's end 1 s earlier, which changes only its end.
+  // Trim the image's end earlier, which changes only its end.
   await dragBy(page, page.getByTestId("timeline-layer-2-clip-0-trim-end"), {
     deltaX: secondsToPixels(-1),
   });
   await expectInspectorFields(page, { start: "0", end: "2" });
 
-  // Hold a drag of the image 1 s right, and confirm the region previews the
-  // move while the inspector keeps the committed start.
+  // Hold a drag of the image, and confirm the region previews the move while
+  // the inspector keeps the committed start.
   const original = (await image.boundingBox())!;
   const readImageX = async () => (await image.boundingBox())!.x;
   const pointer = await dragBy(page, image, {
@@ -353,7 +351,7 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
 });
 
 test("add, move, rename, and delete locators", async ({ page, editor }) => {
-  // Open the synthetic project and seek to 4 s, past the render end marker.
+  // Open the project and seek past the render end marker.
   await page.goto(editor.url);
   const secondsToPixels = (seconds: number) =>
     seconds * DEFAULT_PIXELS_PER_SECOND;
@@ -368,7 +366,7 @@ test("add, move, rename, and delete locators", async ({ page, editor }) => {
   await expect(added).toHaveAttribute("aria-pressed", "true");
   await expect(added).toHaveAttribute("title", /4\.000 s/);
 
-  // Drag it 0.51 s right, and confirm it lands on the nearest frame at 4.5 s.
+  // Drag it off the frame grid, and confirm it lands on the nearest frame.
   await dragBy(page, added, { deltaX: secondsToPixels(0.51) });
   await expect(added).toHaveAttribute("title", /4\.500 s/);
 
@@ -377,8 +375,8 @@ test("add, move, rename, and delete locators", async ({ page, editor }) => {
   await clickTimelineButton(page, { name: "Rename Locator 2" });
   await expect(getMarker("shorts")).toBeVisible();
 
-  // Select the video layer, then click the thumbnail locator, which takes
-  // over the selection and seeks, and delete it without removing the layer.
+  // Select a layer, then click another locator, which takes over the
+  // selection and seeks, and delete it without removing the layer.
   await clickTimelineButton(page, { name: "Select Test pattern region" });
   await clickTimelineButton(page, { name: "thumbnail" });
   await expect(page.getByTestId("timeline-time")).toContainText("1.500 s");
@@ -399,7 +397,7 @@ test("add, move, rename, and delete locators", async ({ page, editor }) => {
 });
 
 test("drag render markers on the timeline", async ({ page, editor }) => {
-  // Open the synthetic project, which renders 0 to 3 s.
+  // Open the project.
   await page.goto(editor.url);
   const secondsToPixels = (seconds: number) =>
     seconds * DEFAULT_PIXELS_PER_SECOND;
@@ -408,8 +406,8 @@ test("drag render markers on the timeline", async ({ page, editor }) => {
       .getByTestId("editor-timeline")
       .getByRole("button", { name, exact: true });
 
-  // Drag render end 1 s left, and confirm it selects the output and moves the
-  // end without seeking.
+  // Drag render end left, and confirm it selects the output and moves the end
+  // without seeking.
   await dragBy(page, getMarker("Render end"), {
     deltaX: secondsToPixels(-1),
   });
@@ -420,21 +418,21 @@ test("drag render markers on the timeline", async ({ page, editor }) => {
   await clickTimelineButton(page, { name: "Render end" });
   await expect(page.getByTestId("timeline-time")).toContainText("2.000 s");
 
-  // Drag render start 3 s right, and confirm it stops one frame before the end.
+  // Drag render start past the end, and confirm it stops one frame before the end.
   await dragBy(page, getMarker("Render start"), {
     deltaX: secondsToPixels(3),
   });
   await expectInspectorFields(page, { start: "1.967", end: "2" });
 
-  // Reset the start, then drag render end 3 s left, and confirm it stops one
-  // frame after the start.
+  // Reset the start, then drag render end past the start, and confirm it stops
+  // one frame after the start.
   await commitInspectorField(page, { name: "start", value: "0" });
   await dragBy(page, getMarker("Render end"), {
     deltaX: secondsToPixels(-3),
   });
   await expectInspectorFields(page, { start: "0", end: "0.033" });
 
-  // Switch to a still at 1 s, and drag its render frame 0.51 s right onto the
+  // Switch to a still, and drag its render frame off the grid onto the
   // nearest frame.
   await seekTimelineByPixels(page, { pixels: secondsToPixels(1) });
   await page

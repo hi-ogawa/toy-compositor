@@ -8,17 +8,10 @@ import { test } from "./helper";
 test("read and migrate an older project file", async ({ page, editor }) => {
   const readProject = () => readJson<SavedProject>(editor.projectFile);
 
-  // Flatten every layer into its one clip, replace the video's and the image's
-  // transforms with fit boxes, and remove the image's name, the tint's box, the
-  // title's box height, and neutral values, as in a project file from before
-  // layers held clips, media had transforms, layers required a name, color
-  // layers required a box, text layers stored a height, and neutral values
-  // were written out. The image then gets the editor's numbered name, the tint
-  // covered the canvas, the title's box followed its lines, which is the height
-  // the sample stores, and the neutral values are the sample's. The image also
-  // crops its left quarter, and its box is wider than what remains, so the fit
-  // centers it with space on both sides, and its corner is the hidden
-  // quarter's left edge, 40 px before the visible part.
+  // Rewrite the project the way older builds saved it, with each field that
+  // later formats added or required removed or in its old shape, so migrating
+  // it must reproduce the current project. The image is cropped, so converting
+  // its fit box has to account for the hidden part.
   const project = await readJson<Project>(editor.projectFile);
   const migratedProject = {
     ...project,

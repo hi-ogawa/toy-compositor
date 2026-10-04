@@ -20,7 +20,6 @@ import { useWindowEvent } from "./use-window-event";
 
 const PROJECT_LIST_QUERY_KEY = ["project-list"];
 
-/** Start page listing the registered project folders with their project files. */
 export function ProjectList() {
   const query = useQuery({
     queryKey: PROJECT_LIST_QUERY_KEY,
@@ -32,7 +31,6 @@ export function ProjectList() {
   useWindowEvent("focus", () => void query.refetch());
   return (
     <div className="fixed inset-0 overflow-hidden bg-neutral-900">
-      {/* Gradient glow */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(ellipse_70%_70%_at_50%_0%,#10b9811f_0%,transparent_70%)]" />
 
       <div className="relative mx-auto flex h-full w-full max-w-4xl flex-col px-8 py-12">
