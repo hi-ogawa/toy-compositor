@@ -9,6 +9,11 @@ type ProjectClientState = {
   playhead?: number;
 };
 
+const DEFAULT_PROJECT_CLIENT_STATE: ProjectClientState = {
+  viewportStart: 0,
+  pixelsPerSecond: DEFAULT_PIXELS_PER_SECOND,
+};
+
 export type ProjectClientStorage = LocalStorageStore<ProjectClientState>;
 
 export function createProjectClientStorage(
@@ -16,6 +21,6 @@ export function createProjectClientStorage(
 ): ProjectClientStorage {
   return new LocalStorageStore<ProjectClientState>({
     key: `toy-compositor:project-client:${projectPath}`,
-    defaults: { viewportStart: 0, pixelsPerSecond: DEFAULT_PIXELS_PER_SECOND },
+    defaults: DEFAULT_PROJECT_CLIENT_STATE,
   });
 }
