@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { readJson } from "../../utils/fs.ts";
+import { readJson, writeJsonAtomicSync } from "../../utils/fs.ts";
 import { HttpError } from "./http.ts";
 
 export type ProjectRegistry = ReturnType<typeof createProjectRegistry>;
@@ -28,15 +28,8 @@ export function createProjectRegistry({ configDir }: { configDir: string }) {
       ? JSON.parse(fs.readFileSync(file, "utf-8")).folders
       : [];
     fs.mkdirSync(configDir, { recursive: true });
-    // Writing in place truncates the file first, so a concurrent
-    // `readFolders` could parse half of it. Renaming a finished temp file over
-    // it means readers see either the old list or the new one.
-    const tempFile = `${file}.${process.pid}.tmp`;
-    fs.writeFileSync(
-      tempFile,
-      JSON.stringify({ folders: update(folders) }, null, 2) + "\n",
-    );
-    fs.renameSync(tempFile, file);
+    // Requests read the file concurrently through `readFolders`.
+    writeJsonAtomicSync(file, { folders: update(folders) });
   }
 
   return {

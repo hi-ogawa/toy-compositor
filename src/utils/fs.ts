@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 
 export async function editJson<T>(file: string, edit: (json: T) => void) {
@@ -16,4 +17,14 @@ export async function writeJson(
   options?: { flag?: string },
 ) {
   await writeFile(file, JSON.stringify(json, null, 2) + "\n", options);
+}
+
+/**
+ * Write JSON by renaming a finished temp file over `file`, so a concurrent
+ * reader sees the old or the new contents, never a truncated file.
+ */
+export function writeJsonAtomicSync(file: string, json: unknown) {
+  const tempFile = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(tempFile, JSON.stringify(json, null, 2) + "\n");
+  fs.renameSync(tempFile, file);
 }
