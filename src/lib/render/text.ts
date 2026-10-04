@@ -4,7 +4,7 @@ import { execFileAsync } from "../../utils/exec.ts";
 import type { TextClip } from "../project.ts";
 
 /** The fields that decide how a text clip's lines are drawn, without its box. */
-type TextDrawing = Pick<
+export type TextDrawing = Pick<
   TextClip,
   "text" | "align" | "font" | "color" | "outline"
 >;

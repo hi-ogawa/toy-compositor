@@ -147,6 +147,20 @@ export class EditorRuntime {
     });
   }
 
+  /** Sets a text clip's box height to its lines' height in the render. */
+  async fitTextHeight(id: string): Promise<void> {
+    const { clip } = findClip(this.store.get().project.layers, id)!;
+    if (clip.type !== "text") {
+      throw new Error("Only a text clip's height fits its lines");
+    }
+    const height = await apiClient.measureTextHeight({ drawing: clip });
+    // Read the box again, because it may have been edited while measuring.
+    const current = findClip(this.store.get().project.layers, id)?.clip;
+    if (current?.type === "text") {
+      this.updateClip({ id, update: { box: { ...current.box, height } } });
+    }
+  }
+
   /** Probes and records the file's media info first if the project has none. */
   async addMediaLayer({ src, type }: MediaFile): Promise<string> {
     const { file } = this.store.get();

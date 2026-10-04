@@ -1,3 +1,4 @@
+import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import { getRescaledTransform } from "../lib/layout";
@@ -84,6 +85,7 @@ export function Inspector({
           media={project.media}
           time={time}
           onUpdate={(update) => runtime.updateClip({ id, update })}
+          onFitTextHeight={() => runtime.fitTextHeight(id)}
         />
       );
     }
@@ -268,18 +270,26 @@ function ClipInspector({
   media,
   time,
   onUpdate,
+  onFitTextHeight,
 }: {
   layerName: string;
   clip: Clip;
   media: Record<string, MediaInfo>;
   time: TimeFieldOptions;
   onUpdate: ClipUpdate;
+  onFitTextHeight: () => Promise<void>;
 }) {
   return (
     <div data-testid="inspector">
       <InspectorTitle title={layerName} subtitle={clip.type} />
       <div className="flex flex-col gap-4 p-3">
-        <ClipFields clip={clip} media={media} time={time} onUpdate={onUpdate} />
+        <ClipFields
+          clip={clip}
+          media={media}
+          time={time}
+          onUpdate={onUpdate}
+          onFitTextHeight={onFitTextHeight}
+        />
       </div>
     </div>
   );
@@ -290,11 +300,13 @@ function ClipFields({
   media,
   time,
   onUpdate,
+  onFitTextHeight,
 }: {
   clip: Clip;
   media: Record<string, MediaInfo>;
   time: TimeFieldOptions;
   onUpdate: ClipUpdate;
+  onFitTextHeight: () => Promise<void>;
 }) {
   switch (clip.type) {
     case "video": {
@@ -346,7 +358,9 @@ function ClipFields({
         <>
           <RangeTimingFields clip={clip} time={time} onUpdate={onUpdate} />
           <TextFields clip={clip} onUpdate={onUpdate} />
-          <BoxFields box={clip.box} onCommit={(box) => onUpdate({ box })} />
+          <BoxFields box={clip.box} onCommit={(box) => onUpdate({ box })}>
+            <FitTextHeightButton onFit={onFitTextHeight} />
+          </BoxFields>
         </>
       );
     }
@@ -668,9 +682,11 @@ function TransformFields({
 function BoxFields({
   box,
   onCommit,
+  children,
 }: {
   box: Box;
   onCommit: (box: Box) => void;
+  children?: React.ReactNode;
 }) {
   return (
     <Group title="Box">
@@ -683,7 +699,30 @@ function BoxFields({
           onCommit={(value) => onCommit({ ...box, [key]: value })}
         />
       ))}
+      {children}
     </Group>
+  );
+}
+
+/** The height comes from the server, which measures the lines as the render draws them. */
+function FitTextHeightButton({ onFit }: { onFit: () => Promise<void> }) {
+  const fitMutation = useMutation({ mutationFn: onFit });
+  return (
+    <div className="col-span-2 flex flex-col gap-1">
+      <button
+        type="button"
+        disabled={fitMutation.isPending}
+        onClick={() => fitMutation.mutate()}
+        className="h-8 rounded border border-neutral-600 bg-neutral-900 text-xs text-neutral-400 outline-none hover:bg-neutral-800 focus-visible:border-ring disabled:opacity-50"
+      >
+        Fit height to text
+      </button>
+      {fitMutation.isError && (
+        <p role="alert" className="text-[10px] text-destructive">
+          {fitMutation.error.message}
+        </p>
+      )}
+    </div>
   );
 }
 

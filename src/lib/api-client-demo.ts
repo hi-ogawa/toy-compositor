@@ -87,6 +87,10 @@ export const apiClient: typeof serverApiClient = {
     return mediaInfo;
   },
 
+  async measureTextHeight() {
+    throw new Error("The demo has no server to measure text.");
+  },
+
   /** The static demo has no server to keep running. */
   openLiveConnection() {},
 
