@@ -323,6 +323,35 @@ test("edit layer names and a color layer's fill and box, and save them", async (
   });
 });
 
+test("hide a layer's picture from the layer inspector, and save it", async ({
+  page,
+  editor,
+}) => {
+  // Open the sample project, where the test pattern shows in the preview.
+  await page.goto(editor.url);
+  const video = page.getByTestId("composition-canvas").locator("video");
+  await expect(video).toBeVisible();
+
+  // Hide the test pattern layer, and confirm the preview drops its picture.
+  await clickTimelineButton(page, { name: "Select Test pattern layer" });
+  const hidden = page
+    .getByTestId("inspector")
+    .getByLabel("hidden", { exact: true });
+  await hidden.check();
+  await expect(video).toBeHidden();
+
+  // Save and confirm the layer is hidden in the project file.
+  const save = page.getByTestId("editor-save-button");
+  await save.click();
+  await expect(save).toHaveAttribute("data-status", "saved");
+  const project = await readJson<Project>(editor.projectFile);
+  expect(project.layers[0].hidden).toBe(true);
+
+  // Show it again, and confirm the picture returns.
+  await hidden.uncheck();
+  await expect(video).toBeVisible();
+});
+
 test("edit the canvas in composition settings and save it", async ({
   page,
   editor,
