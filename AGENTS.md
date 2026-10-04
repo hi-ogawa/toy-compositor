@@ -27,9 +27,9 @@
 - Use braces for every `switch` case body (`case "x": { ... }`, `default: { ... }`)
 - Docs hold only durable, high-level architecture and existing facts. Decisions and their reasons belong in issues and PRs. A change updates docs only when one of those facts changes. Logic that lives in one or two files gets no doc section of its own
 
-## Current Notes
+## Provisional Notes
 
-Provisional notes about the code as it is now. Remove a note when the code moves on or the lesson is absorbed.
+Remove a note when the code moves on or the lesson is absorbed.
 
 - Write comments like toy-midi, mostly inline `//` comments on why something happens at a spot. Keep a docblock only when it states a rule the code does not make obvious, and never one that restates a name, signature, or literal value (#121)
 - Write repeated UI chrome, such as panel bands, inline with its classes at each site, like toy-midi. Name components for a region or behavior, such as `InspectorTitle`, rather than extracting styling wrappers whose props only vary styling (#86)
