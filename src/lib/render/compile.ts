@@ -7,18 +7,19 @@ import {
   getPictureRange,
   type TimeRange,
 } from "../layout.ts";
-import type {
-  Canvas,
-  AudioClip,
-  Clip,
-  ColorClip,
-  Crop,
-  ImageClip,
-  Project,
-  MediaInfo,
-  VideoInfo,
-  TextClip,
-  VideoClip,
+import {
+  getFrameTimeShownAt,
+  type Canvas,
+  type AudioClip,
+  type Clip,
+  type ColorClip,
+  type Crop,
+  type ImageClip,
+  type Project,
+  type MediaInfo,
+  type VideoInfo,
+  type TextClip,
+  type VideoClip,
 } from "../project.ts";
 import type { Resolved } from "./resolve.ts";
 
@@ -195,7 +196,7 @@ function compileVideo({
     video: {
       input: buildSeekInput({
         file,
-        seek: getFrameShownAt(video, { time: read.time }),
+        seek: getSeekTime(video, read.time),
         duration: read.duration,
       }),
       filters: [
@@ -460,17 +461,12 @@ function assembleGraph({
 }
 
 /**
- * The frame shown at a source time is the frame whose timestamp is nearest to it.
- * Project times are rounded to milliseconds and a source's first frame can start
- * off the project's frame grid, so a time often lands a hair before or after a
- * frame, and picking the nearest frame keeps renderers from disagreeing by one.
  * ffmpeg's accurate seek starts from the first frame at or after the seek time,
- * so seek to just before that frame. Assumes a constant frame rate source.
+ * so seek to just before the frame shown at the time.
  */
-function getFrameShownAt(video: VideoInfo, { time }: { time: number }) {
-  const { startTime, frameRate } = video;
-  const index = Math.round((time - startTime) * frameRate);
-  return Math.max(0, startTime + index / frameRate - 0.1 / frameRate);
+function getSeekTime(video: VideoInfo, time: number) {
+  const frameTime = getFrameTimeShownAt(video, time);
+  return Math.max(0, frameTime - 0.1 / video.frameRate);
 }
 
 function buildSeekInput({

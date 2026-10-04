@@ -354,7 +354,7 @@ export class EditorRuntime {
     for (const [id, playback] of this.videoPlaybacks) {
       const clip = clips.find(({ clip }) => clip.id === id)?.clip;
       if (clip?.type === "video") {
-        playback.setClip({ clip });
+        playback.setClip({ clip, video: project.media[clip.src]!.video! });
       }
     }
 

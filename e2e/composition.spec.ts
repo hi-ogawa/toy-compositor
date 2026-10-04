@@ -266,3 +266,31 @@ test("hold a video layer's first and last frames in the preview", async ({
     ],
   });
 });
+
+test("show the video frame nearest the source time in the preview, as the render does", async ({
+  page,
+  editor,
+}) => {
+  // Start the 30fps video at frame 2, which the project stores rounded up to
+  // 0.067s.
+  await page.goto(editor.url);
+  const video = page.getByTestId("composition-canvas").locator("video");
+  await clickTimelineButton(page, { name: "Select Test pattern region" });
+  await commitInspectorField(page, { name: "start", value: "0.067" });
+
+  // Seek to frame 31, stored rounded down to 1.033s, so the source time is
+  // 0.966s, a hair before source frame 29. Confirm the paused video shows
+  // frame 29, the nearest one, rather than frame 28, the last one at or
+  // before the source time.
+  await seekTimelineByPixels(page, {
+    pixels: 1.033 * DEFAULT_PIXELS_PER_SECOND,
+  });
+  await expect(page.getByTestId("timeline-time")).toContainText("1.033 s");
+  await expect
+    .poll(() =>
+      video.evaluate((element: HTMLVideoElement) =>
+        Math.floor(element.currentTime * 30),
+      ),
+    )
+    .toBe(29);
+});

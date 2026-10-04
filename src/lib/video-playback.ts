@@ -1,6 +1,10 @@
 import { clamp } from "../utils/math.ts";
 import { throttle } from "../utils/timing.ts";
-import type { VideoClip } from "./project.ts";
+import {
+  getFrameTimeShownAt,
+  type VideoClip,
+  type VideoInfo,
+} from "./project.ts";
 import type { AudioContextTransport } from "./transport.ts";
 
 type PlaybackMode = "paused" | "before" | "playing" | "after";
@@ -28,6 +32,7 @@ export class VideoPlayback {
   private readonly transport: AudioContextTransport;
   private readonly element: HTMLVideoElement;
   private clip?: VideoClip;
+  private video?: VideoInfo;
   private mode?: PlaybackMode;
   private readonly unsubscribe: () => void;
   private readonly correctDriftThrottled = throttle(
@@ -50,8 +55,9 @@ export class VideoPlayback {
     element.addEventListener("loadedmetadata", this.resync);
   }
 
-  setClip({ clip }: { clip: VideoClip }): void {
+  setClip({ clip, video }: { clip: VideoClip; video: VideoInfo }): void {
     this.clip = clip;
+    this.video = video;
     // A moved clip re-enters its mode instead of being corrected as drift.
     this.mode = undefined;
     this.sync();
@@ -69,15 +75,15 @@ export class VideoPlayback {
   };
 
   private sync = (): void => {
-    const clip = this.clip;
-    if (!clip) {
+    const { clip, video } = this;
+    if (!clip || !video) {
       return;
     }
     const { position, isPlaying } = this.transport.store.get();
     const expectedTime = clip.in + position - clip.start;
     if (!isPlaying) {
       this.mode = "paused";
-      this.pause(clamp(expectedTime, clip.in, clip.out));
+      this.pause(clamp(expectedTime, clip.in, clip.out), video);
       return;
     }
 
@@ -96,7 +102,7 @@ export class VideoPlayback {
     this.mode = mode;
     switch (mode) {
       case "before": {
-        this.pause(clip.in);
+        this.pause(clip.in, video);
         break;
       }
       case "playing": {
@@ -104,7 +110,7 @@ export class VideoPlayback {
         break;
       }
       case "after": {
-        this.pause(clip.out);
+        this.pause(clip.out, video);
         break;
       }
     }
@@ -144,12 +150,15 @@ export class VideoPlayback {
     this.element.play().catch(() => {});
   }
 
-  private pause(time: number): void {
+  private pause(time: number, video: VideoInfo): void {
     this.correctDriftThrottled.reset();
     this.element.pause();
     this.element.playbackRate = 1;
-    if (this.element.currentTime !== time) {
-      this.element.currentTime = time;
+    // The element shows the last frame at or before its current time, so seek
+    // just past the frame the render shows.
+    const frameTime = getFrameTimeShownAt(video, time) + 0.1 / video.frameRate;
+    if (this.element.currentTime !== frameTime) {
+      this.element.currentTime = frameTime;
     }
   }
 }
