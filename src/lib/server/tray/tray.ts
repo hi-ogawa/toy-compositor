@@ -29,26 +29,17 @@ export class Tray {
     onQuit: () => void;
   }): Promise<Tray> {
     const tray = new Tray({ bus: await DBusConnection.create(), ...options });
-    await tray.bus.watchNameOwner(WATCHER_NAME, (owner) => {
-      if (owner) {
-        tray.register().catch((error: unknown) => {
-          console.error("Failed to register the tray item:", error);
-        });
+    await tray.bus.watchName(WATCHER_NAME, (hasOwner) => {
+      if (!hasOwner) {
+        console.warn(
+          "No tray host is running, so the tray item appears once one starts. On GNOME, enable the AppIndicator and KStatusNotifierItem Support extension.",
+        );
+        return;
       }
+      tray.register().catch((error: unknown) => {
+        console.error("Failed to register the tray item:", error);
+      });
     });
-    try {
-      await tray.register();
-    } catch (error) {
-      if (
-        !(error instanceof DBusError) ||
-        error.name !== "org.freedesktop.DBus.Error.ServiceUnknown"
-      ) {
-        throw error;
-      }
-      console.warn(
-        "No tray host is running, so the tray item appears once one starts. On GNOME, enable the AppIndicator and KStatusNotifierItem Support extension.",
-      );
-    }
     return tray;
   }
 
