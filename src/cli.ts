@@ -22,6 +22,7 @@ import {
   serveEditor,
   stopEditorServer,
 } from "./lib/server/serve.ts";
+import { createTray } from "./lib/server/tray.ts";
 import { execFileAsync } from "./utils/exec.ts";
 import { readJson, writeJson } from "./utils/fs.ts";
 
@@ -33,16 +34,18 @@ const UPGRADE_SOURCE = "https://pkg.pr.new/hi-ogawa/toy-compositor@main";
 
 const HELP = `\
 Usage:
-  toy-compositor serve [directory] [--port <port>] [--open]
+  toy-compositor serve [directory] [--port <port>] [--open | --tray]
       Open the editor for the project folders, adding directory to them first.
       --open opens it in the browser, reusing a server already on the port,
-      and exits shortly after the last editor tab closes
+      and exits shortly after the last editor tab closes.
+      --tray opens it the same way, but keeps running with a tray item,
+      whose menu opens the editor again or quits (Linux)
   toy-compositor stop [--port <port>]
       Stop the running editor server, leaving another process on the port alone
   toy-compositor status [--port <port>]
       Show whether the editor server is running
-  toy-compositor install-desktop
-      Add an app launcher entry that runs serve --open (Linux)
+  toy-compositor install-desktop [--tray]
+      Add an app launcher entry that runs serve --open, or serve --tray (Linux)
   toy-compositor upgrade [source] [--port <port>]
       Install a new build globally with pnpm, rewrite the app launcher entry,
       and stop the running editor server, so the next launch uses the new build.
@@ -72,6 +75,7 @@ async function main() {
     options: {
       port: { type: "string", default: "5190" },
       open: { type: "boolean" },
+      tray: { type: "boolean" },
       "dry-run": { type: "boolean" },
       check: { type: "boolean" },
       help: { type: "boolean", short: "h" },
@@ -84,6 +88,7 @@ async function main() {
         directory: args[0],
         port: Number(values.port),
         open: values.open,
+        tray: values.tray,
       });
       break;
     }
@@ -108,7 +113,12 @@ async function main() {
     case "install-desktop": {
       const iconFile = path.join(getClientDir(), "icon.svg");
       const entryFile = await installDesktopEntry({
-        command: [process.execPath, import.meta.filename, "serve", "--open"],
+        command: [
+          process.execPath,
+          import.meta.filename,
+          "serve",
+          values.tray ? "--tray" : "--open",
+        ],
         iconFile,
       });
       console.log(`Installed ${entryFile}`);
@@ -174,10 +184,12 @@ async function runServe({
   directory,
   port,
   open,
+  tray,
 }: {
   directory?: string;
   port: number;
   open?: boolean;
+  tray?: boolean;
 }) {
   const clientDir = getClientDir();
   const registry = createProjectRegistry({ configDir: getConfigDir() });
@@ -193,7 +205,7 @@ async function runServe({
     // The server reads the registry on every request, so a tab on the
     // running one also lists a folder added above.
     if (
-      open &&
+      (open || tray) &&
       (error as NodeJS.ErrnoException).code === "EADDRINUSE" &&
       (await checkEditorServer(port))
     ) {
@@ -209,6 +221,23 @@ async function runServe({
     await live.waitForLastClose({ graceMs: 3000 });
     console.log("Closing after the last editor tab closed");
     await server.close(true);
+  }
+  if (tray) {
+    await openWithDefaultApp(url);
+    // The tray's Quit stops the server the way `toy-compositor stop` does.
+    const trayItem = await createTray({
+      url,
+      iconThemePath: clientDir,
+      iconName: "icon",
+      onOpen: () => {
+        openWithDefaultApp(url).catch((error: unknown) => console.error(error));
+      },
+      onQuit: () => {
+        stopEditorServer(port).catch((error: unknown) => console.error(error));
+      },
+    });
+    await once(server.node!.server!, "close");
+    trayItem.close();
   }
 }
 
@@ -228,7 +257,10 @@ async function upgradeGlobalInstall(source: string) {
   if (fs.existsSync(getDesktopEntryFile())) {
     const { stdout } = await execFileAsync("pnpm", ["bin", "-g"], { cwd });
     const cli = path.join(stdout.trim(), "toy-compositor");
-    await runCommand(cli, ["install-desktop"], { cwd });
+    // Keep the entry's mode, which install-desktop writes as serve's option.
+    const entry = await fs.promises.readFile(getDesktopEntryFile(), "utf8");
+    const options = entry.includes('"--tray"') ? ["--tray"] : [];
+    await runCommand(cli, ["install-desktop", ...options], { cwd });
   }
 }
 

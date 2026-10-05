@@ -9,7 +9,9 @@ toy-compositor --help  # commands, and paths of the bundled docs and sample
 
 On Linux, `toy-compositor install-desktop` adds an app launcher entry that runs `toy-compositor serve --open`, which opens the editor in the browser and exits shortly after the last editor tab closes. `toy-compositor status` shows whether the editor server is running, and `toy-compositor stop` stops it.
 
-`toy-compositor upgrade` installs the latest main build, rewrites the launcher entry, and stops the running editor server, so the next launch uses the new build. It also takes a pkg.pr.new URL or a tarball to install another build, such as a pull request's.
+`toy-compositor install-desktop --tray` writes an entry that runs `toy-compositor serve --tray` instead, which also opens the editor but keeps the server running after the tabs close, with a tray item whose menu opens the editor again or quits. The item appears in a StatusNotifierItem tray, which GNOME shows through the [AppIndicator and KStatusNotifierItem Support](https://extensions.gnome.org/extension/615/appindicator-support/) extension. Without a tray, the server keeps running and `toy-compositor stop` stops it.
+
+`toy-compositor upgrade` installs the latest main build, rewrites the launcher entry in its current mode, and stops the running editor server, so the next launch uses the new build. It also takes a pkg.pr.new URL or a tarball to install another build, such as a pull request's.
 
 The editor and the renderer rewrite project files from an older build to the current format when they open them and report what changed, or reject one with a message naming the command that fixes it, such as `update-media`. `toy-compositor migrate <project.json...>` rewrites them to the current format, for example before your own scripts read them.
 
