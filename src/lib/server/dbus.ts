@@ -1,18 +1,10 @@
 import net from "node:net";
 
 /**
- * The subset of D-Bus that the tray needs: a session bus connection with
- * EXTERNAL authentication, method calls, exported objects that answer the
- * standard interfaces, watching a name's owner, and marshalling of every type
- * in little-endian.
- * https://dbus.freedesktop.org/doc/dbus-specification.html
- *
  * Values map to JavaScript as follows: integers to numbers (64-bit ones to
  * bigints), structs and dict entries to arrays of their fields, arrays to
  * arrays, and variants to `Variant` objects.
  */
-export type DBusConnection = Awaited<ReturnType<typeof connectSessionBus>>;
-
 export type Variant = { signature: string; value: unknown };
 
 export type MethodReturn = { signature: string; body: unknown[] };
@@ -65,32 +57,184 @@ const HEADER_FIELDS = [
   { code: 8, key: "signature", signature: "g" },
 ] as const;
 
-export async function connectSessionBus() {
-  const socket = net.connect(getSessionBusPath());
-  await new Promise<void>((resolve, reject) => {
-    socket.once("connect", resolve);
-    socket.once("error", reject);
-  });
-  await authenticate(socket);
-
-  let serial = 0;
-  const pendingCalls = new Map<
+/**
+ * The subset of D-Bus that the tray needs: a session bus connection with
+ * EXTERNAL authentication, method calls, exported objects that answer the
+ * standard interfaces, watching a name's owner, and marshalling of every type
+ * in little-endian.
+ * https://dbus.freedesktop.org/doc/dbus-specification.html
+ *
+ * The connection keeps the serial of the last message it
+ * sent, the calls waiting for a reply, the objects it answers calls on, the
+ * signal listeners, and the received bytes that do not yet form a message.
+ */
+export class DBusConnection {
+  private readonly socket: net.Socket;
+  private serial = 0;
+  private readonly pendingCalls = new Map<
     number,
     { resolve: (body: unknown[]) => void; reject: (error: Error) => void }
   >();
-  const objects = new Map<string, DBusObject>();
-  const signalListeners = new Set<(message: Message) => void>();
+  private readonly objects = new Map<string, DBusObject>();
+  private readonly signalListeners = new Set<(message: Message) => void>();
+  private received = Buffer.alloc(0);
+  private assignedName = "";
 
-  function send(message: Omit<Message, "serial">) {
-    serial += 1;
-    socket.write(marshalMessage({ ...message, serial }));
-    return serial;
+  /** Connect, authenticate, and take a unique name from the bus. */
+  static async connectSessionBus(): Promise<DBusConnection> {
+    const socket = net.connect(getSessionBusPath());
+    await new Promise<void>((resolve, reject) => {
+      socket.once("connect", resolve);
+      socket.once("error", reject);
+    });
+    await authenticate(socket);
+    const connection = new DBusConnection(socket);
+    const [uniqueName] = await connection.call({
+      destination: "org.freedesktop.DBus",
+      path: "/org/freedesktop/DBus",
+      interface: "org.freedesktop.DBus",
+      member: "Hello",
+    });
+    connection.assignedName = uniqueName as string;
+    return connection;
   }
 
-  function handleCall(message: Message) {
+  private constructor(socket: net.Socket) {
+    this.socket = socket;
+    socket.on("data", (chunk: Buffer) => this.receive(chunk));
+    socket.on("close", () => {
+      for (const pending of this.pendingCalls.values()) {
+        pending.reject(new Error("The D-Bus connection closed"));
+      }
+      this.pendingCalls.clear();
+    });
+  }
+
+  /** The name the bus assigned to this connection, such as `:1.42`. */
+  get uniqueName(): string {
+    return this.assignedName;
+  }
+
+  call({
+    destination,
+    path,
+    interface: interfaceName,
+    member,
+    signature = "",
+    body = [],
+  }: {
+    destination: string;
+    path: string;
+    interface: string;
+    member: string;
+    signature?: string;
+    body?: unknown[];
+  }): Promise<unknown[]> {
+    return new Promise((resolve, reject) => {
+      const serial = this.send({
+        type: MESSAGE_TYPE.call,
+        flags: 0,
+        destination,
+        path,
+        interface: interfaceName,
+        member,
+        signature,
+        body,
+      });
+      this.pendingCalls.set(serial, { resolve, reject });
+    });
+  }
+
+  exportObject(path: string, object: DBusObject): void {
+    this.objects.set(path, object);
+  }
+
+  /**
+   * Call `onChange` with the unique name of `name`'s new owner whenever it
+   * changes, or with an empty string when nobody owns it.
+   */
+  async watchNameOwner(
+    name: string,
+    onChange: (owner: string) => void,
+  ): Promise<void> {
+    await this.call({
+      destination: "org.freedesktop.DBus",
+      path: "/org/freedesktop/DBus",
+      interface: "org.freedesktop.DBus",
+      member: "AddMatch",
+      signature: "s",
+      body: [
+        `type='signal',sender='org.freedesktop.DBus',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='${name}'`,
+      ],
+    });
+    this.signalListeners.add((message) => {
+      if (
+        message.interface === "org.freedesktop.DBus" &&
+        message.member === "NameOwnerChanged" &&
+        message.body[0] === name
+      ) {
+        onChange(message.body[2] as string);
+      }
+    });
+  }
+
+  close(): void {
+    this.socket.end();
+  }
+
+  private send(message: Omit<Message, "serial">): number {
+    this.serial += 1;
+    this.socket.write(marshalMessage({ ...message, serial: this.serial }));
+    return this.serial;
+  }
+
+  private receive(chunk: Buffer) {
+    this.received = Buffer.concat([this.received, chunk]);
+    for (;;) {
+      const length = measureMessage(this.received);
+      if (length === undefined || this.received.length < length) {
+        break;
+      }
+      this.handleMessage(unmarshalMessage(this.received.subarray(0, length)));
+      this.received = this.received.subarray(length);
+    }
+  }
+
+  private handleMessage(message: Message) {
+    switch (message.type) {
+      case MESSAGE_TYPE.call: {
+        this.handleCall(message);
+        break;
+      }
+      case MESSAGE_TYPE.return:
+      case MESSAGE_TYPE.error: {
+        const pending = this.pendingCalls.get(message.replySerial!);
+        this.pendingCalls.delete(message.replySerial!);
+        if (message.type === MESSAGE_TYPE.return) {
+          pending?.resolve(message.body);
+        } else {
+          pending?.reject(
+            new DBusError({
+              name: message.errorName!,
+              message: String(message.body[0] ?? ""),
+            }),
+          );
+        }
+        break;
+      }
+      case MESSAGE_TYPE.signal: {
+        for (const listener of this.signalListeners) {
+          listener(message);
+        }
+        break;
+      }
+    }
+  }
+
+  private handleCall(message: Message) {
     let reply: Omit<Message, "serial" | "flags">;
     try {
-      const result = answerCall({ objects, message });
+      const result = answerCall({ objects: this.objects, message });
       reply = {
         type: MESSAGE_TYPE.return,
         replySerial: message.serial,
@@ -111,136 +255,9 @@ export async function connectSessionBus() {
       };
     }
     if (!(message.flags & NO_REPLY_EXPECTED)) {
-      send({ ...reply, flags: 0 });
+      this.send({ ...reply, flags: 0 });
     }
   }
-
-  function handleMessage(message: Message) {
-    switch (message.type) {
-      case MESSAGE_TYPE.call: {
-        handleCall(message);
-        break;
-      }
-      case MESSAGE_TYPE.return:
-      case MESSAGE_TYPE.error: {
-        const pending = pendingCalls.get(message.replySerial!);
-        pendingCalls.delete(message.replySerial!);
-        if (message.type === MESSAGE_TYPE.return) {
-          pending?.resolve(message.body);
-        } else {
-          pending?.reject(
-            new DBusError({
-              name: message.errorName!,
-              message: String(message.body[0] ?? ""),
-            }),
-          );
-        }
-        break;
-      }
-      case MESSAGE_TYPE.signal: {
-        for (const listener of signalListeners) {
-          listener(message);
-        }
-        break;
-      }
-    }
-  }
-
-  let received = Buffer.alloc(0);
-  socket.on("data", (chunk: Buffer) => {
-    received = Buffer.concat([received, chunk]);
-    for (;;) {
-      const length = measureMessage(received);
-      if (length === undefined || received.length < length) {
-        break;
-      }
-      handleMessage(unmarshalMessage(received.subarray(0, length)));
-      received = received.subarray(length);
-    }
-  });
-  socket.on("close", () => {
-    for (const pending of pendingCalls.values()) {
-      pending.reject(new Error("The D-Bus connection closed"));
-    }
-    pendingCalls.clear();
-  });
-
-  const connection = {
-    uniqueName: "",
-
-    call({
-      destination,
-      path,
-      interface: interfaceName,
-      member,
-      signature = "",
-      body = [],
-    }: {
-      destination: string;
-      path: string;
-      interface: string;
-      member: string;
-      signature?: string;
-      body?: unknown[];
-    }): Promise<unknown[]> {
-      return new Promise((resolve, reject) => {
-        const callSerial = send({
-          type: MESSAGE_TYPE.call,
-          flags: 0,
-          destination,
-          path,
-          interface: interfaceName,
-          member,
-          signature,
-          body,
-        });
-        pendingCalls.set(callSerial, { resolve, reject });
-      });
-    },
-
-    exportObject(path: string, object: DBusObject) {
-      objects.set(path, object);
-    },
-
-    /**
-     * Call `onChange` with the unique name of `name`'s new owner whenever it
-     * changes, or with an empty string when nobody owns it.
-     */
-    async watchNameOwner(name: string, onChange: (owner: string) => void) {
-      await connection.call({
-        destination: "org.freedesktop.DBus",
-        path: "/org/freedesktop/DBus",
-        interface: "org.freedesktop.DBus",
-        member: "AddMatch",
-        signature: "s",
-        body: [
-          `type='signal',sender='org.freedesktop.DBus',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='${name}'`,
-        ],
-      });
-      signalListeners.add((message) => {
-        if (
-          message.interface === "org.freedesktop.DBus" &&
-          message.member === "NameOwnerChanged" &&
-          message.body[0] === name
-        ) {
-          onChange(message.body[2] as string);
-        }
-      });
-    },
-
-    close() {
-      socket.end();
-    },
-  };
-
-  const [uniqueName] = await connection.call({
-    destination: "org.freedesktop.DBus",
-    path: "/org/freedesktop/DBus",
-    interface: "org.freedesktop.DBus",
-    member: "Hello",
-  });
-  connection.uniqueName = uniqueName as string;
-  return connection;
 }
 
 function getSessionBusPath() {

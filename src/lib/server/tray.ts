@@ -1,4 +1,4 @@
-import { connectSessionBus, DBusError, type Variant } from "./dbus.ts";
+import { DBusConnection, DBusError, type Variant } from "./dbus.ts";
 
 const WATCHER_NAME = "org.kde.StatusNotifierWatcher";
 const ITEM_PATH = "/StatusNotifierItem";
@@ -28,7 +28,7 @@ export async function createTray({
   onOpen: () => void;
   onQuit: () => void;
 }) {
-  const bus = await connectSessionBus();
+  const bus = await DBusConnection.connectSessionBus();
 
   const itemProperties: Record<string, Variant> = {
     Category: { signature: "s", value: "ApplicationStatus" },
