@@ -80,8 +80,8 @@ export class DBusConnection {
   private received = Buffer.alloc(0);
   private uniqueName = "";
 
-  /** Connect, authenticate, and take a unique name from the bus. */
-  static async connectSessionBus(): Promise<DBusConnection> {
+  /** Connect to the session bus, authenticate, and take a unique name. */
+  static async create(): Promise<DBusConnection> {
     const socket = net.connect(getSessionBusPath());
     await new Promise<void>((resolve, reject) => {
       socket.once("connect", resolve);

@@ -28,7 +28,7 @@ export async function createTray({
   onOpen: () => void;
   onQuit: () => void;
 }) {
-  const bus = await DBusConnection.connectSessionBus();
+  const bus = await DBusConnection.create();
 
   const itemProperties: Record<string, Variant> = {
     Category: { signature: "s", value: "ApplicationStatus" },
