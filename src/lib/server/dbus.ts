@@ -78,7 +78,7 @@ export class DBusConnection {
   private readonly objects = new Map<string, DBusObject>();
   private readonly signalListeners = new Set<(message: Message) => void>();
   private received = Buffer.alloc(0);
-  private assignedName = "";
+  private uniqueName = "";
 
   /** Connect, authenticate, and take a unique name from the bus. */
   static async connectSessionBus(): Promise<DBusConnection> {
@@ -95,7 +95,7 @@ export class DBusConnection {
       interface: "org.freedesktop.DBus",
       member: "Hello",
     });
-    connection.assignedName = uniqueName as string;
+    connection.uniqueName = uniqueName as string;
     return connection;
   }
 
@@ -111,8 +111,8 @@ export class DBusConnection {
   }
 
   /** The name the bus assigned to this connection, such as `:1.42`. */
-  get uniqueName(): string {
-    return this.assignedName;
+  getUniqueName(): string {
+    return this.uniqueName;
   }
 
   call({

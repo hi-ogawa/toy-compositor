@@ -180,7 +180,7 @@ export async function createTray({
       interface: "org.kde.StatusNotifierWatcher",
       member: "RegisterStatusNotifierItem",
       signature: "s",
-      body: [bus.uniqueName],
+      body: [bus.getUniqueName()],
     });
   }
 
