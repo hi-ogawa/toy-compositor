@@ -38,11 +38,11 @@ export async function createTray({
   );
   bus.exportObject(
     MENU_PATH,
-    createMenuObject([
+    new DBusMenu([
       { label: `Running at ${url}`, enabled: false },
       { label: "Open editor", onClick: onOpen },
       { label: "Quit", onClick: onQuit },
-    ]),
+    ]).dbusObject,
   );
 
   async function register() {
@@ -134,18 +134,82 @@ function createItemObject({
   };
 }
 
+type MenuItem = { label: string; enabled?: boolean; onClick?: () => void };
+
 /**
  * A flat DBusMenu whose items never change, so its layout stays at one
  * revision. Item ids count from 1 in order, because id 0 is the root.
  */
-function createMenuObject(
-  items: { label: string; enabled?: boolean; onClick?: () => void }[],
-): DBusObject {
-  function getItemProperties(id: number): Record<string, Variant> {
+class DBusMenu {
+  readonly dbusObject: DBusObject;
+  private readonly items: MenuItem[];
+
+  constructor(items: MenuItem[]) {
+    this.items = items;
+    this.dbusObject = {
+      interface: "com.canonical.dbusmenu",
+      properties: {
+        Version: { signature: "u", value: 3 },
+        TextDirection: { signature: "s", value: "ltr" },
+        Status: { signature: "s", value: "normal" },
+        IconThemePath: { signature: "as", value: [] },
+      },
+      methods: {
+        GetLayout: (body) => {
+          const [parentId] = body as [number];
+          return {
+            signature: "u(ia{sv}av)",
+            body: [1, this.getLayout(parentId)],
+          };
+        },
+        GetGroupProperties: (body) => {
+          const [ids] = body as [number[]];
+          const requested =
+            ids.length > 0 ? ids : [0, ...this.items.map((_, i) => i + 1)];
+          return {
+            signature: "a(ia{sv})",
+            body: [
+              requested.map((id) => [
+                id,
+                Object.entries(this.getItemProperties(id)),
+              ]),
+            ],
+          };
+        },
+        GetProperty: (body) => {
+          const [id, name] = body as [number, string];
+          const value = this.getItemProperties(id)[name];
+          if (!value) {
+            throw new DBusError({
+              name: "org.freedesktop.DBus.Error.InvalidArgs",
+              message: `No property ${name} on menu item ${id}`,
+            });
+          }
+          return { signature: "v", body: [value] };
+        },
+        Event: (body) => {
+          const [id, eventId] = body as [number, string];
+          this.handleEvent(id, eventId);
+          return EMPTY_REPLY;
+        },
+        EventGroup: (body) => {
+          const [events] = body as [[number, string][]];
+          for (const [id, eventId] of events) {
+            this.handleEvent(id, eventId);
+          }
+          return { signature: "ai", body: [[]] };
+        },
+        AboutToShow: () => ({ signature: "b", body: [false] }),
+        AboutToShowGroup: () => ({ signature: "aiai", body: [[], []] }),
+      },
+    };
+  }
+
+  private getItemProperties(id: number): Record<string, Variant> {
     if (id === 0) {
       return { "children-display": { signature: "s", value: "submenu" } };
     }
-    const item = items[id - 1];
+    const item = this.items[id - 1];
     if (!item) {
       throw new DBusError({
         name: "org.freedesktop.DBus.Error.InvalidArgs",
@@ -159,72 +223,20 @@ function createMenuObject(
   }
 
   // A layout node is `(ia{sv}av)`, with the children as variants of nodes.
-  function getLayout(id: number): unknown[] {
+  private getLayout(id: number): unknown[] {
     const children =
       id === 0
-        ? items.map((_, i) => ({
+        ? this.items.map((_, i) => ({
             signature: "(ia{sv}av)",
-            value: getLayout(i + 1),
+            value: this.getLayout(i + 1),
           }))
         : [];
-    return [id, Object.entries(getItemProperties(id)), children];
+    return [id, Object.entries(this.getItemProperties(id)), children];
   }
 
-  function handleEvent(id: number, eventId: string) {
+  private handleEvent(id: number, eventId: string) {
     if (eventId === "clicked") {
-      items[id - 1]?.onClick?.();
+      this.items[id - 1]?.onClick?.();
     }
   }
-
-  return {
-    interface: "com.canonical.dbusmenu",
-    properties: {
-      Version: { signature: "u", value: 3 },
-      TextDirection: { signature: "s", value: "ltr" },
-      Status: { signature: "s", value: "normal" },
-      IconThemePath: { signature: "as", value: [] },
-    },
-    methods: {
-      GetLayout: (body) => {
-        const [parentId] = body as [number];
-        return { signature: "u(ia{sv}av)", body: [1, getLayout(parentId)] };
-      },
-      GetGroupProperties: (body) => {
-        const [ids] = body as [number[]];
-        const requested =
-          ids.length > 0 ? ids : [0, ...items.map((_, i) => i + 1)];
-        return {
-          signature: "a(ia{sv})",
-          body: [
-            requested.map((id) => [id, Object.entries(getItemProperties(id))]),
-          ],
-        };
-      },
-      GetProperty: (body) => {
-        const [id, name] = body as [number, string];
-        const value = getItemProperties(id)[name];
-        if (!value) {
-          throw new DBusError({
-            name: "org.freedesktop.DBus.Error.InvalidArgs",
-            message: `No property ${name} on menu item ${id}`,
-          });
-        }
-        return { signature: "v", body: [value] };
-      },
-      Event: (body) => {
-        const [id, eventId] = body as [number, string];
-        handleEvent(id, eventId);
-        return EMPTY_REPLY;
-      },
-      EventGroup: (body) => {
-        const [events] = body as [[number, string][]];
-        for (const [id, eventId] of events) {
-          handleEvent(id, eventId);
-        }
-        return { signature: "ai", body: [[]] };
-      },
-      AboutToShow: () => ({ signature: "b", body: [false] }),
-      AboutToShowGroup: () => ({ signature: "aiai", body: [[], []] }),
-    },
-  };
 }
