@@ -22,7 +22,7 @@ import {
   serveEditor,
   stopEditorServer,
 } from "./lib/server/serve.ts";
-import { createTray } from "./lib/server/tray.ts";
+import { createTray } from "./lib/server/tray/tray.ts";
 import { execFileAsync } from "./utils/exec.ts";
 import { readJson, writeJson } from "./utils/fs.ts";
 
