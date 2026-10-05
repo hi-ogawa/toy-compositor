@@ -60,7 +60,7 @@ const HEADER_FIELDS = [
 /**
  * The subset of D-Bus that the tray needs: a session bus connection with
  * EXTERNAL authentication, method calls, exported objects that answer the
- * standard interfaces, watching a name, and marshalling of every type
+ * standard interfaces, watching a name's owner, and marshalling of every type
  * in little-endian.
  * https://dbus.freedesktop.org/doc/dbus-specification.html
  *
@@ -150,12 +150,12 @@ export class DBusConnection {
   }
 
   /**
-   * Call `onChange` with whether `name` has an owner, once with the current
-   * state and again whenever its owner changes.
+   * Call `onChange` with the unique name of `name`'s new owner whenever it
+   * changes, or with an empty string when nobody owns it.
    */
-  async watchName(
+  async watchNameOwner(
     name: string,
-    onChange: (hasOwner: boolean) => void,
+    onChange: (owner: string) => void,
   ): Promise<void> {
     await this.call({
       destination: "org.freedesktop.DBus",
@@ -173,19 +173,9 @@ export class DBusConnection {
         message.member === "NameOwnerChanged" &&
         message.body[0] === name
       ) {
-        onChange(message.body[2] !== "");
+        onChange(message.body[2] as string);
       }
     });
-    // Watch before asking, so an owner that appears in between is not missed.
-    const [hasOwner] = await this.call({
-      destination: "org.freedesktop.DBus",
-      path: "/org/freedesktop/DBus",
-      interface: "org.freedesktop.DBus",
-      member: "NameHasOwner",
-      signature: "s",
-      body: [name],
-    });
-    onChange(hasOwner as boolean);
   }
 
   close(): void {
