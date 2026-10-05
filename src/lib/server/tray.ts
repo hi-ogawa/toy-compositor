@@ -34,7 +34,12 @@ export async function createTray({
   const bus = await DBusConnection.create();
   bus.exportObject(
     ITEM_PATH,
-    createItemObject({ url, iconThemePath, iconName, onActivate: onOpen }),
+    new StatusNotifierItem({
+      url,
+      iconThemePath,
+      iconName,
+      onActivate: onOpen,
+    }).dbusObject,
   );
   bus.exportObject(
     MENU_PATH,
@@ -86,52 +91,57 @@ export async function createTray({
 
 const EMPTY_REPLY = { signature: "", body: [] };
 
-function createItemObject({
-  url,
-  iconThemePath,
-  iconName,
-  onActivate,
-}: {
-  url: string;
-  iconThemePath: string;
-  iconName: string;
-  onActivate: () => void;
-}): DBusObject {
-  return {
-    interface: "org.kde.StatusNotifierItem",
-    properties: {
-      Category: { signature: "s", value: "ApplicationStatus" },
-      Id: { signature: "s", value: "toy-compositor" },
-      Title: { signature: "s", value: "Toy Compositor" },
-      Status: { signature: "s", value: "Active" },
-      WindowId: { signature: "i", value: 0 },
-      IconThemePath: { signature: "s", value: iconThemePath },
-      IconName: { signature: "s", value: iconName },
-      IconPixmap: { signature: "a(iiay)", value: [] },
-      OverlayIconName: { signature: "s", value: "" },
-      AttentionIconName: { signature: "s", value: "" },
-      ToolTip: {
-        signature: "(sa(iiay)ss)",
-        value: ["", [], "Toy Compositor", url],
+class StatusNotifierItem {
+  readonly dbusObject: DBusObject;
+  private readonly onActivate: () => void;
+
+  constructor({
+    url,
+    iconThemePath,
+    iconName,
+    onActivate,
+  }: {
+    url: string;
+    iconThemePath: string;
+    iconName: string;
+    onActivate: () => void;
+  }) {
+    this.onActivate = onActivate;
+    this.dbusObject = {
+      interface: "org.kde.StatusNotifierItem",
+      properties: {
+        Category: { signature: "s", value: "ApplicationStatus" },
+        Id: { signature: "s", value: "toy-compositor" },
+        Title: { signature: "s", value: "Toy Compositor" },
+        Status: { signature: "s", value: "Active" },
+        WindowId: { signature: "i", value: 0 },
+        IconThemePath: { signature: "s", value: iconThemePath },
+        IconName: { signature: "s", value: iconName },
+        IconPixmap: { signature: "a(iiay)", value: [] },
+        OverlayIconName: { signature: "s", value: "" },
+        AttentionIconName: { signature: "s", value: "" },
+        ToolTip: {
+          signature: "(sa(iiay)ss)",
+          value: ["", [], "Toy Compositor", url],
+        },
+        // A host that follows this opens the menu on a click, and one that
+        // calls Activate instead runs `onActivate`.
+        ItemIsMenu: { signature: "b", value: true },
+        Menu: { signature: "o", value: MENU_PATH },
       },
-      // A host that follows this opens the menu on a click, and one that calls
-      // Activate instead runs `onActivate`.
-      ItemIsMenu: { signature: "b", value: true },
-      Menu: { signature: "o", value: MENU_PATH },
-    },
-    methods: {
-      Activate: () => {
-        onActivate();
-        return EMPTY_REPLY;
+      methods: {
+        Activate: () => this.activate(),
+        SecondaryActivate: () => this.activate(),
+        ContextMenu: () => EMPTY_REPLY,
+        Scroll: () => EMPTY_REPLY,
       },
-      SecondaryActivate: () => {
-        onActivate();
-        return EMPTY_REPLY;
-      },
-      ContextMenu: () => EMPTY_REPLY,
-      Scroll: () => EMPTY_REPLY,
-    },
-  };
+    };
+  }
+
+  private activate() {
+    this.onActivate();
+    return EMPTY_REPLY;
+  }
 }
 
 type MenuItem = { label: string; enabled?: boolean; onClick?: () => void };
