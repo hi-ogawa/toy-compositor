@@ -34,7 +34,7 @@ export class Tray {
     // Watch before asking, so a host that starts in between is not missed.
     await tray.bus.watchNameOwner(WATCHER_NAME, (owner) => {
       if (owner) {
-        tray.register();
+        void tray.register();
       } else {
         console.warn(NO_HOST_WARNING);
       }
@@ -48,7 +48,7 @@ export class Tray {
       body: [WATCHER_NAME],
     });
     if (hasHost) {
-      tray.register();
+      await tray.register();
     } else {
       console.warn(NO_HOST_WARNING);
     }
@@ -96,19 +96,19 @@ export class Tray {
     this.bus.close();
   }
 
-  private register() {
-    this.bus
-      .call({
+  private async register() {
+    try {
+      await this.bus.call({
         destination: WATCHER_NAME,
         path: "/StatusNotifierWatcher",
         interface: "org.kde.StatusNotifierWatcher",
         member: "RegisterStatusNotifierItem",
         signature: "s",
         body: [this.bus.getUniqueName()],
-      })
-      .catch((error: unknown) => {
-        console.error("Failed to register the tray item:", error);
       });
+    } catch (error) {
+      console.error("Failed to register the tray item:", error);
+    }
   }
 }
 
