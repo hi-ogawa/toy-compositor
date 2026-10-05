@@ -39,15 +39,7 @@ export class Tray {
         console.warn(NO_HOST_WARNING);
       }
     });
-    const [hasHost] = await tray.bus.call({
-      destination: "org.freedesktop.DBus",
-      path: "/org/freedesktop/DBus",
-      interface: "org.freedesktop.DBus",
-      member: "NameHasOwner",
-      signature: "s",
-      body: [WATCHER_NAME],
-    });
-    if (hasHost) {
+    if (await tray.bus.checkNameOwner(WATCHER_NAME)) {
       await tray.register();
     } else {
       console.warn(NO_HOST_WARNING);

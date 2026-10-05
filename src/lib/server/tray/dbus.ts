@@ -149,6 +149,19 @@ export class DBusConnection {
     this.objects.set(path, object);
   }
 
+  /** Whether any connection owns `name`. */
+  async checkNameOwner(name: string): Promise<boolean> {
+    const [hasOwner] = await this.call({
+      destination: "org.freedesktop.DBus",
+      path: "/org/freedesktop/DBus",
+      interface: "org.freedesktop.DBus",
+      member: "NameHasOwner",
+      signature: "s",
+      body: [name],
+    });
+    return hasOwner as boolean;
+  }
+
   /**
    * Call `onChange` with the unique name of `name`'s new owner whenever it
    * changes, or with an empty string when nobody owns it.
