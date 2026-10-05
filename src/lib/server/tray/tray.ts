@@ -1,9 +1,5 @@
-import {
-  DBusConnection,
-  DBusError,
-  type DBusObject,
-  type Variant,
-} from "./dbus.ts";
+import type { Variant } from "./dbus-message.ts";
+import { DBusConnection, DBusError, type DBusObject } from "./dbus.ts";
 
 const WATCHER_NAME = "org.kde.StatusNotifierWatcher";
 const ITEM_PATH = "/StatusNotifierItem";
