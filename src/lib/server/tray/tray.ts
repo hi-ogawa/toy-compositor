@@ -31,9 +31,9 @@ export class Tray {
     const tray = new Tray({ bus: await DBusConnection.create(), ...options });
     // Watch before asking, so a host that starts in between is not missed.
     await tray.bus.watchNameOwner(WATCHER_NAME, (owner) => {
-      void tray.updateRegistration(owner !== "");
+      void tray.handleRegister(owner !== "");
     });
-    await tray.updateRegistration(await tray.bus.checkNameOwner(WATCHER_NAME));
+    await tray.handleRegister(await tray.bus.checkNameOwner(WATCHER_NAME));
     return tray;
   }
 
@@ -78,7 +78,7 @@ export class Tray {
     this.bus.close();
   }
 
-  private async updateRegistration(hasHost: boolean) {
+  private async handleRegister(hasHost: boolean) {
     if (!hasHost) {
       console.warn(
         "No tray host is running, so the tray item appears once one starts. On GNOME, enable the AppIndicator and KStatusNotifierItem Support extension.",
