@@ -8,6 +8,8 @@ import {
 const WATCHER_NAME = "org.kde.StatusNotifierWatcher";
 const ITEM_PATH = "/StatusNotifierItem";
 const MENU_PATH = "/MenuBar";
+const NO_HOST_WARNING =
+  "No tray host is running, so the tray item appears once one starts. On GNOME, enable the AppIndicator and KStatusNotifierItem Support extension.";
 
 /**
  * A tray item for the running server, shown by a StatusNotifierItem host, such
@@ -29,21 +31,14 @@ export class Tray {
     onQuit: () => void;
   }): Promise<Tray> {
     const tray = new Tray({ bus: await DBusConnection.create(), ...options });
-    function updateRegistration(hasHost: boolean) {
-      if (!hasHost) {
-        console.warn(
-          "No tray host is running, so the tray item appears once one starts. On GNOME, enable the AppIndicator and KStatusNotifierItem Support extension.",
-        );
-        return;
-      }
-      tray.register().catch((error: unknown) => {
-        console.error("Failed to register the tray item:", error);
-      });
-    }
     // Watch before asking, so a host that starts in between is not missed.
-    await tray.bus.watchNameOwner(WATCHER_NAME, (owner) =>
-      updateRegistration(owner !== ""),
-    );
+    await tray.bus.watchNameOwner(WATCHER_NAME, (owner) => {
+      if (owner) {
+        tray.register();
+      } else {
+        console.warn(NO_HOST_WARNING);
+      }
+    });
     const [hasHost] = await tray.bus.call({
       destination: "org.freedesktop.DBus",
       path: "/org/freedesktop/DBus",
@@ -52,7 +47,11 @@ export class Tray {
       signature: "s",
       body: [WATCHER_NAME],
     });
-    updateRegistration(hasHost as boolean);
+    if (hasHost) {
+      tray.register();
+    } else {
+      console.warn(NO_HOST_WARNING);
+    }
     return tray;
   }
 
@@ -97,15 +96,19 @@ export class Tray {
     this.bus.close();
   }
 
-  private async register() {
-    await this.bus.call({
-      destination: WATCHER_NAME,
-      path: "/StatusNotifierWatcher",
-      interface: "org.kde.StatusNotifierWatcher",
-      member: "RegisterStatusNotifierItem",
-      signature: "s",
-      body: [this.bus.getUniqueName()],
-    });
+  private register() {
+    this.bus
+      .call({
+        destination: WATCHER_NAME,
+        path: "/StatusNotifierWatcher",
+        interface: "org.kde.StatusNotifierWatcher",
+        member: "RegisterStatusNotifierItem",
+        signature: "s",
+        body: [this.bus.getUniqueName()],
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to register the tray item:", error);
+      });
   }
 }
 
