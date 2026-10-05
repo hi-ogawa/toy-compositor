@@ -29,9 +29,20 @@ export class Tray {
     onQuit: () => void;
   }): Promise<Tray> {
     const tray = new Tray({ bus: await DBusConnection.create(), ...options });
+    function updateRegistration(hasHost: boolean) {
+      if (!hasHost) {
+        console.warn(
+          "No tray host is running, so the tray item appears once one starts. On GNOME, enable the AppIndicator and KStatusNotifierItem Support extension.",
+        );
+        return;
+      }
+      tray.register().catch((error: unknown) => {
+        console.error("Failed to register the tray item:", error);
+      });
+    }
     // Watch before asking, so a host that starts in between is not missed.
     await tray.bus.watchNameOwner(WATCHER_NAME, (owner) =>
-      tray.updateRegistration(owner !== ""),
+      updateRegistration(owner !== ""),
     );
     const [hasHost] = await tray.bus.call({
       destination: "org.freedesktop.DBus",
@@ -41,7 +52,7 @@ export class Tray {
       signature: "s",
       body: [WATCHER_NAME],
     });
-    tray.updateRegistration(hasHost as boolean);
+    updateRegistration(hasHost as boolean);
     return tray;
   }
 
@@ -84,18 +95,6 @@ export class Tray {
 
   close(): void {
     this.bus.close();
-  }
-
-  private updateRegistration(hasHost: boolean) {
-    if (!hasHost) {
-      console.warn(
-        "No tray host is running, so the tray item appears once one starts. On GNOME, enable the AppIndicator and KStatusNotifierItem Support extension.",
-      );
-      return;
-    }
-    this.register().catch((error: unknown) => {
-      console.error("Failed to register the tray item:", error);
-    });
   }
 
   private async register() {
