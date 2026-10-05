@@ -1,9 +1,10 @@
 import net from "node:net";
 
 /**
- * The subset of the D-Bus wire protocol that the tray needs: a session bus
- * connection with EXTERNAL authentication, method calls in both directions,
- * signals, and marshalling of every type in little-endian.
+ * The subset of D-Bus that the tray needs: a session bus connection with
+ * EXTERNAL authentication, method calls, exported objects that answer the
+ * standard interfaces, watching a name's owner, and marshalling of every type
+ * in little-endian.
  * https://dbus.freedesktop.org/doc/dbus-specification.html
  *
  * Values map to JavaScript as follows: integers to numbers (64-bit ones to
@@ -14,15 +15,17 @@ export type DBusConnection = Awaited<ReturnType<typeof connectSessionBus>>;
 
 export type Variant = { signature: string; value: unknown };
 
-export type MethodCall = {
-  path: string;
-  interface?: string;
-  member: string;
-  sender?: string;
-  body: unknown[];
-};
-
 export type MethodReturn = { signature: string; body: unknown[] };
+
+/**
+ * An object with one interface. The connection answers the standard
+ * Properties, Introspectable and Peer interfaces for it.
+ */
+export type DBusObject = {
+  interface: string;
+  properties: Record<string, Variant>;
+  methods: Record<string, (body: unknown[]) => MethodReturn>;
+};
 
 /** A method handler throws this to reply with a D-Bus error. */
 export class DBusError extends Error {
@@ -75,10 +78,7 @@ export async function connectSessionBus() {
     number,
     { resolve: (body: unknown[]) => void; reject: (error: Error) => void }
   >();
-  const objects = new Map<
-    string,
-    (call: MethodCall) => MethodReturn | Promise<MethodReturn>
-  >();
+  const objects = new Map<string, DBusObject>();
   const signalListeners = new Set<(message: Message) => void>();
 
   function send(message: Omit<Message, "serial">) {
@@ -87,23 +87,10 @@ export async function connectSessionBus() {
     return serial;
   }
 
-  async function handleCall(message: Message) {
-    const handler = objects.get(message.path!);
+  function handleCall(message: Message) {
     let reply: Omit<Message, "serial" | "flags">;
     try {
-      if (!handler) {
-        throw new DBusError({
-          name: "org.freedesktop.DBus.Error.UnknownObject",
-          message: `No object at ${message.path}`,
-        });
-      }
-      const result = await handler({
-        path: message.path!,
-        interface: message.interface,
-        member: message.member!,
-        sender: message.sender,
-        body: message.body,
-      });
+      const result = answerCall({ objects, message });
       reply = {
         type: MESSAGE_TYPE.return,
         replySerial: message.serial,
@@ -131,7 +118,7 @@ export async function connectSessionBus() {
   function handleMessage(message: Message) {
     switch (message.type) {
       case MESSAGE_TYPE.call: {
-        void handleCall(message);
+        handleCall(message);
         break;
       }
       case MESSAGE_TYPE.return:
@@ -179,6 +166,8 @@ export async function connectSessionBus() {
   });
 
   const connection = {
+    uniqueName: "",
+
     call({
       destination,
       path,
@@ -209,64 +198,32 @@ export async function connectSessionBus() {
       });
     },
 
-    emitSignal({
-      path,
-      interface: interfaceName,
-      member,
-      signature = "",
-      body = [],
-    }: {
-      path: string;
-      interface: string;
-      member: string;
-      signature?: string;
-      body?: unknown[];
-    }) {
-      send({
-        type: MESSAGE_TYPE.signal,
-        flags: NO_REPLY_EXPECTED,
-        path,
-        interface: interfaceName,
-        member,
-        signature,
-        body,
-      });
-    },
-
-    /** Answer method calls on `path`. */
-    exportObject(
-      path: string,
-      handler: (call: MethodCall) => MethodReturn | Promise<MethodReturn>,
-    ) {
-      objects.set(path, handler);
+    exportObject(path: string, object: DBusObject) {
+      objects.set(path, object);
     },
 
     /**
-     * Listen to the signals that `rule` matches, a match rule as the bus's
-     * `AddMatch` takes it.
+     * Call `onChange` with the unique name of `name`'s new owner whenever it
+     * changes, or with an empty string when nobody owns it.
      */
-    async addSignalListener(
-      rule: string,
-      listener: (signal: { member: string; body: unknown[] }) => void,
-    ) {
+    async watchNameOwner(name: string, onChange: (owner: string) => void) {
       await connection.call({
         destination: "org.freedesktop.DBus",
         path: "/org/freedesktop/DBus",
         interface: "org.freedesktop.DBus",
         member: "AddMatch",
         signature: "s",
-        body: [rule],
+        body: [
+          `type='signal',sender='org.freedesktop.DBus',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='${name}'`,
+        ],
       });
-      // The bus routes only matching signals here, but other listeners' rules
-      // also route theirs, so check the fields the rule names.
-      const fields = parseMatchRule(rule);
       signalListeners.add((message) => {
         if (
-          (!fields.interface || fields.interface === message.interface) &&
-          (!fields.member || fields.member === message.member) &&
-          (!fields.arg0 || fields.arg0 === message.body[0])
+          message.interface === "org.freedesktop.DBus" &&
+          message.member === "NameOwnerChanged" &&
+          message.body[0] === name
         ) {
-          listener({ member: message.member!, body: message.body });
+          onChange(message.body[2] as string);
         }
       });
     },
@@ -274,8 +231,6 @@ export async function connectSessionBus() {
     close() {
       socket.end();
     },
-
-    uniqueName: "",
   };
 
   const [uniqueName] = await connection.call({
@@ -322,13 +277,96 @@ async function authenticate(socket: net.Socket) {
   socket.write("BEGIN\r\n");
 }
 
-function parseMatchRule(rule: string): Record<string, string> {
-  return Object.fromEntries(
-    [...rule.matchAll(/(\w+)='([^']*)'/g)].map(([, key, value]) => [
-      key,
-      value,
-    ]),
-  );
+//
+// Exported objects
+//
+
+/**
+ * Answer a method call on an exported object, or introspection on a path
+ * above one, so a caller can find the objects by walking down from `/`.
+ */
+function answerCall({
+  objects,
+  message,
+}: {
+  objects: Map<string, DBusObject>;
+  message: Message;
+}): MethodReturn {
+  const path = message.path!;
+  const key = `${message.interface ?? ""} ${message.member}`;
+  if (key === "org.freedesktop.DBus.Introspectable Introspect") {
+    return { signature: "s", body: [getIntrospection({ objects, path })] };
+  }
+  const object = objects.get(path);
+  if (!object) {
+    throw new DBusError({
+      name: "org.freedesktop.DBus.Error.UnknownObject",
+      message: `No object at ${path}`,
+    });
+  }
+  switch (key) {
+    case "org.freedesktop.DBus.Properties Get": {
+      const [, name] = message.body as [string, string];
+      const value = object.properties[name];
+      if (!value) {
+        throw new DBusError({
+          name: "org.freedesktop.DBus.Error.UnknownProperty",
+          message: `No property ${name} on ${path}`,
+        });
+      }
+      return { signature: "v", body: [value] };
+    }
+    case "org.freedesktop.DBus.Properties GetAll": {
+      const [name] = message.body as [string];
+      const properties =
+        name === object.interface ? Object.entries(object.properties) : [];
+      return { signature: "a{sv}", body: [properties] };
+    }
+    case "org.freedesktop.DBus.Peer Ping": {
+      return { signature: "", body: [] };
+    }
+  }
+  const method = object.methods[message.member!];
+  if (
+    !method ||
+    (message.interface && message.interface !== object.interface)
+  ) {
+    throw new DBusError({
+      name: "org.freedesktop.DBus.Error.UnknownMethod",
+      message: `No method ${key} on ${path}`,
+    });
+  }
+  return method(message.body);
+}
+
+// Introspection lists each interface by name only, because callers of the
+// interfaces in use bring their own copies of the specifications.
+function getIntrospection({
+  objects,
+  path,
+}: {
+  objects: Map<string, DBusObject>;
+  path: string;
+}) {
+  const object = objects.get(path);
+  const prefix = path === "/" ? "/" : `${path}/`;
+  const children = new Set<string>();
+  for (const objectPath of objects.keys()) {
+    if (objectPath.startsWith(prefix) && objectPath !== path) {
+      children.add(objectPath.slice(prefix.length).split("/")[0]!);
+    }
+  }
+  if (!object && children.size === 0) {
+    throw new DBusError({
+      name: "org.freedesktop.DBus.Error.UnknownObject",
+      message: `No object at ${path}`,
+    });
+  }
+  const body = [
+    ...(object ? [`<interface name="${object.interface}"/>`] : []),
+    ...[...children].map((child) => `<node name="${child}"/>`),
+  ].join("");
+  return `<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd"><node>${body}</node>`;
 }
 
 //

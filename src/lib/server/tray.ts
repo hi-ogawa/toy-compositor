@@ -1,10 +1,4 @@
-import {
-  connectSessionBus,
-  DBusError,
-  type MethodCall,
-  type MethodReturn,
-  type Variant,
-} from "./dbus.ts";
+import { connectSessionBus, DBusError, type Variant } from "./dbus.ts";
 
 const WATCHER_NAME = "org.kde.StatusNotifierWatcher";
 const ITEM_PATH = "/StatusNotifierItem";
@@ -106,98 +100,78 @@ export async function createTray({
     return [id, Object.entries(getMenuItemProperties(id)), children];
   }
 
-  bus.exportObject(ITEM_PATH, (call) =>
-    handleObjectCall({
-      call,
-      interfaceName: ITEM_INTERFACE,
-      properties: itemProperties,
-      handleMethod: (member) => {
-        switch (member) {
-          case "Activate":
-          case "SecondaryActivate": {
-            onOpen();
-            return { signature: "", body: [] };
-          }
-          case "ContextMenu":
-          case "Scroll": {
-            return { signature: "", body: [] };
+  const done = { signature: "", body: [] };
+
+  bus.exportObject(ITEM_PATH, {
+    interface: ITEM_INTERFACE,
+    properties: itemProperties,
+    methods: {
+      Activate: () => {
+        onOpen();
+        return done;
+      },
+      SecondaryActivate: () => {
+        onOpen();
+        return done;
+      },
+      ContextMenu: () => done,
+      Scroll: () => done,
+    },
+  });
+
+  bus.exportObject(MENU_PATH, {
+    interface: MENU_INTERFACE,
+    properties: menuProperties,
+    methods: {
+      GetLayout: (body) => {
+        const [parentId] = body as [number];
+        return { signature: "u(ia{sv}av)", body: [1, getLayout(parentId)] };
+      },
+      GetGroupProperties: (body) => {
+        const [ids] = body as [number[]];
+        const requested =
+          ids.length > 0 ? ids : [0, ...menuItems.map((item) => item.id)];
+        return {
+          signature: "a(ia{sv})",
+          body: [
+            requested.map((id) => [
+              id,
+              Object.entries(getMenuItemProperties(id)),
+            ]),
+          ],
+        };
+      },
+      GetProperty: (body) => {
+        const [id, name] = body as [number, string];
+        const value = getMenuItemProperties(id)[name];
+        if (!value) {
+          throw new DBusError({
+            name: "org.freedesktop.DBus.Error.InvalidArgs",
+            message: `No property ${name} on menu item ${id}`,
+          });
+        }
+        return { signature: "v", body: [value] };
+      },
+      Event: (body) => {
+        const [id, eventId] = body as [number, string];
+        if (eventId === "clicked") {
+          menuActions[id]?.();
+        }
+        return done;
+      },
+      EventGroup: (body) => {
+        const [events] = body as [[number, string][]];
+        for (const [id, eventId] of events) {
+          if (eventId === "clicked") {
+            menuActions[id]?.();
           }
         }
+        return { signature: "ai", body: [[]] };
       },
-    }),
-  );
-
-  bus.exportObject(MENU_PATH, (call) =>
-    handleObjectCall({
-      call,
-      interfaceName: MENU_INTERFACE,
-      properties: menuProperties,
-      handleMethod: (member, body) => {
-        switch (member) {
-          case "GetLayout": {
-            const [parentId] = body as [number];
-            return { signature: "u(ia{sv}av)", body: [1, getLayout(parentId)] };
-          }
-          case "GetGroupProperties": {
-            const [ids] = body as [number[]];
-            const requested =
-              ids.length > 0 ? ids : [0, ...menuItems.map((item) => item.id)];
-            return {
-              signature: "a(ia{sv})",
-              body: [
-                requested.map((id) => [
-                  id,
-                  Object.entries(getMenuItemProperties(id)),
-                ]),
-              ],
-            };
-          }
-          case "GetProperty": {
-            const [id, name] = body as [number, string];
-            const value = getMenuItemProperties(id)[name];
-            if (!value) {
-              throw new DBusError({
-                name: "org.freedesktop.DBus.Error.InvalidArgs",
-                message: `No property ${name} on menu item ${id}`,
-              });
-            }
-            return { signature: "v", body: [value] };
-          }
-          case "Event": {
-            const [id, eventId] = body as [number, string];
-            if (eventId === "clicked") {
-              menuActions[id]?.();
-            }
-            return { signature: "", body: [] };
-          }
-          case "EventGroup": {
-            const [events] = body as [[number, string][]];
-            for (const [id, eventId] of events) {
-              if (eventId === "clicked") {
-                menuActions[id]?.();
-              }
-            }
-            return { signature: "ai", body: [[]] };
-          }
-          case "AboutToShow": {
-            return { signature: "b", body: [false] };
-          }
-          case "AboutToShowGroup": {
-            return { signature: "aiai", body: [[], []] };
-          }
-        }
-      },
-    }),
-  );
-
-  bus.exportObject("/", (call) =>
-    handleObjectCall({
-      call,
-      interfaceName: "",
-      properties: {},
-      handleMethod: () => undefined,
-    }),
-  );
+      AboutToShow: () => ({ signature: "b", body: [false] }),
+      AboutToShowGroup: () => ({ signature: "aiai", body: [[], []] }),
+    },
+  });
 
   async function register() {
     await bus.call({
@@ -210,17 +184,13 @@ export async function createTray({
     });
   }
 
-  await bus.addSignalListener(
-    `type='signal',sender='org.freedesktop.DBus',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='${WATCHER_NAME}'`,
-    ({ body }) => {
-      const [, , newOwner] = body as [string, string, string];
-      if (newOwner) {
-        register().catch((error: unknown) => {
-          console.error("Failed to register the tray item:", error);
-        });
-      }
-    },
-  );
+  await bus.watchNameOwner(WATCHER_NAME, (owner) => {
+    if (owner) {
+      register().catch((error: unknown) => {
+        console.error("Failed to register the tray item:", error);
+      });
+    }
+  });
   try {
     await register();
   } catch (error) {
@@ -240,73 +210,4 @@ export async function createTray({
       bus.close();
     },
   };
-}
-
-/**
- * Answer the standard Properties and Introspectable interfaces for an object
- * with one interface, and pass that interface's other calls to `handleMethod`,
- * which returns undefined for a method it does not have.
- */
-function handleObjectCall({
-  call,
-  interfaceName,
-  properties,
-  handleMethod,
-}: {
-  call: MethodCall;
-  interfaceName: string;
-  properties: Record<string, Variant>;
-  handleMethod: (member: string, body: unknown[]) => MethodReturn | undefined;
-}): MethodReturn {
-  const key = `${call.interface ?? ""} ${call.member}`;
-  switch (key) {
-    case "org.freedesktop.DBus.Properties Get": {
-      const [, name] = call.body as [string, string];
-      const value = properties[name];
-      if (!value) {
-        throw new DBusError({
-          name: "org.freedesktop.DBus.Error.UnknownProperty",
-          message: `No property ${name}`,
-        });
-      }
-      return { signature: "v", body: [value] };
-    }
-    case "org.freedesktop.DBus.Properties GetAll": {
-      const [name] = call.body as [string];
-      return {
-        signature: "a{sv}",
-        body: [name === interfaceName ? Object.entries(properties) : []],
-      };
-    }
-    case "org.freedesktop.DBus.Introspectable Introspect": {
-      return { signature: "s", body: [getIntrospection(call.path)] };
-    }
-    case "org.freedesktop.DBus.Peer Ping": {
-      return { signature: "", body: [] };
-    }
-  }
-  if (!call.interface || call.interface === interfaceName) {
-    const result = handleMethod(call.member, call.body);
-    if (result) {
-      return result;
-    }
-  }
-  throw new DBusError({
-    name: "org.freedesktop.DBus.Error.UnknownMethod",
-    message: `No method ${key} on ${call.path}`,
-  });
-}
-
-// Hosts read the interfaces from their own copies of the specifications, so
-// introspection only lists the objects and their interface names.
-function getIntrospection(path: string) {
-  const interfaces: Record<string, string> = {
-    [ITEM_PATH]: ITEM_INTERFACE,
-    [MENU_PATH]: MENU_INTERFACE,
-  };
-  const body =
-    path === "/"
-      ? `<node name="${ITEM_PATH.slice(1)}"/><node name="${MENU_PATH.slice(1)}"/>`
-      : `<interface name="${interfaces[path]}"/>`;
-  return `<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd"><node>${body}</node>`;
 }
