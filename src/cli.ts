@@ -22,7 +22,7 @@ import {
   serveEditor,
   stopEditorServer,
 } from "./lib/server/serve.ts";
-import { createTray } from "./lib/server/tray/tray.ts";
+import { Tray } from "./lib/server/tray/tray.ts";
 import { execFileAsync } from "./utils/exec.ts";
 import { readJson, writeJson } from "./utils/fs.ts";
 
@@ -225,7 +225,7 @@ async function runServe({
   if (tray) {
     await openWithDefaultApp(url);
     // The tray's Quit stops the server the way `toy-compositor stop` does.
-    const trayItem = await createTray({
+    const trayItem = await Tray.create({
       url,
       iconThemePath: clientDir,
       iconName: "icon",

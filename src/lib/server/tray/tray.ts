@@ -18,77 +18,91 @@ const MENU_PATH = "/MenuBar";
  * so it comes back after the host restarts, and the host removes it once the
  * bus connection closes.
  */
-export async function createTray({
-  url,
-  iconThemePath,
-  iconName,
-  onOpen,
-  onQuit,
-}: {
-  url: string;
-  iconThemePath: string;
-  iconName: string;
-  onOpen: () => void;
-  onQuit: () => void;
-}) {
-  const bus = await DBusConnection.create();
-  bus.exportObject(
-    ITEM_PATH,
-    new StatusNotifierItem({
-      id: "toy-compositor",
-      title: "Toy Compositor",
-      url,
-      iconThemePath,
-      iconName,
-      onActivate: onOpen,
-    }).dbusObject,
-  );
-  bus.exportObject(
-    MENU_PATH,
-    new DBusMenu([
-      { label: `Running at ${url}`, enabled: false },
-      { label: "Open editor", onClick: onOpen },
-      { label: "Quit", onClick: onQuit },
-    ]).dbusObject,
-  );
+export class Tray {
+  private readonly bus: DBusConnection;
 
-  async function register() {
-    await bus.call({
+  static async create(options: {
+    url: string;
+    iconThemePath: string;
+    iconName: string;
+    onOpen: () => void;
+    onQuit: () => void;
+  }): Promise<Tray> {
+    const tray = new Tray({ bus: await DBusConnection.create(), ...options });
+    await tray.bus.watchNameOwner(WATCHER_NAME, (owner) => {
+      if (owner) {
+        tray.register().catch((error: unknown) => {
+          console.error("Failed to register the tray item:", error);
+        });
+      }
+    });
+    try {
+      await tray.register();
+    } catch (error) {
+      if (
+        !(error instanceof DBusError) ||
+        error.name !== "org.freedesktop.DBus.Error.ServiceUnknown"
+      ) {
+        throw error;
+      }
+      console.warn(
+        "No tray host is running, so the tray item appears once one starts. On GNOME, enable the AppIndicator and KStatusNotifierItem Support extension.",
+      );
+    }
+    return tray;
+  }
+
+  private constructor({
+    bus,
+    url,
+    iconThemePath,
+    iconName,
+    onOpen,
+    onQuit,
+  }: {
+    bus: DBusConnection;
+    url: string;
+    iconThemePath: string;
+    iconName: string;
+    onOpen: () => void;
+    onQuit: () => void;
+  }) {
+    this.bus = bus;
+    bus.exportObject(
+      ITEM_PATH,
+      new StatusNotifierItem({
+        id: "toy-compositor",
+        title: "Toy Compositor",
+        url,
+        iconThemePath,
+        iconName,
+        onActivate: onOpen,
+      }).dbusObject,
+    );
+    bus.exportObject(
+      MENU_PATH,
+      new DBusMenu([
+        { label: `Running at ${url}`, enabled: false },
+        { label: "Open editor", onClick: onOpen },
+        { label: "Quit", onClick: onQuit },
+      ]).dbusObject,
+    );
+  }
+
+  close(): void {
+    this.bus.close();
+  }
+
+  private async register() {
+    await this.bus.call({
       destination: WATCHER_NAME,
       path: "/StatusNotifierWatcher",
       interface: "org.kde.StatusNotifierWatcher",
       member: "RegisterStatusNotifierItem",
       signature: "s",
-      body: [bus.getUniqueName()],
+      body: [this.bus.getUniqueName()],
     });
   }
-
-  await bus.watchNameOwner(WATCHER_NAME, (owner) => {
-    if (owner) {
-      register().catch((error: unknown) => {
-        console.error("Failed to register the tray item:", error);
-      });
-    }
-  });
-  try {
-    await register();
-  } catch (error) {
-    if (
-      !(error instanceof DBusError) ||
-      error.name !== "org.freedesktop.DBus.Error.ServiceUnknown"
-    ) {
-      throw error;
-    }
-    console.warn(
-      "No tray host is running, so the tray item appears once one starts. On GNOME, enable the AppIndicator and KStatusNotifierItem Support extension.",
-    );
-  }
-
-  return {
-    close() {
-      bus.close();
-    },
-  };
 }
 
 const EMPTY_REPLY = { signature: "", body: [] };
