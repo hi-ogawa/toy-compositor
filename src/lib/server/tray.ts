@@ -95,7 +95,6 @@ const EMPTY_REPLY = { signature: "", body: [] };
 
 class StatusNotifierItem {
   readonly dbusObject: DBusObject;
-  private readonly onActivate: () => void;
 
   constructor({
     id,
@@ -112,7 +111,6 @@ class StatusNotifierItem {
     iconName: string;
     onActivate: () => void;
   }) {
-    this.onActivate = onActivate;
     this.dbusObject = {
       interface: "org.kde.StatusNotifierItem",
       properties: {
@@ -136,17 +134,18 @@ class StatusNotifierItem {
         Menu: { signature: "o", value: MENU_PATH },
       },
       methods: {
-        Activate: () => this.activate(),
-        SecondaryActivate: () => this.activate(),
+        Activate: () => {
+          onActivate();
+          return EMPTY_REPLY;
+        },
+        SecondaryActivate: () => {
+          onActivate();
+          return EMPTY_REPLY;
+        },
         ContextMenu: () => EMPTY_REPLY,
         Scroll: () => EMPTY_REPLY,
       },
     };
-  }
-
-  private activate() {
-    this.onActivate();
-    return EMPTY_REPLY;
   }
 }
 
