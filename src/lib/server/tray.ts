@@ -1,10 +1,13 @@
-import { DBusConnection, DBusError, type Variant } from "./dbus.ts";
+import {
+  DBusConnection,
+  DBusError,
+  type DBusObject,
+  type Variant,
+} from "./dbus.ts";
 
 const WATCHER_NAME = "org.kde.StatusNotifierWatcher";
 const ITEM_PATH = "/StatusNotifierItem";
-const ITEM_INTERFACE = "org.kde.StatusNotifierItem";
 const MENU_PATH = "/MenuBar";
-const MENU_INTERFACE = "com.canonical.dbusmenu";
 
 /**
  * A tray item for the running server, shown by a StatusNotifierItem host, such
@@ -29,149 +32,18 @@ export async function createTray({
   onQuit: () => void;
 }) {
   const bus = await DBusConnection.create();
-
-  const itemProperties: Record<string, Variant> = {
-    Category: { signature: "s", value: "ApplicationStatus" },
-    Id: { signature: "s", value: "toy-compositor" },
-    Title: { signature: "s", value: "Toy Compositor" },
-    Status: { signature: "s", value: "Active" },
-    WindowId: { signature: "i", value: 0 },
-    IconThemePath: { signature: "s", value: iconThemePath },
-    IconName: { signature: "s", value: iconName },
-    IconPixmap: { signature: "a(iiay)", value: [] },
-    OverlayIconName: { signature: "s", value: "" },
-    AttentionIconName: { signature: "s", value: "" },
-    ToolTip: {
-      signature: "(sa(iiay)ss)",
-      value: ["", [], "Toy Compositor", url],
-    },
-    // A host that follows this opens the menu on a click, and one that calls
-    // Activate instead opens the editor.
-    ItemIsMenu: { signature: "b", value: true },
-    Menu: { signature: "o", value: MENU_PATH },
-  };
-  const menuProperties: Record<string, Variant> = {
-    Version: { signature: "u", value: 3 },
-    TextDirection: { signature: "s", value: "ltr" },
-    Status: { signature: "s", value: "normal" },
-    IconThemePath: { signature: "as", value: [] },
-  };
-
-  // The menu never changes, so its layout stays at one revision.
-  const menuItems: { id: number; properties: Record<string, Variant> }[] = [
-    {
-      id: 1,
-      properties: {
-        label: { signature: "s", value: `Running at ${url}` },
-        enabled: { signature: "b", value: false },
-      },
-    },
-    { id: 2, properties: { label: { signature: "s", value: "Open editor" } } },
-    { id: 3, properties: { label: { signature: "s", value: "Quit" } } },
-  ];
-  const menuActions: Record<number, () => void> = { 2: onOpen, 3: onQuit };
-  const rootProperties: Record<string, Variant> = {
-    "children-display": { signature: "s", value: "submenu" },
-  };
-
-  function getMenuItemProperties(id: number) {
-    if (id === 0) {
-      return rootProperties;
-    }
-    const item = menuItems.find((item) => item.id === id);
-    if (!item) {
-      throw new DBusError({
-        name: "org.freedesktop.DBus.Error.InvalidArgs",
-        message: `No menu item ${id}`,
-      });
-    }
-    return item.properties;
-  }
-
-  // A layout node is `(ia{sv}av)`, with the children as variants of nodes.
-  function getLayout(id: number): unknown[] {
-    const children =
-      id === 0
-        ? menuItems.map((item) => ({
-            signature: "(ia{sv}av)",
-            value: getLayout(item.id),
-          }))
-        : [];
-    return [id, Object.entries(getMenuItemProperties(id)), children];
-  }
-
-  const done = { signature: "", body: [] };
-
-  bus.exportObject(ITEM_PATH, {
-    interface: ITEM_INTERFACE,
-    properties: itemProperties,
-    methods: {
-      Activate: () => {
-        onOpen();
-        return done;
-      },
-      SecondaryActivate: () => {
-        onOpen();
-        return done;
-      },
-      ContextMenu: () => done,
-      Scroll: () => done,
-    },
-  });
-
-  bus.exportObject(MENU_PATH, {
-    interface: MENU_INTERFACE,
-    properties: menuProperties,
-    methods: {
-      GetLayout: (body) => {
-        const [parentId] = body as [number];
-        return { signature: "u(ia{sv}av)", body: [1, getLayout(parentId)] };
-      },
-      GetGroupProperties: (body) => {
-        const [ids] = body as [number[]];
-        const requested =
-          ids.length > 0 ? ids : [0, ...menuItems.map((item) => item.id)];
-        return {
-          signature: "a(ia{sv})",
-          body: [
-            requested.map((id) => [
-              id,
-              Object.entries(getMenuItemProperties(id)),
-            ]),
-          ],
-        };
-      },
-      GetProperty: (body) => {
-        const [id, name] = body as [number, string];
-        const value = getMenuItemProperties(id)[name];
-        if (!value) {
-          throw new DBusError({
-            name: "org.freedesktop.DBus.Error.InvalidArgs",
-            message: `No property ${name} on menu item ${id}`,
-          });
-        }
-        return { signature: "v", body: [value] };
-      },
-      Event: (body) => {
-        const [id, eventId] = body as [number, string];
-        if (eventId === "clicked") {
-          menuActions[id]?.();
-        }
-        return done;
-      },
-      EventGroup: (body) => {
-        const [events] = body as [[number, string][]];
-        for (const [id, eventId] of events) {
-          if (eventId === "clicked") {
-            menuActions[id]?.();
-          }
-        }
-        return { signature: "ai", body: [[]] };
-      },
-      AboutToShow: () => ({ signature: "b", body: [false] }),
-      AboutToShowGroup: () => ({ signature: "aiai", body: [[], []] }),
-    },
-  });
+  bus.exportObject(
+    ITEM_PATH,
+    createItemObject({ url, iconThemePath, iconName, onActivate: onOpen }),
+  );
+  bus.exportObject(
+    MENU_PATH,
+    createMenuObject([
+      { label: `Running at ${url}`, enabled: false },
+      { label: "Open editor", onClick: onOpen },
+      { label: "Quit", onClick: onQuit },
+    ]),
+  );
 
   async function register() {
     await bus.call({
@@ -208,6 +80,151 @@ export async function createTray({
   return {
     close() {
       bus.close();
+    },
+  };
+}
+
+const EMPTY_REPLY = { signature: "", body: [] };
+
+function createItemObject({
+  url,
+  iconThemePath,
+  iconName,
+  onActivate,
+}: {
+  url: string;
+  iconThemePath: string;
+  iconName: string;
+  onActivate: () => void;
+}): DBusObject {
+  return {
+    interface: "org.kde.StatusNotifierItem",
+    properties: {
+      Category: { signature: "s", value: "ApplicationStatus" },
+      Id: { signature: "s", value: "toy-compositor" },
+      Title: { signature: "s", value: "Toy Compositor" },
+      Status: { signature: "s", value: "Active" },
+      WindowId: { signature: "i", value: 0 },
+      IconThemePath: { signature: "s", value: iconThemePath },
+      IconName: { signature: "s", value: iconName },
+      IconPixmap: { signature: "a(iiay)", value: [] },
+      OverlayIconName: { signature: "s", value: "" },
+      AttentionIconName: { signature: "s", value: "" },
+      ToolTip: {
+        signature: "(sa(iiay)ss)",
+        value: ["", [], "Toy Compositor", url],
+      },
+      // A host that follows this opens the menu on a click, and one that calls
+      // Activate instead runs `onActivate`.
+      ItemIsMenu: { signature: "b", value: true },
+      Menu: { signature: "o", value: MENU_PATH },
+    },
+    methods: {
+      Activate: () => {
+        onActivate();
+        return EMPTY_REPLY;
+      },
+      SecondaryActivate: () => {
+        onActivate();
+        return EMPTY_REPLY;
+      },
+      ContextMenu: () => EMPTY_REPLY,
+      Scroll: () => EMPTY_REPLY,
+    },
+  };
+}
+
+/**
+ * A flat DBusMenu whose items never change, so its layout stays at one
+ * revision. Item ids count from 1 in order, because id 0 is the root.
+ */
+function createMenuObject(
+  items: { label: string; enabled?: boolean; onClick?: () => void }[],
+): DBusObject {
+  function getItemProperties(id: number): Record<string, Variant> {
+    if (id === 0) {
+      return { "children-display": { signature: "s", value: "submenu" } };
+    }
+    const item = items[id - 1];
+    if (!item) {
+      throw new DBusError({
+        name: "org.freedesktop.DBus.Error.InvalidArgs",
+        message: `No menu item ${id}`,
+      });
+    }
+    return {
+      label: { signature: "s", value: item.label },
+      enabled: { signature: "b", value: item.enabled ?? true },
+    };
+  }
+
+  // A layout node is `(ia{sv}av)`, with the children as variants of nodes.
+  function getLayout(id: number): unknown[] {
+    const children =
+      id === 0
+        ? items.map((_, i) => ({
+            signature: "(ia{sv}av)",
+            value: getLayout(i + 1),
+          }))
+        : [];
+    return [id, Object.entries(getItemProperties(id)), children];
+  }
+
+  function handleEvent(id: number, eventId: string) {
+    if (eventId === "clicked") {
+      items[id - 1]?.onClick?.();
+    }
+  }
+
+  return {
+    interface: "com.canonical.dbusmenu",
+    properties: {
+      Version: { signature: "u", value: 3 },
+      TextDirection: { signature: "s", value: "ltr" },
+      Status: { signature: "s", value: "normal" },
+      IconThemePath: { signature: "as", value: [] },
+    },
+    methods: {
+      GetLayout: (body) => {
+        const [parentId] = body as [number];
+        return { signature: "u(ia{sv}av)", body: [1, getLayout(parentId)] };
+      },
+      GetGroupProperties: (body) => {
+        const [ids] = body as [number[]];
+        const requested =
+          ids.length > 0 ? ids : [0, ...items.map((_, i) => i + 1)];
+        return {
+          signature: "a(ia{sv})",
+          body: [
+            requested.map((id) => [id, Object.entries(getItemProperties(id))]),
+          ],
+        };
+      },
+      GetProperty: (body) => {
+        const [id, name] = body as [number, string];
+        const value = getItemProperties(id)[name];
+        if (!value) {
+          throw new DBusError({
+            name: "org.freedesktop.DBus.Error.InvalidArgs",
+            message: `No property ${name} on menu item ${id}`,
+          });
+        }
+        return { signature: "v", body: [value] };
+      },
+      Event: (body) => {
+        const [id, eventId] = body as [number, string];
+        handleEvent(id, eventId);
+        return EMPTY_REPLY;
+      },
+      EventGroup: (body) => {
+        const [events] = body as [[number, string][]];
+        for (const [id, eventId] of events) {
+          handleEvent(id, eventId);
+        }
+        return { signature: "ai", body: [[]] };
+      },
+      AboutToShow: () => ({ signature: "b", body: [false] }),
+      AboutToShowGroup: () => ({ signature: "aiai", body: [[], []] }),
     },
   };
 }
