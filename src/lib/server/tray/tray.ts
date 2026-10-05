@@ -8,8 +8,6 @@ import {
 const WATCHER_NAME = "org.kde.StatusNotifierWatcher";
 const ITEM_PATH = "/StatusNotifierItem";
 const MENU_PATH = "/MenuBar";
-const NO_HOST_WARNING =
-  "No tray host is running, so the tray item appears once one starts. On GNOME, enable the AppIndicator and KStatusNotifierItem Support extension.";
 
 /**
  * A tray item for the running server, shown by a StatusNotifierItem host, such
@@ -33,17 +31,9 @@ export class Tray {
     const tray = new Tray({ bus: await DBusConnection.create(), ...options });
     // Watch before asking, so a host that starts in between is not missed.
     await tray.bus.watchNameOwner(WATCHER_NAME, (owner) => {
-      if (owner) {
-        void tray.register();
-      } else {
-        console.warn(NO_HOST_WARNING);
-      }
+      void tray.updateRegistration(owner !== "");
     });
-    if (await tray.bus.checkNameOwner(WATCHER_NAME)) {
-      await tray.register();
-    } else {
-      console.warn(NO_HOST_WARNING);
-    }
+    await tray.updateRegistration(await tray.bus.checkNameOwner(WATCHER_NAME));
     return tray;
   }
 
@@ -88,7 +78,13 @@ export class Tray {
     this.bus.close();
   }
 
-  private async register() {
+  private async updateRegistration(hasHost: boolean) {
+    if (!hasHost) {
+      console.warn(
+        "No tray host is running, so the tray item appears once one starts. On GNOME, enable the AppIndicator and KStatusNotifierItem Support extension.",
+      );
+      return;
+    }
     try {
       await this.bus.call({
         destination: WATCHER_NAME,
