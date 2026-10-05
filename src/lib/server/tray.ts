@@ -35,6 +35,8 @@ export async function createTray({
   bus.exportObject(
     ITEM_PATH,
     new StatusNotifierItem({
+      id: "toy-compositor",
+      title: "Toy Compositor",
       url,
       iconThemePath,
       iconName,
@@ -96,11 +98,15 @@ class StatusNotifierItem {
   private readonly onActivate: () => void;
 
   constructor({
+    id,
+    title,
     url,
     iconThemePath,
     iconName,
     onActivate,
   }: {
+    id: string;
+    title: string;
     url: string;
     iconThemePath: string;
     iconName: string;
@@ -111,8 +117,8 @@ class StatusNotifierItem {
       interface: "org.kde.StatusNotifierItem",
       properties: {
         Category: { signature: "s", value: "ApplicationStatus" },
-        Id: { signature: "s", value: "toy-compositor" },
-        Title: { signature: "s", value: "Toy Compositor" },
+        Id: { signature: "s", value: id },
+        Title: { signature: "s", value: title },
         Status: { signature: "s", value: "Active" },
         WindowId: { signature: "i", value: 0 },
         IconThemePath: { signature: "s", value: iconThemePath },
@@ -122,7 +128,7 @@ class StatusNotifierItem {
         AttentionIconName: { signature: "s", value: "" },
         ToolTip: {
           signature: "(sa(iiay)ss)",
-          value: ["", [], "Toy Compositor", url],
+          value: ["", [], title, url],
         },
         // A host that follows this opens the menu on a click, and one that
         // calls Activate instead runs `onActivate`.
