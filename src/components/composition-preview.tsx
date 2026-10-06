@@ -177,11 +177,11 @@ function PreviewClip({
     // Keeps the image's native drag and text selection out.
     onStart: (event) => event.preventDefault(),
     onDragStart: () =>
-      layerInteraction.startBoxEdit({ type: "move", id, clip }),
+      layerInteraction.startCanvasEdit({ type: "move", id, clip }),
     onDragMove: (_event, gesture) =>
-      layerInteraction.updateBoxEdit(toCanvasDelta(gesture)),
+      layerInteraction.updateCanvasEdit(toCanvasDelta(gesture)),
     onDragEnd: (_event, gesture) =>
-      layerInteraction.finishBoxEdit(toCanvasDelta(gesture)),
+      layerInteraction.finishCanvasEdit(toCanvasDelta(gesture)),
     onCancel: layerInteraction.cancelEdit,
   });
   const box = getPreviewBox({ clip, mediaInfoMap });

@@ -1,9 +1,9 @@
 import { useState } from "react";
 import {
-  applyBoxEdit,
-  type BoxEditDelta,
-  type BoxEditType,
-} from "../lib/box-edit";
+  applyCanvasEdit,
+  type CanvasEditDelta,
+  type CanvasEditType,
+} from "../lib/canvas-edit";
 import { applyClipEdit, type ClipEditType } from "../lib/clip-edit";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import type { Clip } from "../lib/project";
@@ -16,12 +16,12 @@ export type EditorSelection =
 
 type VisualClip = Exclude<Clip, { type: "audio" }>;
 
-/** A drag's draft, of the clip's timing on the timeline or its box on the preview. */
+/** A drag's draft, of the clip's timing in seconds or its placement in canvas pixels. */
 type ClipEdit =
   | { domain: "time"; type: ClipEditType; id: string; clip: Clip }
   | {
-      domain: "box";
-      type: BoxEditType;
+      domain: "canvas";
+      type: CanvasEditType;
       id: string;
       original: VisualClip;
       clip: Clip;
@@ -86,36 +86,36 @@ export function useLayerInteraction({
     commitEdit(edit.id, getEditedClip(edit, delta));
   }
 
-  function startBoxEdit({
+  function startCanvasEdit({
     type,
     id,
     clip,
   }: {
-    type: BoxEditType;
+    type: CanvasEditType;
     id: string;
     clip: VisualClip;
   }) {
     select({ type: "clip", id });
-    setEdit({ domain: "box", type, id, original: clip, clip });
+    setEdit({ domain: "canvas", type, id, original: clip, clip });
   }
 
-  function updateBoxEdit(delta: BoxEditDelta) {
-    if (edit?.domain !== "box") {
+  function updateCanvasEdit(delta: CanvasEditDelta) {
+    if (edit?.domain !== "canvas") {
       return;
     }
     setEdit({
       ...edit,
-      clip: applyBoxEdit(edit.original, { type: edit.type, delta }),
+      clip: applyCanvasEdit(edit.original, { type: edit.type, delta }),
     });
   }
 
-  function finishBoxEdit(delta: BoxEditDelta) {
-    if (edit?.domain !== "box") {
+  function finishCanvasEdit(delta: CanvasEditDelta) {
+    if (edit?.domain !== "canvas") {
       return;
     }
     commitEdit(
       edit.id,
-      applyBoxEdit(edit.original, { type: edit.type, delta }),
+      applyCanvasEdit(edit.original, { type: edit.type, delta }),
     );
   }
 
@@ -164,9 +164,9 @@ export function useLayerInteraction({
     startEdit,
     updateEdit,
     finishEdit,
-    startBoxEdit,
-    updateBoxEdit,
-    finishBoxEdit,
+    startCanvasEdit,
+    updateCanvasEdit,
+    finishCanvasEdit,
     cancelEdit: () => setEdit(undefined),
     handleRemoveShortcut,
   };

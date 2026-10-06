@@ -1,8 +1,8 @@
 import type { Clip } from "./project.ts";
 
-export type BoxEditType = "move";
+export type CanvasEditType = "move";
 
-export type BoxEditDelta = { x: number; y: number };
+export type CanvasEditDelta = { x: number; y: number };
 
 /**
  * The pointer's travel in canvas pixels moves what the clip places, rounded to
@@ -10,9 +10,9 @@ export type BoxEditDelta = { x: number; y: number };
  * clip's transform, which carries its crop with it, or a text or color clip's
  * box.
  */
-export function applyBoxEdit(
+export function applyCanvasEdit(
   clip: Exclude<Clip, { type: "audio" }>,
-  { type, delta }: { type: BoxEditType; delta: BoxEditDelta },
+  { type, delta }: { type: CanvasEditType; delta: CanvasEditDelta },
 ): Exclude<Clip, { type: "audio" }> {
   switch (type) {
     case "move": {
