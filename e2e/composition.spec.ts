@@ -185,6 +185,7 @@ test("drag a clip to move it on the composition preview", async ({
     exact: true,
   });
   const placed = image.locator("..");
+  await expect(placed).toHaveCSS("left", "420px");
 
   // Drag the unselected image, and see it selected and moving before release.
   await dragCanvasBy(
