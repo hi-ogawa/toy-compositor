@@ -66,9 +66,13 @@ export function CompositionPreview({
         ref={viewportRef}
         className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden"
         data-testid="composition-viewport"
-        // A click that no clip takes lands on empty space, inside the frame or
+        // A press that no clip takes lands on empty space, inside the frame or
         // outside it.
-        onClick={onClearSelection}
+        onPointerDown={(event) => {
+          if (event.button === 0) {
+            onClearSelection();
+          }
+        }}
       >
         <div
           className="relative shrink-0"
@@ -171,11 +175,14 @@ function PreviewClip({
     x: deltaX / scale,
     y: deltaY / scale,
   });
-  // A click without dragging selects through the wrapper's own click, which
-  // also follows a drag and must not reach the viewport's clearing click.
-  const moveRef = usePointerGesture({
-    // Keeps the image's native drag and text selection out.
-    onStart: (event) => event.preventDefault(),
+  const gestureRef = usePointerGesture({
+    onStart: (event) => {
+      // Keeps the image's native drag and text selection out, and the press
+      // from reaching the viewport, which would clear the selection.
+      event.preventDefault();
+      event.stopPropagation();
+    },
+    onClick: () => layerInteraction.select({ type: "clip", id }),
     onDragStart: () =>
       layerInteraction.startCanvasEdit({ type: "move", id, clip }),
     onDragMove: (_event, gesture) =>
@@ -194,17 +201,13 @@ function PreviewClip({
   };
   return (
     // The wrapper's children are absolutely positioned, so it takes no area
-    // itself and a click reaches it only from the clip's visible rectangle,
-    // where a later clip on top takes the click first.
+    // itself and a press reaches it only from the clip's visible rectangle,
+    // where a later clip on top takes the press first.
     <div
-      ref={moveRef}
+      ref={gestureRef}
       data-testid={testId}
       hidden={!visible}
       className="cursor-pointer"
-      onClick={(event) => {
-        event.stopPropagation();
-        layerInteraction.select({ type: "clip", id });
-      }}
     >
       {clip.type === "video" || clip.type === "image" ? (
         <CompositionMedia
