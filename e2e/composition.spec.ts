@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
 import { readJson } from "../src/utils/fs.ts";
 import {
@@ -141,6 +141,37 @@ test("edit the canvas in composition settings and save it", async ({
     canvas: { width: 800, height: 360, fps: 10, background: "#336699" },
     output: { start: 0, end: 1.1 },
   });
+});
+
+test("select a clip by clicking it on the composition preview", async ({
+  page,
+  editor,
+}) => {
+  // Open the project, whose tint sits over the video and whose title sits over
+  // the image's lower part.
+  await page.goto(editor.url);
+  const canvas = page.getByTestId("composition-canvas");
+  const outline = canvas.getByLabel("Selected layer outline");
+  await expectImageLoaded(
+    canvas.getByRole("img", { name: "Label backdrop", exact: true }),
+  );
+
+  // Click where only the video shows, and select it.
+  await clickCanvasAt(page, { x: 100, y: 50 });
+  await expect(outline).toBeVisible();
+  await expectInspectorFields(page, { x: "0", y: "0", "scale %": "200" });
+
+  // Click overlapping clips, and select the topmost one under the pointer.
+  await clickCanvasAt(page, { x: 100, y: 150 });
+  await expectInspectorFields(page, { x: "40", y: "100", width: "240" });
+  await clickCanvasAt(page, { x: 450, y: 250 });
+  await expectInspectorFields(page, { x: "420", y: "240", "scale %": "100" });
+  await clickCanvasAt(page, { x: 450, y: 280 });
+  await expectInspectorFields(page, { x: "420", y: "260", height: "50" });
+
+  // Click empty space outside the frame, and clear the selection.
+  await clickCanvasAt(page, { x: -20, y: 50 });
+  await expect(outline).toHaveCount(0);
 });
 
 test("compose a still project at its output time", async ({ page, editor }) => {
@@ -294,3 +325,14 @@ test("show the video frame nearest the source time in the preview, as the render
     )
     .toBe(29);
 });
+
+/** Click the composition preview at a point in canvas pixels. */
+async function clickCanvasAt(page: Page, { x, y }: { x: number; y: number }) {
+  const canvas = page.getByTestId("composition-canvas");
+  const box = (await canvas.boundingBox())!;
+  const width = await canvas.evaluate(
+    (element: HTMLElement) => element.offsetWidth,
+  );
+  const scale = box.width / width;
+  await page.mouse.click(box.x + x * scale, box.y + y * scale);
+}

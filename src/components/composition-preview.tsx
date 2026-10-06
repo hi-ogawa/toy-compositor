@@ -16,6 +16,8 @@ export function CompositionPreview({
   time,
   runtime,
   resolveMediaUrl,
+  onClipSelect,
+  onClearSelection,
 }: {
   clientStorage: ProjectClientStorage;
   project: EditorProject;
@@ -23,6 +25,8 @@ export function CompositionPreview({
   time: number;
   runtime: EditorRuntime;
   resolveMediaUrl: (src: string) => string;
+  onClipSelect: (id: string) => void;
+  onClearSelection: () => void;
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const viewportRef = useResizeObserver((element) =>
@@ -58,6 +62,9 @@ export function CompositionPreview({
         ref={viewportRef}
         className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden"
         data-testid="composition-viewport"
+        // A click that no clip takes lands on empty space, inside the frame or
+        // outside it.
+        onClick={onClearSelection}
       >
         <div
           className="relative shrink-0"
@@ -99,6 +106,7 @@ export function CompositionPreview({
                     testId={`composition-layer-${index}-clip-${clipIndex}`}
                     mediaInfoMap={project.media}
                     resolveMediaUrl={resolveMediaUrl}
+                    onSelect={() => onClipSelect(clip.id)}
                   />
                 );
               }),
@@ -131,6 +139,7 @@ function PreviewClip({
   testId,
   mediaInfoMap,
   resolveMediaUrl,
+  onSelect,
 }: {
   clip: Exclude<Clip, { type: "audio" }>;
   /** The layer's name, which labels a video. */
@@ -142,6 +151,7 @@ function PreviewClip({
   testId: string;
   mediaInfoMap: Project["media"];
   resolveMediaUrl: (src: string) => string;
+  onSelect: () => void;
 }) {
   const box = getPreviewBox({ clip, mediaInfoMap });
   const style: CSSProperties = {
@@ -152,7 +162,18 @@ function PreviewClip({
     height: box.height,
   };
   return (
-    <div data-testid={testId} hidden={!visible}>
+    // The wrapper's children are absolutely positioned, so it takes no area
+    // itself and a click reaches it only from the clip's visible rectangle,
+    // where a later clip on top takes the click first.
+    <div
+      data-testid={testId}
+      hidden={!visible}
+      className="cursor-pointer"
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect();
+      }}
+    >
       {clip.type === "video" || clip.type === "image" ? (
         <CompositionMedia
           clip={clip}
