@@ -180,7 +180,7 @@ test("drag a clip to move it on the composition preview", async ({
   page,
   editor,
 }) => {
-  // Open the project, whose title sits over the image's upper part.
+  // Open the project, whose title covers a band across the image.
   await page.goto(editor.url);
   const canvas = page.getByTestId("composition-canvas");
   const image = canvas.getByRole("img", {
