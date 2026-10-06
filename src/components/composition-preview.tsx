@@ -4,7 +4,7 @@ import { useResizeObserver } from "../hooks/use-resize-observer";
 import type { ProjectClientStorage } from "../lib/client-storage";
 import { measureFontMetrics } from "../lib/font-metrics";
 import { getPictureRange, getVisibleBox } from "../lib/layout";
-import type { Box, Clip, Project, TextClip } from "../lib/project";
+import type { Box, Project, TextClip, VisualClip } from "../lib/project";
 import type { EditorRuntime, EditorProject } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
 import { cn } from "./ui/utils";
@@ -147,7 +147,7 @@ function PreviewClip({
   scale,
   layerInteraction,
 }: {
-  clip: Exclude<Clip, { type: "audio" }>;
+  clip: VisualClip;
   /** The layer's name, which labels a video. */
   name: string;
   visible: boolean;
@@ -242,7 +242,7 @@ function getPreviewBox({
   clip,
   mediaInfoMap,
 }: {
-  clip: Exclude<Clip, { type: "audio" }>;
+  clip: VisualClip;
   mediaInfoMap: Project["media"];
 }): Box {
   switch (clip.type) {

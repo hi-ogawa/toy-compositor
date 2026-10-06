@@ -7,15 +7,13 @@ import {
   type ClipEditType,
 } from "../lib/clip-edit";
 import { matchKeyboardEvent } from "../lib/keyboard";
-import type { Clip } from "../lib/project";
+import type { Clip, VisualClip } from "../lib/project";
 import { findClip, type EditorRuntime, type EditorState } from "../lib/runtime";
 
 export type EditorSelection =
   | { type: "output" }
   | { type: "layer"; id: string }
   | { type: "clip"; id: string };
-
-type VisualClip = Exclude<Clip, { type: "audio" }>;
 
 /** A drag's draft, of the clip's timing in seconds or its placement in canvas pixels. */
 type ClipEdit =

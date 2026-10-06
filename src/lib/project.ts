@@ -122,6 +122,9 @@ export type Layer = {
 
 export type Clip = VideoClip | AudioClip | ImageClip | TextClip | ColorClip;
 
+/** A clip that draws a picture, which every type but audio does. */
+export type VisualClip = Exclude<Clip, { type: "audio" }>;
+
 export type Box = { x: number; y: number; width: number; height: number };
 
 /** Where a media clip's whole source goes: its top-left corner in canvas pixels, at a uniform scale. */

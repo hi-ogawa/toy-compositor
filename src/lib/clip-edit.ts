@@ -1,6 +1,6 @@
 import { clamp } from "../utils/math.ts";
 import { getClipRange } from "./layout.ts";
-import type { Clip, Project } from "./project.ts";
+import type { Clip, Project, VisualClip } from "./project.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 
 export type ClipEditType = "move" | "trim-start" | "trim-end";
@@ -98,9 +98,9 @@ export type CanvasEditDelta = { x: number; y: number };
  * box.
  */
 export function applyCanvasEdit(
-  clip: Exclude<Clip, { type: "audio" }>,
+  clip: VisualClip,
   { type, delta }: { type: CanvasEditType; delta: CanvasEditDelta },
-): Exclude<Clip, { type: "audio" }> {
+): VisualClip {
   switch (type) {
     case "move": {
       const x = Math.round(delta.x);
