@@ -152,9 +152,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
                 time={state.playhead}
                 runtime={runtime}
                 resolveMediaUrl={project.resolveMediaUrl}
-                onClipSelect={(id) =>
-                  layerInteraction.select({ type: "clip", id })
-                }
+                layerInteraction={layerInteraction}
                 onClearSelection={clearSelection}
               />
             }

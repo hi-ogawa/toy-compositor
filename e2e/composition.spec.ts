@@ -4,6 +4,7 @@ import { readJson } from "../src/utils/fs.ts";
 import {
   clickCanvasAt,
   commitInspectorField,
+  dragCanvasBy,
   expectImageLoaded,
   expectInspectorFields,
   expectInspectorTitle,
@@ -170,6 +171,66 @@ test("select a clip by clicking it on the composition preview", async ({
   // Click empty space outside the frame, and clear the selection.
   await clickCanvasAt(page, { x: -20, y: 50 });
   await expect(outline).toHaveCount(0);
+});
+
+test("drag a clip to move it on the composition preview", async ({
+  page,
+  editor,
+}) => {
+  // Open the project.
+  await page.goto(editor.url);
+  const canvas = page.getByTestId("composition-canvas");
+  const image = canvas.getByRole("img", {
+    name: "Label backdrop",
+    exact: true,
+  });
+  const placed = image.locator("..");
+  await expect(placed).toHaveCSS("left", "420px");
+
+  // Drag the unselected image, and see it selected and moving before release.
+  await dragCanvasBy(
+    page,
+    { x: 450, y: 250 },
+    { deltaX: 40, deltaY: 20, release: false },
+  );
+  await expect(placed).toHaveCSS("left", "460px");
+  await expect(placed).toHaveCSS("top", "260px");
+  await expect(canvas.getByLabel("Selected layer outline")).toBeVisible();
+  await expectInspectorTitle(page, { name: "Label backdrop" });
+  await page.mouse.up();
+  await expectInspectorFields(page, { x: "460", y: "260" });
+
+  // Press Escape mid-drag, and the image returns to where it was.
+  await dragCanvasBy(
+    page,
+    { x: 500, y: 330 },
+    { deltaX: 30, deltaY: 10, release: false },
+  );
+  await expect(placed).toHaveCSS("left", "490px");
+  await page.keyboard.press("Escape");
+  await expect(placed).toHaveCSS("left", "460px");
+  await page.mouse.up();
+  await expectInspectorFields(page, { x: "460", y: "260" });
+
+  // Drag from where the title covers the selected image, and move the title,
+  // the topmost clip under the pointer, as a click there would select it.
+  await dragCanvasBy(page, { x: 470, y: 280 }, { deltaX: -20, deltaY: -10 });
+  await expectInspectorTitle(page, { name: "Title" });
+  await expectInspectorFields(page, { x: "400", y: "250" });
+
+  // Save, and the project file has both new positions.
+  const save = page.getByTestId("editor-save-button");
+  await save.click();
+  await expect(save).toHaveAttribute("data-status", "saved");
+  expect(await readJson(editor.projectFile)).toMatchObject({
+    layers: [
+      {},
+      {},
+      { clips: [{ transform: { x: 460, y: 260 } }] },
+      { clips: [{ box: { x: 400, y: 250 } }] },
+      {},
+    ],
+  });
 });
 
 test("compose a still project at its output time", async ({ page, editor }) => {

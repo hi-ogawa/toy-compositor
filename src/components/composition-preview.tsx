@@ -1,13 +1,17 @@
 import { useState, type CSSProperties } from "react";
+import { usePointerGesture } from "../hooks/use-pointer-gesture";
 import { useResizeObserver } from "../hooks/use-resize-observer";
 import type { ProjectClientStorage } from "../lib/client-storage";
 import { measureFontMetrics } from "../lib/font-metrics";
 import { getPictureRange, getVisibleBox } from "../lib/layout";
-import type { Box, Clip, Project, TextClip } from "../lib/project";
+import type { Box, Project, TextClip, VisualClip } from "../lib/project";
 import type { EditorRuntime, EditorProject } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
 import { cn } from "./ui/utils";
-import type { EditorSelection } from "./use-layer-interaction";
+import type {
+  EditorSelection,
+  LayerInteraction,
+} from "./use-layer-interaction";
 
 export function CompositionPreview({
   clientStorage,
@@ -16,7 +20,7 @@ export function CompositionPreview({
   time,
   runtime,
   resolveMediaUrl,
-  onClipSelect,
+  layerInteraction,
   onClearSelection,
 }: {
   clientStorage: ProjectClientStorage;
@@ -25,7 +29,7 @@ export function CompositionPreview({
   time: number;
   runtime: EditorRuntime;
   resolveMediaUrl: (src: string) => string;
-  onClipSelect: (id: string) => void;
+  layerInteraction: LayerInteraction;
   onClearSelection: () => void;
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -62,9 +66,13 @@ export function CompositionPreview({
         ref={viewportRef}
         className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden"
         data-testid="composition-viewport"
-        // A click that no clip takes lands on empty space, inside the frame or
+        // A press that no clip takes lands on empty space, inside the frame or
         // outside it.
-        onClick={onClearSelection}
+        onPointerDown={(event) => {
+          if (event.button === 0) {
+            onClearSelection();
+          }
+        }}
       >
         <div
           className="relative shrink-0"
@@ -84,7 +92,7 @@ export function CompositionPreview({
             }}
           >
             {/* Every clip stays mounted, so media is ready when playback reaches it. */}
-            {project.layers.flatMap((layer, index) =>
+            {layerInteraction.layers.flatMap((layer, index) =>
               layer.clips.map((clip, clipIndex) => {
                 if (clip.type === "audio") {
                   return undefined;
@@ -106,7 +114,8 @@ export function CompositionPreview({
                     testId={`composition-layer-${index}-clip-${clipIndex}`}
                     mediaInfoMap={project.media}
                     resolveMediaUrl={resolveMediaUrl}
-                    onSelect={() => onClipSelect(clip.id)}
+                    scale={scale}
+                    layerInteraction={layerInteraction}
                   />
                 );
               }),
@@ -139,9 +148,10 @@ function PreviewClip({
   testId,
   mediaInfoMap,
   resolveMediaUrl,
-  onSelect,
+  scale,
+  layerInteraction,
 }: {
-  clip: Exclude<Clip, { type: "audio" }>;
+  clip: VisualClip;
   /** The layer's name, which labels a video. */
   name: string;
   visible: boolean;
@@ -151,8 +161,36 @@ function PreviewClip({
   testId: string;
   mediaInfoMap: Project["media"];
   resolveMediaUrl: (src: string) => string;
-  onSelect: () => void;
+  /** The preview's scale, which converts screen pixels to canvas pixels. */
+  scale: number;
+  layerInteraction: LayerInteraction;
 }) {
+  const toCanvasDelta = ({
+    deltaX,
+    deltaY,
+  }: {
+    deltaX: number;
+    deltaY: number;
+  }) => ({
+    x: deltaX / scale,
+    y: deltaY / scale,
+  });
+  const gestureRef = usePointerGesture({
+    onStart: (event) => {
+      // Keeps the image's native drag and text selection out, and the press
+      // from reaching the viewport, which would clear the selection.
+      event.preventDefault();
+      event.stopPropagation();
+    },
+    onClick: () => layerInteraction.select({ type: "clip", id }),
+    onDragStart: () =>
+      layerInteraction.startCanvasEdit({ type: "move", id, clip }),
+    onDragMove: (_event, gesture) =>
+      layerInteraction.updateCanvasEdit(toCanvasDelta(gesture)),
+    onDragEnd: (_event, gesture) =>
+      layerInteraction.finishCanvasEdit(toCanvasDelta(gesture)),
+    onCancel: layerInteraction.cancelEdit,
+  });
   const box = getPreviewBox({ clip, mediaInfoMap });
   const style: CSSProperties = {
     position: "absolute",
@@ -163,16 +201,13 @@ function PreviewClip({
   };
   return (
     // The wrapper's children are absolutely positioned, so it takes no area
-    // itself and a click reaches it only from the clip's visible rectangle,
-    // where a later clip on top takes the click first.
+    // itself and a press reaches it only from the clip's visible rectangle,
+    // where a later clip on top takes the press first.
     <div
+      ref={gestureRef}
       data-testid={testId}
       hidden={!visible}
       className="cursor-pointer"
-      onClick={(event) => {
-        event.stopPropagation();
-        onSelect();
-      }}
     >
       {clip.type === "video" || clip.type === "image" ? (
         <CompositionMedia
@@ -210,7 +245,7 @@ function getPreviewBox({
   clip,
   mediaInfoMap,
 }: {
-  clip: Exclude<Clip, { type: "audio" }>;
+  clip: VisualClip;
   mediaInfoMap: Project["media"];
 }): Box {
   switch (clip.type) {

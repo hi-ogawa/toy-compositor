@@ -1,8 +1,10 @@
 import { clamp } from "../utils/math.ts";
 import { getClipRange } from "./layout.ts";
-import type { Clip, Project } from "./project.ts";
+import type { Clip, Project, VisualClip } from "./project.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 
+// TODO(time-edit): Rename to `TimeEditType`, with `applyClipEdit` and the time
+// edit methods of `useLayerInteraction`, because canvas edits are clip edits too.
 export type ClipEditType = "move" | "trim-start" | "trim-end";
 
 /**
@@ -82,6 +84,42 @@ export function applyClipEdit(
         end: roundToMillisecond(
           Math.max(range.start + frame, snap(range.end + delta)),
         ),
+      };
+    }
+  }
+}
+
+export type CanvasEditType = "move";
+
+export type CanvasEditDelta = { x: number; y: number };
+
+/**
+ * The pointer's travel in canvas pixels moves what the clip places, rounded to
+ * whole canvas pixels as the inspector's position fields are: a video or image
+ * clip's transform, which carries its crop with it, or a text or color clip's
+ * box.
+ */
+export function applyCanvasEdit(
+  clip: VisualClip,
+  { type, delta }: { type: CanvasEditType; delta: CanvasEditDelta },
+): VisualClip {
+  switch (type) {
+    case "move": {
+      const x = Math.round(delta.x);
+      const y = Math.round(delta.y);
+      if (clip.type === "video" || clip.type === "image") {
+        return {
+          ...clip,
+          transform: {
+            ...clip.transform,
+            x: clip.transform.x + x,
+            y: clip.transform.y + y,
+          },
+        };
+      }
+      return {
+        ...clip,
+        box: { ...clip.box, x: clip.box.x + x, y: clip.box.y + y },
       };
     }
   }

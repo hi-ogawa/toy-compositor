@@ -28,7 +28,7 @@ The preview time decides which clips show and which frame each video shows. A cl
 
 Every clip stays mounted and is hidden outside its range or on a `hidden` layer, so its media is loaded before playback reaches it. Clips draw in [layer order](project-format.md#layers), so later layers sit on top. Audio clips draw nothing, and their sound plays on the transport, described below.
 
-The selected clip gets a read-only outline, drawn as a second div with the same rectangle. Clicking the preview selects the topmost visible clip under the pointer, because the browser hits each clip's own element in the same layer order, and clicking empty space clears the selection.
+The selected clip gets a read-only outline, drawn as a second div with the same rectangle. Clicking the preview selects the topmost visible clip under the pointer, because the browser hits each clip's own element in the same layer order, and clicking empty space clears the selection. Dragging selects and moves that same clip by the pointer's travel divided by the preview scale. Like a timeline drag, it shows as a draft and commits on release, so playback reschedules once.
 
 ## Play Along the Transport
 

@@ -1,7 +1,13 @@
 import { useState } from "react";
-import { applyClipEdit, type ClipEditType } from "../lib/clip-edit";
+import {
+  applyCanvasEdit,
+  applyClipEdit,
+  type CanvasEditDelta,
+  type CanvasEditType,
+  type ClipEditType,
+} from "../lib/clip-edit";
 import { matchKeyboardEvent } from "../lib/keyboard";
-import type { Clip } from "../lib/project";
+import type { Clip, VisualClip } from "../lib/project";
 import { findClip, type EditorRuntime, type EditorState } from "../lib/runtime";
 
 export type EditorSelection =
@@ -9,11 +15,16 @@ export type EditorSelection =
   | { type: "layer"; id: string }
   | { type: "clip"; id: string };
 
-type ClipEdit = {
-  type: ClipEditType;
-  id: string;
-  clip: Clip;
-};
+/** A drag's draft, of the clip's timing in seconds or its placement in canvas pixels. */
+type ClipEdit =
+  | { domain: "time"; type: ClipEditType; id: string; clip: Clip }
+  | {
+      domain: "canvas";
+      type: CanvasEditType;
+      id: string;
+      original: VisualClip;
+      clip: Clip;
+    };
 
 export type LayerInteraction = ReturnType<typeof useLayerInteraction>;
 
@@ -45,10 +56,13 @@ export function useLayerInteraction({
 
   function startEdit({ type, id }: { type: ClipEditType; id: string }) {
     select({ type: "clip", id });
-    setEdit({ type, id, clip: findClip(layers, id)!.clip });
+    setEdit({ domain: "time", type, id, clip: findClip(layers, id)!.clip });
   }
 
-  function getEditedClip(edit: ClipEdit, delta: number): Clip {
+  function getEditedClip(
+    edit: Extract<ClipEdit, { domain: "time" }>,
+    delta: number,
+  ): Clip {
     return applyClipEdit(findClip(layers, edit.id)!.clip, {
       type: edit.type,
       delta,
@@ -58,21 +72,55 @@ export function useLayerInteraction({
   }
 
   function updateEdit(delta: number) {
-    if (!edit) {
+    if (edit?.domain !== "time") {
       return;
     }
     setEdit({ ...edit, clip: getEditedClip(edit, delta) });
   }
 
   function finishEdit(delta: number) {
-    if (!edit) {
+    if (edit?.domain !== "time") {
       return;
     }
-    setEdit(undefined);
-    runtime.updateClip({
-      id: edit.id,
-      update: getEditedClip(edit, delta),
+    commitEdit(edit.id, getEditedClip(edit, delta));
+  }
+
+  function startCanvasEdit({
+    type,
+    id,
+    clip,
+  }: {
+    type: CanvasEditType;
+    id: string;
+    clip: VisualClip;
+  }) {
+    select({ type: "clip", id });
+    setEdit({ domain: "canvas", type, id, original: clip, clip });
+  }
+
+  function updateCanvasEdit(delta: CanvasEditDelta) {
+    if (edit?.domain !== "canvas") {
+      return;
+    }
+    setEdit({
+      ...edit,
+      clip: applyCanvasEdit(edit.original, { type: edit.type, delta }),
     });
+  }
+
+  function finishCanvasEdit(delta: CanvasEditDelta) {
+    if (edit?.domain !== "canvas") {
+      return;
+    }
+    commitEdit(
+      edit.id,
+      applyCanvasEdit(edit.original, { type: edit.type, delta }),
+    );
+  }
+
+  function commitEdit(id: string, clip: Clip) {
+    setEdit(undefined);
+    runtime.updateClip({ id, update: clip });
   }
 
   /** Removes the selected layer, or the selected clip's layer, the only removal the editor has. */
@@ -115,6 +163,9 @@ export function useLayerInteraction({
     startEdit,
     updateEdit,
     finishEdit,
+    startCanvasEdit,
+    updateCanvasEdit,
+    finishCanvasEdit,
     cancelEdit: () => setEdit(undefined),
     handleRemoveShortcut,
   };
