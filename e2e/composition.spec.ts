@@ -150,8 +150,7 @@ test("select a clip by clicking it on the composition preview", async ({
   page,
   editor,
 }) => {
-  // Open the project, where every clip sits over the full-frame video, the tint
-  // covers part of its left side, and the title covers a band across the image.
+  // Open the project.
   await page.goto(editor.url);
   const canvas = page.getByTestId("composition-canvas");
   const outline = canvas.getByLabel("Selected layer outline");
@@ -161,9 +160,7 @@ test("select a clip by clicking it on the composition preview", async ({
   await expect(outline).toBeVisible();
   await expectInspectorTitle(page, { name: "Test pattern" });
 
-  // Click overlapping clips, and select the topmost one under the pointer: the
-  // tint over the video, the image above the title's band, and the title over
-  // the image.
+  // Click where clips overlap, and select the topmost one under the pointer.
   await clickCanvasAt(page, { x: 100, y: 150 });
   await expectInspectorTitle(page, { name: "Tint" });
   await clickCanvasAt(page, { x: 450, y: 250 });
