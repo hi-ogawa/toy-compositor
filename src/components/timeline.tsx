@@ -10,7 +10,7 @@ import { useState, type ReactNode } from "react";
 import { usePointerDrag } from "../hooks/use-pointer-drag";
 import { usePointerGesture } from "../hooks/use-pointer-gesture";
 import type { ProjectClientStorage } from "../lib/client-storage";
-import type { ClipEditType } from "../lib/clip-edit";
+import type { TimeEditType } from "../lib/clip-edit";
 import {
   getClipRange,
   getPictureRange,
@@ -468,11 +468,11 @@ function TimelineClip({
   const moveRef = usePointerGesture({
     onStart: (event) => event.preventDefault(),
     onDragStart: () =>
-      layerInteraction.startEdit({ type: "move", id: clip.id }),
+      layerInteraction.startTimeEdit({ type: "move", id: clip.id }),
     onDragMove: (_event, { deltaX }) =>
-      layerInteraction.updateEdit(pixelsToSeconds(deltaX)),
+      layerInteraction.updateTimeEdit(pixelsToSeconds(deltaX)),
     onDragEnd: (_event, { deltaX }) =>
-      layerInteraction.finishEdit(pixelsToSeconds(deltaX)),
+      layerInteraction.finishTimeEdit(pixelsToSeconds(deltaX)),
     onCancel: layerInteraction.cancelEdit,
   });
   const picture = getPictureRange(clip);
@@ -592,7 +592,7 @@ function ClipTrimHandle({
   timeline,
   layerInteraction,
 }: {
-  type: Exclude<ClipEditType, "move">;
+  type: Exclude<TimeEditType, "move">;
   id: string;
   testId: string;
   timeline: TimelineView;
@@ -603,12 +603,12 @@ function ClipTrimHandle({
     onStart: (event) => {
       event.preventDefault();
       event.stopPropagation();
-      layerInteraction.startEdit({ type, id });
+      layerInteraction.startTimeEdit({ type, id });
     },
     onMove: (_event, { deltaX }) =>
-      layerInteraction.updateEdit(pixelsToSeconds(deltaX)),
+      layerInteraction.updateTimeEdit(pixelsToSeconds(deltaX)),
     onEnd: (_event, { deltaX }) =>
-      layerInteraction.finishEdit(pixelsToSeconds(deltaX)),
+      layerInteraction.finishTimeEdit(pixelsToSeconds(deltaX)),
     onCancel: layerInteraction.cancelEdit,
   });
   return (

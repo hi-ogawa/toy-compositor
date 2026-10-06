@@ -1,10 +1,10 @@
 import { useState } from "react";
 import {
   applyCanvasEdit,
-  applyClipEdit,
+  applyTimeEdit,
   type CanvasEditDelta,
   type CanvasEditType,
-  type ClipEditType,
+  type TimeEditType,
 } from "../lib/clip-edit";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import type { Clip, VisualClip } from "../lib/project";
@@ -17,7 +17,7 @@ export type EditorSelection =
 
 /** A drag's draft, of the clip's timing in seconds or its placement in canvas pixels. */
 type ClipEdit =
-  | { domain: "time"; type: ClipEditType; id: string; clip: Clip }
+  | { domain: "time"; type: TimeEditType; id: string; clip: Clip }
   | {
       domain: "canvas";
       type: CanvasEditType;
@@ -54,16 +54,16 @@ export function useLayerInteraction({
     setSelection(selection);
   }
 
-  function startEdit({ type, id }: { type: ClipEditType; id: string }) {
+  function startTimeEdit({ type, id }: { type: TimeEditType; id: string }) {
     select({ type: "clip", id });
     setEdit({ domain: "time", type, id, clip: findClip(layers, id)!.clip });
   }
 
-  function getEditedClip(
+  function getTimeEditedClip(
     edit: Extract<ClipEdit, { domain: "time" }>,
     delta: number,
   ): Clip {
-    return applyClipEdit(findClip(layers, edit.id)!.clip, {
+    return applyTimeEdit(findClip(layers, edit.id)!.clip, {
       type: edit.type,
       delta,
       fps: canvas.fps,
@@ -71,18 +71,18 @@ export function useLayerInteraction({
     });
   }
 
-  function updateEdit(delta: number) {
+  function updateTimeEdit(delta: number) {
     if (edit?.domain !== "time") {
       return;
     }
-    setEdit({ ...edit, clip: getEditedClip(edit, delta) });
+    setEdit({ ...edit, clip: getTimeEditedClip(edit, delta) });
   }
 
-  function finishEdit(delta: number) {
+  function finishTimeEdit(delta: number) {
     if (edit?.domain !== "time") {
       return;
     }
-    commitEdit(edit.id, getEditedClip(edit, delta));
+    commitEdit(edit.id, getTimeEditedClip(edit, delta));
   }
 
   function startCanvasEdit({
@@ -160,9 +160,9 @@ export function useLayerInteraction({
       setEdit(undefined);
       setSelection(undefined);
     },
-    startEdit,
-    updateEdit,
-    finishEdit,
+    startTimeEdit,
+    updateTimeEdit,
+    finishTimeEdit,
     startCanvasEdit,
     updateCanvasEdit,
     finishCanvasEdit,
