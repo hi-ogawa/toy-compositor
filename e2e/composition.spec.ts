@@ -2,9 +2,11 @@ import { expect } from "@playwright/test";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
 import { readJson } from "../src/utils/fs.ts";
 import {
+  clickCanvasAt,
   commitInspectorField,
   expectImageLoaded,
   expectInspectorFields,
+  expectInspectorTitle,
   clickTimelineButton,
   getInspectorField,
   seekTimelineByPixels,
@@ -141,6 +143,33 @@ test("edit the canvas in composition settings and save it", async ({
     canvas: { width: 800, height: 360, fps: 10, background: "#336699" },
     output: { start: 0, end: 1.1 },
   });
+});
+
+test("select a clip by clicking it on the composition preview", async ({
+  page,
+  editor,
+}) => {
+  // Open the project.
+  await page.goto(editor.url);
+  const canvas = page.getByTestId("composition-canvas");
+  const outline = canvas.getByLabel("Selected layer outline");
+
+  // Click where only the video shows, and select it.
+  await clickCanvasAt(page, { x: 100, y: 50 });
+  await expect(outline).toBeVisible();
+  await expectInspectorTitle(page, { name: "Test pattern" });
+
+  // Click where clips overlap, and select the topmost one under the pointer.
+  await clickCanvasAt(page, { x: 100, y: 150 });
+  await expectInspectorTitle(page, { name: "Tint" });
+  await clickCanvasAt(page, { x: 450, y: 250 });
+  await expectInspectorTitle(page, { name: "Label backdrop" });
+  await clickCanvasAt(page, { x: 450, y: 280 });
+  await expectInspectorTitle(page, { name: "Title" });
+
+  // Click empty space outside the frame, and clear the selection.
+  await clickCanvasAt(page, { x: -20, y: 50 });
+  await expect(outline).toHaveCount(0);
 });
 
 test("compose a still project at its output time", async ({ page, editor }) => {
