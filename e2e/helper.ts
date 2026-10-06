@@ -151,6 +151,24 @@ async function getCanvasPagePoint(page: Page, { x, y }: CanvasPoint) {
   return { x: bounds.x + x * scale, y: bounds.y + y * scale };
 }
 
+/** Expect the inspector's title to name what it inspects, such as a clip's layer. */
+export async function expectInspectorTitle(
+  page: Page,
+  { name }: { name: string },
+) {
+  await test.step(
+    `Expect the inspector to show ${name}`,
+    async () => {
+      await expect(
+        page
+          .getByTestId("inspector")
+          .getByRole("heading", { name, exact: true }),
+      ).toBeVisible();
+    },
+    { box: true },
+  );
+}
+
 /** Locate an inspector field by its label. */
 export function getInspectorField(page: Page, { name }: { name: string }) {
   return page

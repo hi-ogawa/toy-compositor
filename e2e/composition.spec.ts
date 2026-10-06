@@ -6,6 +6,7 @@ import {
   commitInspectorField,
   expectImageLoaded,
   expectInspectorFields,
+  expectInspectorTitle,
   clickTimelineButton,
   getInspectorField,
   seekTimelineByPixels,
@@ -160,15 +161,15 @@ test("select a clip by clicking it on the composition preview", async ({
   // Click where only the video shows, and select it.
   await clickCanvasAt(page, { x: 100, y: 50 });
   await expect(outline).toBeVisible();
-  await expectInspectorFields(page, { x: "0", y: "0", "scale %": "200" });
+  await expectInspectorTitle(page, { name: "Test pattern" });
 
   // Click overlapping clips, and select the topmost one under the pointer.
   await clickCanvasAt(page, { x: 100, y: 150 });
-  await expectInspectorFields(page, { x: "40", y: "100", width: "240" });
+  await expectInspectorTitle(page, { name: "Tint" });
   await clickCanvasAt(page, { x: 450, y: 250 });
-  await expectInspectorFields(page, { x: "420", y: "240", "scale %": "100" });
+  await expectInspectorTitle(page, { name: "Label backdrop" });
   await clickCanvasAt(page, { x: 450, y: 280 });
-  await expectInspectorFields(page, { x: "420", y: "260", height: "50" });
+  await expectInspectorTitle(page, { name: "Title" });
 
   // Click empty space outside the frame, and clear the selection.
   await clickCanvasAt(page, { x: -20, y: 50 });
