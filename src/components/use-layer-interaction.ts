@@ -1,10 +1,11 @@
 import { useState } from "react";
 import {
   applyCanvasEdit,
+  applyClipEdit,
   type CanvasEditDelta,
   type CanvasEditType,
-} from "../lib/canvas-edit";
-import { applyClipEdit, type ClipEditType } from "../lib/clip-edit";
+  type ClipEditType,
+} from "../lib/clip-edit";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import type { Clip } from "../lib/project";
 import { findClip, type EditorRuntime, type EditorState } from "../lib/runtime";
