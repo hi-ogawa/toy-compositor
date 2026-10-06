@@ -5,7 +5,6 @@ import { defineConfig, type Plugin } from "vite";
 
 /** Build the editor as a static site over the synthetic sample, with no server. */
 export default defineConfig({
-  base: "./",
   plugins: [react(), tailwindcss(), demoApiClientPlugin()],
   build: { outDir: "dist/demo" },
 });
