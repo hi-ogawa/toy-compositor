@@ -9,6 +9,8 @@ toy-compositor --help  # commands, and paths of the bundled docs and sample
 
 On Linux, `toy-compositor install-desktop` adds an app launcher entry that runs `toy-compositor serve --open`, which opens the editor in the browser and exits shortly after the last editor tab closes. `toy-compositor status` shows whether the editor server is running, and `toy-compositor stop` stops it.
 
+`toy-compositor install-desktop --app` makes the entry run `toy-compositor serve --open --app`, which opens the editor in a Chrome app window instead, without tabs or an address bar. The window runs in a Chrome instance with its own profile under the user config directory, so the desktop shows it under the launcher entry's name and icon rather than as part of the browser, and closing it closes the editor. This mode needs `google-chrome-stable`, and `upgrade` keeps it when it rewrites the entry.
+
 `toy-compositor upgrade` installs the latest main build, rewrites the launcher entry, and stops the running editor server, so the next launch uses the new build. It also takes a pkg.pr.new URL or a tarball to install another build, such as a pull request's.
 
 The editor and the renderer rewrite project files from an older build to the current format when they open them and report what changed, or reject one with a message naming the command that fixes it, such as `update-media`. `toy-compositor migrate <project.json...>` rewrites them to the current format, for example before your own scripts read them.

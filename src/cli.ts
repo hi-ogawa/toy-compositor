@@ -15,6 +15,10 @@ import { updateProjectMedia } from "./lib/media-info.ts";
 import { migrateAndValidateProject, type SavedProject } from "./lib/migrate.ts";
 import { renderProject } from "./lib/render/render.ts";
 import { createLiveConnections } from "./lib/server/live.ts";
+import {
+  APP_WINDOW_WM_CLASS,
+  openInAppWindow,
+} from "./lib/server/open-app-window.ts";
 import { openWithDefaultApp } from "./lib/server/open-default.ts";
 import { createProjectRegistry, getConfigDir } from "./lib/server/registry.ts";
 import {
@@ -33,16 +37,18 @@ const UPGRADE_SOURCE = "https://pkg.pr.new/hi-ogawa/toy-compositor@main";
 
 const HELP = `\
 Usage:
-  toy-compositor serve [directory] [--port <port>] [--open]
+  toy-compositor serve [directory] [--port <port>] [--open] [--app]
       Open the editor for the project folders, adding directory to them first.
       --open opens it in the browser, reusing a server already on the port,
-      and exits shortly after the last editor tab closes
+      and exits shortly after the last editor tab closes.
+      --app opens it in a Chrome app window of its own instead (Linux)
   toy-compositor stop [--port <port>]
       Stop the running editor server, leaving another process on the port alone
   toy-compositor status [--port <port>]
       Show whether the editor server is running
-  toy-compositor install-desktop
-      Add an app launcher entry that runs serve --open (Linux)
+  toy-compositor install-desktop [--app]
+      Add an app launcher entry that runs serve --open (Linux).
+      --app makes it run serve --open --app, and groups the window under the entry
   toy-compositor upgrade [source] [--port <port>]
       Install a new build globally with pnpm, rewrite the app launcher entry,
       and stop the running editor server, so the next launch uses the new build.
@@ -72,6 +78,7 @@ async function main() {
     options: {
       port: { type: "string", default: "5190" },
       open: { type: "boolean" },
+      app: { type: "boolean" },
       "dry-run": { type: "boolean" },
       check: { type: "boolean" },
       help: { type: "boolean", short: "h" },
@@ -84,6 +91,7 @@ async function main() {
         directory: args[0],
         port: Number(values.port),
         open: values.open,
+        app: values.app,
       });
       break;
     }
@@ -107,10 +115,16 @@ async function main() {
     }
     case "install-desktop": {
       const iconFile = path.join(getClientDir(), "icon.svg");
-      const entryFile = await installDesktopEntry({
-        command: [process.execPath, import.meta.filename, "serve", "--open"],
-        iconFile,
-      });
+      const command = [process.execPath, import.meta.filename, "serve"];
+      const entryFile = await installDesktopEntry(
+        values.app
+          ? {
+              command: [...command, "--open", "--app"],
+              iconFile,
+              startupWmClass: APP_WINDOW_WM_CLASS,
+            }
+          : { command: [...command, "--open"], iconFile },
+      );
       console.log(`Installed ${entryFile}`);
       break;
     }
@@ -174,10 +188,12 @@ async function runServe({
   directory,
   port,
   open,
+  app,
 }: {
   directory?: string;
   port: number;
   open?: boolean;
+  app?: boolean;
 }) {
   const clientDir = getClientDir();
   const registry = createProjectRegistry({ configDir: getConfigDir() });
@@ -185,6 +201,12 @@ async function runServe({
     console.log(`Added ${await registry.addFolder(directory)}`);
   }
   const url = `http://localhost:${port}/`;
+  const openEditor = app
+    ? () =>
+        openInAppWindow(url, {
+          userDataDir: path.join(getConfigDir(), "chrome"),
+        })
+    : () => openWithDefaultApp(url);
   const live = createLiveConnections();
   let server: Server;
   try {
@@ -197,7 +219,7 @@ async function runServe({
       (error as NodeJS.ErrnoException).code === "EADDRINUSE" &&
       (await checkEditorServer(port))
     ) {
-      await openWithDefaultApp(url);
+      await openEditor();
       console.log(`Opened the editor already running at ${url}`);
       return;
     }
@@ -205,7 +227,7 @@ async function runServe({
   }
   console.log(`Editor: ${url}`);
   if (open) {
-    await openWithDefaultApp(url);
+    await openEditor();
     await live.waitForLastClose({ graceMs: 3000 });
     console.log("Closing after the last editor tab closed");
     await server.close(true);
@@ -225,10 +247,17 @@ async function upgradeGlobalInstall(source: string) {
     source = path.resolve(source);
   }
   await runCommand("pnpm", ["add", "-g", source], { cwd });
-  if (fs.existsSync(getDesktopEntryFile())) {
+  const entryFile = getDesktopEntryFile();
+  if (fs.existsSync(entryFile)) {
+    // Keep the mode the entry was installed with.
+    const entry = await fs.promises.readFile(entryFile, "utf8");
     const { stdout } = await execFileAsync("pnpm", ["bin", "-g"], { cwd });
     const cli = path.join(stdout.trim(), "toy-compositor");
-    await runCommand(cli, ["install-desktop"], { cwd });
+    await runCommand(
+      cli,
+      ["install-desktop", ...(entry.includes('"--app"') ? ["--app"] : [])],
+      { cwd },
+    );
   }
 }
 

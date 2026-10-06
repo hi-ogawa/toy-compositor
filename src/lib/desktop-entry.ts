@@ -6,9 +6,12 @@ import path from "node:path";
 export async function installDesktopEntry({
   command,
   iconFile,
+  startupWmClass,
 }: {
   command: string[];
   iconFile: string;
+  /** The class of the window the command opens, so the desktop groups it under the entry. */
+  startupWmClass?: string;
 }): Promise<string> {
   if (process.platform !== "linux") {
     throw new Error(`No desktop entry on ${process.platform}`);
@@ -27,7 +30,7 @@ Name=Toy Compositor
 Comment=Compose videos from JSON projects in the browser editor
 Exec=${command.map(quoteExecArg).join(" ")}
 Icon=${installedIcon}
-Terminal=false
+${startupWmClass ? `StartupWMClass=${startupWmClass}\n` : ""}Terminal=false
 Categories=AudioVideo;Video;
 `;
   await fs.promises.writeFile(entryFile, entry);
