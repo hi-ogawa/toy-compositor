@@ -126,6 +126,60 @@ export async function clickTimelineButton(
   );
 }
 
+/** Click the composition preview at a point in canvas pixels. */
+export async function clickCanvasAt(page: Page, point: CanvasPoint) {
+  await test.step(
+    `Click the canvas at (${point.x}, ${point.y})`,
+    async () => {
+      const { x, y } = await getCanvasPagePoint(page, point);
+      await page.mouse.click(x, y);
+    },
+    { box: true },
+  );
+}
+
+/** Like `dragBy`, from a point on the composition preview and by canvas pixels. */
+export async function dragCanvasBy(
+  page: Page,
+  point: CanvasPoint,
+  {
+    deltaX = 0,
+    deltaY = 0,
+    release = true,
+  }: { deltaX?: number; deltaY?: number; release?: boolean },
+) {
+  await test.step(
+    `Drag the canvas from (${point.x}, ${point.y}) by (${deltaX}, ${deltaY})${release ? "" : " without releasing"}`,
+    async () => {
+      const start = await getCanvasPagePoint(page, point);
+      const end = await getCanvasPagePoint(page, {
+        x: point.x + deltaX,
+        y: point.y + deltaY,
+      });
+      await page.mouse.move(start.x, start.y);
+      await page.mouse.down();
+      await page.mouse.move(end.x, end.y, { steps: 4 });
+      if (release) {
+        await page.mouse.up();
+      }
+    },
+    { box: true },
+  );
+}
+
+type CanvasPoint = { x: number; y: number };
+
+/** Convert a point in canvas pixels to page pixels through the preview scale. */
+async function getCanvasPagePoint(page: Page, { x, y }: CanvasPoint) {
+  const canvas = page.getByTestId("composition-canvas");
+  const bounds = (await canvas.boundingBox())!;
+  const width = await canvas.evaluate(
+    (element: HTMLElement) => element.offsetWidth,
+  );
+  const scale = bounds.width / width;
+  return { x: bounds.x + x * scale, y: bounds.y + y * scale };
+}
+
 /** Locate an inspector field by its label. */
 export function getInspectorField(page: Page, { name }: { name: string }) {
   return page

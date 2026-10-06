@@ -1,8 +1,10 @@
-import { expect, type Page } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
 import { readJson } from "../src/utils/fs.ts";
 import {
+  clickCanvasAt,
   commitInspectorField,
+  dragCanvasBy,
   expectImageLoaded,
   expectInspectorFields,
   clickTimelineButton,
@@ -189,10 +191,11 @@ test("drag a clip to move it on the composition preview", async ({
   await expectImageLoaded(image);
 
   // Drag the unselected image, and see it selected and moving before release.
-  await dragCanvasTo(page, {
-    from: { x: 450, y: 250 },
-    to: { x: 490, y: 270 },
-  });
+  await dragCanvasBy(
+    page,
+    { x: 450, y: 250 },
+    { deltaX: 40, deltaY: 20, release: false },
+  );
   await expect(placed).toHaveCSS("left", "460px");
   await expect(placed).toHaveCSS("top", "260px");
   await expect(canvas.getByLabel("Selected layer outline")).toBeVisible();
@@ -200,10 +203,11 @@ test("drag a clip to move it on the composition preview", async ({
   await expectInspectorFields(page, { x: "460", y: "260" });
 
   // Press Escape mid-drag, and the image returns to where it was.
-  await dragCanvasTo(page, {
-    from: { x: 500, y: 330 },
-    to: { x: 530, y: 340 },
-  });
+  await dragCanvasBy(
+    page,
+    { x: 500, y: 330 },
+    { deltaX: 30, deltaY: 10, release: false },
+  );
   await expect(placed).toHaveCSS("left", "490px");
   await page.keyboard.press("Escape");
   await expect(placed).toHaveCSS("left", "460px");
@@ -212,11 +216,7 @@ test("drag a clip to move it on the composition preview", async ({
 
   // Drag from where the title covers the selected image, and move the title,
   // the topmost clip under the pointer, as a click there would select it.
-  await dragCanvasTo(page, {
-    from: { x: 470, y: 280 },
-    to: { x: 450, y: 270 },
-  });
-  await page.mouse.up();
+  await dragCanvasBy(page, { x: 470, y: 280 }, { deltaX: -20, deltaY: -10 });
   await expectInspectorFields(page, { x: "400", y: "250", height: "50" });
 
   // Save, and the project file has both new positions.
@@ -385,34 +385,3 @@ test("show the video frame nearest the source time in the preview, as the render
     )
     .toBe(29);
 });
-
-/** Click the composition preview at a point in canvas pixels. */
-async function clickCanvasAt(page: Page, point: Point) {
-  const { x, y } = await getPagePoint(page, point);
-  await page.mouse.click(x, y);
-}
-
-/** Press at one canvas point and move to another, leaving the button down. */
-async function dragCanvasTo(
-  page: Page,
-  { from, to }: { from: Point; to: Point },
-) {
-  const start = await getPagePoint(page, from);
-  const end = await getPagePoint(page, to);
-  await page.mouse.move(start.x, start.y);
-  await page.mouse.down();
-  await page.mouse.move(end.x, end.y, { steps: 5 });
-}
-
-type Point = { x: number; y: number };
-
-/** Convert a point in canvas pixels to page pixels through the preview scale. */
-async function getPagePoint(page: Page, { x, y }: Point): Promise<Point> {
-  const canvas = page.getByTestId("composition-canvas");
-  const box = (await canvas.boundingBox())!;
-  const width = await canvas.evaluate(
-    (element: HTMLElement) => element.offsetWidth,
-  );
-  const scale = box.width / width;
-  return { x: box.x + x * scale, y: box.y + y * scale };
-}
