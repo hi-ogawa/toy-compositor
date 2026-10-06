@@ -200,6 +200,7 @@ test("drag a clip to move it on the composition preview", async ({
   await expect(placed).toHaveCSS("left", "460px");
   await expect(placed).toHaveCSS("top", "260px");
   await expect(canvas.getByLabel("Selected layer outline")).toBeVisible();
+  await expectInspectorTitle(page, { name: "Label backdrop" });
   await page.mouse.up();
   await expectInspectorFields(page, { x: "460", y: "260" });
 
@@ -218,7 +219,8 @@ test("drag a clip to move it on the composition preview", async ({
   // Drag from where the title covers the selected image, and move the title,
   // the topmost clip under the pointer, as a click there would select it.
   await dragCanvasBy(page, { x: 470, y: 280 }, { deltaX: -20, deltaY: -10 });
-  await expectInspectorFields(page, { x: "400", y: "250", height: "50" });
+  await expectInspectorTitle(page, { name: "Title" });
+  await expectInspectorFields(page, { x: "400", y: "250" });
 
   // Save, and the project file has both new positions.
   const save = page.getByTestId("editor-save-button");
