@@ -143,6 +143,8 @@ type CanvasPoint = { x: number; y: number };
 /** Convert a point in canvas pixels to page pixels through the preview scale. */
 async function getCanvasPagePoint(page: Page, { x, y }: CanvasPoint) {
   const canvas = page.getByTestId("composition-canvas");
+  // The canvas has no size until the preview first measures its viewport.
+  await expect(canvas).toBeVisible();
   const bounds = (await canvas.boundingBox())!;
   const width = await canvas.evaluate(
     (element: HTMLElement) => element.offsetWidth,

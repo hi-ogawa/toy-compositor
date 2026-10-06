@@ -154,9 +154,6 @@ test("select a clip by clicking it on the composition preview", async ({
   await page.goto(editor.url);
   const canvas = page.getByTestId("composition-canvas");
   const outline = canvas.getByLabel("Selected layer outline");
-  await expectImageLoaded(
-    canvas.getByRole("img", { name: "Label backdrop", exact: true }),
-  );
 
   // Click where only the video shows, and select it.
   await clickCanvasAt(page, { x: 100, y: 50 });
