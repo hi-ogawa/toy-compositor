@@ -174,6 +174,66 @@ test("select a clip by clicking it on the composition preview", async ({
   await expect(outline).toHaveCount(0);
 });
 
+test("drag a clip to move it on the composition preview", async ({
+  page,
+  editor,
+}) => {
+  // Open the project, whose title sits over the image's upper part.
+  await page.goto(editor.url);
+  const canvas = page.getByTestId("composition-canvas");
+  const image = canvas.getByRole("img", {
+    name: "Label backdrop",
+    exact: true,
+  });
+  const placed = image.locator("..");
+  await expectImageLoaded(image);
+
+  // Drag the unselected image, and see it selected and moving before release.
+  await dragCanvasTo(page, {
+    from: { x: 450, y: 250 },
+    to: { x: 490, y: 270 },
+  });
+  await expect(placed).toHaveCSS("left", "460px");
+  await expect(placed).toHaveCSS("top", "260px");
+  await expect(canvas.getByLabel("Selected layer outline")).toBeVisible();
+  await page.mouse.up();
+  await expectInspectorFields(page, { x: "460", y: "260" });
+
+  // Press Escape mid-drag, and the image returns to where it was.
+  await dragCanvasTo(page, {
+    from: { x: 500, y: 330 },
+    to: { x: 530, y: 340 },
+  });
+  await expect(placed).toHaveCSS("left", "490px");
+  await page.keyboard.press("Escape");
+  await expect(placed).toHaveCSS("left", "460px");
+  await page.mouse.up();
+  await expectInspectorFields(page, { x: "460", y: "260" });
+
+  // Drag from where the title covers the selected image, and move the title,
+  // the topmost clip under the pointer, as a click there would select it.
+  await dragCanvasTo(page, {
+    from: { x: 470, y: 280 },
+    to: { x: 450, y: 270 },
+  });
+  await page.mouse.up();
+  await expectInspectorFields(page, { x: "400", y: "250", height: "50" });
+
+  // Save, and the project file has both new positions.
+  const save = page.getByTestId("editor-save-button");
+  await save.click();
+  await expect(save).toHaveAttribute("data-status", "saved");
+  expect(await readJson(editor.projectFile)).toMatchObject({
+    layers: [
+      {},
+      {},
+      { clips: [{ transform: { x: 460, y: 260 } }] },
+      { clips: [{ box: { x: 400, y: 250 } }] },
+      {},
+    ],
+  });
+});
+
 test("compose a still project at its output time", async ({ page, editor }) => {
   // Open a still-output project and confirm its video seeks to the still's time.
   await page.goto(
@@ -327,12 +387,32 @@ test("show the video frame nearest the source time in the preview, as the render
 });
 
 /** Click the composition preview at a point in canvas pixels. */
-async function clickCanvasAt(page: Page, { x, y }: { x: number; y: number }) {
+async function clickCanvasAt(page: Page, point: Point) {
+  const { x, y } = await getPagePoint(page, point);
+  await page.mouse.click(x, y);
+}
+
+/** Press at one canvas point and move to another, leaving the button down. */
+async function dragCanvasTo(
+  page: Page,
+  { from, to }: { from: Point; to: Point },
+) {
+  const start = await getPagePoint(page, from);
+  const end = await getPagePoint(page, to);
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(end.x, end.y, { steps: 5 });
+}
+
+type Point = { x: number; y: number };
+
+/** Convert a point in canvas pixels to page pixels through the preview scale. */
+async function getPagePoint(page: Page, { x, y }: Point): Promise<Point> {
   const canvas = page.getByTestId("composition-canvas");
   const box = (await canvas.boundingBox())!;
   const width = await canvas.evaluate(
     (element: HTMLElement) => element.offsetWidth,
   );
   const scale = box.width / width;
-  await page.mouse.click(box.x + x * scale, box.y + y * scale);
+  return { x: box.x + x * scale, y: box.y + y * scale };
 }

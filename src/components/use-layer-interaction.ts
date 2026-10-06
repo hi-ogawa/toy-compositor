@@ -1,4 +1,9 @@
 import { useState } from "react";
+import {
+  applyBoxEdit,
+  type BoxEditDelta,
+  type BoxEditType,
+} from "../lib/box-edit";
 import { applyClipEdit, type ClipEditType } from "../lib/clip-edit";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import type { Clip } from "../lib/project";
@@ -9,11 +14,18 @@ export type EditorSelection =
   | { type: "layer"; id: string }
   | { type: "clip"; id: string };
 
-type ClipEdit = {
-  type: ClipEditType;
-  id: string;
-  clip: Clip;
-};
+type VisualClip = Exclude<Clip, { type: "audio" }>;
+
+/** A drag's draft, of the clip's timing on the timeline or its box on the preview. */
+type ClipEdit =
+  | { domain: "time"; type: ClipEditType; id: string; clip: Clip }
+  | {
+      domain: "box";
+      type: BoxEditType;
+      id: string;
+      original: VisualClip;
+      clip: Clip;
+    };
 
 export type LayerInteraction = ReturnType<typeof useLayerInteraction>;
 
@@ -45,10 +57,13 @@ export function useLayerInteraction({
 
   function startEdit({ type, id }: { type: ClipEditType; id: string }) {
     select({ type: "clip", id });
-    setEdit({ type, id, clip: findClip(layers, id)!.clip });
+    setEdit({ domain: "time", type, id, clip: findClip(layers, id)!.clip });
   }
 
-  function getEditedClip(edit: ClipEdit, delta: number): Clip {
+  function getEditedClip(
+    edit: Extract<ClipEdit, { domain: "time" }>,
+    delta: number,
+  ): Clip {
     return applyClipEdit(findClip(layers, edit.id)!.clip, {
       type: edit.type,
       delta,
@@ -58,21 +73,55 @@ export function useLayerInteraction({
   }
 
   function updateEdit(delta: number) {
-    if (!edit) {
+    if (edit?.domain !== "time") {
       return;
     }
     setEdit({ ...edit, clip: getEditedClip(edit, delta) });
   }
 
   function finishEdit(delta: number) {
-    if (!edit) {
+    if (edit?.domain !== "time") {
       return;
     }
-    setEdit(undefined);
-    runtime.updateClip({
-      id: edit.id,
-      update: getEditedClip(edit, delta),
+    commitEdit(edit.id, getEditedClip(edit, delta));
+  }
+
+  function startBoxEdit({
+    type,
+    id,
+    clip,
+  }: {
+    type: BoxEditType;
+    id: string;
+    clip: VisualClip;
+  }) {
+    select({ type: "clip", id });
+    setEdit({ domain: "box", type, id, original: clip, clip });
+  }
+
+  function updateBoxEdit(delta: BoxEditDelta) {
+    if (edit?.domain !== "box") {
+      return;
+    }
+    setEdit({
+      ...edit,
+      clip: applyBoxEdit(edit.original, { type: edit.type, delta }),
     });
+  }
+
+  function finishBoxEdit(delta: BoxEditDelta) {
+    if (edit?.domain !== "box") {
+      return;
+    }
+    commitEdit(
+      edit.id,
+      applyBoxEdit(edit.original, { type: edit.type, delta }),
+    );
+  }
+
+  function commitEdit(id: string, clip: Clip) {
+    setEdit(undefined);
+    runtime.updateClip({ id, update: clip });
   }
 
   /** Removes the selected layer, or the selected clip's layer, the only removal the editor has. */
@@ -115,6 +164,9 @@ export function useLayerInteraction({
     startEdit,
     updateEdit,
     finishEdit,
+    startBoxEdit,
+    updateBoxEdit,
+    finishBoxEdit,
     cancelEdit: () => setEdit(undefined),
     handleRemoveShortcut,
   };
