@@ -3,9 +3,7 @@ import { getClipRange } from "./layout.ts";
 import type { Clip, Project, VisualClip } from "./project.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 
-// TODO(time-edit): Rename to `TimeEditType`, with `applyClipEdit` and the time
-// edit methods of `useLayerInteraction`, because canvas edits are clip edits too.
-export type ClipEditType = "move" | "trim-start" | "trim-end";
+export type TimeEditType = "move" | "trim-start" | "trim-end";
 
 /**
  * The dragged edge snaps to the frame grid, the clip keeps at least one frame
@@ -17,7 +15,7 @@ export type ClipEditType = "move" | "trim-start" | "trim-end";
  * TODO(multi-clip): Clamp at the neighboring clips on the layer, once the
  * editor can put several clips on a layer.
  */
-export function applyClipEdit(
+export function applyTimeEdit(
   clip: Clip,
   {
     type,
@@ -25,7 +23,7 @@ export function applyClipEdit(
     fps,
     mediaInfoMap,
   }: {
-    type: ClipEditType;
+    type: TimeEditType;
     delta: number;
     fps: number;
     mediaInfoMap: Project["media"];
