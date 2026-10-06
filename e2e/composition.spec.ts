@@ -1,7 +1,8 @@
-import { expect, type Page } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
 import { readJson } from "../src/utils/fs.ts";
 import {
+  clickCanvasAt,
   commitInspectorField,
   expectImageLoaded,
   expectInspectorFields,
@@ -325,14 +326,3 @@ test("show the video frame nearest the source time in the preview, as the render
     )
     .toBe(29);
 });
-
-/** Click the composition preview at a point in canvas pixels. */
-async function clickCanvasAt(page: Page, { x, y }: { x: number; y: number }) {
-  const canvas = page.getByTestId("composition-canvas");
-  const box = (await canvas.boundingBox())!;
-  const width = await canvas.evaluate(
-    (element: HTMLElement) => element.offsetWidth,
-  );
-  const scale = box.width / width;
-  await page.mouse.click(box.x + x * scale, box.y + y * scale);
-}

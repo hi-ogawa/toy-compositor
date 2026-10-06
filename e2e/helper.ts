@@ -126,6 +126,31 @@ export async function clickTimelineButton(
   );
 }
 
+/** Click the composition preview at a point in canvas pixels. */
+export async function clickCanvasAt(page: Page, point: CanvasPoint) {
+  await test.step(
+    `Click the canvas at (${point.x}, ${point.y})`,
+    async () => {
+      const { x, y } = await getCanvasPagePoint(page, point);
+      await page.mouse.click(x, y);
+    },
+    { box: true },
+  );
+}
+
+type CanvasPoint = { x: number; y: number };
+
+/** Convert a point in canvas pixels to page pixels through the preview scale. */
+async function getCanvasPagePoint(page: Page, { x, y }: CanvasPoint) {
+  const canvas = page.getByTestId("composition-canvas");
+  const bounds = (await canvas.boundingBox())!;
+  const width = await canvas.evaluate(
+    (element: HTMLElement) => element.offsetWidth,
+  );
+  const scale = bounds.width / width;
+  return { x: bounds.x + x * scale, y: bounds.y + y * scale };
+}
+
 /** Locate an inspector field by its label. */
 export function getInspectorField(page: Page, { name }: { name: string }) {
   return page
