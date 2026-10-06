@@ -3,6 +3,8 @@ import { getClipRange } from "./layout.ts";
 import type { Clip, Project, VisualClip } from "./project.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 
+// TODO(time-edit): Rename to `TimeEditType`, with `applyClipEdit` and the time
+// edit methods of `useLayerInteraction`, because canvas edits are clip edits too.
 export type ClipEditType = "move" | "trim-start" | "trim-end";
 
 /**
