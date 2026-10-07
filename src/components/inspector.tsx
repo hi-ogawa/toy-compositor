@@ -24,6 +24,7 @@ import {
   type EditorRuntime,
   type EditorProject,
 } from "../lib/runtime";
+import { roundTo } from "../utils/math";
 import { cn } from "./ui/utils";
 import { useDraftInput } from "./use-draft-input";
 import type { EditorSelection } from "./use-layer-interaction";
@@ -763,10 +764,6 @@ function getTimeFieldOptions(fps: number): TimeFieldOptions {
     min: 0,
     round: (value: number) => roundTo(Math.round(value * fps) / fps, 1e-3),
   };
-}
-
-function roundTo(value: number, unit: number) {
-  return Number((Math.round(value / unit) * unit).toFixed(9));
 }
 
 function NumberField({

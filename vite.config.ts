@@ -17,6 +17,9 @@ export default defineConfig({
       curly: "error",
     },
   },
+  test: {
+    dir: "src",
+  },
   staged: {
     "*": "vp check --fix",
   },

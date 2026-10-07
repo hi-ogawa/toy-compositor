@@ -1,5 +1,5 @@
 import { clamp } from "../utils/math.ts";
-import { getClipRange } from "./layout.ts";
+import { getClipRange, getResizedTransform, type BoxHandle } from "./layout.ts";
 import type { Clip, Project, VisualClip } from "./project.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 
@@ -87,21 +87,31 @@ export function applyTimeEdit(
   }
 }
 
-export type CanvasEditType = "move";
+export type CanvasEdit =
+  | { type: "move" }
+  | { type: "resize"; handle: BoxHandle };
 
 export type CanvasEditDelta = { x: number; y: number };
 
 /**
- * The pointer's travel in canvas pixels moves what the clip places, rounded to
- * whole canvas pixels as the inspector's position fields are: a video or image
- * clip's transform, which carries its crop with it, or a text or color clip's
- * box.
+ * The pointer's travel in canvas pixels changes what the clip places: a video
+ * or image clip's transform, which carries its crop with it, or a text or color
+ * clip's box. A move shifts it by whole canvas pixels, as the inspector's
+ * position fields round, and a resize drags one of its handles.
  */
 export function applyCanvasEdit(
   clip: VisualClip,
-  { type, delta }: { type: CanvasEditType; delta: CanvasEditDelta },
+  {
+    edit,
+    delta,
+    mediaInfoMap,
+  }: {
+    edit: CanvasEdit;
+    delta: CanvasEditDelta;
+    mediaInfoMap: Project["media"];
+  },
 ): VisualClip {
-  switch (type) {
+  switch (edit.type) {
     case "move": {
       const x = Math.round(delta.x);
       const y = Math.round(delta.y);
@@ -119,6 +129,22 @@ export function applyCanvasEdit(
         ...clip,
         box: { ...clip.box, x: clip.box.x + x, y: clip.box.y + y },
       };
+    }
+    case "resize": {
+      if (clip.type === "video" || clip.type === "image") {
+        return {
+          ...clip,
+          transform: getResizedTransform({
+            size: mediaInfoMap[clip.src].video!,
+            crop: clip.crop,
+            transform: clip.transform,
+            handle: edit.handle,
+            delta,
+          }),
+        };
+      }
+      // TODO(#263): Resize a text or color clip's box.
+      return clip;
     }
   }
 }

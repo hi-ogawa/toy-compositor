@@ -31,6 +31,7 @@
     "render": "node src/cli.ts render",
     "update-media": "node src/cli.ts update-media",
     "setup-sample": "node tools/samples/setup.ts",
+    "test": "vp test",
     "test-e2e": "playwright test",
     "test-e2e-trace": "E2E_TRACE=1 playwright test"
   },

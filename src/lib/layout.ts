@@ -1,3 +1,4 @@
+import { roundTo } from "../utils/math.ts";
 import type { Box, Clip, Crop, Project, Size, Transform } from "./project.ts";
 
 export type TimeRange = { start: number; end: number };
@@ -113,6 +114,91 @@ export function getRescaledTransform({
     x: Math.round(transform.x + center.x * (transform.scale - scale)),
     y: Math.round(transform.y + center.y * (transform.scale - scale)),
     scale,
+  };
+}
+
+/**
+ * A handle's position on a box, as a fraction of its width and height, so a
+ * corner is 0 or 1 on both axes and an edge's middle is ½ on the axis along it.
+ */
+export type BoxHandle = { x: 0 | 0.5 | 1; y: 0 | 0.5 | 1 };
+
+/**
+ * Scale from the transform at drag start so a corner handle follows the
+ * pointer's travel while the opposite corner of the visible box stays fixed on
+ * the canvas. A single scale cannot follow a one-axis drag, so a media clip has
+ * no edge handles. The larger of the two axis ratios wins, so the dragged
+ * corner reaches the pointer along whichever axis leads. The visible box keeps
+ * at least 1px on each side, and the scale rounds as the inspector's scale
+ * field does.
+ */
+export function getResizedTransform({
+  size,
+  crop,
+  transform,
+  handle,
+  delta,
+}: {
+  size: Size;
+  crop: Crop;
+  transform: Transform;
+  handle: BoxHandle;
+  delta: { x: number; y: number };
+}): Transform {
+  const box = getVisibleBox({ size, crop, transform });
+  const dragged = getDraggedSize({ box, handle, delta });
+  const cropped = getCroppedBox({ size, crop });
+  const ratio = Math.max(
+    dragged.width / box.width,
+    dragged.height / box.height,
+  );
+  const scale = roundTo(
+    Math.max(
+      transform.scale * ratio,
+      1 / Math.min(cropped.width, cropped.height),
+    ),
+    1e-6,
+  );
+  // The visible box at the origin rounds its size and offset as it will be
+  // placed, so deriving the position from them keeps the anchor pixel-exact.
+  const placed = getVisibleBox({
+    size,
+    crop,
+    transform: { x: 0, y: 0, scale },
+  });
+  const position = getAnchoredPosition({ box, handle, size: placed });
+  return { x: position.x - placed.x, y: position.y - placed.y, scale };
+}
+
+/** The box's size if the handle moved by the delta, with the opposite side fixed. */
+function getDraggedSize({
+  box,
+  handle,
+  delta,
+}: {
+  box: Box;
+  handle: BoxHandle;
+  delta: { x: number; y: number };
+}): Size {
+  return {
+    width: box.width + (2 * handle.x - 1) * delta.x,
+    height: box.height + (2 * handle.y - 1) * delta.y,
+  };
+}
+
+/** Where a box of the new size goes so the side opposite the handle stays put. */
+function getAnchoredPosition({
+  box,
+  handle,
+  size,
+}: {
+  box: Box;
+  handle: BoxHandle;
+  size: Size;
+}): { x: number; y: number } {
+  return {
+    x: box.x + (1 - handle.x) * (box.width - size.width),
+    y: box.y + (1 - handle.y) * (box.height - size.height),
   };
 }
 
