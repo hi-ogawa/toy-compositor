@@ -10,7 +10,7 @@ import {
   createMediaLayer,
   createTextLayer,
 } from "./layer-defaults.ts";
-import { getContentRange, getOutputRange, type TimeRange } from "./layout.ts";
+import { getContentRange, getOutputRange } from "./layout.ts";
 import type { MediaFile } from "./media-file.ts";
 import {
   CANVAS_PRESETS,
@@ -23,7 +23,7 @@ import {
   type Project,
 } from "./project.ts";
 import type { ProjectFile } from "./server/api.ts";
-import { roundToMillisecond, snapToFrame } from "./timeline.ts";
+import { snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
 import { VideoPlayback } from "./video-playback.ts";
 
@@ -166,29 +166,30 @@ export class EditorRuntime {
         mediaInfo,
         canvas: project.canvas,
         start: snapToFrame(playhead, project.canvas.fps),
-        stillRange: this.getNewStillRange(),
       }),
     );
   }
 
   addTextLayer(): string {
-    const { canvas, layers } = this.store.get().project;
+    const { project, playhead } = this.store.get();
+    const { canvas, layers } = project;
     return this.insertLayer(
       createTextLayer({
         name: createLayerName({ layers, type: "text" }),
         canvas,
-        range: this.getNewStillRange(),
+        start: snapToFrame(playhead, canvas.fps),
       }),
     );
   }
 
   addColorLayer(): string {
-    const { canvas, layers } = this.store.get().project;
+    const { project, playhead } = this.store.get();
+    const { canvas, layers } = project;
     return this.insertLayer(
       createColorLayer({
         name: createLayerName({ layers, type: "color" }),
         canvas,
-        range: this.getNewStillRange(),
+        start: snapToFrame(playhead, canvas.fps),
       }),
     );
   }
@@ -325,11 +326,6 @@ export class EditorRuntime {
       }
     }
     return editorLayer.clips[0]!.id;
-  }
-
-  private getNewStillRange(): TimeRange {
-    const output = getOutputRange(this.store.get().project);
-    return { start: output.start, end: roundToMillisecond(output.end) };
   }
 
   /**

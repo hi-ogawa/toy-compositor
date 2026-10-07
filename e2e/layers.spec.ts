@@ -45,16 +45,19 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     height: "360",
   });
 
-  // Add an image, and confirm it spans the output.
+  // Add an image, and confirm it starts at the playhead and lasts the default
+  // still length.
   await page
     .getByRole("button", { name: "Add image.png", exact: true })
     .click();
-  await expectInspectorFields(page, { start: "0", end: "3" });
+  await expectInspectorFields(page, { start: "1", end: "6" });
 
   // Add the built-in text and color layers, and confirm they are numbered
-  // after the existing ones.
+  // after the existing ones and placed like the image.
   await page.getByRole("button", { name: "Add Text", exact: true }).click();
+  await expectInspectorFields(page, { start: "1", end: "6" });
   await page.getByRole("button", { name: "Add Color", exact: true }).click();
+  await expectInspectorFields(page, { start: "1", end: "6" });
   await expect(page.getByTestId("timeline-layer-8-clip-0")).toBeVisible();
 
   // Drop a new file into the folder, focus the window as when switching back
@@ -123,8 +126,8 @@ test("add layers from the Library tab", async ({ page, editor }) => {
           src: "media/image.png",
           transform: { x: 0, y: 0, scale: 4 },
           crop: { left: 0, right: 0, top: 0, bottom: 0 },
-          start: 0,
-          end: 3,
+          start: 1,
+          end: 6,
         },
       ],
     },
@@ -140,8 +143,8 @@ test("add layers from the Library tab", async ({ page, editor }) => {
           align: "center",
           font: { family: "Noto Sans", size: 36, weight: 400, lineSpacing: 0 },
           color: "#ffffff",
-          start: 0,
-          end: 3,
+          start: 1,
+          end: 6,
         },
       ],
     },
@@ -155,8 +158,8 @@ test("add layers from the Library tab", async ({ page, editor }) => {
           color: "#000000",
           opacity: 0.5,
           box: { x: 0, y: 0, width: 640, height: 360 },
-          start: 0,
-          end: 3,
+          start: 1,
+          end: 6,
         },
       ],
     },
