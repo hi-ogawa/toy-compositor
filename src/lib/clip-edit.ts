@@ -1,5 +1,10 @@
 import { clamp } from "../utils/math.ts";
-import { getClipRange, getResizedTransform, type BoxHandle } from "./layout.ts";
+import {
+  getClipRange,
+  getResizedBox,
+  getResizedTransform,
+  type BoxHandle,
+} from "./layout.ts";
 import type { Clip, Project, VisualClip } from "./project.ts";
 import { roundToMillisecond, snapToFrame } from "./timeline.ts";
 
@@ -143,8 +148,10 @@ export function applyCanvasEdit(
           }),
         };
       }
-      // TODO(#263): Resize a text or color clip's box.
-      return clip;
+      return {
+        ...clip,
+        box: getResizedBox({ box: clip.box, handle: edit.handle, delta }),
+      };
     }
   }
 }

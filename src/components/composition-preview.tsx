@@ -227,8 +227,10 @@ function PreviewClip({
         />
       )}
       {selected &&
-        (clip.type === "video" || clip.type === "image") &&
-        MEDIA_HANDLES.map((handle) => (
+        (clip.type === "video" || clip.type === "image"
+          ? MEDIA_HANDLES
+          : BOX_HANDLES
+        ).map((handle) => (
           <ResizeHandle
             key={`${handle.x}-${handle.y}`}
             handle={handle}
@@ -251,12 +253,21 @@ const MEDIA_HANDLES: BoxHandle[] = [
   { x: 1, y: 1 },
 ];
 
+/** A text or color clip's box resizes freely, so its edges have handles too. */
+const BOX_HANDLES: BoxHandle[] = [
+  ...MEDIA_HANDLES,
+  { x: 0.5, y: 0 },
+  { x: 1, y: 0.5 },
+  { x: 0.5, y: 1 },
+  { x: 0, y: 0.5 },
+];
+
 /** Screen pixels, so a handle keeps its size at any preview scale. */
 const HANDLE_SIZE = 8;
 
-const HANDLE_ROWS = { 0: "top", 0.5: "middle", 1: "bottom" };
+const HANDLE_ROWS = { 0: "top", 0.5: "", 1: "bottom" };
 
-const HANDLE_COLUMNS = { 0: "left", 0.5: "center", 1: "right" };
+const HANDLE_COLUMNS = { 0: "left", 0.5: "", 1: "right" };
 
 function ResizeHandle({
   handle,
@@ -292,7 +303,9 @@ function ResizeHandle({
     onCancel: layerInteraction.cancelEdit,
   });
   const size = HANDLE_SIZE / scale;
-  const name = `${HANDLE_ROWS[handle.y]} ${HANDLE_COLUMNS[handle.x]}`;
+  const name = [HANDLE_ROWS[handle.y], HANDLE_COLUMNS[handle.x]]
+    .filter(Boolean)
+    .join(" ");
   return (
     // Above the mask over the area outside the frame, like the outline.
     <div
@@ -300,7 +313,7 @@ function ResizeHandle({
       aria-label={`Resize handle ${name}`}
       className={cn(
         "absolute z-10 border-primary bg-white",
-        handle.x === handle.y ? "cursor-nwse-resize" : "cursor-nesw-resize",
+        getHandleCursor(handle),
       )}
       style={{
         left: box.x + handle.x * box.width - size / 2,
@@ -311,6 +324,17 @@ function ResizeHandle({
       }}
     />
   );
+}
+
+/** The resize cursor that points along the directions the handle drags. */
+function getHandleCursor(handle: BoxHandle) {
+  if (handle.x === 0.5) {
+    return "cursor-ns-resize";
+  }
+  if (handle.y === 0.5) {
+    return "cursor-ew-resize";
+  }
+  return handle.x === handle.y ? "cursor-nwse-resize" : "cursor-nesw-resize";
 }
 
 /** Convert a pointer's travel on screen to canvas pixels. */
