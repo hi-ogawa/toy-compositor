@@ -1,6 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { apiClient } from "../lib/api-client";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import { getRescaledTransform } from "../lib/layout";
@@ -38,6 +37,12 @@ export function Inspector({
   project: EditorProject;
   selection?: EditorSelection;
 }) {
+  // A rejected update, such as one overlapping a neighbor, shows as the
+  // mutation error toast.
+  const updateClipMutation = useMutation({
+    mutationFn: async (args: Parameters<EditorRuntime["updateClip"]>[0]) =>
+      runtime.updateClip(args),
+  });
   if (!selection) {
     return (
       <>
@@ -86,15 +91,7 @@ export function Inspector({
           clip={clip}
           media={project.media}
           time={time}
-          onUpdate={(update) => {
-            try {
-              runtime.updateClip({ id, update });
-            } catch (error) {
-              // An Enter commit also blurs and commits again, so one id
-              // keeps the repeat from stacking a second toast.
-              toast.error((error as Error).message, { id: "clip-update" });
-            }
-          }}
+          onUpdate={(update) => updateClipMutation.mutate({ id, update })}
         />
       );
     }
