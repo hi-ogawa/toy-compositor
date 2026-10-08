@@ -3,7 +3,8 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import type { Project } from "../src/lib/project.ts";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
-import { readJson } from "../src/utils/fs.ts";
+import { editJson, readJson } from "../src/utils/fs.ts";
+import { runCli } from "./cli";
 import {
   expectInspectorFields,
   getInspectorField,
@@ -12,7 +13,7 @@ import {
   test,
 } from "./helper";
 
-test("add layers from the Library tab", async ({ page, editor }) => {
+test("add clips to a layer from the Library tab", async ({ page, editor }) => {
   // Put a non-media file into the project's media folder, then open the
   // project.
   const mediaDir = path.join(path.dirname(editor.projectFile), "media");
@@ -27,38 +28,47 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     /video\.mp4$/,
   ]);
 
-  // Move the playhead and add a video, and confirm it lands on top, selected,
-  // playing its whole source from the playhead.
-  await seekTimelineByPixels(page, { pixels: DEFAULT_PIXELS_PER_SECOND });
-  await page
-    .getByRole("button", { name: "Add video.mp4", exact: true })
-    .click();
-  await expect(page.getByTestId("timeline-layer-5-clip-0")).toBeVisible();
-  await expectInspectorFields(page, {
-    start: "1",
-    in: "0",
-    out: "3",
-    x: "0",
-    y: "0",
-    "scale %": "200",
-    width: "640",
-    height: "360",
+  // Add a video with no layer selected, and confirm it is rejected.
+  const addVideo = page.getByRole("button", {
+    name: "Add video.mp4",
+    exact: true,
   });
+  await addVideo.click();
+  await expect(page.getByText("Select a layer first")).toBeVisible();
+  await expect(page.getByTestId("timeline-layer-5-clip-0")).toHaveCount(0);
 
-  // Add an image, and confirm it starts at the playhead and lasts the default
-  // still length.
+  // Move the playhead, add a new layer, and confirm it lands on top, empty and
+  // selected.
+  await seekTimelineByPixels(page, { pixels: DEFAULT_PIXELS_PER_SECOND });
+  await page.getByRole("button", { name: "New layer", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Select Layer 6 layer" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("timeline-layer-5-clip-0")).toHaveCount(0);
+
+  // Add the video, and confirm it lands on the layer while the layer stays
+  // selected.
+  await addVideo.click();
+  await expect(page.getByTestId("timeline-layer-5-clip-0")).toBeVisible();
+  await expectInspectorFields(page, { name: "Layer 6" });
+
+  // Add an image at the same playhead, and confirm there is no room for it.
   await page
     .getByRole("button", { name: "Add image.png", exact: true })
     .click();
-  await expectInspectorFields(page, { start: "1", end: "6" });
+  await expect(
+    page.getByText('No room at the playhead on "Layer 6"'),
+  ).toBeVisible();
 
-  // Add the built-in text and color layers, and confirm they are numbered
-  // after the existing ones and placed like the image.
+  // Add text before the video, and confirm it ends where the video starts
+  // instead of lasting the default still length.
+  await seekTimelineByPixels(page, { pixels: 1 });
   await page.getByRole("button", { name: "Add Text", exact: true }).click();
-  await expectInspectorFields(page, { start: "1", end: "6" });
+
+  // Add color after the video, and confirm it lasts the default still length.
+  await seekTimelineByPixels(page, { pixels: 4 * DEFAULT_PIXELS_PER_SECOND });
   await page.getByRole("button", { name: "Add Color", exact: true }).click();
-  await expectInspectorFields(page, { start: "1", end: "6" });
-  await expect(page.getByTestId("timeline-layer-8-clip-0")).toBeVisible();
+  await expect(page.getByTestId("timeline-layer-5-clip-2")).toBeVisible();
 
   // Drop a new file into the folder, focus the window as when switching back
   // from the file manager, and confirm the list picks it up.
@@ -74,17 +84,20 @@ test("add layers from the Library tab", async ({ page, editor }) => {
     /video\.mp4$/,
   ]);
 
-  // Add the new file, which the project has no media info for yet.
+  // Add another layer with the image at the playhead, then the new file,
+  // which the project has no media info for yet, before it.
+  await page.getByRole("button", { name: "New layer", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Add image.png", exact: true })
+    .click();
+  await seekTimelineByPixels(page, { pixels: 1 });
   await page
     .getByRole("button", { name: "Add extra.wav", exact: true })
     .click();
-  await expect(page.getByTestId("timeline-layer-9-clip-0")).toBeVisible();
+  await expect(page.getByTestId("timeline-layer-6-clip-1")).toBeVisible();
 
-  // Select the added video from its lane, then save, and confirm the new layers
-  // reach the file on top of the existing ones, existing media info is reused,
-  // and the new file's info is probed.
-  await clickTimelineButton(page, { name: "Select video region" });
-  await expectInspectorFields(page, { start: "1" });
+  // Save, and confirm each layer's clips reach the file in order by start,
+  // existing media info is reused, and the new file's info is probed.
   await page.getByTestId("editor-save-button").click();
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
     "data-status",
@@ -98,10 +111,20 @@ test("add layers from the Library tab", async ({ page, editor }) => {
   });
   expect(project.layers.slice(5)).toEqual([
     {
-      name: "video",
+      name: "Layer 6",
       muted: false,
       hidden: false,
       clips: [
+        {
+          type: "text",
+          text: "Text",
+          box: { x: 64, y: 144, width: 512, height: 72 },
+          align: "center",
+          font: { family: "Noto Sans", size: 36, weight: 400, lineSpacing: 0 },
+          color: "#ffffff",
+          start: 0,
+          end: 1,
+        },
         {
           type: "video",
           src: "media/video.mp4",
@@ -114,75 +137,44 @@ test("add layers from the Library tab", async ({ page, editor }) => {
           fadeOut: 0,
           hold: { before: 0, after: 0 },
         },
-      ],
-    },
-    {
-      name: "image",
-      muted: false,
-      hidden: false,
-      clips: [
-        {
-          type: "image",
-          src: "media/image.png",
-          transform: { x: 0, y: 0, scale: 4 },
-          crop: { left: 0, right: 0, top: 0, bottom: 0 },
-          start: 1,
-          end: 6,
-        },
-      ],
-    },
-    {
-      name: "Text 2",
-      muted: false,
-      hidden: false,
-      clips: [
-        {
-          type: "text",
-          text: "Text",
-          box: { x: 64, y: 144, width: 512, height: 72 },
-          align: "center",
-          font: { family: "Noto Sans", size: 36, weight: 400, lineSpacing: 0 },
-          color: "#ffffff",
-          start: 1,
-          end: 6,
-        },
-      ],
-    },
-    {
-      name: "Color 2",
-      muted: false,
-      hidden: false,
-      clips: [
         {
           type: "color",
           color: "#000000",
           opacity: 0.5,
           box: { x: 0, y: 0, width: 640, height: 360 },
-          start: 1,
-          end: 6,
+          start: 4,
+          end: 9,
         },
       ],
     },
     {
-      name: "extra",
+      name: "Layer 7",
       muted: false,
       hidden: false,
       clips: [
         {
           type: "audio",
           src: "media/extra.wav",
-          start: 1,
+          start: 0,
           in: 0,
           out: 3,
           fadeIn: 0,
           fadeOut: 0,
+        },
+        {
+          type: "image",
+          src: "media/image.png",
+          transform: { x: 0, y: 0, scale: 4 },
+          crop: { left: 0, right: 0, top: 0, bottom: 0 },
+          start: 4,
+          end: 9,
         },
       ],
     },
   ]);
 });
 
-test("remove the selected layer", async ({ page, editor }) => {
+test("remove the selected clip or layer", async ({ page, editor }) => {
   // Open the project and select the text layer.
   await page.goto(editor.url);
   const lanes = page.getByTestId("editor-timeline");
@@ -197,16 +189,26 @@ test("remove the selected layer", async ({ page, editor }) => {
   await page.keyboard.press("Escape");
 
   // Click the time readout to leave the field, press Delete, and confirm the
-  // lane and its inspector go away.
+  // clip and its inspector go away while its now empty layer stays.
   await page.getByTestId("timeline-time").click();
   await page.keyboard.press("Delete");
   await expect(
     lanes.getByRole("button", { name: "Select Title region" }),
   ).toHaveCount(0);
   await expect(page.getByTestId("inspector")).toHaveCount(0);
+  await expect(
+    lanes.getByRole("button", { name: "Select Title layer" }),
+  ).toBeVisible();
 
-  // Select the audio and remove it with Backspace.
-  await clickTimelineButton(page, { name: "Select Tone 660 Hz region" });
+  // Select the empty layer and remove it with Delete.
+  await clickTimelineButton(page, { name: "Select Title layer" });
+  await page.keyboard.press("Delete");
+  await expect(
+    lanes.getByRole("button", { name: "Select Title layer" }),
+  ).toHaveCount(0);
+
+  // Select the audio layer and remove it with its clip by Backspace.
+  await clickTimelineButton(page, { name: "Select Tone 660 Hz layer" });
   await page.keyboard.press("Backspace");
   await expect(
     lanes.getByRole("button", { name: "Select Tone 660 Hz region" }),
@@ -317,4 +319,34 @@ test("move the selected layer up and down in the stack", async ({
     "Title",
     "Tint",
   ]);
+});
+
+test("reject a layer whose clips overlap", async ({ page, editor }) => {
+  // Add a second text clip to the title layer that starts before the first
+  // one ends.
+  await editJson<Project>(editor.projectFile, (project) => {
+    const clips = project.layers[3]!.clips;
+    clips.push({
+      ...clips[0]!,
+      start: 2,
+      end: 4,
+    } as Project["layers"][number]["clips"][number]);
+  });
+  const message =
+    'clip 1 in layer "Title" starts before the previous clip or overlaps its picture';
+
+  // Open the editor, and confirm it shows the error instead of the editor.
+  await page.goto(editor.url);
+  await expect(page.getByText(message)).toBeVisible();
+  await expect(page.getByRole("main")).toHaveCount(0);
+
+  // Render, and confirm it fails with the same error.
+  await expect(
+    runCli([
+      "render",
+      editor.projectFile,
+      `${editor.projectFile}.mp4`,
+      "--dry-run",
+    ]),
+  ).rejects.toMatchObject({ stderr: expect.stringContaining(message) });
 });

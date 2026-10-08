@@ -126,9 +126,7 @@ export function Editor({ projectPath }: { projectPath: string }) {
                 runtime={runtime}
                 projectPath={projectPath}
                 resolveMediaUrl={project.resolveMediaUrl}
-                onLayerAdd={(clipId) =>
-                  layerInteraction.select({ type: "clip", id: clipId })
-                }
+                layerId={selection?.type === "layer" ? selection.id : undefined}
                 onCollapse={() => setSideOpen(false)}
               />
             }
@@ -240,15 +238,15 @@ function LibrarySourceTabs({
   runtime,
   projectPath,
   resolveMediaUrl,
-  onLayerAdd,
+  layerId,
   onCollapse,
 }: {
   selected?: ClipLocation;
   runtime: EditorRuntime;
   projectPath: string;
   resolveMediaUrl: (src: string) => string;
-  /** Receives the id of the new layer's clip. */
-  onLayerAdd: (clipId: string) => void;
+  /** The selected layer, which the library adds clips to. */
+  layerId?: string;
   onCollapse: () => void;
 }) {
   const clip = selected?.clip;
@@ -311,7 +309,7 @@ function LibrarySourceTabs({
           <LibraryPanel
             runtime={runtime}
             projectPath={projectPath}
-            onLayerAdd={onLayerAdd}
+            layerId={layerId}
           />
         ) : (
           <MediaPreview selected={selected} resolveMediaUrl={resolveMediaUrl} />

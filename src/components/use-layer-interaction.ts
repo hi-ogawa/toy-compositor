@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   applyCanvasEdit,
   applyTimeEdit,
+  getClipBounds,
   type CanvasEditDelta,
   type CanvasEditType,
   type TimeEditType,
@@ -63,11 +64,13 @@ export function useLayerInteraction({
     edit: Extract<ClipEdit, { domain: "time" }>,
     delta: number,
   ): Clip {
-    return applyTimeEdit(findClip(layers, edit.id)!.clip, {
+    const { layer, clip, clipIndex } = findClip(layers, edit.id)!;
+    return applyTimeEdit(clip, {
       type: edit.type,
       delta,
       fps: canvas.fps,
       mediaInfoMap,
+      bounds: getClipBounds(layer.clips, clipIndex),
     });
   }
 
@@ -123,7 +126,7 @@ export function useLayerInteraction({
     runtime.updateClip({ id, update: clip });
   }
 
-  /** Removes the selected layer, or the selected clip's layer, the only removal the editor has. */
+  /** Removes the selected layer with its clips, or only the selected clip. */
   function handleRemoveShortcut(event: KeyboardEvent): boolean {
     if (
       !(selection?.type === "layer" || selection?.type === "clip") ||
@@ -135,11 +138,11 @@ export function useLayerInteraction({
     ) {
       return false;
     }
-    runtime.removeLayer(
-      selection.type === "layer"
-        ? selection.id
-        : findClip(layers, selection.id)!.layer.id,
-    );
+    if (selection.type === "layer") {
+      runtime.removeLayer(selection.id);
+    } else {
+      runtime.removeClip(selection.id);
+    }
     setSelection(undefined);
     return true;
   }

@@ -56,7 +56,7 @@ Layers stack in list order over the canvas `background`, so later layers sit on 
 
 Every layer has a `name`, such as `"camera"`, `"score"`, or `"mix"`. Names do not affect rendering. They label layers in the editor and let scripts find a layer by its role instead of its position in the list. `muted` leaves the sound of every clip on the layer out of the mix, and `hidden` leaves their picture out of the frame.
 
-A layer can mix clip types. The editor only creates layers with one clip so far.
+A layer can mix clip types, and it can hold no clips. Its clips are in order by `start`, and each clip's picture, including a video clip's hold, ends at or before the next clip's begins, so loading rejects a file whose clips overlap. Overlap is rejected rather than resolved, because overlapping sound would mix in both the render and the preview.
 
 ## Clips
 

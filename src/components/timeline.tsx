@@ -126,6 +126,16 @@ export function Timeline({
         >
           {playhead.toFixed(3)} s
         </span>
+        <Button
+          aria-label="New layer"
+          title="New layer"
+          className="ml-auto size-7 hover:bg-neutral-700"
+          onClick={() =>
+            layerInteraction.select({ type: "layer", id: runtime.addLayer() })
+          }
+        >
+          <PlusIcon className="size-4" />
+        </Button>
       </div>
       <div className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {/* Measures the graph width and receives wheel scrolling and zoom. */}

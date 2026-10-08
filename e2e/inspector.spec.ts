@@ -179,9 +179,10 @@ test("edit layer names and a color layer's fill and box, and save them", async (
   page,
   editor,
 }) => {
-  // Add a color layer from the Library tab, and confirm it is numbered after
-  // the existing one, selected, and fills the canvas.
+  // Add a new layer and a color clip on it from the Library tab, and confirm
+  // the clip fills the canvas.
   await page.goto(editor.url);
+  await page.getByRole("button", { name: "New layer", exact: true }).click();
   await page.getByRole("button", { name: "Add Color", exact: true }).click();
   const fill = page
     .getByTestId("composition-layer-5-clip-0")
@@ -191,9 +192,9 @@ test("edit layer names and a color layer's fill and box, and save them", async (
 
   // Select the color layer from its lane header, rename it, and confirm its
   // lane and the inspector title follow.
-  await clickTimelineButton(page, { name: "Select Color 2 layer" });
+  await clickTimelineButton(page, { name: "Select Layer 6 layer" });
   const name = getInspectorField(page, { name: "name" });
-  await expect(name).toHaveValue("Color 2");
+  await expect(name).toHaveValue("Layer 6");
   await name.fill("Scrim");
   await name.press("Enter");
   await expect(

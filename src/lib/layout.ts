@@ -1,4 +1,5 @@
 import type { Box, Clip, Crop, Project, Size, Transform } from "./project.ts";
+import { roundToMillisecond } from "./timeline.ts";
 
 export type TimeRange = { start: number; end: number };
 
@@ -39,6 +40,28 @@ export function getPictureRange(clip: Clip): TimeRange {
     start: range.start - clip.hold.before,
     end: range.end + clip.hold.after,
   };
+}
+
+/**
+ * A layer's clips are in order by `start`, and each clip's picture range ends
+ * at or before the next one's begins, so a hold only fills a gap. Ends are
+ * compared to the millisecond that project times are rounded to, because a
+ * computed end such as `start + out - in` can land a hair past it. Returns the
+ * index of the first clip that breaks this against the clip before it.
+ */
+export function findMisplacedClip(clips: readonly Clip[]): number | undefined {
+  for (let index = 1; index < clips.length; index++) {
+    const previous = clips[index - 1]!;
+    const clip = clips[index]!;
+    if (
+      clip.start < previous.start ||
+      roundToMillisecond(getPictureRange(clip).start) <
+        roundToMillisecond(getPictureRange(previous).end)
+    ) {
+      return index;
+    }
+  }
+  return undefined;
 }
 
 export function intersect(a: TimeRange, b: TimeRange): TimeRange | undefined {
