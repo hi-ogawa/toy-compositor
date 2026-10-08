@@ -126,16 +126,6 @@ export function Timeline({
         >
           {playhead.toFixed(3)} s
         </span>
-        <Button
-          aria-label="New layer"
-          title="New layer"
-          className="ml-auto size-7 hover:bg-neutral-700"
-          onClick={() =>
-            layerInteraction.select({ type: "layer", id: runtime.addLayer() })
-          }
-        >
-          <PlusIcon className="size-4" />
-        </Button>
       </div>
       <div className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {/* Measures the graph width and receives wheel scrolling and zoom. */}
@@ -154,7 +144,13 @@ export function Timeline({
             onClearSelection={onClearSelection}
             onSeek={seek}
           />
-          <TimelineRuler timeline={timeline} onSeek={seek} />
+          <TimelineRuler
+            timeline={timeline}
+            onSeek={seek}
+            onLayerAdd={() =>
+              layerInteraction.select({ type: "layer", id: runtime.addLayer() })
+            }
+          />
           {/* Top layer first, like tracks in a timeline. */}
           {layerInteraction.layers
             .map((layer, index) => ({ layer, index }))
@@ -243,9 +239,11 @@ function getRenderMarkers(output: Output): RenderMarker[] {
 function TimelineRuler({
   timeline,
   onSeek,
+  onLayerAdd,
 }: {
   timeline: TimelineView;
   onSeek: (time: number) => void;
+  onLayerAdd: () => void;
 }) {
   const { tickStep, visible } = timeline;
   const ticks: number[] = [];
@@ -262,9 +260,17 @@ function TimelineRuler({
       className="h-7"
       subdivisions={false}
       label={
-        <span className="px-3 text-xs font-semibold text-muted-foreground">
-          Layers
-        </span>
+        <div className="flex w-full items-center justify-between px-3 text-xs font-semibold text-muted-foreground">
+          <span>Layers</span>
+          <Button
+            title="New layer"
+            aria-label="New layer"
+            className="size-5 hover:bg-neutral-700"
+            onClick={onLayerAdd}
+          >
+            <PlusIcon className="size-3" />
+          </Button>
+        </div>
       }
     >
       <button
