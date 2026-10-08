@@ -25,4 +25,4 @@
 - Make props/params required when all call sites always pass them
 - Shape arguments the way a reader expects from the operation. Take a value positionally when the operation conventionally takes just that value. Use an options object when a call site would be ambiguous without names
 - Use braces for every `switch` case body (`case "x": { ... }`, `default: { ... }`)
-- Docs: follow the writing conventions in the comment at the top of [docs/README.md](docs/README.md)
+- Docs: follow the writing conventions in [docs/AGENTS.md](docs/AGENTS.md)
