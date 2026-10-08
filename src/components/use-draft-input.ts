@@ -39,9 +39,10 @@ export function useDraftInput({
     const n = Number.parseFloat(draft);
     if (!Number.isNaN(n)) {
       onCommit(clamp(n, min, max));
-    } else {
-      setDraft(format(value));
     }
+    // Show the committed value again, which an applied commit then replaces
+    // with the new one, so a draft the commit did not apply does not linger.
+    setDraft(format(value));
   };
 
   const reset = () => setDraft(format(value));
