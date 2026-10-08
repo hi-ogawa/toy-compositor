@@ -240,7 +240,7 @@ test("edit layer names and a color layer's fill and box, and save them", async (
         color: "#ff0000",
         opacity: 0.5,
         start: 0,
-        end: 3,
+        end: 5,
         box: { x: 0, y: 0, width: 320, height: 360 },
       },
     ],
