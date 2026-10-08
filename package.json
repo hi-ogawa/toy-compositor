@@ -13,7 +13,6 @@
   "files": [
     "dist",
     "docs",
-    "!docs/AGENTS.md",
     "samples/synthetic"
   ],
   "type": "module",
