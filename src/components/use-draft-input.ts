@@ -10,7 +10,6 @@ type UseDraftInputOptions = {
   max?: number;
   /** Arrow keys step by this, and by ten times this with Shift. */
   step?: number;
-  format?: (value: number) => string;
 };
 
 /**
@@ -26,7 +25,6 @@ export function useDraftInput({
   min = -Infinity,
   max = Infinity,
   step = 1,
-  format = String,
 }: UseDraftInputOptions) {
   const [draft, setDraft] = useState<string>();
 
@@ -35,11 +33,6 @@ export function useDraftInput({
       return;
     }
     setDraft(undefined);
-    // Leave the value alone when the draft matches the display, so a rounded
-    // display never rewrites a more precise value.
-    if (draft === format(value)) {
-      return;
-    }
     const n = Number.parseFloat(draft);
     if (!Number.isNaN(n)) {
       onCommit(clamp(n, min, max));
@@ -53,7 +46,7 @@ export function useDraftInput({
 
   return {
     props: {
-      value: draft ?? format(value),
+      value: draft ?? String(value),
       onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
         setDraft(e.target.value),
       onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
