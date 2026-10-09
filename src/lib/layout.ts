@@ -70,33 +70,21 @@ export function getVisibleBox({
   };
 }
 
-/**
- * Center what the crop leaves on the canvas at the largest scale that keeps it
- * inside (contain), or the smallest scale that covers the canvas (cover).
- */
+/** Center the size on the canvas at the largest scale that keeps it inside. */
 export function getFitTransform({
   size,
-  crop,
   canvas,
-  mode,
 }: {
   size: Size;
-  crop: Crop;
   canvas: Size;
-  mode: "contain" | "cover";
 }): Transform {
-  const cropped = getCroppedBox({ size, crop });
-  const scale = (mode === "contain" ? Math.min : Math.max)(
-    canvas.width / cropped.width,
-    canvas.height / cropped.height,
+  const scale = Math.min(
+    canvas.width / size.width,
+    canvas.height / size.height,
   );
   return {
-    x: Math.round(
-      (canvas.width - cropped.width * scale) / 2 - cropped.x * scale,
-    ),
-    y: Math.round(
-      (canvas.height - cropped.height * scale) / 2 - cropped.y * scale,
-    ),
+    x: Math.round((canvas.width - size.width * scale) / 2),
+    y: Math.round((canvas.height - size.height * scale) / 2),
     scale,
   };
 }
@@ -169,6 +157,53 @@ export function getRescaledTransform({
     y: Math.round(transform.y + center.y * (transform.scale - scale)),
     scale,
   };
+}
+
+/**
+ * Scale uniformly so what the crop leaves spans the canvas along one
+ * dimension, against its edge there, and keep its center along the other.
+ */
+export function getFilledTransform({
+  size,
+  crop,
+  transform,
+  canvas,
+  dimension,
+}: {
+  size: Size;
+  crop: Crop;
+  transform: Transform;
+  canvas: Size;
+  dimension: "width" | "height";
+}): Transform {
+  const cropped = getCroppedBox({ size, crop });
+  const rescaled = getRescaledTransform({
+    size,
+    crop,
+    transform,
+    scale: canvas[dimension] / cropped[dimension],
+  });
+  const offset = getAlignOffset({
+    box: getVisibleBox({ size, crop, transform: rescaled }),
+    canvas,
+    alignment: dimension === "width" ? "left" : "top",
+  });
+  return { ...rescaled, x: rescaled.x + offset.x, y: rescaled.y + offset.y };
+}
+
+/** Stretch the box across the canvas along one dimension, keeping the other. */
+export function getFilledBox({
+  box,
+  canvas,
+  dimension,
+}: {
+  box: Box;
+  canvas: Size;
+  dimension: "width" | "height";
+}): Box {
+  return dimension === "width"
+    ? { ...box, x: 0, width: canvas.width }
+    : { ...box, y: 0, height: canvas.height };
 }
 
 /** What the crop leaves of the source, in source pixels. */

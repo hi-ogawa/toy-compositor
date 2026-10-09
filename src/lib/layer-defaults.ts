@@ -68,12 +68,7 @@ export function createMediaClip({
         start,
         in: mediaInfo.start,
         out: mediaInfo.end,
-        transform: getFitTransform({
-          size: mediaInfo.video!,
-          crop: NEUTRAL_VALUES.video.crop,
-          canvas,
-          mode: "contain",
-        }),
+        transform: getFitTransform({ size: mediaInfo.video!, canvas }),
         ...NEUTRAL_VALUES.video,
       };
     }
@@ -91,12 +86,7 @@ export function createMediaClip({
       return {
         type,
         src,
-        transform: getFitTransform({
-          size: mediaInfo.video!,
-          crop: NEUTRAL_VALUES.image.crop,
-          canvas,
-          mode: "contain",
-        }),
+        transform: getFitTransform({ size: mediaInfo.video!, canvas }),
         ...NEUTRAL_VALUES.image,
         ...getStillRange({ start, canvas }),
       };

@@ -13,7 +13,8 @@ import { apiClient } from "../lib/api-client";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import {
   getAlignOffset,
-  getFitTransform,
+  getFilledBox,
+  getFilledTransform,
   getRescaledTransform,
   getVisibleBox,
   type Alignment,
@@ -649,7 +650,7 @@ function TextFields({
  * Position and size describe the whole scaled source, before the crop hides
  * its edges. Scale, width, and height are linked views of the one stored
  * scale, and editing any of them keeps what the crop leaves centered where it
- * was. Aligning and fitting place what the crop leaves, since that is what
+ * was. Aligning and filling place what the crop leaves, since that is what
  * shows on the canvas.
  */
 function TransformFields({
@@ -718,16 +719,24 @@ function TransformFields({
           });
         }}
       />
-      {(["contain", "cover"] as const).map((mode) => (
+      {(["width", "height"] as const).map((dimension) => (
         <button
-          key={mode}
+          key={dimension}
           type="button"
           onClick={() =>
-            onCommit(getFitTransform({ size: source, crop, canvas, mode }))
+            onCommit(
+              getFilledTransform({
+                size: source,
+                crop,
+                transform,
+                canvas,
+                dimension,
+              }),
+            )
           }
           className={BUTTON_CLASS}
         >
-          {mode === "contain" ? "Fit canvas" : "Fill canvas"}
+          Fill {dimension}
         </button>
       ))}
     </Group>
@@ -762,15 +771,16 @@ function BoxFields({
           onCommit({ ...box, x: box.x + offset.x, y: box.y + offset.y });
         }}
       />
-      <button
-        type="button"
-        onClick={() =>
-          onCommit({ x: 0, y: 0, width: canvas.width, height: canvas.height })
-        }
-        className={cn("col-span-2", BUTTON_CLASS)}
-      >
-        Fill canvas
-      </button>
+      {(["width", "height"] as const).map((dimension) => (
+        <button
+          key={dimension}
+          type="button"
+          onClick={() => onCommit(getFilledBox({ box, canvas, dimension }))}
+          className={BUTTON_CLASS}
+        >
+          Fill {dimension}
+        </button>
+      ))}
       {children}
     </Group>
   );

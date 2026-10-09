@@ -96,7 +96,7 @@ test("place a media layer by position, scale, and size, and save them", async ({
   });
 });
 
-test("align and fit a cropped media clip and a color clip against the canvas, and save them", async ({
+test("align a cropped media clip and a color clip and fill the canvas with them, and save them", async ({
   page,
   editor,
 }) => {
@@ -129,17 +129,17 @@ test("align and fit a cropped media clip and a color clip against the canvas, an
   await expect(placed).toHaveCSS("left", "280px");
   await expect(placed).toHaveCSS("top", "270px");
 
-  // Fit it to the canvas, and confirm what the crop leaves fills the canvas
-  // height, centered.
-  await inspector.getByRole("button", { name: "Fit canvas" }).click();
+  // Fill the canvas height, and confirm what the crop leaves scales around its
+  // horizontal center.
+  await inspector.getByRole("button", { name: "Fill height" }).click();
   await expectInspectorFields(page, { x: "-160", y: "0", "scale %": "400" });
   await expect(placed).toHaveCSS("left", "160px");
   await expect(placed).toHaveCSS("width", "320px");
   await expect(placed).toHaveCSS("height", "360px");
 
-  // Fill the canvas, and confirm what the crop leaves covers the canvas width,
-  // centered.
-  await inspector.getByRole("button", { name: "Fill canvas" }).click();
+  // Fill the canvas width, and confirm what the crop leaves scales around its
+  // vertical center.
+  await inspector.getByRole("button", { name: "Fill width" }).click();
   await expectInspectorFields(page, { x: "-640", y: "-180", "scale %": "800" });
   await expect(placed).toHaveCSS("left", "0px");
   await expect(placed).toHaveCSS("width", "640px");
@@ -160,8 +160,17 @@ test("align and fit a cropped media clip and a color clip against the canvas, an
     height: "100",
   });
 
-  // Fill the canvas with it again.
-  await inspector.getByRole("button", { name: "Fill canvas" }).click();
+  // Fill the canvas width, and confirm the box keeps its vertical place.
+  await inspector.getByRole("button", { name: "Fill width" }).click();
+  await expectInspectorFields(page, {
+    x: "0",
+    y: "260",
+    width: "640",
+    height: "100",
+  });
+
+  // Fill the canvas height too, and confirm the box covers the canvas.
+  await inspector.getByRole("button", { name: "Fill height" }).click();
   await expectInspectorFields(page, {
     x: "0",
     y: "0",
