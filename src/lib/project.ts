@@ -110,8 +110,7 @@ export function createEmptyProject(preset: CanvasPreset): Project {
 }
 
 /**
- * A lane in the stack, like a track in a video editor, holding clips. The
- * editor only creates layers with one clip so far.
+ * A lane in the stack, like a track in a video editor, holding clips.
  */
 export type Layer = {
   name: string;
