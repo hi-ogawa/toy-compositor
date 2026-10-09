@@ -1,3 +1,4 @@
+import path from "node:path";
 import {
   type APIRequestContext,
   type Browser,
@@ -6,7 +7,7 @@ import {
   type Page,
   request as playwrightRequest,
 } from "@playwright/test";
-import { inject, test as base } from "vitest";
+import { inject, recordArtifact, test as base } from "vitest";
 
 // Mirrors Playwright Test's built-in fixtures: a browser shared across tests,
 // and a fresh context and page per test. The browser is a connection per file
@@ -17,11 +18,27 @@ export const test = base
     onCleanup(() => browser.close());
     return browser;
   })
-  .extend("context", async ({ browser }, { onCleanup }) => {
+  .extend("context", async ({ browser, task }, { onCleanup }) => {
     const context: BrowserContext = await browser.newContext({
       baseURL: inject("baseURL"),
     });
-    onCleanup(() => context.close());
+    // Record a native Playwright trace per test and attach it to the test,
+    // in place of Playwright Test's `trace` option. This uses `recordArtifact`
+    // because `annotate` is rejected once the test body has finished, which
+    // includes fixture cleanup and `onTestFinished`.
+    await context.tracing.start({ snapshots: true, sources: true });
+    onCleanup(async () => {
+      const tracePath = path.resolve(
+        ".local/e2e-vitest-traces",
+        `${task.id}.zip`,
+      );
+      await context.tracing.stop({ path: tracePath });
+      await recordArtifact(task, {
+        type: "playwright:trace",
+        attachments: [{ path: tracePath, contentType: "application/zip" }],
+      });
+      await context.close();
+    });
     return context;
   })
   .extend("page", async ({ context }) => {

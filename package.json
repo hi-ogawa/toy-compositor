@@ -49,6 +49,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
+    "@vitest/ui": "5.0.3",
     "lucide-react": "^1.48.0",
     "pkg-pr-new": "^0.0.88",
     "react": "^19.3.0",
