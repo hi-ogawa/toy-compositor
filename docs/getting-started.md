@@ -1,4 +1,4 @@
-# Getting started
+# Getting Started
 
 ## Install
 
@@ -13,7 +13,7 @@ On Linux, `toy-compositor install-desktop` adds an app launcher entry that runs 
 
 The editor and the renderer rewrite project files from an older build to the current format when they open them and report what changed, or reject one with a message naming the command that fixes it, such as `update-media`. `toy-compositor migrate <project.json...>` rewrites them to the current format, for example before your own scripts read them.
 
-## Project folders
+## Project Folders
 
 A project folder holds its project files at the top level and their media under `media/`. Each project file describes one deliverable, such as a video or its thumbnail, and its clips refer to media by paths relative to the folder, such as `media/clip.mp4`. The editor's library lists the files in `media/`.
 
@@ -21,7 +21,7 @@ The editor's start page lists the folders you add with `toy-compositor add`, `to
 
 The bundled synthetic sample, whose path `toy-compositor --help` prints, is a project folder with a video project, `project.json`, and its still thumbnail, `thumbnail.json`. To try it, copy the whole folder.
 
-## From media to a render
+## From Media to a Render
 
 1. Make a project folder and put media files in its `media/`. Pre-process camera footage first, especially from a phone, as described in [pre-processing](preprocessing.md).
 2. Run `toy-compositor serve <folder>`, create a project from the editor's start page, and add layers from the library. The editor saves back to the project file.

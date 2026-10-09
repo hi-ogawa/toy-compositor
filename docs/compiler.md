@@ -1,8 +1,8 @@
-# ffmpeg compiler
+# ffmpeg Compiler
 
 The renderer in [src/lib/render](../src/lib/render) turns a project file ([project-format.md](project-format.md)) into one ffmpeg command and runs it. The render depends only on the project's numbers, so drift in the editor's preview never shifts it. The compiler assumes evenly spaced source frames, which [pre-processing](preprocessing.md) guarantees for camera footage.
 
-## Draw text, compile, run
+## Draw Text, Compile, Run
 
 A render has three steps. First, it draws each text clip to a transparent PNG with ImageMagick. Then the project, which carries its media info ([project-format.md](project-format.md#media)), and the text images are compiled into ffmpeg arguments. Finally, ffmpeg runs.
 
@@ -10,7 +10,7 @@ A render has three steps. First, it draws each text clip to a transparent PNG wi
 
 Compiling reads no files and starts no processes, so it is plain data in and arguments out. All the I/O sits at the two ends. `--dry-run` stops before running ffmpeg, but it still writes the text PNGs, because the printed command refers to them.
 
-## Read an ffmpeg command
+## Read an ffmpeg Command
 
 The compiled command has three parts: inputs, one filter graph, and an output. The rest of this doc uses the names below.
 
@@ -41,7 +41,7 @@ The project maps onto those parts like this:
 
 Clips and inputs are not one to one. A color clip has no input, a video clip with sound has two, and a clip outside the output range has none. Only the filter graph connects everything.
 
-## Cut each clip to the output
+## Cut Each Clip to the Output
 
 Every clip is compiled on its own, into at most one picture stream and one sound stream. A clip does not need to know which other clips exist, and a clip compiles the same whether its layer holds one clip or several. The clip does not see its layer either. After each clip compiles, the layer's `muted` drops its sound stream and `hidden` drops its picture stream.
 
@@ -76,7 +76,7 @@ What each clip type turns into:
 
 Sound is normalized to 48 kHz stereo, faded in and out at the clip's own edges when the clip asks for it, trimmed to the visible part, and delayed to its offset. The output range only cuts a clip and never moves its fades, so a sound is read from the clip's start rather than the visible part's, because `afade` cannot start before its stream does.
 
-## Stack pictures, mix sounds
+## Stack Pictures, Mix Sounds
 
 Once every clip has its streams, one pass joins them into a single filter graph. The picture chain starts from a solid canvas covering the whole output. Each picture is overlaid on the result so far at its position, in layer order, so later layers sit on top. A layer's clips are overlaid one after another at the layer's position. When a picture stream ends before the output does, the layers below show through. Every sound goes into one mix, which is padded or trimmed to the output length.
 
@@ -121,7 +121,7 @@ The video clip's layer is muted, so it adds no sound. `eof_action=pass` is what 
 -map [vout] -c:v libx264 -preset medium -crf 20 -r 30 -t 3 -map [aout] -c:a aac -b:a 192k -movflags +faststart out.mp4
 ```
 
-## Stills
+## Render a Still as One Frame
 
 A project whose `output` is a still renders the same graph over a single frame. The output range becomes one frame long starting at the still's time, no clip contributes sound, and ffmpeg writes one image file instead of encoding a video. A thumbnail therefore only decodes each source around its time, however long the source is.
 
@@ -136,7 +136,7 @@ For the synthetic thumbnail at 1.5 seconds, the video input reads one frame's wo
 
 A project is declarative data, so it compiles directly to an ffmpeg filter graph. A React-based renderer such as Remotion would need a JSON-to-React interpreter in front of it, and its offline render captures every frame from headless Chrome, which buys nothing for static layouts of existing media. ffmpeg also gives direct control over encoding and file size.
 
-## Known gaps
+## Known Gaps
 
 - Color metadata is incomplete. The output is BT.709 limited range like typical camera footage, but only the matrix is tagged, not the transfer and primaries. RGB clips (images, text, color) are likely converted to YUV with ffmpeg's default BT.601 matrix while the file says BT.709, so they may be very slightly off. The fix is to convert with `out_color_matrix=bt709:out_range=tv` and tag the output with `-colorspace bt709 -color_primaries bt709 -color_trc bt709`. It is only visible side by side.
 - Encoding is fixed at `libx264 -crf 20 -preset medium` and not tuned for file size.

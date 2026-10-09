@@ -1,4 +1,4 @@
-# Pre-processing footage
+# Pre-processing Footage
 
 Camera footage, especially from a phone, should be transcoded before it goes into a project. toy-compositor does not do this itself, so it is one ffmpeg command run by hand. Pre-processing solves four problems:
 
@@ -20,11 +20,11 @@ ffmpeg -i input.mp4 -vf fps=30 -c:v libx264 -b:v 8000k -g 30 -preset slow -c:a a
 
 The rest of this doc explains the frame timing and seeking problems, and how to check a pre-processed file.
 
-## Constant frame rate
+## Constant Frame Rate
 
 A project's `media` records one frame rate per video file, and frame times are computed from it as the stream's start time plus a whole number of frame durations. The renderer seeks to the frame nearest a source time this way. With a variable frame rate, the real frames drift away from those computed times, so a render can land on a different frame than the project intends. `fps=30` rewrites the footage onto an even grid, so computed and real frame times agree.
 
-## Keyframe interval
+## Keyframe Interval
 
 A keyframe is a complete picture, and the frames after it only store what changed. To show an arbitrary frame, a decoder starts from the keyframe before it and decodes forward, so the gap between keyframes sets the worst-case seek time. Without `-g`, x264 allows up to 250 frames between keyframes, which is 8.33 seconds at 30fps.
 
@@ -37,7 +37,7 @@ The editor seeks whenever the playhead moves while paused, so long keyframe inte
 
 At a fixed bitrate, more keyframes leave slightly fewer bits for the other frames, but the SSIM difference above is far below what is visible. The seek time scales with the distance from the previous keyframe, so the default interval ranges from fast just after a keyframe to over half a second before the next.
 
-## Check a pre-processed file
+## Check a Pre-processed File
 
 ```sh
 # Frame rate, which should be 30/1 for both
