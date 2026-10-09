@@ -59,7 +59,7 @@ export function useDraftInput({
         setDraft(e.target.value),
       onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (matchKeyboardEvent(e, "Enter")) {
-          commit();
+          // Blurring commits, so committing here too would commit twice.
           e.currentTarget.blur();
         } else if (matchKeyboardEvent(e, "Escape")) {
           reset();
