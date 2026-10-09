@@ -70,6 +70,12 @@ test("place a media layer by position, scale, and size, and save them", async ({
   await commitInspectorField(page, { name: "right", value: "-0.2" });
   await expectInspectorFields(page, { right: "0" });
 
+  // Type a crop and press Escape, and confirm the field drops the typed value.
+  const top = getInspectorField(page, { name: "top" });
+  await top.fill("0.3");
+  await top.press("Escape");
+  await expectInspectorFields(page, { top: "0" });
+
   // Move it partly off the canvas, which clips it rather than limiting it.
   await commitInspectorField(page, { name: "x", value: "-400" });
   await expect(placed).toHaveCSS("left", "-320px");
