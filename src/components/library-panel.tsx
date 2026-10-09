@@ -20,12 +20,11 @@ type LibraryItemSource = MediaFile | { type: "text" } | { type: "color" };
 export function LibraryPanel({
   runtime,
   projectPath,
-  layerId,
+  selectedLayerId,
 }: {
   runtime: EditorRuntime;
   projectPath: string;
-  /** The selected layer, which clips are added to. */
-  layerId?: string;
+  selectedLayerId?: string;
 }) {
   const filesQuery = useQuery({
     queryKey: ["media-files", projectPath],
@@ -39,18 +38,21 @@ export function LibraryPanel({
   });
   const addClipMutation = useMutation({
     mutationFn: async (source: LibraryItemSource) => {
-      if (!layerId) {
+      if (!selectedLayerId) {
         throw new Error("Select a layer first");
       }
       switch (source.type) {
         case "text": {
-          return runtime.addTextClip(layerId);
+          return runtime.addTextClip(selectedLayerId);
         }
         case "color": {
-          return runtime.addColorClip(layerId);
+          return runtime.addColorClip(selectedLayerId);
         }
         default: {
-          return runtime.addMediaClip({ layerId, file: source });
+          return runtime.addMediaClip({
+            layerId: selectedLayerId,
+            file: source,
+          });
         }
       }
     },
