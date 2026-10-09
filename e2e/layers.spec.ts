@@ -82,8 +82,8 @@ test("add clips to a layer from the Library tab", async ({ page, editor }) => {
     .click();
   await expect(page.getByTestId("timeline-layer-6-clip-1")).toBeVisible();
 
-  // Save, and confirm each layer's clips reach the file in order by start,
-  // existing media info is reused, and the new file's info is probed.
+  // Save, and confirm each layer's clips reach the file in the order they were
+  // added, existing media info is reused, and the new file's info is probed.
   await page.getByTestId("editor-save-button").click();
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
     "data-status",
@@ -129,6 +129,14 @@ test("add clips to a layer from the Library tab", async ({ page, editor }) => {
       hidden: false,
       clips: [
         {
+          type: "image",
+          src: "media/image.png",
+          transform: { x: 0, y: 0, scale: 4 },
+          crop: { left: 0, right: 0, top: 0, bottom: 0 },
+          start: 4,
+          end: 9,
+        },
+        {
           type: "audio",
           src: "media/extra.wav",
           start: 0,
@@ -136,14 +144,6 @@ test("add clips to a layer from the Library tab", async ({ page, editor }) => {
           out: 3,
           fadeIn: 0,
           fadeOut: 0,
-        },
-        {
-          type: "image",
-          src: "media/image.png",
-          transform: { x: 0, y: 0, scale: 4 },
-          crop: { left: 0, right: 0, top: 0, bottom: 0 },
-          start: 4,
-          end: 9,
         },
       ],
     },

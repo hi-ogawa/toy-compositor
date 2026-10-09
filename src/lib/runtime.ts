@@ -123,16 +123,15 @@ export class EditorRuntime {
     });
   }
 
-  /** Keeps the layer's clips in order by start. */
   updateClip({ id, update }: { id: string; update: Partial<Clip> }): void {
     const { layers } = this.store.get().project;
     const { layer } = findClip(layers, id)!;
-    const clips = sortClips(
-      layer.clips.map((clip) =>
+    this.replaceClips({
+      layerId: layer.id,
+      clips: layer.clips.map((clip) =>
         clip.id === id ? ({ ...clip, ...update } as EditorClip) : clip,
       ),
-    );
-    this.replaceClips({ layerId: layer.id, clips });
+    });
   }
 
   /** Adds an empty layer on top of the stack. */
@@ -319,7 +318,7 @@ export class EditorRuntime {
     };
   }
 
-  /** Adds the clip to the layer in order by start. */
+  /** Adds the clip after the layer's other clips. */
   private insertClip({
     layerId,
     clip,
@@ -333,7 +332,7 @@ export class EditorRuntime {
     const editorClip = { ...clip, id: crypto.randomUUID() } as EditorClip;
     this.replaceClips({
       layerId,
-      clips: sortClips([...layer.clips, editorClip]),
+      clips: [...layer.clips, editorClip],
     });
     if (editorClip.type === "video" || editorClip.type === "audio") {
       this.loadAudio(editorClip.src);
@@ -488,10 +487,6 @@ export function findClip(
     }
   }
   return undefined;
-}
-
-function sortClips(clips: EditorClip[]): EditorClip[] {
-  return clips.toSorted((a, b) => a.start - b.start);
 }
 
 function serializeEditorProject(project: EditorProject): Project {
