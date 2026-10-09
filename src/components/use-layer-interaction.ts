@@ -123,7 +123,7 @@ export function useLayerInteraction({
     runtime.updateClip({ id, update: clip });
   }
 
-  /** Removes the selected layer, or the selected clip's layer, the only removal the editor has. */
+  /** Removes the selected layer with its clips, or only the selected clip. */
   function handleRemoveShortcut(event: KeyboardEvent): boolean {
     if (
       !(selection?.type === "layer" || selection?.type === "clip") ||
@@ -135,11 +135,11 @@ export function useLayerInteraction({
     ) {
       return false;
     }
-    runtime.removeLayer(
-      selection.type === "layer"
-        ? selection.id
-        : findClip(layers, selection.id)!.layer.id,
-    );
+    if (selection.type === "layer") {
+      runtime.removeLayer(selection.id);
+    } else {
+      runtime.removeClip(selection.id);
+    }
     setSelection(undefined);
     return true;
   }

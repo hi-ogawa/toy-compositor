@@ -31,33 +31,24 @@ export function createLayerName({
   });
 }
 
-/** A media file's layer is named after the file, and holds one clip of it. */
-export function createMediaLayer({
-  src,
-  type,
-  mediaInfo,
-  canvas,
-  start,
+/** A new layer holds no clips, and is numbered among every layer, such as `Layer 2`. */
+export function createEmptyLayer({
+  layers,
 }: {
-  src: string;
-  type: MediaType;
-  mediaInfo: MediaInfo;
-  canvas: Canvas;
-  start: number;
+  layers: readonly Layer[];
 }): Layer {
-  const name = src
-    .split("/")
-    .pop()!
-    .replace(/\.[^.]+$/, "");
   return {
-    name,
+    name: createNumberedName({
+      names: layers.map((layer) => layer.name),
+      prefix: "Layer",
+    }),
     ...NEUTRAL_VALUES.layer,
-    clips: [createMediaClip({ src, type, mediaInfo, canvas, start })],
+    clips: [],
   };
 }
 
 /** Video and images start fitted inside the canvas, centered. */
-function createMediaClip({
+export function createMediaClip({
   src,
   type,
   mediaInfo,
@@ -104,23 +95,7 @@ function createMediaClip({
   }
 }
 
-export function createTextLayer({
-  name,
-  canvas,
-  start,
-}: {
-  name: string;
-  canvas: Canvas;
-  start: number;
-}): Layer {
-  return {
-    name,
-    ...NEUTRAL_VALUES.layer,
-    clips: [createTextClip({ canvas, start })],
-  };
-}
-
-function createTextClip({
+export function createTextClip({
   canvas,
   start,
 }: {
@@ -148,23 +123,7 @@ function createTextClip({
   };
 }
 
-export function createColorLayer({
-  name,
-  canvas,
-  start,
-}: {
-  name: string;
-  canvas: Canvas;
-  start: number;
-}): Layer {
-  return {
-    name,
-    ...NEUTRAL_VALUES.layer,
-    clips: [createColorClip({ canvas, start })],
-  };
-}
-
-function createColorClip({
+export function createColorClip({
   canvas,
   start,
 }: {
