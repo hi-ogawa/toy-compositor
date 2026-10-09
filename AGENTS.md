@@ -5,6 +5,7 @@
 | Command         | When                                      |
 | --------------- | ----------------------------------------- |
 | `pnpm lint`     | Format, Lint, Typecheck after any changes |
+| `pnpm test`     | Unit tests (src/, vitest)                 |
 | `pnpm test-e2e` | E2E tests (e2e/, playwright)              |
 
 ## Conventions

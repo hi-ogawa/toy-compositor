@@ -233,6 +233,32 @@ test("drag a clip to move it on the composition preview", async ({
   });
 });
 
+test("drag a corner handle to scale a clip on the composition preview", async ({
+  page,
+  editor,
+}) => {
+  // Open the project and select the image.
+  await page.goto(editor.url);
+  const canvas = page.getByTestId("composition-canvas");
+  const placed = canvas
+    .getByRole("img", { name: "Label backdrop", exact: true })
+    .locator("..");
+  await clickCanvasAt(page, { x: 450, y: 250 });
+  await expectInspectorTitle(page, { name: "Label backdrop" });
+
+  // Drag its bottom-right handle, and see it scale from the top-left corner.
+  await expect(canvas.getByLabel("Resize handle bottom right")).toBeVisible();
+  await dragCanvasBy(page, { x: 580, y: 330 }, { deltaX: 80, deltaY: 20 });
+  await expect(placed).toHaveCSS("width", "240px");
+  await expectInspectorFields(page, {
+    x: "420",
+    y: "240",
+    "scale %": "150",
+    width: "240",
+    height: "135",
+  });
+});
+
 test("compose a still project at its output time", async ({ page, editor }) => {
   // Open a still-output project and confirm its video seeks to the still's time.
   await page.goto(

@@ -3,7 +3,7 @@ import { usePointerGesture } from "../hooks/use-pointer-gesture";
 import { useResizeObserver } from "../hooks/use-resize-observer";
 import type { ProjectClientStorage } from "../lib/client-storage";
 import { measureFontMetrics } from "../lib/font-metrics";
-import { getPictureRange, getVisibleBox } from "../lib/layout";
+import { getPictureRange, getVisibleBox, type BoxHandle } from "../lib/layout";
 import type { Box, Project, TextClip, VisualClip } from "../lib/project";
 import type { EditorRuntime, EditorProject } from "../lib/runtime";
 import { CompositionMedia } from "./composition-media";
@@ -165,16 +165,6 @@ function PreviewClip({
   scale: number;
   layerInteraction: LayerInteraction;
 }) {
-  const toCanvasDelta = ({
-    deltaX,
-    deltaY,
-  }: {
-    deltaX: number;
-    deltaY: number;
-  }) => ({
-    x: deltaX / scale,
-    y: deltaY / scale,
-  });
   const gestureRef = usePointerGesture({
     onStart: (event) => {
       // Keeps the image's native drag and text selection out, and the press
@@ -184,11 +174,11 @@ function PreviewClip({
     },
     onClick: () => layerInteraction.select({ type: "clip", id }),
     onDragStart: () =>
-      layerInteraction.startCanvasEdit({ type: "move", id, clip }),
+      layerInteraction.startCanvasEdit({ edit: { type: "move" }, id, clip }),
     onDragMove: (_event, gesture) =>
-      layerInteraction.updateCanvasEdit(toCanvasDelta(gesture)),
+      layerInteraction.updateCanvasEdit(toCanvasDelta(gesture, scale)),
     onDragEnd: (_event, gesture) =>
-      layerInteraction.finishCanvasEdit(toCanvasDelta(gesture)),
+      layerInteraction.finishCanvasEdit(toCanvasDelta(gesture, scale)),
     onCancel: layerInteraction.cancelEdit,
   });
   const box = getPreviewBox({ clip, mediaInfoMap });
@@ -236,8 +226,99 @@ function PreviewClip({
           style={style}
         />
       )}
+      {selected &&
+        (clip.type === "video" || clip.type === "image") &&
+        MEDIA_HANDLES.map((handle) => (
+          <ResizeHandle
+            key={`${handle.x}-${handle.y}`}
+            handle={handle}
+            box={box}
+            id={id}
+            clip={clip}
+            scale={scale}
+            layerInteraction={layerInteraction}
+          />
+        ))}
     </div>
   );
+}
+
+/** A single scale keeps a media clip's aspect ratio, so it has only corners. */
+const MEDIA_HANDLES: BoxHandle[] = [
+  { x: 0, y: 0 },
+  { x: 1, y: 0 },
+  { x: 0, y: 1 },
+  { x: 1, y: 1 },
+];
+
+/** Screen pixels, so a handle keeps its size at any preview scale. */
+const HANDLE_SIZE = 8;
+
+const HANDLE_ROWS = { 0: "top", 0.5: "middle", 1: "bottom" };
+
+const HANDLE_COLUMNS = { 0: "left", 0.5: "center", 1: "right" };
+
+function ResizeHandle({
+  handle,
+  box,
+  id,
+  clip,
+  scale,
+  layerInteraction,
+}: {
+  handle: BoxHandle;
+  box: Box;
+  id: string;
+  clip: VisualClip;
+  scale: number;
+  layerInteraction: LayerInteraction;
+}) {
+  const gestureRef = usePointerGesture({
+    onStart: (event) => {
+      // Keeps the press from reaching the clip, which would move it.
+      event.preventDefault();
+      event.stopPropagation();
+    },
+    onDragStart: () =>
+      layerInteraction.startCanvasEdit({
+        edit: { type: "resize", handle },
+        id,
+        clip,
+      }),
+    onDragMove: (_event, gesture) =>
+      layerInteraction.updateCanvasEdit(toCanvasDelta(gesture, scale)),
+    onDragEnd: (_event, gesture) =>
+      layerInteraction.finishCanvasEdit(toCanvasDelta(gesture, scale)),
+    onCancel: layerInteraction.cancelEdit,
+  });
+  const size = HANDLE_SIZE / scale;
+  const name = `${HANDLE_ROWS[handle.y]} ${HANDLE_COLUMNS[handle.x]}`;
+  return (
+    // Above the mask over the area outside the frame, like the outline.
+    <div
+      ref={gestureRef}
+      aria-label={`Resize handle ${name}`}
+      className={cn(
+        "absolute z-10 border-primary bg-white",
+        handle.x === handle.y ? "cursor-nwse-resize" : "cursor-nesw-resize",
+      )}
+      style={{
+        left: box.x + handle.x * box.width - size / 2,
+        top: box.y + handle.y * box.height - size / 2,
+        width: size,
+        height: size,
+        borderWidth: 1 / scale,
+      }}
+    />
+  );
+}
+
+/** Convert a pointer's travel on screen to canvas pixels. */
+function toCanvasDelta(
+  { deltaX, deltaY }: { deltaX: number; deltaY: number },
+  scale: number,
+) {
+  return { x: deltaX / scale, y: deltaY / scale };
 }
 
 /** The clip's rectangle in canvas pixels. */

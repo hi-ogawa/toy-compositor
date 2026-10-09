@@ -3,7 +3,7 @@ import {
   applyCanvasEdit,
   applyTimeEdit,
   type CanvasEditDelta,
-  type CanvasEditType,
+  type CanvasEdit,
   type TimeEditType,
 } from "../lib/clip-edit";
 import { matchKeyboardEvent } from "../lib/keyboard";
@@ -20,7 +20,7 @@ type ClipEdit =
   | { domain: "time"; type: TimeEditType; id: string; clip: Clip }
   | {
       domain: "canvas";
-      type: CanvasEditType;
+      edit: CanvasEdit;
       id: string;
       original: VisualClip;
       clip: Clip;
@@ -86,16 +86,27 @@ export function useLayerInteraction({
   }
 
   function startCanvasEdit({
-    type,
+    edit,
     id,
     clip,
   }: {
-    type: CanvasEditType;
+    edit: CanvasEdit;
     id: string;
     clip: VisualClip;
   }) {
     select({ type: "clip", id });
-    setEdit({ domain: "canvas", type, id, original: clip, clip });
+    setEdit({ domain: "canvas", edit, id, original: clip, clip });
+  }
+
+  function getCanvasEditedClip(
+    edit: Extract<ClipEdit, { domain: "canvas" }>,
+    delta: CanvasEditDelta,
+  ): VisualClip {
+    return applyCanvasEdit(edit.original, {
+      edit: edit.edit,
+      delta,
+      mediaInfoMap,
+    });
   }
 
   function updateCanvasEdit(delta: CanvasEditDelta) {
@@ -104,7 +115,7 @@ export function useLayerInteraction({
     }
     setEdit({
       ...edit,
-      clip: applyCanvasEdit(edit.original, { type: edit.type, delta }),
+      clip: getCanvasEditedClip(edit, delta),
     });
   }
 
@@ -112,10 +123,7 @@ export function useLayerInteraction({
     if (edit?.domain !== "canvas") {
       return;
     }
-    commitEdit(
-      edit.id,
-      applyCanvasEdit(edit.original, { type: edit.type, delta }),
-    );
+    commitEdit(edit.id, getCanvasEditedClip(edit, delta));
   }
 
   function commitEdit(id: string, clip: Clip) {
