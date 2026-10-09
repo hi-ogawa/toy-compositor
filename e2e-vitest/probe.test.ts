@@ -1,6 +1,6 @@
-import { expect } from "@playwright/test";
 import { describe, expect as vitestExpect } from "vitest";
 import { test } from "./helper.ts";
+import { expect } from "./vitest-playwright/index.ts";
 
 // Deliberately failing probes of how Playwright Test's standalone `expect`
 // behaves under Vitest. Run with `E2E_PROBE=1` and read the failure output.

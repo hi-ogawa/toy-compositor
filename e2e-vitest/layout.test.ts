@@ -1,5 +1,5 @@
-import { expect } from "@playwright/test";
 import { dragBy, test } from "./helper.ts";
+import { expect } from "./vitest-playwright/index.ts";
 
 test("restore the panel layout when reopening the editor", async ({
   page,
