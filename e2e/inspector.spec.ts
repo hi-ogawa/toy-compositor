@@ -70,10 +70,15 @@ test("place a media layer by position, scale, and size, and save them", async ({
   await commitInspectorField(page, { name: "right", value: "-0.2" });
   await expectInspectorFields(page, { right: "0" });
 
-  // Type a crop and press Escape, and confirm the field drops the typed value.
+  // Type a crop and press Escape, and confirm the field reverts the typed
+  // value and stays focused. Press Escape again to leave the field.
   const top = getInspectorField(page, { name: "top" });
   await top.fill("0.3");
   await top.press("Escape");
+  await expectInspectorFields(page, { top: "0" });
+  await expect(top).toBeFocused();
+  await top.press("Escape");
+  await expect(top).not.toBeFocused();
   await expectInspectorFields(page, { top: "0" });
 
   // Move it partly off the canvas, which clips it rather than limiting it.

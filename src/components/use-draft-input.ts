@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { flushSync } from "react-dom";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import { clamp } from "../utils/math";
 
@@ -13,8 +12,9 @@ type UseDraftInputOptions = {
 };
 
 /**
- * Commits only on Enter or blur. Arrow keys step the committed value, which is
- * the main way to nudge layout.
+ * Commits only on Enter or blur. Escape reverts the typed text, and a second
+ * Escape leaves the field. Arrow keys step the committed value, which is the
+ * main way to nudge layout.
  *
  * The draft exists only while the user edits, so the field otherwise shows the
  * value itself, including after a commit that leaves it unchanged.
@@ -51,12 +51,14 @@ export function useDraftInput({
         setDraft(e.target.value),
       onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (matchKeyboardEvent(e, "Enter")) {
-          // Blurring commits, so committing here too would commit twice.
+          // Leave the field, which commits the draft.
           e.currentTarget.blur();
         } else if (matchKeyboardEvent(e, "Escape")) {
-          // Drop the draft before blurring, so the blur has nothing to commit.
-          flushSync(() => setDraft(undefined));
-          e.currentTarget.blur();
+          if (draft === undefined) {
+            e.currentTarget.blur();
+          } else {
+            setDraft(undefined);
+          }
         } else if (matchKeyboardEvent(e, "ArrowUp")) {
           e.preventDefault();
           stepBy(step);
