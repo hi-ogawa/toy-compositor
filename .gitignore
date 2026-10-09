@@ -9,3 +9,6 @@ dist
 test-results/
 playwright-report/
 .playwright-cli/
+
+# Vitest HTML report
+.vitest/
