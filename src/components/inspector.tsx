@@ -786,32 +786,40 @@ function BoxFields({
   );
 }
 
+/** Horizontal alignments, then vertical ones, each under its axis's fields. */
 const ALIGN_BUTTONS = [
-  { alignment: "left", label: "Align left", Icon: AlignStartVerticalIcon },
-  {
-    alignment: "center",
-    label: "Align center",
-    Icon: AlignCenterVerticalIcon,
-  },
-  { alignment: "right", label: "Align right", Icon: AlignEndVerticalIcon },
-  { alignment: "top", label: "Align top", Icon: AlignStartHorizontalIcon },
-  {
-    alignment: "middle",
-    label: "Align middle",
-    Icon: AlignCenterHorizontalIcon,
-  },
-  { alignment: "bottom", label: "Align bottom", Icon: AlignEndHorizontalIcon },
-] satisfies { alignment: Alignment; label: string; Icon: LucideIcon }[];
+  [
+    { alignment: "left", label: "Align left", Icon: AlignStartVerticalIcon },
+    {
+      alignment: "center",
+      label: "Align center",
+      Icon: AlignCenterVerticalIcon,
+    },
+    { alignment: "right", label: "Align right", Icon: AlignEndVerticalIcon },
+  ],
+  [
+    { alignment: "top", label: "Align top", Icon: AlignStartHorizontalIcon },
+    {
+      alignment: "middle",
+      label: "Align middle",
+      Icon: AlignCenterHorizontalIcon,
+    },
+    {
+      alignment: "bottom",
+      label: "Align bottom",
+      Icon: AlignEndHorizontalIcon,
+    },
+  ],
+] satisfies { alignment: Alignment; label: string; Icon: LucideIcon }[][];
 
-/** Horizontal alignments, then vertical ones, against the canvas. */
 function AlignButtons({
   onAlign,
 }: {
   onAlign: (alignment: Alignment) => void;
 }) {
-  return (
-    <div className="col-span-2 flex gap-1">
-      {ALIGN_BUTTONS.map(({ alignment, label, Icon }) => (
+  return ALIGN_BUTTONS.map((buttons, axis) => (
+    <div key={axis} className="flex gap-1">
+      {buttons.map(({ alignment, label, Icon }) => (
         <button
           key={alignment}
           type="button"
@@ -820,7 +828,6 @@ function AlignButtons({
           onClick={() => onAlign(alignment)}
           className={cn(
             "flex flex-1 items-center justify-center",
-            alignment === "top" && "ml-1",
             BUTTON_CLASS,
           )}
         >
@@ -828,7 +835,7 @@ function AlignButtons({
         </button>
       ))}
     </div>
-  );
+  ));
 }
 
 function FitTextHeightButton({
