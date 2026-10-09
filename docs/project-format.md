@@ -1,4 +1,4 @@
-# Project format
+# Project Format
 
 A project is one JSON file that describes one deliverable: a canvas, an output, which is a video range or a still frame, and a stack of layers. Variants of a cover, such as the horizontal video and its thumbnail, are separate project files, and each one is self-contained.
 
@@ -190,7 +190,7 @@ Locators are labeled timeline times, like markers in other video editors. They d
 
 An entry depends only on the file's contents, so a copied file has the same entry. Facts describe a file, not a clip, so clips that share a file share its entry. Each project file carries its own `media`, so variants such as the thumbnail repeat the entries they share and stay self-contained.
 
-## Transform and crop
+## Transform and Crop
 
 `transform` is where a video or image clip goes on the canvas. `x` and `y` are where the source's top-left corner goes, in canvas pixels, like a text or color clip's `box`, and `scale` multiplies the source's own size, keeping its aspect ratio. A 1920×1080 camera zoomed in by 10% around the middle of a 1920×1080 canvas is `{ "x": -96, "y": -54, "scale": 1.1 }`. The placed size rounds to whole pixels. Anything outside the canvas is clipped, so a clip can be larger than the canvas or partly off it.
 
