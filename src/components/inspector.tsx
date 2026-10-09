@@ -37,8 +37,6 @@ export function Inspector({
   project: EditorProject;
   selection?: EditorSelection;
 }) {
-  // A rejected update, such as one overlapping a neighbor, shows as the
-  // mutation error toast.
   const updateClipMutation = useMutation({
     mutationFn: async ({ id, update }: { id: string; update: Partial<Clip> }) =>
       runtime.updateClip({ id, update }),
