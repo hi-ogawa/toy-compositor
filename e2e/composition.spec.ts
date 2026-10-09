@@ -259,6 +259,28 @@ test("drag a corner handle to scale a clip on the composition preview", async ({
   });
 });
 
+test("drag an edge handle to resize a box on the composition preview", async ({
+  page,
+  editor,
+}) => {
+  // Open the project and select the color clip.
+  await page.goto(editor.url);
+  await clickCanvasAt(page, { x: 100, y: 150 });
+  await expectInspectorTitle(page, { name: "Tint" });
+
+  // Drag its right edge handle, and see only the width change.
+  await expect(
+    page.getByTestId("composition-canvas").getByLabel("Resize handle right"),
+  ).toBeVisible();
+  await dragCanvasBy(page, { x: 280, y: 167.5 }, { deltaX: 40, deltaY: 10 });
+  await expectInspectorFields(page, {
+    x: "40",
+    y: "100",
+    width: "280",
+    height: "135",
+  });
+});
+
 test("compose a still project at its output time", async ({ page, editor }) => {
   // Open a still-output project and confirm its video seeks to the still's time.
   await page.goto(

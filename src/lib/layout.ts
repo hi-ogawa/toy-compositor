@@ -170,6 +170,30 @@ export function getResizedTransform({
   return { x: position.x - placed.x, y: position.y - placed.y, scale };
 }
 
+/**
+ * Resize the box at drag start so the handle follows the pointer's travel
+ * while the opposite corner or edge stays fixed. Width and height change
+ * freely, an edge handle leaves the other axis as it was, and the box keeps at
+ * least 1px on each side. The size rounds to whole canvas pixels before the
+ * position is derived from it, so the fixed side stays pixel-exact.
+ */
+export function getResizedBox({
+  box,
+  handle,
+  delta,
+}: {
+  box: Box;
+  handle: BoxHandle;
+  delta: { x: number; y: number };
+}): Box {
+  const dragged = getDraggedSize({ box, handle, delta });
+  const size = {
+    width: Math.max(1, Math.round(dragged.width)),
+    height: Math.max(1, Math.round(dragged.height)),
+  };
+  return { ...getAnchoredPosition({ box, handle, size }), ...size };
+}
+
 /** The box's size if the handle moved by the delta, with the opposite side fixed. */
 function getDraggedSize({
   box,
