@@ -111,6 +111,8 @@ export class AudioContextTransport {
   /**
    * The position reaching the speakers now. `currentTime` is where the context
    * is rendering, which runs ahead of what is heard by the output latency.
+   * `getOutputTimestamp` is used rather than `currentTime - outputLatency`,
+   * because Chromium on Linux reports `outputLatency` as 0.
    */
   private getPlaybackPosition(): number {
     const { contextTime = 0, performanceTime = 0 } =
