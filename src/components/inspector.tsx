@@ -1,8 +1,24 @@
 import { useMutation } from "@tanstack/react-query";
+import {
+  AlignCenterHorizontalIcon,
+  AlignCenterVerticalIcon,
+  AlignEndHorizontalIcon,
+  AlignEndVerticalIcon,
+  AlignStartHorizontalIcon,
+  AlignStartVerticalIcon,
+  type LucideIcon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiClient } from "../lib/api-client";
 import { matchKeyboardEvent } from "../lib/keyboard";
-import { getRescaledTransform } from "../lib/layout";
+import {
+  getAlignOffset,
+  getFilledBox,
+  getFilledTransform,
+  getRescaledTransform,
+  getVisibleBox,
+  type Alignment,
+} from "../lib/layout";
 import type {
   Canvas,
   AudioClip,
@@ -83,6 +99,7 @@ export function Inspector({
         <ClipInspector
           layerName={layer.name}
           clip={clip}
+          canvas={project.canvas}
           media={project.media}
           time={time}
           onUpdate={(update) => runtime.updateClip({ id, update })}
@@ -267,12 +284,14 @@ function LayerInspector({
 function ClipInspector({
   layerName,
   clip,
+  canvas,
   media,
   time,
   onUpdate,
 }: {
   layerName: string;
   clip: Clip;
+  canvas: Canvas;
   media: Record<string, MediaInfo>;
   time: TimeFieldOptions;
   onUpdate: ClipUpdate;
@@ -281,7 +300,13 @@ function ClipInspector({
     <div data-testid="inspector">
       <InspectorTitle title={layerName} subtitle={clip.type} />
       <div className="flex flex-col gap-4 p-3">
-        <ClipFields clip={clip} media={media} time={time} onUpdate={onUpdate} />
+        <ClipFields
+          clip={clip}
+          canvas={canvas}
+          media={media}
+          time={time}
+          onUpdate={onUpdate}
+        />
       </div>
     </div>
   );
@@ -289,11 +314,13 @@ function ClipInspector({
 
 function ClipFields({
   clip,
+  canvas,
   media,
   time,
   onUpdate,
 }: {
   clip: Clip;
+  canvas: Canvas;
   media: Record<string, MediaInfo>;
   time: TimeFieldOptions;
   onUpdate: ClipUpdate;
@@ -309,6 +336,7 @@ function ClipFields({
             transform={clip.transform}
             source={media[clip.src].video!}
             crop={clip.crop}
+            canvas={canvas}
             onCommit={(transform) => onUpdate({ transform })}
           />
           <CropFields
@@ -334,6 +362,7 @@ function ClipFields({
             transform={clip.transform}
             source={media[clip.src].video!}
             crop={clip.crop}
+            canvas={canvas}
             onCommit={(transform) => onUpdate({ transform })}
           />
           <CropFields
@@ -348,7 +377,11 @@ function ClipFields({
         <>
           <RangeTimingFields clip={clip} time={time} onUpdate={onUpdate} />
           <TextFields clip={clip} onUpdate={onUpdate} />
-          <BoxFields box={clip.box} onCommit={(box) => onUpdate({ box })}>
+          <BoxFields
+            box={clip.box}
+            canvas={canvas}
+            onCommit={(box) => onUpdate({ box })}
+          >
             <FitTextHeightButton clip={clip} onUpdate={onUpdate} />
           </BoxFields>
         </>
@@ -374,7 +407,11 @@ function ClipFields({
               onCommit={(opacity) => onUpdate({ opacity })}
             />
           </Group>
-          <BoxFields box={clip.box} onCommit={(box) => onUpdate({ box })} />
+          <BoxFields
+            box={clip.box}
+            canvas={canvas}
+            onCommit={(box) => onUpdate({ box })}
+          />
         </>
       );
     }
@@ -613,17 +650,20 @@ function TextFields({
  * Position and size describe the whole scaled source, before the crop hides
  * its edges. Scale, width, and height are linked views of the one stored
  * scale, and editing any of them keeps what the crop leaves centered where it
- * was.
+ * was. Aligning and filling place what the crop leaves, since that is what
+ * shows on the canvas.
  */
 function TransformFields({
   transform,
   source,
   crop,
+  canvas,
   onCommit,
 }: {
   transform: Transform;
   source: Size;
   crop: Crop;
+  canvas: Size;
   onCommit: (transform: Transform) => void;
 }) {
   const commitScale = (scale: number) =>
@@ -665,16 +705,52 @@ function TransformFields({
           onCommit={(size) => commitScale(size / source[key])}
         />
       ))}
+      <AlignButtons
+        onAlign={(alignment) => {
+          const offset = getAlignOffset({
+            box: getVisibleBox({ size: source, crop, transform }),
+            canvas,
+            alignment,
+          });
+          onCommit({
+            ...transform,
+            x: transform.x + offset.x,
+            y: transform.y + offset.y,
+          });
+        }}
+      />
+      {(["width", "height"] as const).map((dimension) => (
+        <button
+          key={dimension}
+          type="button"
+          onClick={() =>
+            onCommit(
+              getFilledTransform({
+                size: source,
+                crop,
+                transform,
+                canvas,
+                dimension,
+              }),
+            )
+          }
+          className={BUTTON_CLASS}
+        >
+          Fill {dimension}
+        </button>
+      ))}
     </Group>
   );
 }
 
 function BoxFields({
   box,
+  canvas,
   onCommit,
   children,
 }: {
   box: Box;
+  canvas: Size;
   onCommit: (box: Box) => void;
   children?: React.ReactNode;
 }) {
@@ -689,10 +765,81 @@ function BoxFields({
           onCommit={(value) => onCommit({ ...box, [key]: value })}
         />
       ))}
+      <AlignButtons
+        onAlign={(alignment) => {
+          const offset = getAlignOffset({ box, canvas, alignment });
+          onCommit({ ...box, x: box.x + offset.x, y: box.y + offset.y });
+        }}
+      />
+      {(["width", "height"] as const).map((dimension) => (
+        <button
+          key={dimension}
+          type="button"
+          onClick={() => onCommit(getFilledBox({ box, canvas, dimension }))}
+          className={BUTTON_CLASS}
+        >
+          Fill {dimension}
+        </button>
+      ))}
       {children}
     </Group>
   );
 }
+
+/** Horizontal alignments, then vertical ones, each under its axis's fields. */
+const ALIGN_BUTTONS = [
+  [
+    { alignment: "left", label: "Align left", Icon: AlignStartVerticalIcon },
+    {
+      alignment: "center",
+      label: "Align center",
+      Icon: AlignCenterVerticalIcon,
+    },
+    { alignment: "right", label: "Align right", Icon: AlignEndVerticalIcon },
+  ],
+  [
+    { alignment: "top", label: "Align top", Icon: AlignStartHorizontalIcon },
+    {
+      alignment: "middle",
+      label: "Align middle",
+      Icon: AlignCenterHorizontalIcon,
+    },
+    {
+      alignment: "bottom",
+      label: "Align bottom",
+      Icon: AlignEndHorizontalIcon,
+    },
+  ],
+] satisfies { alignment: Alignment; label: string; Icon: LucideIcon }[][];
+
+function AlignButtons({
+  onAlign,
+}: {
+  onAlign: (alignment: Alignment) => void;
+}) {
+  return ALIGN_BUTTONS.map((buttons, axis) => (
+    <div key={axis} className="flex gap-1">
+      {buttons.map(({ alignment, label, Icon }) => (
+        <button
+          key={alignment}
+          type="button"
+          aria-label={label}
+          title={label}
+          onClick={() => onAlign(alignment)}
+          className={cn(
+            "flex flex-1 items-center justify-center",
+            BUTTON_CLASS,
+          )}
+        >
+          <Icon className="size-4" />
+        </button>
+      ))}
+    </div>
+  ));
+}
+
+const BUTTON_CLASS =
+  "h-8 rounded border border-neutral-600 bg-neutral-900 text-xs text-neutral-400 outline-none hover:bg-neutral-800 focus-visible:border-ring disabled:opacity-50";
 
 function FitTextHeightButton({
   clip,
@@ -712,7 +859,7 @@ function FitTextHeightButton({
       type="button"
       disabled={fitMutation.isPending}
       onClick={() => fitMutation.mutate()}
-      className="col-span-2 h-8 rounded border border-neutral-600 bg-neutral-900 text-xs text-neutral-400 outline-none hover:bg-neutral-800 focus-visible:border-ring disabled:opacity-50"
+      className={cn("col-span-2", BUTTON_CLASS)}
     >
       Fit height to text
     </button>

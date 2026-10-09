@@ -96,6 +96,102 @@ test("place a media layer by position, scale, and size, and save them", async ({
   });
 });
 
+test("align a cropped media clip and a color clip and fill the canvas with them, and save them", async ({
+  page,
+  editor,
+}) => {
+  // Select the image and crop its left half, which leaves 80 by 90 pixels
+  // showing at (500, 240) on the 640 by 360 canvas.
+  await page.goto(editor.url);
+  const canvas = page.getByTestId("composition-canvas");
+  const image = canvas.getByRole("img", {
+    name: "Label backdrop",
+    exact: true,
+  });
+  const placed = image.locator("..");
+  await expectImageLoaded(image);
+  await clickTimelineButton(page, { name: "Select Label backdrop region" });
+  await commitInspectorField(page, { name: "left", value: "0.5" });
+  await expect(placed).toHaveCSS("left", "500px");
+  await expect(placed).toHaveCSS("width", "80px");
+
+  // Align it right and bottom, and confirm what the crop leaves touches the
+  // canvas corner while the transform keeps the hidden half to its left.
+  const inspector = page.getByTestId("inspector");
+  await inspector.getByRole("button", { name: "Align right" }).click();
+  await inspector.getByRole("button", { name: "Align bottom" }).click();
+  await expectInspectorFields(page, { x: "480", y: "270", "scale %": "100" });
+  await expect(placed).toHaveCSS("left", "560px");
+  await expect(placed).toHaveCSS("top", "270px");
+
+  // Align it to the horizontal center, and confirm the vertical position stays.
+  await inspector.getByRole("button", { name: "Align center" }).click();
+  await expect(placed).toHaveCSS("left", "280px");
+  await expect(placed).toHaveCSS("top", "270px");
+
+  // Fill the canvas height, and confirm what the crop leaves scales around its
+  // horizontal center.
+  await inspector.getByRole("button", { name: "Fill height" }).click();
+  await expectInspectorFields(page, { x: "-160", y: "0", "scale %": "400" });
+  await expect(placed).toHaveCSS("left", "160px");
+  await expect(placed).toHaveCSS("width", "320px");
+  await expect(placed).toHaveCSS("height", "360px");
+
+  // Fill the canvas width, and confirm what the crop leaves scales around its
+  // vertical center.
+  await inspector.getByRole("button", { name: "Fill width" }).click();
+  await expectInspectorFields(page, { x: "-640", y: "-180", "scale %": "800" });
+  await expect(placed).toHaveCSS("left", "0px");
+  await expect(placed).toHaveCSS("width", "640px");
+
+  // Add a color clip on a new layer, shrink its box, then align it to the
+  // horizontal center and the bottom.
+  await page.getByRole("button", { name: "New layer", exact: true }).click();
+  await page.getByRole("button", { name: "Add Color", exact: true }).click();
+  await clickTimelineButton(page, { name: "Select Layer 6 region" });
+  await commitInspectorField(page, { name: "width", value: "200" });
+  await commitInspectorField(page, { name: "height", value: "100" });
+  await inspector.getByRole("button", { name: "Align center" }).click();
+  await inspector.getByRole("button", { name: "Align bottom" }).click();
+  await expectInspectorFields(page, {
+    x: "220",
+    y: "260",
+    width: "200",
+    height: "100",
+  });
+
+  // Fill the canvas width, and confirm the box keeps its vertical place.
+  await inspector.getByRole("button", { name: "Fill width" }).click();
+  await expectInspectorFields(page, {
+    x: "0",
+    y: "260",
+    width: "640",
+    height: "100",
+  });
+
+  // Fill the canvas height too, and confirm the box covers the canvas.
+  await inspector.getByRole("button", { name: "Fill height" }).click();
+  await expectInspectorFields(page, {
+    x: "0",
+    y: "0",
+    width: "640",
+    height: "360",
+  });
+
+  // Save and confirm the image's transform and the color clip's box.
+  const save = page.getByTestId("editor-save-button");
+  await save.click();
+  await expect(save).toHaveAttribute("data-status", "saved");
+  const project = await readJson<Project>(editor.projectFile);
+  expect(project.layers[2].clips[0]).toMatchObject({
+    transform: { x: -640, y: -180, scale: 8 },
+    crop: { left: 0.5, right: 0, top: 0, bottom: 0 },
+  });
+  expect(project.layers[5].clips[0]).toMatchObject({
+    box: { x: 0, y: 0, width: 640, height: 360 },
+  });
+});
+
 test("edit a text layer's content and styling and save them", async ({
   page,
   editor,
