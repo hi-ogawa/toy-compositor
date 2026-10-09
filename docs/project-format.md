@@ -2,7 +2,7 @@
 
 A project is one JSON file that describes one deliverable: a canvas, an output, which is a video range or a still frame, and a stack of layers. Variants of a cover, such as the horizontal video and its thumbnail, are separate project files, and each one is self-contained.
 
-This doc describes what a project means. The [renderer](compiler.md) turns it into the finished video or image, and the [editor](editor.md) previews it in the browser while you edit.
+The [renderer](compiler.md) turns it into the finished video or image, and the [editor](editor.md) previews it in the browser while you edit.
 
 ```jsonc
 {
@@ -27,6 +27,8 @@ This doc describes what a project means. The [renderer](compiler.md) turns it in
 ```
 
 A video output needs an even canvas `width` and `height`, because it is encoded as 4:2:0, which stores one color sample per 2×2 block of pixels. Clips inside the canvas can have any size.
+
+Every field in the examples is required, with two exceptions. A text clip's `outline` is optional. Fields whose neutral value means no effect, such as `crop`, `fadeIn`, `fadeOut`, `hold`, and a layer's `muted` and `hidden`, can be left out and are filled in when the project is opened.
 
 ## Time
 
@@ -79,7 +81,7 @@ Each clip has a `type`, and the type decides its other fields.
 }
 ```
 
-A video clip carries its file's audio, like a clip in other video editors, and the audio is trimmed and mixed the same way as an `audio` clip, including `fadeIn` and `fadeOut`, which fade only the audio. The camera is a video clip on a muted layer, so it moves as one thing and its audio stays available in the editor as a waveform for syncing against the mix. A video file without an audio stream contributes nothing to the mix.
+A video clip carries its file's audio, like a clip in other video editors, and the audio is trimmed and mixed the same way as an `audio` clip, including `fadeIn` and `fadeOut`, which fade only the audio. A camera recorded alongside a separate mix can sit on a muted layer, so its picture and sound move as one clip and its sound shows as a waveform to sync against the mix without being heard. A video file without an audio stream contributes nothing to the mix.
 
 ### `audio`
 
@@ -146,7 +148,7 @@ The lines are drawn at the font's size and aligned across the box's width by `al
 }
 ```
 
-A solid fill over its `box`, used for the translucent dim under thumbnail titles.
+A solid fill over its `box`, such as a translucent dim under a title.
 
 ## Locators
 

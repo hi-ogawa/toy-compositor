@@ -19,15 +19,14 @@ A project folder holds its project files at the top level and their media under 
 
 The editor's start page lists the folders you add with `toy-compositor add`, `toy-compositor serve <folder>`, or the start page itself. It keeps that list in `projects.json` under the user config directory, and `toy-compositor --help` prints its path. The editor only serves files inside the added folders, so a clip whose media sits outside its folder does not load in the editor.
 
-`toy-compositor --help` prints the paths of this doc and of the bundled synthetic sample, a project folder with a video project, `project.json`, and its still thumbnail, `thumbnail.json`.
+The bundled synthetic sample, whose path `toy-compositor --help` prints, is a project folder with a video project, `project.json`, and its still thumbnail, `thumbnail.json`. To try it, copy the whole folder.
 
 ## From media to a render
 
 1. Make a project folder and put media files in its `media/`. Pre-process camera footage first, especially from a phone, as described in [pre-processing](preprocessing.md).
-2. Write a project file in the folder following the [project format](project-format.md). To start from the sample, copy its `project.json` and replace its layers with ones for your media, because its layers use the sample's own `media/` files. To try the sample itself first, copy the whole sample folder. Alternatively, create a project from the editor's start page and add layers from the library.
-3. Run `toy-compositor update-media <project.json>`. The editor and renderer reject a project until its `media` records every file its clips use, and a rerun is needed whenever a media file changes. Adding a layer in the editor records its media on its own.
+2. Run `toy-compositor serve <folder>`, create a project from the editor's start page, and add layers from the library. The editor saves back to the project file.
+3. To write or script a project file instead, follow the [project format](project-format.md), for example starting from a copy of the sample's `project.json` with its layers replaced. Then run `toy-compositor update-media <project.json>`, because the editor and renderer reject a project until its `media` records every file its clips use. Rerun it whenever a media file changes. Layers added in the editor record their media on their own.
 4. Render a still, like the sample's `thumbnail.json`, with `toy-compositor render <project.json> <output.png>` to check the layout, then render the video to an `.mp4`.
-5. Run `toy-compositor serve <folder>` to adjust the layout in the editor, which saves back to the project file.
 
 ## Requirements
 

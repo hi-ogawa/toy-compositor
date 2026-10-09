@@ -28,7 +28,7 @@ A project's `media` records one frame rate per video file, and frame times are c
 
 A keyframe is a complete picture, and the frames after it only store what changed. To show an arbitrary frame, a decoder starts from the keyframe before it and decodes forward, so the gap between keyframes sets the worst-case seek time. Without `-g`, x264 allows up to 250 frames between keyframes, which is 8.33 seconds at 30fps.
 
-The editor seeks whenever the playhead moves while paused, so long keyframe intervals make timeline clicks lag and make any corrective seek during playback stall. A 60-second excerpt of a phone camera clip, whose pre-processed file came from this recipe without `-g`, was encoded again with and without `-g 30`, and compared against that pre-processed file:
+The editor seeks whenever the playhead moves while paused, so long keyframe intervals make timeline clicks lag and make any corrective seek during playback stall. To measure the trade-off, a 60-second excerpt of pre-processed phone footage was encoded with and without `-g 30` and compared with that excerpt:
 
 |                          | Keyframes | Size   | SSIM vs source | Seek in Chromium |
 | ------------------------ | --------- | ------ | -------------- | ---------------- |
