@@ -838,6 +838,9 @@ function AlignButtons({
   ));
 }
 
+const BUTTON_CLASS =
+  "h-8 rounded border border-neutral-600 bg-neutral-900 text-xs text-neutral-400 outline-none hover:bg-neutral-800 focus-visible:border-ring disabled:opacity-50";
+
 function FitTextHeightButton({
   clip,
   onUpdate,
@@ -889,9 +892,6 @@ function CropFields({
 }
 
 const PIXEL_FIELD = { step: 1, round: Math.round };
-
-const BUTTON_CLASS =
-  "h-8 rounded border border-neutral-600 bg-neutral-900 text-xs text-neutral-400 outline-none hover:bg-neutral-800 focus-visible:border-ring disabled:opacity-50";
 
 interface TimeFieldOptions {
   step: number;
