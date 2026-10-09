@@ -10,6 +10,10 @@ import {
   type MediaInfo,
   type TextClip,
 } from "./project.ts";
+import { snapToFrame } from "./timeline.ts";
+
+/** Seconds a new text, color, or image clip lasts. */
+const STILL_LENGTH = 5;
 
 /** Numbers a layer by a clip type among the layers holding it, such as `Text 2`. */
 export function createLayerName({
@@ -27,50 +31,34 @@ export function createLayerName({
   });
 }
 
-/** A media file's layer is named after the file, and holds one clip of it. */
-export function createMediaLayer({
-  src,
-  type,
-  mediaInfo,
-  canvas,
-  start,
-  stillRange,
+export function createEmptyLayer({
+  layers,
 }: {
-  src: string;
-  type: MediaType;
-  mediaInfo: MediaInfo;
-  canvas: Canvas;
-  start: number;
-  stillRange: TimeRange;
+  layers: readonly Layer[];
 }): Layer {
-  const name = src
-    .split("/")
-    .pop()!
-    .replace(/\.[^.]+$/, "");
   return {
-    name,
+    name: createNumberedName({
+      names: layers.map((layer) => layer.name),
+      prefix: "Layer",
+    }),
     ...NEUTRAL_VALUES.layer,
-    clips: [
-      createMediaClip({ src, type, mediaInfo, canvas, start, stillRange }),
-    ],
+    clips: [],
   };
 }
 
 /** Video and images start fitted inside the canvas, centered. */
-function createMediaClip({
+export function createMediaClip({
   src,
   type,
   mediaInfo,
   canvas,
   start,
-  stillRange,
 }: {
   src: string;
   type: MediaType;
   mediaInfo: MediaInfo;
   canvas: Canvas;
   start: number;
-  stillRange: TimeRange;
 }): Clip {
   switch (type) {
     case "video": {
@@ -100,34 +88,18 @@ function createMediaClip({
         src,
         transform: getFitTransform({ size: mediaInfo.video!, canvas }),
         ...NEUTRAL_VALUES.image,
-        ...stillRange,
+        ...getStillRange({ start, canvas }),
       };
     }
   }
 }
 
-export function createTextLayer({
-  name,
+export function createTextClip({
   canvas,
-  range,
-}: {
-  name: string;
-  canvas: Canvas;
-  range: TimeRange;
-}): Layer {
-  return {
-    name,
-    ...NEUTRAL_VALUES.layer,
-    clips: [createTextClip({ canvas, range })],
-  };
-}
-
-function createTextClip({
-  canvas,
-  range,
+  start,
 }: {
   canvas: Canvas;
-  range: TimeRange;
+  start: number;
 }): TextClip {
   return {
     type: "text",
@@ -146,38 +118,33 @@ function createTextClip({
       ...NEUTRAL_VALUES.text.font,
     },
     color: "#ffffff",
-    ...range,
+    ...getStillRange({ start, canvas }),
   };
 }
 
-export function createColorLayer({
-  name,
+export function createColorClip({
   canvas,
-  range,
-}: {
-  name: string;
-  canvas: Canvas;
-  range: TimeRange;
-}): Layer {
-  return {
-    name,
-    ...NEUTRAL_VALUES.layer,
-    clips: [createColorClip({ canvas, range })],
-  };
-}
-
-function createColorClip({
-  canvas,
-  range,
+  start,
 }: {
   canvas: Canvas;
-  range: TimeRange;
+  start: number;
 }): ColorClip {
   return {
     type: "color",
     color: "#000000",
     opacity: 0.5,
     box: { x: 0, y: 0, width: canvas.width, height: canvas.height },
-    ...range,
+    ...getStillRange({ start, canvas }),
   };
+}
+
+/** A still has no source length, so it lasts a fixed length from its start. */
+function getStillRange({
+  start,
+  canvas,
+}: {
+  start: number;
+  canvas: Canvas;
+}): TimeRange {
+  return { start, end: snapToFrame(start + STILL_LENGTH, canvas.fps) };
 }

@@ -5,12 +5,12 @@ import { apiClient } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
 import { createAudioView, type AudioView } from "./audio-view.ts";
 import {
-  createColorLayer,
-  createLayerName,
-  createMediaLayer,
-  createTextLayer,
+  createColorClip,
+  createEmptyLayer,
+  createMediaClip,
+  createTextClip,
 } from "./layer-defaults.ts";
-import { getContentRange, getOutputRange, type TimeRange } from "./layout.ts";
+import { getContentRange, getOutputRange } from "./layout.ts";
 import type { MediaFile } from "./media-file.ts";
 import {
   CANVAS_PRESETS,
@@ -23,7 +23,7 @@ import {
   type Project,
 } from "./project.ts";
 import type { ProjectFile } from "./server/api.ts";
-import { roundToMillisecond, snapToFrame } from "./timeline.ts";
+import { snapToFrame } from "./timeline.ts";
 import { AudioContextTransport } from "./transport.ts";
 import { VideoPlayback } from "./video-playback.ts";
 
@@ -124,31 +124,36 @@ export class EditorRuntime {
   }
 
   updateClip({ id, update }: { id: string; update: Partial<Clip> }): void {
-    this.reschedulePlayback(() => {
-      const { project } = this.store.get();
-      this.store.update({
-        project: {
-          ...project,
-          layers: project.layers.map((layer) =>
-            layer.clips.some((clip) => clip.id === id)
-              ? {
-                  ...layer,
-                  clips: layer.clips.map((clip) =>
-                    clip.id === id
-                      ? ({ ...clip, ...update } as EditorClip)
-                      : clip,
-                  ),
-                }
-              : layer,
-          ),
-        },
-      });
-      this.syncPlayback();
+    const { layers } = this.store.get().project;
+    const { layer } = findClip(layers, id)!;
+    this.replaceClips({
+      layerId: layer.id,
+      clips: layer.clips.map((clip) =>
+        clip.id === id ? ({ ...clip, ...update } as EditorClip) : clip,
+      ),
     });
   }
 
+  /** Adds an empty layer on top of the stack. */
+  addLayer(): string {
+    const { project } = this.store.get();
+    const layer = deserializeEditorLayer(
+      createEmptyLayer({ layers: project.layers }),
+    );
+    this.store.update({
+      project: { ...project, layers: [...project.layers, layer] },
+    });
+    return layer.id;
+  }
+
   /** Probes and records the file's media info first if the project has none. */
-  async addMediaLayer({ src, type }: MediaFile): Promise<string> {
+  async addMediaClip({
+    layerId,
+    file: { src, type },
+  }: {
+    layerId: string;
+    file: MediaFile;
+  }): Promise<string> {
     const { file } = this.store.get();
     let mediaInfo = this.store.get().project.media[src];
     if (!mediaInfo) {
@@ -158,39 +163,42 @@ export class EditorRuntime {
         project: { ...project, media: { ...project.media, [src]: mediaInfo } },
       });
     }
-    const { project, playhead } = this.store.get();
-    return this.insertLayer(
-      createMediaLayer({
+    const { canvas } = this.store.get().project;
+    return this.insertClip({
+      layerId,
+      clip: createMediaClip({
         src,
         type,
         mediaInfo,
-        canvas: project.canvas,
-        start: snapToFrame(playhead, project.canvas.fps),
-        stillRange: this.getNewStillRange(),
+        canvas,
+        start: this.getNewClipStart(),
       }),
-    );
+    });
   }
 
-  addTextLayer(): string {
-    const { canvas, layers } = this.store.get().project;
-    return this.insertLayer(
-      createTextLayer({
-        name: createLayerName({ layers, type: "text" }),
-        canvas,
-        range: this.getNewStillRange(),
-      }),
-    );
+  addTextClip(layerId: string): string {
+    const { canvas } = this.store.get().project;
+    return this.insertClip({
+      layerId,
+      clip: createTextClip({ canvas, start: this.getNewClipStart() }),
+    });
   }
 
-  addColorLayer(): string {
-    const { canvas, layers } = this.store.get().project;
-    return this.insertLayer(
-      createColorLayer({
-        name: createLayerName({ layers, type: "color" }),
-        canvas,
-        range: this.getNewStillRange(),
-      }),
-    );
+  addColorClip(layerId: string): string {
+    const { canvas } = this.store.get().project;
+    return this.insertClip({
+      layerId,
+      clip: createColorClip({ canvas, start: this.getNewClipStart() }),
+    });
+  }
+
+  /** The clip's layer stays, even when it has no clips left. */
+  removeClip(id: string): void {
+    const { layer } = findClip(this.store.get().project.layers, id)!;
+    this.replaceClips({
+      layerId: layer.id,
+      clips: layer.clips.filter((clip) => clip.id !== id),
+    });
   }
 
   removeLayer(id: string): void {
@@ -309,27 +317,52 @@ export class EditorRuntime {
     };
   }
 
-  /** Adds the layer on top of the stack. */
-  private insertLayer(layer: Layer): string {
-    const editorLayer = deserializeEditorLayer(layer);
+  /** Adds the clip after the layer's other clips. */
+  private insertClip({
+    layerId,
+    clip,
+  }: {
+    layerId: string;
+    clip: Clip;
+  }): string {
+    const layer = this.store
+      .get()
+      .project.layers.find((layer) => layer.id === layerId)!;
+    const editorClip = { ...clip, id: crypto.randomUUID() } as EditorClip;
+    this.replaceClips({
+      layerId,
+      clips: [...layer.clips, editorClip],
+    });
+    if (editorClip.type === "video" || editorClip.type === "audio") {
+      this.loadAudio(editorClip.src);
+    }
+    return editorClip.id;
+  }
+
+  private replaceClips({
+    layerId,
+    clips,
+  }: {
+    layerId: string;
+    clips: EditorClip[];
+  }): void {
     this.reschedulePlayback(() => {
       const { project } = this.store.get();
       this.store.update({
-        project: { ...project, layers: [...project.layers, editorLayer] },
+        project: {
+          ...project,
+          layers: project.layers.map((layer) =>
+            layer.id === layerId ? { ...layer, clips } : layer,
+          ),
+        },
       });
       this.syncPlayback();
     });
-    for (const clip of layer.clips) {
-      if (clip.type === "video" || clip.type === "audio") {
-        this.loadAudio(clip.src);
-      }
-    }
-    return editorLayer.clips[0]!.id;
   }
 
-  private getNewStillRange(): TimeRange {
-    const output = getOutputRange(this.store.get().project);
-    return { start: output.start, end: roundToMillisecond(output.end) };
+  private getNewClipStart(): number {
+    const { project, playhead } = this.store.get();
+    return snapToFrame(playhead, project.canvas.fps);
   }
 
   /**
