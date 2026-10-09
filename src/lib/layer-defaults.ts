@@ -31,7 +31,6 @@ export function createLayerName({
   });
 }
 
-/** A new layer holds no clips, and is numbered among every layer, such as `Layer 2`. */
 export function createEmptyLayer({
   layers,
 }: {
