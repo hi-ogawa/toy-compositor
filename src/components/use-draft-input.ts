@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { matchKeyboardEvent } from "../lib/keyboard";
 import { clamp } from "../utils/math";
 
@@ -9,12 +9,15 @@ type UseDraftInputOptions = {
   max?: number;
   /** Arrow keys step by this, and by ten times this with Shift. */
   step?: number;
-  format?: (value: number) => string;
 };
 
 /**
- * Commits only on Enter or blur. Arrow keys step the committed value, which is
- * the main way to nudge layout.
+ * Commits only on Enter or blur. Escape reverts the typed text, and a second
+ * Escape leaves the field. Arrow keys step the committed value, which is the
+ * main way to nudge layout.
+ *
+ * The draft exists only while the user edits, so the field otherwise shows the
+ * value itself, including after a commit that leaves it unchanged.
  */
 export function useDraftInput({
   value,
@@ -22,47 +25,40 @@ export function useDraftInput({
   min = -Infinity,
   max = Infinity,
   step = 1,
-  format = String,
 }: UseDraftInputOptions) {
-  const [draft, setDraft] = useState(format(value));
-
-  useEffect(() => {
-    setDraft(format(value));
-  }, [format, value]);
+  const [draft, setDraft] = useState<string>();
 
   const commit = () => {
-    // Leave the value alone when the draft was not edited, so a rounded
-    // display never rewrites a more precise value on blur.
-    if (draft === format(value)) {
+    if (draft === undefined) {
       return;
     }
+    setDraft(undefined);
     const n = Number.parseFloat(draft);
     if (!Number.isNaN(n)) {
       onCommit(clamp(n, min, max));
-    } else {
-      setDraft(format(value));
     }
   };
 
-  const reset = () => setDraft(format(value));
-
-  const stepBy = (delta: number) => onCommit(clamp(value + delta, min, max));
+  const stepBy = (delta: number) => {
+    setDraft(undefined);
+    onCommit(clamp(value + delta, min, max));
+  };
 
   return {
-    draft,
-    commit,
-    reset,
     props: {
-      value: draft,
+      value: draft ?? String(value),
       onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
         setDraft(e.target.value),
       onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (matchKeyboardEvent(e, "Enter")) {
-          commit();
+          // Leave the field, which commits the draft.
           e.currentTarget.blur();
         } else if (matchKeyboardEvent(e, "Escape")) {
-          reset();
-          e.currentTarget.blur();
+          if (draft === undefined) {
+            e.currentTarget.blur();
+          } else {
+            setDraft(undefined);
+          }
         } else if (matchKeyboardEvent(e, "ArrowUp")) {
           e.preventDefault();
           stepBy(step);
