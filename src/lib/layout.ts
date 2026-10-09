@@ -70,23 +70,78 @@ export function getVisibleBox({
   };
 }
 
-/** Center the size on the canvas at the largest scale that keeps it inside. */
+/**
+ * Center what the crop leaves on the canvas at the largest scale that keeps it
+ * inside (contain), or the smallest scale that covers the canvas (cover).
+ */
 export function getFitTransform({
   size,
+  crop,
   canvas,
+  mode,
 }: {
   size: Size;
+  crop: Crop;
   canvas: Size;
+  mode: "contain" | "cover";
 }): Transform {
-  const scale = Math.min(
-    canvas.width / size.width,
-    canvas.height / size.height,
+  const cropped = getCroppedBox({ size, crop });
+  const scale = (mode === "contain" ? Math.min : Math.max)(
+    canvas.width / cropped.width,
+    canvas.height / cropped.height,
   );
   return {
-    x: Math.round((canvas.width - size.width * scale) / 2),
-    y: Math.round((canvas.height - size.height * scale) / 2),
+    x: Math.round(
+      (canvas.width - cropped.width * scale) / 2 - cropped.x * scale,
+    ),
+    y: Math.round(
+      (canvas.height - cropped.height * scale) / 2 - cropped.y * scale,
+    ),
     scale,
   };
+}
+
+export type Alignment =
+  | "left"
+  | "center"
+  | "right"
+  | "top"
+  | "middle"
+  | "bottom";
+
+/**
+ * How far to move a box so it touches a canvas edge or sits at the canvas
+ * center along one axis, leaving the other axis where it is.
+ */
+export function getAlignOffset({
+  box,
+  canvas,
+  alignment,
+}: {
+  box: Box;
+  canvas: Size;
+  alignment: Alignment;
+}): { x: number; y: number } {
+  switch (alignment) {
+    case "left": {
+      return { x: -box.x, y: 0 };
+    }
+    case "center": {
+      return { x: Math.round((canvas.width - box.width) / 2) - box.x, y: 0 };
+    }
+    case "right": {
+      return { x: canvas.width - box.width - box.x, y: 0 };
+    }
+    case "top": {
+      return { x: 0, y: -box.y };
+    }
+    case "middle": {
+      return { x: 0, y: Math.round((canvas.height - box.height) / 2) - box.y };
+    }
+    case "bottom": {
+      return { x: 0, y: canvas.height - box.height - box.y };
+    }
+  }
 }
 
 /**
