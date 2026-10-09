@@ -37,7 +37,6 @@ export function LibraryPanel({
   const openFolderMutation = useMutation({
     mutationFn: () => apiClient.openMediaFolder({ projectPath }),
   });
-  // Errors, such as no selected layer, show as the mutation error toast.
   const addClipMutation = useMutation({
     mutationFn: async (source: LibraryItemSource) => {
       if (!layerId) {
