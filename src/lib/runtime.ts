@@ -136,13 +136,12 @@ export class EditorRuntime {
 
   /** Adds an empty layer on top of the stack. */
   addLayer(): string {
-    const { layers } = this.store.get().project;
-    const layer = deserializeEditorLayer(createEmptyLayer({ layers }));
-    this.reschedulePlayback(() => {
-      const { project } = this.store.get();
-      this.store.update({
-        project: { ...project, layers: [...project.layers, layer] },
-      });
+    const { project } = this.store.get();
+    const layer = deserializeEditorLayer(
+      createEmptyLayer({ layers: project.layers }),
+    );
+    this.store.update({
+      project: { ...project, layers: [...project.layers, layer] },
     });
     return layer.id;
   }
