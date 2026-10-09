@@ -9,20 +9,22 @@ import { Button } from "./ui/button";
 import { cn } from "./ui/utils";
 import { useWindowEvent } from "./use-window-event";
 
+type LibraryItemSource = MediaFile | { type: "text" } | { type: "color" };
+
 /**
- * Everything that can become a layer: the files in the project's `media/`
+ * Everything that can become a clip: the files in the project's `media/`
  * folder, which the user manages with the desktop file manager, and the
- * built-in text and color layers.
+ * built-in text and color clips. Adding puts the clip on the selected layer at
+ * the playhead.
  */
 export function LibraryPanel({
   runtime,
   projectPath,
-  onLayerAdd,
+  selectedLayerId,
 }: {
   runtime: EditorRuntime;
   projectPath: string;
-  /** Receives the id of the new layer's clip. */
-  onLayerAdd: (clipId: string) => void;
+  selectedLayerId?: string;
 }) {
   const filesQuery = useQuery({
     queryKey: ["media-files", projectPath],
@@ -34,9 +36,26 @@ export function LibraryPanel({
   const openFolderMutation = useMutation({
     mutationFn: () => apiClient.openMediaFolder({ projectPath }),
   });
-  const addMediaMutation = useMutation({
-    mutationFn: (file: MediaFile) => runtime.addMediaLayer(file),
-    onSuccess: onLayerAdd,
+  const addClipMutation = useMutation({
+    mutationFn: async (source: LibraryItemSource) => {
+      if (!selectedLayerId) {
+        throw new Error("Select a layer first");
+      }
+      switch (source.type) {
+        case "text": {
+          return runtime.addTextClip(selectedLayerId);
+        }
+        case "color": {
+          return runtime.addColorClip(selectedLayerId);
+        }
+        default: {
+          return runtime.addMediaClip({
+            layerId: selectedLayerId,
+            file: source,
+          });
+        }
+      }
+    },
   });
   const files = filesQuery.data ?? [];
   return (
@@ -66,7 +85,7 @@ export function LibraryPanel({
               type={file.type}
               label={file.src.replace(/^media\//, "")}
               mono
-              onAdd={() => addMediaMutation.mutate(file)}
+              onAdd={() => addClipMutation.mutate(file)}
             />
           ))}
         </ul>
@@ -74,16 +93,16 @@ export function LibraryPanel({
       <h3 className="px-3 pb-0.5 pt-3 text-[10px] font-medium uppercase tracking-wide text-neutral-500">
         Built-in
       </h3>
-      <ul aria-label="Built-in layers">
+      <ul aria-label="Built-in clips">
         <LibraryItem
           type="text"
           label="Text"
-          onAdd={() => onLayerAdd(runtime.addTextLayer())}
+          onAdd={() => addClipMutation.mutate({ type: "text" })}
         />
         <LibraryItem
           type="color"
           label="Color"
-          onAdd={() => onLayerAdd(runtime.addColorLayer())}
+          onAdd={() => addClipMutation.mutate({ type: "color" })}
         />
       </ul>
     </div>
@@ -109,7 +128,7 @@ function LibraryItem({
       </span>
       <Button
         aria-label={`Add ${label}`}
-        title="Add as layer"
+        title="Add to the selected layer at the playhead"
         className="ml-auto size-5 shrink-0 text-neutral-400 hover:bg-neutral-700 hover:text-neutral-100"
         onClick={onAdd}
       >
