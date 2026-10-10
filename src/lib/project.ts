@@ -110,7 +110,8 @@ export function createEmptyProject(preset: CanvasPreset): Project {
 }
 
 /**
- * A lane in the stack, like a track in a video editor, holding clips.
+ * A lane in the stack, like a track in a video editor, holding clips in order
+ * by `start` whose picture ranges do not overlap.
  */
 export type Layer = {
   name: string;

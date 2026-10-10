@@ -363,6 +363,53 @@ test("move and trim layers on the timeline", async ({ page, editor }) => {
   });
 });
 
+test("keep clips on one layer from overlapping", async ({ page, editor }) => {
+  // Open the project, select the title layer, whose text spans 0 to 3 s, and
+  // add a second text clip at 4 s.
+  await page.goto(editor.url);
+  const secondsToPixels = (seconds: number) =>
+    seconds * DEFAULT_PIXELS_PER_SECOND;
+  await clickTimelineButton(page, { name: "Select Title layer" });
+  await seekTimelineByPixels(page, { pixels: secondsToPixels(4) });
+  await page.getByRole("button", { name: "Add Text", exact: true }).click();
+  const second = page.getByTestId("timeline-layer-3-clip-1");
+  await expect(second).toBeVisible();
+
+  // Trim the first clip's end later past the second's start, and confirm it
+  // stops where the second starts.
+  await dragBy(page, page.getByTestId("timeline-layer-3-clip-0-trim-end"), {
+    deltaX: secondsToPixels(2),
+  });
+  await expectInspectorFields(page, { start: "0", end: "4" });
+
+  // Drag the second clip left into the first, and confirm it stays where the
+  // first ends.
+  await dragBy(page, second, { deltaX: secondsToPixels(-2) });
+  await expectInspectorFields(page, { start: "4", end: "9" });
+
+  // Type a start inside the first clip in the inspector, and confirm it is
+  // rejected and the clip keeps its start.
+  await commitInspectorField(page, { name: "start", value: "3" });
+  await expect(
+    page.getByText('The clip would overlap its neighbors on "Title"'),
+  ).toBeVisible();
+  await expectInspectorFields(page, { start: "4" });
+
+  // Save and confirm the clips reach the file end to end.
+  await page.getByTestId("editor-save-button").click();
+  await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
+  const project = await readJson<Project>(editor.projectFile);
+  expect(project.layers[3]).toMatchObject({
+    clips: [
+      { start: 0, end: 4 },
+      { start: 4, end: 9 },
+    ],
+  });
+});
+
 test("add, move, rename, and delete locators", async ({ page, editor }) => {
   // Open the project and seek past the render end marker.
   await page.goto(editor.url);

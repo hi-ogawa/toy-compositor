@@ -3,7 +3,8 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import type { Project } from "../src/lib/project.ts";
 import { DEFAULT_PIXELS_PER_SECOND } from "../src/lib/timeline.ts";
-import { readJson } from "../src/utils/fs.ts";
+import { editJson, readJson } from "../src/utils/fs.ts";
+import { runCli } from "./cli";
 import {
   expectInspectorFields,
   getInspectorField,
@@ -51,10 +52,23 @@ test("add clips to a layer from the Library tab", async ({ page, editor }) => {
   await expect(page.getByTestId("timeline-layer-5-clip-0")).toBeVisible();
   await expectInspectorFields(page, { name: "Layer 6" });
 
-  // Add color after the video, and confirm it lands on the same layer.
+  // Add an image at the same playhead, and confirm there is no room for it.
+  await page
+    .getByRole("button", { name: "Add image.png", exact: true })
+    .click();
+  await expect(
+    page.getByText('No room at the playhead on "Layer 6"'),
+  ).toBeVisible();
+
+  // Add text before the video, and confirm it ends where the video starts
+  // instead of lasting the default still length.
+  await seekTimelineByPixels(page, { pixels: 1 });
+  await page.getByRole("button", { name: "Add Text", exact: true }).click();
+
+  // Add color after the video, and confirm it lasts the default still length.
   await seekTimelineByPixels(page, { pixels: 4 * DEFAULT_PIXELS_PER_SECOND });
   await page.getByRole("button", { name: "Add Color", exact: true }).click();
-  await expect(page.getByTestId("timeline-layer-5-clip-1")).toBeVisible();
+  await expect(page.getByTestId("timeline-layer-5-clip-2")).toBeVisible();
 
   // Drop a new file into the folder, focus the window as when switching back
   // from the file manager, and confirm the list picks it up.
@@ -82,8 +96,8 @@ test("add clips to a layer from the Library tab", async ({ page, editor }) => {
     .click();
   await expect(page.getByTestId("timeline-layer-6-clip-1")).toBeVisible();
 
-  // Save, and confirm each layer's clips reach the file in the order they were
-  // added, existing media info is reused, and the new file's info is probed.
+  // Save, and confirm each layer's clips reach the file in order by start,
+  // existing media info is reused, and the new file's info is probed.
   await page.getByTestId("editor-save-button").click();
   await expect(page.getByTestId("editor-save-button")).toHaveAttribute(
     "data-status",
@@ -101,6 +115,16 @@ test("add clips to a layer from the Library tab", async ({ page, editor }) => {
       muted: false,
       hidden: false,
       clips: [
+        {
+          type: "text",
+          text: "Text",
+          box: { x: 64, y: 144, width: 512, height: 72 },
+          align: "center",
+          font: { family: "Noto Sans", size: 36, weight: 400, lineSpacing: 0 },
+          color: "#ffffff",
+          start: 0,
+          end: 1,
+        },
         {
           type: "video",
           src: "media/video.mp4",
@@ -129,14 +153,6 @@ test("add clips to a layer from the Library tab", async ({ page, editor }) => {
       hidden: false,
       clips: [
         {
-          type: "image",
-          src: "media/image.png",
-          transform: { x: 0, y: 0, scale: 4 },
-          crop: { left: 0, right: 0, top: 0, bottom: 0 },
-          start: 4,
-          end: 9,
-        },
-        {
           type: "audio",
           src: "media/extra.wav",
           start: 0,
@@ -144,6 +160,14 @@ test("add clips to a layer from the Library tab", async ({ page, editor }) => {
           out: 3,
           fadeIn: 0,
           fadeOut: 0,
+        },
+        {
+          type: "image",
+          src: "media/image.png",
+          transform: { x: 0, y: 0, scale: 4 },
+          crop: { left: 0, right: 0, top: 0, bottom: 0 },
+          start: 4,
+          end: 9,
         },
       ],
     },
@@ -295,4 +319,34 @@ test("move the selected layer up and down in the stack", async ({
     "Title",
     "Tint",
   ]);
+});
+
+test("reject a layer whose clips overlap", async ({ page, editor }) => {
+  // Add a second text clip to the title layer that starts before the first
+  // one ends.
+  await editJson<Project>(editor.projectFile, (project) => {
+    const clips = project.layers[3]!.clips;
+    clips.push({
+      ...clips[0]!,
+      start: 2,
+      end: 4,
+    } as Project["layers"][number]["clips"][number]);
+  });
+  const message =
+    'clip 1 in layer "Title" starts before the previous clip or overlaps its picture';
+
+  // Open the editor, and confirm it shows the error instead of the editor.
+  await page.goto(editor.url);
+  await expect(page.getByText(message)).toBeVisible();
+  await expect(page.getByRole("main")).toHaveCount(0);
+
+  // Render, and confirm it fails with the same error.
+  await expect(
+    runCli([
+      "render",
+      editor.projectFile,
+      `${editor.projectFile}.mp4`,
+      "--dry-run",
+    ]),
+  ).rejects.toMatchObject({ stderr: expect.stringContaining(message) });
 });

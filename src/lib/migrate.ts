@@ -1,5 +1,5 @@
 import { createLayerName } from "./layer-defaults.ts";
-import { getCroppedBox } from "./layout.ts";
+import { findMisplacedClip, getCroppedBox } from "./layout.ts";
 import {
   NEUTRAL_VALUES,
   type AudioClip,
@@ -122,8 +122,12 @@ function validateProject(project: Project): void {
         );
       }
     }
-    // TODO(multi-clip): Reject clips out of order by `start` or whose
-    // picture ranges overlap, once the editor can put several clips on a layer.
+    const index = findMisplacedClip(layer.clips);
+    if (index !== undefined) {
+      throw new Error(
+        `clip ${index} in layer "${layer.name}" starts before the previous clip or overlaps its picture`,
+      );
+    }
   }
 }
 

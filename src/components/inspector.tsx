@@ -53,6 +53,10 @@ export function Inspector({
   project: EditorProject;
   selection?: EditorSelection;
 }) {
+  const updateClipMutation = useMutation({
+    mutationFn: async ({ id, update }: { id: string; update: Partial<Clip> }) =>
+      runtime.updateClip({ id, update }),
+  });
   if (!selection) {
     return (
       <>
@@ -102,7 +106,7 @@ export function Inspector({
           canvas={project.canvas}
           media={project.media}
           time={time}
-          onUpdate={(update) => runtime.updateClip({ id, update })}
+          onUpdate={(update) => updateClipMutation.mutate({ id, update })}
         />
       );
     }

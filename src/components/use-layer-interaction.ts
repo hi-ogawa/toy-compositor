@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   applyCanvasEdit,
   applyTimeEdit,
+  getClipBounds,
   type CanvasEditDelta,
   type CanvasEditType,
   type TimeEditType,
@@ -63,11 +64,13 @@ export function useLayerInteraction({
     edit: Extract<ClipEdit, { domain: "time" }>,
     delta: number,
   ): Clip {
-    return applyTimeEdit(findClip(layers, edit.id)!.clip, {
+    const { layer, clip, clipIndex } = findClip(layers, edit.id)!;
+    return applyTimeEdit(clip, {
       type: edit.type,
       delta,
       fps: canvas.fps,
       mediaInfoMap,
+      bounds: getClipBounds(layer.clips, clipIndex),
     });
   }
 

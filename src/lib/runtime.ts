@@ -4,13 +4,18 @@ import { createStore } from "../utils/store.ts";
 import { apiClient } from "./api-client.ts";
 import { AudioBufferPlayback } from "./audio-buffer-playback.ts";
 import { createAudioView, type AudioView } from "./audio-view.ts";
+import { fitClipInGap } from "./clip-edit.ts";
 import {
   createColorClip,
   createEmptyLayer,
   createMediaClip,
   createTextClip,
 } from "./layer-defaults.ts";
-import { getContentRange, getOutputRange } from "./layout.ts";
+import {
+  findMisplacedClip,
+  getContentRange,
+  getOutputRange,
+} from "./layout.ts";
 import type { MediaFile } from "./media-file.ts";
 import {
   CANVAS_PRESETS,
@@ -123,15 +128,24 @@ export class EditorRuntime {
     });
   }
 
+  /**
+   * Keeps the layer's clips in order by start, and rejects a change, such as a
+   * typed start or hold, that would overlap the clip's neighbors.
+   */
   updateClip({ id, update }: { id: string; update: Partial<Clip> }): void {
     const { layers } = this.store.get().project;
     const { layer } = findClip(layers, id)!;
-    this.replaceClips({
-      layerId: layer.id,
-      clips: layer.clips.map((clip) =>
+    const clips = sortClips(
+      layer.clips.map((clip) =>
         clip.id === id ? ({ ...clip, ...update } as EditorClip) : clip,
       ),
-    });
+    );
+    if (findMisplacedClip(clips) !== undefined) {
+      throw new Error(
+        `The clip would overlap its neighbors on "${layer.name}"`,
+      );
+    }
+    this.replaceClips({ layerId: layer.id, clips });
   }
 
   /** Adds an empty layer on top of the stack. */
@@ -317,7 +331,11 @@ export class EditorRuntime {
     };
   }
 
-  /** Adds the clip after the layer's other clips. */
+  /**
+   * Places the clip at its start in a gap on the layer, ending it at the next
+   * clip when the gap is shorter, and rejects it when the start falls on
+   * another clip.
+   */
   private insertClip({
     layerId,
     clip,
@@ -328,10 +346,14 @@ export class EditorRuntime {
     const layer = this.store
       .get()
       .project.layers.find((layer) => layer.id === layerId)!;
-    const editorClip = { ...clip, id: crypto.randomUUID() } as EditorClip;
+    const fitted = fitClipInGap(clip, layer.clips);
+    if (!fitted) {
+      throw new Error(`No room at the playhead on "${layer.name}"`);
+    }
+    const editorClip = { ...fitted, id: crypto.randomUUID() } as EditorClip;
     this.replaceClips({
       layerId,
-      clips: [...layer.clips, editorClip],
+      clips: sortClips([...layer.clips, editorClip]),
     });
     if (editorClip.type === "video" || editorClip.type === "audio") {
       this.loadAudio(editorClip.src);
@@ -486,6 +508,10 @@ export function findClip(
     }
   }
   return undefined;
+}
+
+function sortClips(clips: EditorClip[]): EditorClip[] {
+  return clips.toSorted((a, b) => a.start - b.start);
 }
 
 function serializeEditorProject(project: EditorProject): Project {
